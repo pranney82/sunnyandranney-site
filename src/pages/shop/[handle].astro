@@ -1,0 +1,307 @@
+---
+import Base from '@/layouts/Base.astro';
+
+// Dynamic route: /shop/[handle]
+const { handle } = Astro.params;
+
+let product: any = null;
+let notFound = false;
+
+try {
+  const { getProductByHandle } = await import('@/lib/shopify');
+  product = await getProductByHandle(handle!);
+  if (!product) notFound = true;
+} catch (e) {
+  notFound = true;
+}
+
+if (notFound) {
+  return Astro.redirect('/shop');
+}
+
+const images = product.images.edges.map((e: any) => e.node);
+const variants = product.variants.edges.map((e: any) => e.node);
+const mainImage = images[0];
+const price = product.priceRange.minVariantPrice;
+const compareAt = product.compareAtPriceRange?.minVariantPrice;
+const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.amount);
+---
+
+<Base
+  title={product.seo?.title || product.title}
+  description={product.seo?.description || product.description?.slice(0, 160)}
+  image={mainImage?.url}
+  type="product"
+  product={{
+    name: product.title,
+    price: price.amount,
+    currency: price.currencyCode,
+    image: mainImage?.url || '',
+    availability: product.availableForSale,
+  }}
+>
+  <section class="pdp section">
+    <div class="container">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="/">Home</a>
+        <span>/</span>
+        <a href="/shop">Shop</a>
+        <span>/</span>
+        <span>{product.title}</span>
+      </nav>
+
+      <div class="pdp-grid">
+        <!-- Image Gallery -->
+        <div class="pdp-gallery">
+          <div class="pdp-gallery__main">
+            {mainImage ? (
+              <img
+                src={mainImage.url}
+                alt={mainImage.altText || product.title}
+                width={mainImage.width}
+                height={mainImage.height}
+                id="main-product-image"
+              />
+            ) : (
+              <div class="pdp-gallery__placeholder">No Image</div>
+            )}
+            {isOnSale && <span class="product-card__badge">Sale</span>}
+          </div>
+          {images.length > 1 && (
+            <div class="pdp-gallery__thumbs">
+              {images.map((img: any, i: number) => (
+                <button
+                  class:list={['pdp-thumb', { 'pdp-thumb--active': i === 0 }]}
+                  data-url={img.url}
+                  data-alt={img.altText || product.title}
+                >
+                  <img src={img.url} alt={img.altText || `${product.title} ${i + 1}`} loading="lazy" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <!-- Product Info -->
+        <div class="pdp-info">
+          {product.productType && <span class="label">{product.productType}</span>}
+          <h1>{product.title}</h1>
+
+          <div class="pdp-price">
+            <span class="pdp-price__current">
+              ${parseFloat(price.amount).toFixed(2)}
+            </span>
+            {isOnSale && (
+              <span class="pdp-price__compare">
+                ${parseFloat(compareAt.amount).toFixed(2)}
+              </span>
+            )}
+          </div>
+
+          <hr class="divider" />
+
+          <div class="pdp-description" set:html={product.descriptionHtml || product.description} />
+
+          {/* Variant selector */}
+          {variants.length > 1 && (
+            <div class="pdp-variants">
+              <label class="pdp-variants__label">Options</label>
+              <div class="pdp-variants__options">
+                {variants.map((v: any) => (
+                  <button
+                    class="pdp-variant-btn"
+                    data-variant-id={v.id}
+                    disabled={!v.availableForSale}
+                  >
+                    {v.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div class="pdp-actions">
+            <button
+              class="btn btn--gold pdp-add-to-cart"
+              id="add-to-cart"
+              data-variant-id={variants[0]?.id}
+              disabled={!product.availableForSale}
+            >
+              {product.availableForSale ? 'Add to Cart' : 'Sold Out'}
+            </button>
+          </div>
+
+          <div class="pdp-charity-note">
+            <span class="pdp-charity-note__icon">☀️</span>
+            <p>
+              This purchase supports <strong>Sunshine on a Ranney Day</strong> —
+              100% of profits fund home makeovers for kids with special needs.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--color-stone);
+    margin-bottom: var(--space-lg);
+  }
+
+  .breadcrumbs a:hover { color: var(--color-charcoal); }
+  .breadcrumbs span:last-child { color: var(--color-charcoal); }
+
+  .pdp-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+  }
+
+  @media (min-width: 768px) {
+    .pdp-grid { grid-template-columns: 1fr 1fr; gap: var(--space-2xl); }
+  }
+
+  .pdp-gallery__main {
+    position: relative;
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: var(--color-cream-dark);
+  }
+
+  .pdp-gallery__main img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .pdp-gallery__placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    color: var(--color-stone);
+  }
+
+  .pdp-gallery__thumbs {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    overflow-x: auto;
+  }
+
+  .pdp-thumb {
+    width: 72px;
+    height: 72px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    padding: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color 0.3s;
+  }
+
+  .pdp-thumb--active,
+  .pdp-thumb:hover { border-color: var(--color-charcoal); }
+
+  .pdp-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .pdp-info h1 {
+    margin: 0.5rem 0 0.75rem;
+    font-size: clamp(1.8rem, 3vw, 2.5rem);
+  }
+
+  .pdp-price { display: flex; align-items: baseline; gap: 0.75rem; margin-bottom: var(--space-md); }
+  .pdp-price__current { font-family: var(--font-display); font-size: 1.8rem; font-weight: 600; }
+  .pdp-price__compare { font-size: 1.1rem; color: var(--color-stone); text-decoration: line-through; }
+
+  .pdp-description {
+    margin: var(--space-md) 0;
+    color: var(--color-slate);
+    line-height: 1.7;
+  }
+
+  .pdp-variants { margin: var(--space-md) 0; }
+  .pdp-variants__label { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 0.5rem; }
+  .pdp-variants__options { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+  .pdp-variant-btn {
+    padding: 0.6rem 1.25rem;
+    border: 1.5px solid var(--color-cream-dark);
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.3s;
+  }
+
+  .pdp-variant-btn:hover:not(:disabled) { border-color: var(--color-charcoal); }
+  .pdp-variant-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .pdp-actions { margin: var(--space-lg) 0; }
+
+  .pdp-add-to-cart {
+    width: 100%;
+    justify-content: center;
+    padding: 1.1rem 2rem;
+    font-size: 0.9rem;
+  }
+
+  .pdp-charity-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: var(--space-md);
+    background: var(--color-gold-soft);
+    margin-top: var(--space-md);
+  }
+
+  .pdp-charity-note__icon { font-size: 1.5rem; flex-shrink: 0; }
+  .pdp-charity-note p { font-size: 0.85rem; color: var(--color-charcoal); margin: 0; max-width: none; }
+</style>
+
+<script>
+  // Thumbnail gallery
+  const thumbs = document.querySelectorAll('.pdp-thumb');
+  const mainImg = document.getElementById('main-product-image') as HTMLImageElement;
+
+  thumbs.forEach((thumb) => {
+    thumb.addEventListener('click', () => {
+      thumbs.forEach((t) => t.classList.remove('pdp-thumb--active'));
+      thumb.classList.add('pdp-thumb--active');
+      if (mainImg) {
+        mainImg.src = (thumb as HTMLElement).dataset.url || '';
+        mainImg.alt = (thumb as HTMLElement).dataset.alt || '';
+      }
+    });
+  });
+
+  // Add to cart — calls Shopify Cart API
+  const addToCartBtn = document.getElementById('add-to-cart');
+  addToCartBtn?.addEventListener('click', async () => {
+    const variantId = (addToCartBtn as HTMLElement).dataset.variantId;
+    if (!variantId) return;
+
+    addToCartBtn.textContent = 'Adding...';
+    (addToCartBtn as HTMLButtonElement).disabled = true;
+
+    try {
+      // Use Shopify cart API or redirect to Shopify checkout
+      const checkoutUrl = `https://sunnyandranney.myshopify.com/cart/${variantId.split('/').pop()}:1`;
+      window.location.href = checkoutUrl;
+    } catch (err) {
+      console.error('Cart error:', err);
+      addToCartBtn.textContent = 'Add to Cart';
+      (addToCartBtn as HTMLButtonElement).disabled = false;
+    }
+  });
+</script>

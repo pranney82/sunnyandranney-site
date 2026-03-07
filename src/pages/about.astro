@@ -1,0 +1,271 @@
+---
+import Base from '@/layouts/Base.astro';
+---
+
+<Base
+  title="Our Story"
+  description="Learn how Sunny & Ranney began — a furniture store where every purchase supports Sunshine on a Ranney Day, transforming the lives of kids with special needs."
+>
+  <!-- ═══ PAGE HERO ═══ -->
+  <section class="page-hero">
+    <div class="container">
+      <span class="label animate-fade-up">Our Story</span>
+      <h1 class="animate-fade-up delay-1">Where Style<br /><span class="accent">Meets Purpose</span></h1>
+      <hr class="divider animate-fade-up delay-2" />
+    </div>
+  </section>
+
+  <!-- ═══ ORIGIN STORY ═══ -->
+  <section class="story-section section">
+    <div class="container">
+      <div class="story-grid">
+        <div class="story-content reveal">
+          <h2>It Started With a Sermon</h2>
+          <p>
+            In 2012, a sermon sparked a calling that was bigger than furniture. Peter and
+            Holly Ranney felt moved to do something meaningful for their community — to use
+            their love of beautiful spaces to transform the lives of children with special needs.
+          </p>
+          <p>
+            That moment of inspiration became <strong>Sunshine on a Ranney Day</strong>, a
+            charity that renovates bedrooms and living spaces for kids who need environments
+            where they can truly thrive. And <strong>Sunny & Ranney</strong> became its engine —
+            a furniture store where 100% of profits fuel these life-changing makeovers.
+          </p>
+        </div>
+        <div class="story-image reveal delay-2">
+          <div class="image-placeholder">
+            <span>Founders Photo</span>
+            <span class="image-hint">Peter & Holly Ranney</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ WHAT WE CARRY ═══ -->
+  <section class="offerings section" style="background: var(--color-warm-white);">
+    <div class="container">
+      <div class="offerings-header reveal">
+        <span class="label">What We Carry</span>
+        <h2>Curated With Intention</h2>
+        <p>
+          Our Roswell showroom is filled with on-trend designer pieces — carefully selected
+          to help you create a space that feels like home. From statement furniture to
+          thoughtful gifts, every item has a story.
+        </p>
+      </div>
+
+      <div class="offerings-grid reveal delay-2">
+        <div class="offering-card">
+          <div class="offering-icon">🛋️</div>
+          <h4>Furniture</h4>
+          <p>Sofas, chairs, tables, and statement pieces from top designer brands.</p>
+        </div>
+        <div class="offering-card">
+          <div class="offering-icon">✨</div>
+          <h4>Home Decor</h4>
+          <p>Accessories, art, and accents that bring personality to every room.</p>
+        </div>
+        <div class="offering-card">
+          <div class="offering-icon">💡</div>
+          <h4>Lighting</h4>
+          <p>Lamps, pendants, and fixtures that set the perfect mood.</p>
+        </div>
+        <div class="offering-card">
+          <div class="offering-icon">🎁</div>
+          <h4>Gifts</h4>
+          <p>Kitchenware, candles, books, and unique finds for every occasion.</p>
+        </div>
+        <div class="offering-card">
+          <div class="offering-icon">🎄</div>
+          <h4>Holiday Decor</h4>
+          <p>Seasonal collections that make every holiday feel special.</p>
+        </div>
+        <div class="offering-card">
+          <div class="offering-icon">👶</div>
+          <h4>Kids Essentials</h4>
+          <p>Thoughtful items for the little ones in your life.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ THE DIFFERENCE ═══ -->
+  <section class="difference section--large">
+    <div class="container">
+      <div class="story-grid story-grid--reverse">
+        <div class="story-image reveal">
+          <div class="image-placeholder image-placeholder--gold">
+            <span>Makeover Photo</span>
+            <span class="image-hint">A completed room transformation</span>
+          </div>
+        </div>
+        <div class="story-content reveal delay-2">
+          <span class="label">The Difference</span>
+          <h2>Shopping That Changes Lives</h2>
+          <hr class="divider" />
+          <p>
+            When you buy a lamp, a sofa, or even a candle at Sunny & Ranney, you're
+            not just decorating your home. You're directly funding a bedroom makeover
+            for a child with special needs.
+          </p>
+          <p>
+            Since 2012, your purchases have helped transform the lives of over
+            <strong>20,000 kids</strong>. That's the power of shopping with purpose.
+          </p>
+          <a href="/charity" class="btn btn--gold" style="margin-top: 1rem;">
+            See Our Impact →
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ VISIT CTA ═══ -->
+  <section class="visit-cta section">
+    <div class="container">
+      <div class="visit-cta__inner reveal">
+        <h2>Come See Us in Roswell</h2>
+        <p>
+          There's nothing like experiencing our collection in person. Stop by, say hello,
+          and find your next favorite piece — all while supporting an incredible cause.
+        </p>
+        <div class="visit-cta__details">
+          <div>
+            <strong>Hours</strong><br />
+            Tue–Thu: 10am – 5pm<br />
+            Fri–Sat: 10am – 6pm
+          </div>
+          <a href="https://maps.google.com/?q=Sunny+and+Ranney+Roswell+GA" target="_blank" rel="noopener noreferrer" class="btn btn--primary">
+            Get Directions
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .page-hero {
+    padding: var(--space-2xl) 0 var(--space-xl);
+    background:
+      radial-gradient(ellipse at 30% 70%, var(--color-gold-soft) 0%, transparent 50%),
+      var(--color-cream);
+  }
+
+  .page-hero h1 {
+    margin: 0.75rem 0 1rem;
+  }
+
+  .accent {
+    color: var(--color-gold);
+    font-style: italic;
+    font-weight: 300;
+  }
+
+  .story-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+    align-items: center;
+  }
+
+  @media (min-width: 768px) {
+    .story-grid { grid-template-columns: 1fr 1fr; gap: var(--space-2xl); }
+    .story-grid--reverse { direction: rtl; }
+    .story-grid--reverse > * { direction: ltr; }
+  }
+
+  .story-content h2 { margin-bottom: 1rem; }
+  .story-content p { margin-top: var(--space-sm); }
+
+  .image-placeholder {
+    width: 100%;
+    min-height: 400px;
+    background: var(--color-cream-dark);
+    border: 2px dashed var(--color-stone);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    color: var(--color-stone);
+  }
+
+  .image-placeholder--gold {
+    background: var(--color-gold-soft);
+    border-color: var(--color-gold);
+  }
+
+  .image-hint {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    color: var(--color-stone);
+  }
+
+  .offerings-header {
+    text-align: center;
+    margin-bottom: var(--space-xl);
+  }
+  .offerings-header h2 { margin: 0.5rem 0 0.75rem; }
+  .offerings-header p { max-width: 55ch; margin: 0 auto; }
+
+  .offerings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--space-md);
+  }
+
+  @media (min-width: 768px) {
+    .offerings-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  .offering-card {
+    background: var(--color-cream);
+    padding: var(--space-lg) var(--space-md);
+    text-align: center;
+    transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
+  }
+
+  .offering-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(44, 44, 44, 0.06);
+  }
+
+  .offering-icon {
+    font-size: 2rem;
+    margin-bottom: var(--space-sm);
+  }
+
+  .offering-card h4 {
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+  }
+
+  .offering-card p {
+    font-size: 0.9rem;
+    margin: 0 auto;
+  }
+
+  .visit-cta__inner {
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .visit-cta__inner h2 { margin-bottom: 0.75rem; }
+  .visit-cta__inner > p { margin: 0 auto var(--space-lg); }
+
+  .visit-cta__details {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-lg);
+    color: var(--color-slate);
+    font-size: 0.95rem;
+  }
+</style>

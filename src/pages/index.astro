@@ -1,0 +1,703 @@
+---
+import Base from '@/layouts/Base.astro';
+---
+
+<Base>
+  <!-- ═══ HERO ═══ -->
+  <section class="hero">
+    <div class="hero__bg">
+      <div class="hero__grain"></div>
+    </div>
+    <div class="hero__content container">
+      <div class="hero__text">
+        <span class="label animate-fade-up">Roswell, Georgia</span>
+        <h1 class="hero__title animate-fade-up delay-1">
+          Designer Furniture<br />
+          <span class="hero__title-accent">With Purpose</span>
+        </h1>
+        <p class="hero__subtitle animate-fade-up delay-2">
+          Every piece you bring home transforms the life of a child with special needs.
+          Curated furniture, decor & gifts — where style meets heart.
+        </p>
+        <div class="hero__actions animate-fade-up delay-3">
+          <a href="/shop" class="btn btn--primary">Shop the Collection</a>
+          <a href="/charity" class="btn btn--outline">Our Mission</a>
+        </div>
+      </div>
+      <div class="hero__visual animate-fade-up delay-2">
+        <div class="hero__image-frame">
+          <div class="hero__image-placeholder">
+            <!-- Replace with your hero image -->
+            <div class="hero__image-text">
+              <span>Your Best</span>
+              <span>Showroom Photo</span>
+              <span class="hero__image-subtext">2400 × 1600px recommended</span>
+            </div>
+          </div>
+          <div class="hero__image-accent"></div>
+        </div>
+      </div>
+    </div>
+    <div class="hero__scroll-indicator animate-fade-in delay-5">
+      <span>Scroll</span>
+      <div class="hero__scroll-line"></div>
+    </div>
+  </section>
+
+  <!-- ═══ IMPACT TICKER ═══ -->
+  <section class="impact">
+    <div class="container">
+      <div class="impact__grid reveal">
+        <div class="impact__stat">
+          <span class="impact__number" data-count="20000">20,000+</span>
+          <span class="impact__label">Kids Helped</span>
+        </div>
+        <div class="impact__divider"></div>
+        <div class="impact__stat">
+          <span class="impact__number">100%</span>
+          <span class="impact__label">Profits to Charity</span>
+        </div>
+        <div class="impact__divider"></div>
+        <div class="impact__stat">
+          <span class="impact__number">2012</span>
+          <span class="impact__label">Founded</span>
+        </div>
+        <div class="impact__divider"></div>
+        <div class="impact__stat">
+          <span class="impact__number">☀️</span>
+          <span class="impact__label">Sunshine on a Ranney Day</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ STORY TEASER ═══ -->
+  <section class="story section--large">
+    <div class="container">
+      <div class="story__grid">
+        <div class="story__content reveal">
+          <span class="label">Our Story</span>
+          <h2>More Than a Furniture Store</h2>
+          <hr class="divider" />
+          <p>
+            It started in 2012 with a sermon that sparked a calling bigger than furniture.
+            That moment became <strong>Sunshine on a Ranney Day</strong> — and has since changed
+            the lives of dozens of families in our community.
+          </p>
+          <p>
+            At Sunny & Ranney, we've curated a collection of on-trend designer furniture
+            and home decor that not only transforms your living space but brightens the
+            lives of children with special needs. Every purchase directly funds home
+            makeovers for kids who need them most.
+          </p>
+          <a href="/about" class="btn btn--outline" style="margin-top: 1rem;">
+            Read Our Full Story
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </a>
+        </div>
+        <div class="story__images reveal delay-2">
+          <div class="story__image story__image--main">
+            <div class="story__image-placeholder">Store Interior</div>
+          </div>
+          <div class="story__image story__image--accent">
+            <div class="story__image-placeholder story__image-placeholder--gold">Charity Event</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ FEATURED PRODUCTS ═══ -->
+  <section class="featured section" id="featured-products">
+    <div class="container">
+      <div class="featured__header reveal">
+        <span class="label">Curated for You</span>
+        <h2>Featured Pieces</h2>
+        <p>Handpicked favorites from our Roswell showroom. Each piece comes with the knowledge that your purchase is changing a child's life.</p>
+      </div>
+
+      <div class="product-grid reveal delay-2" id="product-grid">
+        <!-- Products loaded via Shopify Storefront API -->
+        <!-- Fallback placeholder cards shown if API is not configured -->
+        <div class="product-card">
+          <div class="product-card__image">
+            <div class="product-card__image-ph">Furniture</div>
+          </div>
+          <div class="product-card__info">
+            <span class="product-card__title">Beautiful Accent Chair</span>
+            <span class="product-card__price">$495.00</span>
+          </div>
+        </div>
+        <div class="product-card">
+          <div class="product-card__image">
+            <div class="product-card__image-ph">Lighting</div>
+          </div>
+          <div class="product-card__info">
+            <span class="product-card__title">Artisan Table Lamp</span>
+            <span class="product-card__price">$185.00</span>
+          </div>
+        </div>
+        <div class="product-card">
+          <div class="product-card__image">
+            <div class="product-card__image-ph">Decor</div>
+          </div>
+          <div class="product-card__info">
+            <span class="product-card__title">Handwoven Throw Pillow</span>
+            <span class="product-card__price">$68.00</span>
+          </div>
+        </div>
+        <div class="product-card">
+          <div class="product-card__image">
+            <div class="product-card__image-ph">Gifts</div>
+          </div>
+          <div class="product-card__info">
+            <span class="product-card__title">Artisan Candle Set</span>
+            <span class="product-card__price">$42.00</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="featured__cta reveal delay-3" style="text-align: center; margin-top: var(--space-xl);">
+        <a href="/shop" class="btn btn--gold">
+          View All Products
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ CATEGORIES ═══ -->
+  <section class="categories section">
+    <div class="container">
+      <div class="categories__grid">
+        <a href="/shop?category=furniture" class="categories__card reveal">
+          <div class="categories__card-bg"></div>
+          <div class="categories__card-content">
+            <h3>Furniture</h3>
+            <span class="categories__card-link">Shop Now →</span>
+          </div>
+        </a>
+        <a href="/shop?category=decor" class="categories__card reveal delay-1">
+          <div class="categories__card-bg"></div>
+          <div class="categories__card-content">
+            <h3>Home Decor</h3>
+            <span class="categories__card-link">Shop Now →</span>
+          </div>
+        </a>
+        <a href="/shop?category=lighting" class="categories__card reveal delay-2">
+          <div class="categories__card-bg"></div>
+          <div class="categories__card-content">
+            <h3>Lighting</h3>
+            <span class="categories__card-link">Shop Now →</span>
+          </div>
+        </a>
+        <a href="/shop?category=gifts" class="categories__card categories__card--wide reveal delay-3">
+          <div class="categories__card-bg categories__card-bg--gold"></div>
+          <div class="categories__card-content">
+            <h3>Gifts & Kitchenware</h3>
+            <span class="categories__card-link">Shop Now →</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ CHARITY CTA ═══ -->
+  <section class="charity-cta section--large">
+    <div class="container">
+      <div class="charity-cta__inner reveal">
+        <span class="label" style="color: var(--color-gold-light);">Our Mission</span>
+        <h2>When You Shop Here,<br />You Change a Life</h2>
+        <p>
+          Sunshine on a Ranney Day transforms the bedrooms and living spaces of children
+          with special needs — creating environments where they can thrive. Your purchase
+          makes this possible.
+        </p>
+        <div class="charity-cta__actions">
+          <a href="/charity" class="btn btn--primary" style="background: white; color: var(--color-charcoal); border-color: white;">
+            Learn About Our Impact
+          </a>
+          <a href="https://sunshineonaranneyday.com" target="_blank" rel="noopener noreferrer" class="btn btn--outline" style="color: white; border-color: rgba(255,255,255,0.4);">
+            Visit the Charity
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ VISIT US ═══ -->
+  <section class="visit section">
+    <div class="container">
+      <div class="visit__grid">
+        <div class="visit__info reveal">
+          <span class="label">Come See Us</span>
+          <h2>Visit Our Roswell Showroom</h2>
+          <hr class="divider" />
+          <div class="visit__hours">
+            <p><strong>Tuesday – Thursday:</strong> 10am – 5pm</p>
+            <p><strong>Friday – Saturday:</strong> 10am – 6pm</p>
+            <p><strong>Sunday – Monday:</strong> Closed</p>
+          </div>
+          <p class="visit__address">
+            Roswell, Georgia
+          </p>
+          <a href="https://maps.google.com/?q=Sunny+and+Ranney+Roswell+GA" target="_blank" rel="noopener noreferrer" class="btn btn--outline" style="margin-top: 1rem;">
+            Get Directions
+          </a>
+        </div>
+        <div class="visit__map reveal delay-2">
+          <div class="visit__map-placeholder">
+            <!-- Replace with Google Maps embed or Mapbox -->
+            <div class="visit__map-text">Map Embed</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  /* ─── Hero ───────────────────────────────────────── */
+  .hero {
+    position: relative;
+    min-height: calc(100vh - var(--nav-height));
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .hero__bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 50%, var(--color-gold-soft) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, var(--color-sage-light) 0%, transparent 40%),
+      var(--color-cream);
+    z-index: 0;
+  }
+
+  .hero__grain {
+    position: absolute;
+    inset: 0;
+    opacity: 0.3;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.4'/%3E%3C/svg%3E");
+    background-size: 200px;
+  }
+
+  .hero__content {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+    align-items: center;
+    padding-top: var(--space-xl);
+    padding-bottom: var(--space-xl);
+  }
+
+  @media (min-width: 900px) {
+    .hero__content {
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2xl);
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+  }
+
+  .hero__title {
+    color: var(--color-charcoal);
+    margin: 0.75rem 0 1.25rem;
+    line-height: 1.05;
+  }
+
+  .hero__title-accent {
+    color: var(--color-gold);
+    font-style: italic;
+    font-weight: 300;
+  }
+
+  .hero__subtitle {
+    font-size: clamp(1rem, 1.2vw, 1.15rem);
+    margin-bottom: 0.5rem;
+  }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: var(--space-md);
+  }
+
+  .hero__image-frame {
+    position: relative;
+  }
+
+  .hero__image-placeholder {
+    aspect-ratio: 4 / 3;
+    background: var(--color-cream-dark);
+    border: 2px dashed var(--color-stone);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+  }
+
+  .hero__image-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    color: var(--color-stone);
+  }
+
+  .hero__image-subtext {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    color: var(--color-stone);
+    margin-top: 0.5rem;
+  }
+
+  .hero__image-accent {
+    position: absolute;
+    bottom: -20px;
+    right: -20px;
+    width: 60%;
+    height: 60%;
+    border: 2px solid var(--color-gold);
+    z-index: -1;
+  }
+
+  .hero__scroll-indicator {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--color-stone);
+  }
+
+  .hero__scroll-line {
+    width: 1px;
+    height: 40px;
+    background: var(--color-gold);
+    animation: scrollPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes scrollPulse {
+    0%, 100% { transform: scaleY(1); opacity: 1; }
+    50% { transform: scaleY(0.5); opacity: 0.4; }
+  }
+
+  /* ─── Impact ─────────────────────────────────────── */
+  .impact {
+    background: var(--color-warm-white);
+    border-top: 1px solid var(--color-cream-dark);
+    border-bottom: 1px solid var(--color-cream-dark);
+    padding: var(--space-lg) 0;
+  }
+
+  .impact__grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: var(--space-lg);
+  }
+
+  .impact__stat {
+    text-align: center;
+  }
+
+  .impact__number {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: var(--color-charcoal);
+    line-height: 1;
+  }
+
+  .impact__label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-stone);
+    margin-top: 0.4rem;
+  }
+
+  .impact__divider {
+    width: 1px;
+    height: 40px;
+    background: var(--color-cream-dark);
+    display: none;
+  }
+
+  @media (min-width: 768px) {
+    .impact__divider {
+      display: block;
+    }
+  }
+
+  /* ─── Story Teaser ───────────────────────────────── */
+  .story__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+    align-items: center;
+  }
+
+  @media (min-width: 768px) {
+    .story__grid {
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2xl);
+    }
+  }
+
+  .story__content h2 {
+    margin: 0.75rem 0;
+  }
+
+  .story__content p {
+    margin-top: var(--space-sm);
+  }
+
+  .story__images {
+    position: relative;
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    gap: var(--space-sm);
+    min-height: 400px;
+  }
+
+  .story__image {
+    overflow: hidden;
+  }
+
+  .story__image-placeholder {
+    width: 100%;
+    height: 100%;
+    min-height: 300px;
+    background: var(--color-cream-dark);
+    border: 2px dashed var(--color-stone);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    color: var(--color-stone);
+  }
+
+  .story__image-placeholder--gold {
+    background: var(--color-gold-soft);
+    border-color: var(--color-gold);
+  }
+
+  /* ─── Featured ───────────────────────────────────── */
+  .featured {
+    background: var(--color-warm-white);
+  }
+
+  .featured__header {
+    text-align: center;
+    margin-bottom: var(--space-xl);
+  }
+
+  .featured__header h2 {
+    margin: 0.5rem 0 0.75rem;
+  }
+
+  .featured__header p {
+    margin: 0 auto;
+    max-width: 50ch;
+  }
+
+  .product-card__image-ph {
+    width: 100%;
+    height: 100%;
+    background: var(--color-cream-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    color: var(--color-stone);
+    aspect-ratio: 4/5;
+  }
+
+  /* ─── Categories ─────────────────────────────────── */
+  .categories__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-sm);
+  }
+
+  @media (min-width: 768px) {
+    .categories__grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .categories__card--wide {
+      grid-column: span 3;
+    }
+  }
+
+  .categories__card {
+    position: relative;
+    aspect-ratio: 3 / 2;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    cursor: pointer;
+  }
+
+  @media (min-width: 768px) {
+    .categories__card--wide {
+      aspect-ratio: 4 / 1;
+    }
+  }
+
+  .categories__card-bg {
+    position: absolute;
+    inset: 0;
+    background: var(--color-charcoal);
+    transition: transform 0.6s var(--ease-out);
+  }
+
+  .categories__card-bg--gold {
+    background: linear-gradient(135deg, var(--color-gold) 0%, var(--color-terracotta) 100%);
+  }
+
+  .categories__card:hover .categories__card-bg {
+    transform: scale(1.05);
+  }
+
+  .categories__card-content {
+    position: relative;
+    z-index: 1;
+    padding: var(--space-md);
+    color: white;
+  }
+
+  .categories__card-content h3 {
+    font-size: 1.8rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .categories__card-link {
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.7;
+    transition: opacity 0.3s;
+  }
+
+  .categories__card:hover .categories__card-link {
+    opacity: 1;
+  }
+
+  /* ─── Charity CTA ────────────────────────────────── */
+  .charity-cta {
+    background:
+      linear-gradient(160deg, var(--color-charcoal) 0%, #1a1a1a 100%);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .charity-cta::before {
+    content: '☀️';
+    position: absolute;
+    font-size: 20rem;
+    opacity: 0.03;
+    top: -5rem;
+    right: -3rem;
+  }
+
+  .charity-cta__inner {
+    text-align: center;
+    color: white;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .charity-cta__inner h2 {
+    margin: 0.75rem 0 1.25rem;
+    color: white;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+  }
+
+  .charity-cta__inner p {
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0 auto 2rem;
+    max-width: 50ch;
+  }
+
+  .charity-cta__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  /* ─── Visit ──────────────────────────────────────── */
+  .visit__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+    align-items: center;
+  }
+
+  @media (min-width: 768px) {
+    .visit__grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .visit__info h2 {
+    margin: 0.75rem 0;
+  }
+
+  .visit__hours {
+    margin: var(--space-md) 0;
+  }
+
+  .visit__hours p {
+    margin: 0.3rem 0;
+    font-size: 0.95rem;
+  }
+
+  .visit__address {
+    color: var(--color-stone);
+    font-size: 0.95rem;
+  }
+
+  .visit__map-placeholder {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: var(--color-cream-dark);
+    border: 2px dashed var(--color-stone);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .visit__map-text {
+    font-family: var(--font-display);
+    color: var(--color-stone);
+    font-size: 1.2rem;
+  }
+</style>

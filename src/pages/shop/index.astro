@@ -1,0 +1,308 @@
+---
+import Base from '@/layouts/Base.astro';
+
+// At build time, attempt to fetch products from Shopify
+let products: any[] = [];
+let hasShopify = false;
+
+try {
+  const { getProducts } = await import('@/lib/shopify');
+  const result = await getProducts(24);
+  products = result.products;
+  hasShopify = products.length > 0;
+} catch (e) {
+  // Shopify not configured — will show placeholder UI
+  console.log('Shopify API not configured. Showing placeholder shop.');
+}
+---
+
+<Base
+  title="Shop Our Collection"
+  description="Browse curated designer furniture, home decor, lighting, and gifts at Sunny & Ranney. Every purchase supports kids with special needs through Sunshine on a Ranney Day."
+>
+  <!-- ═══ SHOP HERO ═══ -->
+  <section class="shop-hero">
+    <div class="container">
+      <span class="label animate-fade-up">Shop</span>
+      <h1 class="animate-fade-up delay-1">The Collection</h1>
+      <p class="shop-hero__subtitle animate-fade-up delay-2">
+        Every piece you choose helps transform the life of a child.
+      </p>
+    </div>
+  </section>
+
+  <!-- ═══ FILTERS ═══ -->
+  <section class="filters-bar">
+    <div class="container">
+      <div class="filters">
+        <button class="filter-btn filter-btn--active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="furniture">Furniture</button>
+        <button class="filter-btn" data-filter="decor">Decor</button>
+        <button class="filter-btn" data-filter="lighting">Lighting</button>
+        <button class="filter-btn" data-filter="gifts">Gifts</button>
+        <button class="filter-btn" data-filter="kitchenware">Kitchenware</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ PRODUCTS GRID ═══ -->
+  <section class="shop-grid-section section">
+    <div class="container">
+      {hasShopify ? (
+        <div class="product-grid" id="shop-grid">
+          {products.map((product) => {
+            const image = product.images.edges[0]?.node;
+            const price = product.priceRange.minVariantPrice;
+            const compareAt = product.compareAtPriceRange?.minVariantPrice;
+            const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.amount);
+
+            return (
+              <a href={`/shop/${product.handle}`} class="product-card" data-type={product.productType.toLowerCase()}>
+                {isOnSale && <span class="product-card__badge">Sale</span>}
+                <div class="product-card__image">
+                  {image ? (
+                    <img
+                      src={image.url}
+                      alt={image.altText || product.title}
+                      width={image.width}
+                      height={image.height}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <div class="product-card__image-ph">{product.productType || 'Product'}</div>
+                  )}
+                </div>
+                <div class="product-card__info">
+                  <span class="product-card__title">{product.title}</span>
+                  <span class="product-card__price">
+                    ${parseFloat(price.amount).toFixed(2)}
+                    {isOnSale && (
+                      <span class="product-card__price--compare">
+                        ${parseFloat(compareAt.amount).toFixed(2)}
+                      </span>
+                    )}
+                  </span>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      ) : (
+        <!-- Placeholder: shown when Shopify API is not connected -->
+        <div class="shop-placeholder reveal">
+          <div class="shop-placeholder__icon">🛍️</div>
+          <h3>Connect Your Shopify Store</h3>
+          <p>
+            Products will appear here once you connect your Shopify Storefront API.
+            Add your credentials to the <code>.env</code> file to get started.
+          </p>
+          <div class="shop-placeholder__steps">
+            <div class="shop-placeholder__step">
+              <span class="shop-placeholder__step-num">1</span>
+              <span>Go to Shopify Admin → Settings → Apps → Develop apps</span>
+            </div>
+            <div class="shop-placeholder__step">
+              <span class="shop-placeholder__step-num">2</span>
+              <span>Create an app with Storefront API access</span>
+            </div>
+            <div class="shop-placeholder__step">
+              <span class="shop-placeholder__step-num">3</span>
+              <span>Copy the Storefront API token to your <code>.env</code> file</span>
+            </div>
+          </div>
+          <p style="margin-top: 1.5rem;">
+            <a href="https://sunnyandranney.myshopify.com" target="_blank" rel="noopener noreferrer" class="btn btn--primary">
+              Visit Your Current Shopify Store →
+            </a>
+          </p>
+        </div>
+      )}
+    </div>
+  </section>
+
+  <!-- ═══ MISSION REMINDER ═══ -->
+  <section class="mission-reminder">
+    <div class="container">
+      <p class="mission-reminder__text reveal">
+        <span class="mission-reminder__sun">☀️</span>
+        Every purchase you make here directly supports <strong>Sunshine on a Ranney Day</strong>
+        — funding home makeovers for kids with special needs.
+        <a href="/charity">Learn more →</a>
+      </p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .shop-hero {
+    padding: var(--space-2xl) 0 var(--space-lg);
+    text-align: center;
+    background:
+      radial-gradient(ellipse at 50% 80%, var(--color-sage-light) 0%, transparent 50%),
+      var(--color-cream);
+  }
+
+  .shop-hero h1 { margin: 0.5rem 0; }
+
+  .shop-hero__subtitle {
+    font-size: 1.1rem;
+    color: var(--color-slate);
+    max-width: 40ch;
+    margin: 0 auto;
+  }
+
+  .filters-bar {
+    border-bottom: 1px solid var(--color-cream-dark);
+    padding: var(--space-sm) 0;
+    position: sticky;
+    top: var(--nav-height);
+    background: rgba(250, 247, 242, 0.95);
+    backdrop-filter: blur(8px);
+    z-index: 50;
+  }
+
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+  }
+
+  .filter-btn {
+    padding: 0.5rem 1.25rem;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-slate);
+    border: 1.5px solid transparent;
+    transition: all 0.3s;
+    background: transparent;
+  }
+
+  .filter-btn:hover {
+    color: var(--color-charcoal);
+  }
+
+  .filter-btn--active {
+    color: var(--color-charcoal);
+    border-color: var(--color-charcoal);
+  }
+
+  .shop-grid-section {
+    min-height: 400px;
+  }
+
+  /* Placeholder */
+  .shop-placeholder {
+    text-align: center;
+    padding: var(--space-2xl) var(--space-md);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .shop-placeholder__icon {
+    font-size: 3rem;
+    margin-bottom: var(--space-sm);
+  }
+
+  .shop-placeholder h3 {
+    margin-bottom: 0.75rem;
+  }
+
+  .shop-placeholder code {
+    background: var(--color-cream-dark);
+    padding: 0.15rem 0.5rem;
+    font-size: 0.85em;
+    border-radius: 3px;
+  }
+
+  .shop-placeholder__steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: var(--space-md);
+    text-align: left;
+    max-width: 450px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .shop-placeholder__step {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+    color: var(--color-slate);
+  }
+
+  .shop-placeholder__step-num {
+    width: 28px;
+    height: 28px;
+    background: var(--color-gold);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .mission-reminder {
+    background: var(--color-gold-soft);
+    padding: var(--space-md) 0;
+  }
+
+  .mission-reminder__text {
+    text-align: center;
+    font-size: 0.95rem;
+    color: var(--color-charcoal);
+    max-width: none;
+  }
+
+  .mission-reminder__text a {
+    color: var(--color-gold);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .mission-reminder__sun {
+    margin-right: 0.25rem;
+  }
+</style>
+
+<script>
+  // Client-side category filtering
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  const productCards = document.querySelectorAll('#shop-grid .product-card');
+
+  filterBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const filter = btn.getAttribute('data-filter');
+
+      filterBtns.forEach((b) => b.classList.remove('filter-btn--active'));
+      btn.classList.add('filter-btn--active');
+
+      productCards.forEach((card) => {
+        const type = (card as HTMLElement).getAttribute('data-type') || '';
+        if (filter === 'all' || type.includes(filter!)) {
+          (card as HTMLElement).style.display = '';
+        } else {
+          (card as HTMLElement).style.display = 'none';
+        }
+      });
+    });
+  });
+
+  // Check URL params for initial filter
+  const params = new URLSearchParams(window.location.search);
+  const category = params.get('category');
+  if (category) {
+    const btn = document.querySelector(`[data-filter="${category}"]`) as HTMLElement;
+    if (btn) btn.click();
+  }
+</script>

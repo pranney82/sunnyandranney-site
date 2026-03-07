@@ -1,0 +1,139 @@
+---
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  url?: string;
+  type?: 'website' | 'article' | 'product';
+  product?: {
+    name: string;
+    price: string;
+    currency: string;
+    image: string;
+    availability: boolean;
+  };
+}
+
+const {
+  title = 'Sunny & Ranney — Designer Furniture That Supports Charity',
+  description = 'Curated designer furniture, home decor & gifts in Roswell, GA. 100% of profits support Sunshine on a Ranney Day, transforming the lives of kids with special needs.',
+  image = '/og-image.jpg',
+  url = Astro.url.href,
+  type = 'website',
+  product,
+} = Astro.props;
+
+const siteName = 'Sunny & Ranney';
+const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
+
+// LocalBusiness structured data
+const localBusinessSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FurnitureStore',
+  name: 'Sunny & Ranney',
+  description: 'Designer furniture, home decor & gifts. 100% of profits support Sunshine on a Ranney Day charity.',
+  url: 'https://sunnyandranney.com',
+  logo: 'https://sunnyandranney.com/logo.png',
+  image: 'https://sunnyandranney.com/og-image.jpg',
+  telephone: '',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: '',
+    addressLocality: 'Roswell',
+    addressRegion: 'GA',
+    postalCode: '',
+    addressCountry: 'US',
+  },
+  geo: {
+    '@type': 'GeoCoordinates',
+    latitude: 34.0234,
+    longitude: -84.3616,
+  },
+  openingHoursSpecification: [
+    {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: ['Tuesday', 'Wednesday', 'Thursday'],
+      opens: '10:00',
+      closes: '17:00',
+    },
+    {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: ['Friday', 'Saturday'],
+      opens: '10:00',
+      closes: '18:00',
+    },
+  ],
+  sameAs: [
+    'https://www.instagram.com/sunnyandranney/',
+    'https://www.facebook.com/sunnyandranney/',
+  ],
+  priceRange: '$$',
+  parentOrganization: {
+    '@type': 'NonprofitOrganization',
+    name: 'Sunshine on a Ranney Day',
+    url: 'https://sunshineonaranneyday.com',
+  },
+};
+
+// Product structured data
+const productSchema = product ? {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: product.name,
+  image: product.image,
+  offers: {
+    '@type': 'Offer',
+    price: product.price,
+    priceCurrency: product.currency,
+    availability: product.availability
+      ? 'https://schema.org/InStock'
+      : 'https://schema.org/OutOfStock',
+    seller: {
+      '@type': 'Organization',
+      name: 'Sunny & Ranney',
+    },
+  },
+} : null;
+
+// Organization schema for AI discoverability
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Sunny & Ranney',
+  url: 'https://sunnyandranney.com',
+  logo: 'https://sunnyandranney.com/logo.png',
+  description: 'Designer furniture store in Roswell, GA where 100% of profits support kids with special needs through Sunshine on a Ranney Day.',
+  foundingDate: '2012',
+  knowsAbout: ['Furniture', 'Home Decor', 'Interior Design', 'Charity', 'Children with Special Needs'],
+};
+---
+
+<!-- Primary Meta Tags -->
+<title>{fullTitle}</title>
+<meta name="title" content={fullTitle} />
+<meta name="description" content={description} />
+<meta name="robots" content="index, follow" />
+<link rel="canonical" href={url} />
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content={type} />
+<meta property="og:url" content={url} />
+<meta property="og:title" content={fullTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:image" content={image} />
+<meta property="og:site_name" content={siteName} />
+<meta property="og:locale" content="en_US" />
+
+<!-- Twitter -->
+<meta property="twitter:card" content="summary_large_image" />
+<meta property="twitter:url" content={url} />
+<meta property="twitter:title" content={fullTitle} />
+<meta property="twitter:description" content={description} />
+<meta property="twitter:image" content={image} />
+
+<!-- Structured Data -->
+<script type="application/ld+json" set:html={JSON.stringify(localBusinessSchema)} />
+<script type="application/ld+json" set:html={JSON.stringify(organizationSchema)} />
+{productSchema && (
+  <script type="application/ld+json" set:html={JSON.stringify(productSchema)} />
+)}

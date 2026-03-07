@@ -1,0 +1,23 @@
+# dependencies
+node_modules/
+
+# build
+dist/
+.astro/
+
+# env
+.env
+.env.local
+.env.production
+
+# editor
+.vscode/
+.idea/
+*.swp
+
+# os
+.DS_Store
+Thumbs.db
+
+# cloudflare
+.wrangler/

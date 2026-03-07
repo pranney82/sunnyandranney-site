@@ -1,0 +1,209 @@
+---
+const currentYear = new Date().getFullYear();
+---
+
+<footer class="footer">
+  <div class="footer__charity-bar">
+    <div class="container">
+      <p class="footer__charity-text">
+        <span class="footer__sun">☀️</span>
+        100% of profits support <strong>Sunshine on a Ranney Day</strong> — transforming the lives of kids with special needs
+      </p>
+    </div>
+  </div>
+
+  <div class="footer__main container">
+    <div class="footer__grid">
+      <div class="footer__brand">
+        <span class="footer__logo">Sunny <em>&</em> Ranney</span>
+        <p class="footer__description">
+          Curated designer furniture & home decor in Roswell, Georgia.
+          Every purchase brightens a child's life.
+        </p>
+        <div class="footer__social">
+          <a href="https://www.instagram.com/sunnyandranney/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+              <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+            </svg>
+          </a>
+          <a href="https://www.facebook.com/sunnyandranney/" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <div class="footer__col">
+        <h4 class="footer__heading">Shop</h4>
+        <nav class="footer__nav">
+          <a href="/shop">All Products</a>
+          <a href="/shop?category=furniture">Furniture</a>
+          <a href="/shop?category=decor">Home Decor</a>
+          <a href="/shop?category=gifts">Gifts</a>
+        </nav>
+      </div>
+
+      <div class="footer__col">
+        <h4 class="footer__heading">About</h4>
+        <nav class="footer__nav">
+          <a href="/about">Our Story</a>
+          <a href="/charity">Our Charity</a>
+          <a href="https://sunshineonaranneyday.com" target="_blank" rel="noopener noreferrer">Sunshine on a Ranney Day</a>
+        </nav>
+      </div>
+
+      <div class="footer__col">
+        <h4 class="footer__heading">Visit Us</h4>
+        <address class="footer__address">
+          Roswell, Georgia<br />
+          <br />
+          <strong>Hours</strong><br />
+          Tue–Thu: 10am – 5pm<br />
+          Fri–Sat: 10am – 6pm<br />
+          Sun–Mon: Closed
+        </address>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer__bottom container">
+    <p>&copy; {currentYear} Sunny & Ranney. All rights reserved.</p>
+    <p class="footer__credit">
+      Built with purpose. Every purchase changes a life.
+    </p>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    background: var(--color-charcoal);
+    color: var(--color-cream);
+  }
+
+  .footer__charity-bar {
+    background: var(--color-gold);
+    padding: 0.9rem 0;
+    text-align: center;
+  }
+
+  .footer__charity-text {
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 500;
+    max-width: none;
+  }
+
+  .footer__charity-text strong {
+    font-weight: 700;
+  }
+
+  .footer__sun {
+    margin-right: 0.25rem;
+  }
+
+  .footer__main {
+    padding: var(--space-2xl) var(--space-md);
+  }
+
+  .footer__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
+
+  @media (min-width: 768px) {
+    .footer__grid {
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: var(--space-xl);
+    }
+  }
+
+  .footer__logo {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 500;
+    display: block;
+    margin-bottom: var(--space-sm);
+  }
+
+  .footer__logo em {
+    color: var(--color-gold);
+    font-style: italic;
+  }
+
+  .footer__description {
+    color: var(--color-stone);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin-bottom: var(--space-md);
+  }
+
+  .footer__social {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .footer__social a {
+    color: var(--color-stone);
+    transition: color 0.3s;
+  }
+
+  .footer__social a:hover {
+    color: var(--color-gold);
+  }
+
+  .footer__heading {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    margin-bottom: var(--space-sm);
+  }
+
+  .footer__nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .footer__nav a {
+    color: var(--color-stone);
+    font-size: 0.9rem;
+    transition: color 0.3s;
+  }
+
+  .footer__nav a:hover {
+    color: var(--color-cream);
+  }
+
+  .footer__address {
+    color: var(--color-stone);
+    font-size: 0.9rem;
+    font-style: normal;
+    line-height: 1.7;
+  }
+
+  .footer__address strong {
+    color: var(--color-cream);
+    font-weight: 500;
+  }
+
+  .footer__bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding: var(--space-md);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .footer__bottom p {
+    color: var(--color-stone);
+    font-size: 0.8rem;
+  }
+</style>
