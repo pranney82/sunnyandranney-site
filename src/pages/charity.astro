@@ -10,6 +10,7 @@ import Base from '@/layouts/Base.astro';
   <section class="charity-hero">
     <div class="charity-hero__bg"></div>
     <div class="container charity-hero__content">
+      <img src="/images/logos/gracie.png" alt="Gracie the Pig" class="animate-fade-up" style="width: 56px; margin: 0 auto 1rem; opacity: 0.85;" />
       <span class="label animate-fade-up" style="color: var(--color-gold-light);">Our Mission</span>
       <h1 class="animate-fade-up delay-1">Sunshine on a<br /><span class="hero-accent">Ranney Day</span></h1>
       <p class="charity-hero__subtitle animate-fade-up delay-2">
@@ -165,7 +166,7 @@ import Base from '@/layouts/Base.astro';
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(ellipse at 50% 30%, rgba(196, 152, 47, 0.15) 0%, transparent 60%),
+      radial-gradient(ellipse at 50% 30%, rgba(255, 212, 0, 0.12) 0%, transparent 60%),
       var(--color-charcoal);
   }
 
@@ -214,13 +215,13 @@ import Base from '@/layouts/Base.astro';
     font-family: var(--font-display);
     font-size: 3rem;
     font-weight: 600;
-    color: white;
+    color: var(--color-charcoal);
     line-height: 1;
   }
 
   .impact-card__label {
     display: block;
-    color: rgba(255, 255, 255, 0.85);
+    color: rgba(44, 44, 44, 0.75);
     font-size: 0.85rem;
     font-weight: 500;
     letter-spacing: 0.05em;
