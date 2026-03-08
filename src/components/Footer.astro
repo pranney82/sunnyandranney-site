@@ -15,7 +15,7 @@ const currentYear = new Date().getFullYear();
   <div class="footer__main container">
     <div class="footer__grid">
       <div class="footer__brand">
-        <span class="footer__logo">Sunny <em>&</em> Ranney</span>
+        <img src="/images/logos/logo-tagline-dark-bg.png" alt="Sunny & Ranney" class="footer__logo-img" />
         <p class="footer__description">
           Curated designer furniture & home decor in Roswell, Georgia.
           Every purchase brightens a child's life.
@@ -119,6 +119,14 @@ const currentYear = new Date().getFullYear();
       grid-template-columns: 2fr 1fr 1fr 1fr;
       gap: var(--space-xl);
     }
+  }
+
+  .footer__logo-img {
+    height: 48px;
+    width: auto;
+    object-fit: contain;
+    display: block;
+    margin-bottom: var(--space-sm);
   }
 
   .footer__logo {

@@ -5,13 +5,14 @@ const navLinks = [
   { href: '/about', label: 'Our Story' },
   { href: '/shop', label: 'Shop' },
   { href: '/charity', label: 'Our Charity' },
+  { href: '/branding', label: 'Branding' },
 ];
 ---
 
 <header class="nav" id="main-nav">
   <div class="nav__inner container">
     <a href="/" class="nav__logo" aria-label="Sunny & Ranney Home">
-      <span class="nav__logo-text">Sunny <em>&</em> Ranney</span>
+      <img src="/images/logos/logo-light-bg.png" alt="Sunny & Ranney" class="nav__logo-img" />
     </a>
 
     <nav class="nav__links" aria-label="Main navigation">
@@ -80,6 +81,12 @@ const navLinks = [
     align-items: center;
     justify-content: space-between;
     height: var(--nav-height);
+  }
+
+  .nav__logo-img {
+    height: 40px;
+    width: auto;
+    object-fit: contain;
   }
 
   .nav__logo-text {

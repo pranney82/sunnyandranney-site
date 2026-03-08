@@ -1,0 +1,755 @@
+---
+import Base from '@/layouts/Base.astro';
+
+const logos = [
+  { src: '/images/logos/logo-light-bg.png', title: 'Primary Logo — Light BG', desc: 'No tagline, for light backgrounds', bg: 'light' },
+  { src: '/images/logos/logo-dark-bg.png', title: 'Primary Logo — Dark BG', desc: 'No tagline, for dark backgrounds', bg: 'dark' },
+  { src: '/images/logos/logo-cyan-bg.png', title: 'Primary Logo — Cyan BG', desc: 'No tagline, for cyan backgrounds', bg: 'cyan' },
+  { src: '/images/logos/logo-tagline-dark-bg.png', title: 'Full Logo + Tagline — Dark BG', desc: 'With "Home Furnishings and Decor"', bg: 'dark' },
+  { src: '/images/logos/logo-tagline-light-bg.png', title: 'Full Logo + Tagline — Light BG', desc: 'With "Home Furnishings and Decor"', bg: 'light' },
+  { src: '/images/logos/logo-tagline-cyan-bg.png', title: 'Full Logo + Tagline — Cyan BG', desc: 'With "Home Furnishings and Decor"', bg: 'cyan' },
+  { src: '/images/logos/logo-nopig-dark-bg.png', title: 'Text Only + Tagline — Dark BG', desc: 'Without Gracie the Pig', bg: 'dark' },
+  { src: '/images/logos/logo-nopig-cyan-bg.png', title: 'Text Only + Tagline — Cyan BG', desc: 'Without Gracie the Pig', bg: 'cyan' },
+];
+
+const icons = [
+  { src: '/images/logos/circle-cyan.png', title: 'Cyan Circle Badge', desc: 'Social profiles, stickers' },
+  { src: '/images/logos/circle-dark.jpg', title: 'Dark Circle Badge', desc: 'Alternate social, favicons' },
+  { src: '/images/logos/circle-gray.png', title: 'Light Gray Badge', desc: 'Neutral contexts' },
+  { src: '/images/logos/gracie.png', title: 'Gracie the Pig', desc: 'Standalone mascot mark' },
+];
+
+const colors = [
+  { name: 'Sunshine Yellow', hex: '#FFD400', pantone: 'Pantone 115 C', cmyk: 'C 1 / M 14 / Y 100 / K 0', rgb: '255, 212, 0', desc: 'CTAs, brand accents, "SUNNY" wordmark' },
+  { name: 'Cyan', hex: '#4B95B4', pantone: 'Pantone 7702 C', cmyk: 'C 71 / M 29 / Y 20 / K 0', rgb: '75, 149, 180', desc: '"RANNEY" wordmark, supporting elements' },
+  { name: 'White', hex: '#FFFFFF', pantone: '', cmyk: '', rgb: '255, 255, 255', desc: 'Backgrounds, text on dark' },
+  { name: 'Dark Gray', hex: '#3A3A3A', pantone: '', cmyk: '', rgb: '58, 58, 58', desc: 'Circle badges, dark accents' },
+  { name: 'Medium Gray', hex: '#808080', pantone: '', cmyk: '', rgb: '128, 128, 128', desc: 'Ampersand, secondary text' },
+  { name: 'Near Black', hex: '#1A1A1A', pantone: '', cmyk: '', rgb: '26, 26, 26', desc: 'Logo backgrounds, footer' },
+];
+---
+
+<Base title="Brand Guidelines" description="Official brand resources, logos, and usage guidelines for Sunny & Ranney.">
+
+  <!-- ═══ HERO ═══ -->
+  <section class="brand-hero">
+    <div class="brand-hero__bg"></div>
+    <div class="container brand-hero__content">
+      <img src="/images/logos/gracie.png" alt="Gracie the Pig" class="brand-hero__icon animate-fade-up" />
+      <span class="label animate-fade-up delay-1">Brand Resources</span>
+      <h1 class="animate-fade-up delay-2">Brand <em>Guidelines</em></h1>
+      <p class="animate-fade-up delay-3">
+        Official brand resources, logos, and usage guidelines for representing Sunny &amp; Ranney — Home Furnishings &amp; Decor.
+      </p>
+    </div>
+  </section>
+
+  <!-- ═══ TABLE OF CONTENTS ═══ -->
+  <nav class="brand-toc">
+    <div class="container brand-toc__inner">
+      <a href="#logos" class="brand-toc__link">Logos</a>
+      <a href="#icons" class="brand-toc__link">Icons</a>
+      <a href="#usage" class="brand-toc__link">Logo Usage</a>
+      <a href="#colors" class="brand-toc__link">Colors</a>
+      <a href="#typography" class="brand-toc__link">Typography</a>
+      <a href="#voice" class="brand-toc__link">Voice & Tone</a>
+    </div>
+  </nav>
+
+  <!-- ═══ LOGOS ═══ -->
+  <section class="section" id="logos">
+    <div class="container">
+      <span class="label">Brand Identity</span>
+      <h2>Logos</h2>
+      <p>Our official logos in various formats and background variations.</p>
+      <hr class="divider" />
+
+      <div class="brand-logo-grid">
+        {logos.map((logo) => (
+          <div class="brand-logo-card">
+            <div class:list={['brand-logo-card__preview', `brand-logo-card__preview--${logo.bg}`]}>
+              <img src={logo.src} alt={logo.title} />
+            </div>
+            <div class="brand-logo-card__info">
+              <h3>{logo.title}</h3>
+              <p>{logo.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ ICONS ═══ -->
+  <section class="section" id="icons" style="background: var(--color-warm-white);">
+    <div class="container">
+      <span class="label">Marks & Badges</span>
+      <h2>Icons</h2>
+      <p>Square icons, badges, and mascot marks for web, mobile, and social use.</p>
+      <hr class="divider" />
+
+      <div class="brand-icon-grid">
+        {icons.map((icon) => (
+          <div class="brand-icon-card">
+            <img src={icon.src} alt={icon.title} />
+            <h3>{icon.title}</h3>
+            <p>{icon.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ LOGO USAGE ═══ -->
+  <section class="section" id="usage">
+    <div class="container">
+      <span class="label">Guidelines</span>
+      <h2>Logo Usage</h2>
+      <p>Guidelines for proper logo implementation and presentation across all media.</p>
+      <hr class="divider" />
+
+      <div class="brand-usage-grid">
+        <div class="brand-usage-card">
+          <div class="brand-usage-card__preview" style="background: var(--color-cream);">
+            <img src="/images/logos/logo-light-bg.png" alt="Light background usage" />
+          </div>
+          <div class="brand-usage-card__info">
+            <h3>Light Background</h3>
+            <p>Use the primary logo with adequate contrast and clear space.</p>
+          </div>
+        </div>
+        <div class="brand-usage-card">
+          <div class="brand-usage-card__preview" style="background: var(--color-charcoal);">
+            <img src="/images/logos/logo-dark-bg.png" alt="Dark background usage" />
+          </div>
+          <div class="brand-usage-card__info">
+            <h3>Dark Background</h3>
+            <p>Use the white/yellow version for strong contrast.</p>
+          </div>
+        </div>
+        <div class="brand-usage-card">
+          <div class="brand-usage-card__preview" style="background: #4B95B4;">
+            <img src="/images/logos/logo-cyan-bg.png" alt="Cyan background usage" />
+          </div>
+          <div class="brand-usage-card__info">
+            <h3>Cyan Background</h3>
+            <p>Use the cyan-optimized variant on brand blue surfaces.</p>
+          </div>
+        </div>
+        <div class="brand-usage-card">
+          <div class="brand-usage-card__preview" style="background: linear-gradient(135deg, #f0f0f0, #ddd);">
+            <img src="/images/logos/logo-tagline-light-bg.png" alt="With tagline" />
+          </div>
+          <div class="brand-usage-card__info">
+            <h3>With Tagline</h3>
+            <p>Include the tagline for first impressions and formal use.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="brand-do-dont">
+        <div class="brand-do">
+          <h4>✓ Do</h4>
+          <ul>
+            <li>Maintain clear space around logo</li>
+            <li>Scale proportionally</li>
+            <li>Ensure sufficient contrast</li>
+            <li>Min. 1.25" print, 75px digital</li>
+            <li>Use correct version for background</li>
+          </ul>
+        </div>
+        <div class="brand-dont">
+          <h4>✗ Don't</h4>
+          <ul>
+            <li>Distort or rotate the logo</li>
+            <li>Change logo colors</li>
+            <li>Add effects or shadows</li>
+            <li>Modify or recreate the design</li>
+            <li>Use low-contrast backgrounds</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ COLORS ═══ -->
+  <section class="section" id="colors" style="background: var(--color-warm-white);">
+    <div class="container">
+      <span class="label">Visual System</span>
+      <h2>Color Palette</h2>
+      <p>Our color system ensures visual consistency and brand recognition.</p>
+      <hr class="divider" />
+
+      <div class="brand-color-grid">
+        {colors.map((color) => (
+          <div class="brand-color-card" data-hex={color.hex}>
+            <div class="brand-color-swatch" style={`background: ${color.hex}; ${color.hex === '#FFFFFF' ? 'border: 1px solid rgba(0,0,0,0.08);' : ''}`}>
+              <span class:list={['brand-color-hex', { 'brand-color-hex--dark': color.hex === '#FFFFFF' }]}>{color.hex}</span>
+            </div>
+            <div class="brand-color-info">
+              <h3>{color.name}</h3>
+              {color.pantone && <p class="brand-color-pantone">{color.pantone}</p>}
+              {color.cmyk && <p>{color.cmyk}</p>}
+              <p>RGB {color.rgb}</p>
+              <p class="brand-color-desc">{color.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div class="brand-color-note">
+        <strong>Color Usage:</strong> Sunshine Yellow (#FFD400) is the primary brand accent — use for CTAs, highlights, and the "SUNNY" wordmark.
+        Cyan (#4B95B4) appears in the "RANNEY" wordmark and supporting elements. The three core brand colors — Sunshine Yellow (PMS 115 C),
+        Cyan (PMS 7702 C), and White — are required for all print materials. Click any swatch to copy its HEX value.
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ TYPOGRAPHY ═══ -->
+  <section class="section" id="typography">
+    <div class="container">
+      <span class="label">Type System</span>
+      <h2>Typography</h2>
+      <p>The Sunny & Ranney brand uses a distinctive custom wordmark. For supporting materials, these fonts complement the brand identity.</p>
+      <hr class="divider" />
+
+      <div class="brand-type-grid">
+        <div class="brand-type-card">
+          <span class="label">Display / Headlines</span>
+          <h3 style="font-family: var(--font-display); font-size: 1.8rem; margin: 0.5rem 0 0.25rem;">Cormorant Garamond</h3>
+          <p style="color: var(--color-stone); margin-bottom: 1.5rem;">Editorial warmth, high-contrast serif</p>
+          <div class="brand-type-sample">
+            <span class="brand-type-weight">Regular (400)</span>
+            <span class="brand-type-text" style="font-family: var(--font-display); font-weight: 400; font-size: 1.3rem;">Stylish furniture that supports charity</span>
+          </div>
+          <div class="brand-type-sample">
+            <span class="brand-type-weight">Italic (400)</span>
+            <span class="brand-type-text" style="font-family: var(--font-display); font-weight: 400; font-style: italic; font-size: 1.3rem;">Where every purchase brightens a life</span>
+          </div>
+          <div class="brand-type-sample">
+            <span class="brand-type-weight">Semibold (600)</span>
+            <span class="brand-type-text" style="font-family: var(--font-display); font-weight: 600; font-size: 1.3rem;">Designer furniture with purpose</span>
+          </div>
+        </div>
+
+        <div class="brand-type-card">
+          <span class="label">Body / UI</span>
+          <h3 style="font-family: var(--font-body); font-size: 1.8rem; font-weight: 600; margin: 0.5rem 0 0.25rem;">DM Sans</h3>
+          <p style="color: var(--color-stone); margin-bottom: 1.5rem;">Clean, modern readability</p>
+          <div class="brand-type-sample">
+            <span class="brand-type-weight">Light (300)</span>
+            <span class="brand-type-text" style="font-weight: 300; font-size: 1.15rem;">The quick brown fox jumps over the lazy dog</span>
+          </div>
+          <div class="brand-type-sample">
+            <span class="brand-type-weight">Regular (400)</span>
+            <span class="brand-type-text" style="font-weight: 400; font-size: 1.15rem;">The quick brown fox jumps over the lazy dog</span>
+          </div>
+          <div class="brand-type-sample">
+            <span class="brand-type-weight">Medium (500)</span>
+            <span class="brand-type-text" style="font-weight: 500; font-size: 1.15rem;">The quick brown fox jumps over the lazy dog</span>
+          </div>
+          <div class="brand-type-sample">
+            <span class="brand-type-weight">Semibold (600)</span>
+            <span class="brand-type-text" style="font-weight: 600; font-size: 1.15rem;">The quick brown fox jumps over the lazy dog</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ VOICE & TONE ═══ -->
+  <section class="section" id="voice" style="background: var(--color-warm-white);">
+    <div class="container">
+      <span class="label">Communication</span>
+      <h2>Voice & Tone</h2>
+      <p>Our brand voice reflects who we are — a furniture store with heart, where style meets purpose.</p>
+      <hr class="divider" />
+
+      <div class="brand-voice-grid">
+        <div class="brand-voice-card">
+          <h3 style="color: #2d8a56;">We Are</h3>
+          <div class="brand-voice-item">
+            <h4>Warm & Welcoming</h4>
+            <p>Every customer feels at home the moment they walk in or visit online.</p>
+          </div>
+          <div class="brand-voice-item">
+            <h4>Purposeful</h4>
+            <p>Every purchase supports Sunshine on a Ranney Day — we let the mission shine through naturally.</p>
+          </div>
+          <div class="brand-voice-item">
+            <h4>Design-Forward</h4>
+            <p>Curated, on-trend, and confident in our taste without being pretentious.</p>
+          </div>
+          <div class="brand-voice-item">
+            <h4>Joyful</h4>
+            <p>Shopping should feel good. Our energy is infectious and positive.</p>
+          </div>
+        </div>
+
+        <div class="brand-voice-card">
+          <h3 style="color: #c0392b;">We Are Not</h3>
+          <div class="brand-voice-item">
+            <h4>Guilt-Driven</h4>
+            <p>We inspire through style and joy, never through pressure to donate.</p>
+          </div>
+          <div class="brand-voice-item">
+            <h4>Stuffy</h4>
+            <p>Designer furniture doesn't mean pretentious language. We keep it real.</p>
+          </div>
+          <div class="brand-voice-item">
+            <h4>Pushy</h4>
+            <p>We guide and curate, never hard-sell.</p>
+          </div>
+          <div class="brand-voice-item">
+            <h4>Generic</h4>
+            <p>We have personality. Gracie the Pig didn't fly across our logo for nothing.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</Base>
+
+<style>
+  /* ─── Brand Hero ─────────────────────────── */
+  .brand-hero {
+    position: relative;
+    padding: var(--space-3xl) 0 var(--space-2xl);
+    text-align: center;
+    background: var(--color-charcoal);
+    color: white;
+    overflow: hidden;
+  }
+
+  .brand-hero__bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 30% 50%, rgba(75, 149, 180, 0.12) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 50%, rgba(255, 212, 0, 0.08) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .brand-hero__content {
+    position: relative;
+  }
+
+  .brand-hero__icon {
+    width: 60px;
+    margin-bottom: var(--space-md);
+    opacity: 0.85;
+  }
+
+  .brand-hero h1 {
+    color: white;
+    margin: 0.5rem 0;
+  }
+
+  .brand-hero h1 em {
+    color: var(--color-gold);
+    font-style: italic;
+  }
+
+  .brand-hero p {
+    color: rgba(255, 255, 255, 0.55);
+    max-width: 50ch;
+    margin: 0 auto;
+  }
+
+  /* ─── TOC ────────────────────────────────── */
+  .brand-toc {
+    background: var(--color-warm-white);
+    border-bottom: 1px solid var(--color-cream-dark);
+    position: sticky;
+    top: var(--nav-height);
+    z-index: 50;
+  }
+
+  .brand-toc__inner {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding: 0.75rem 0;
+  }
+
+  .brand-toc__link {
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--color-stone);
+    padding: 0.5rem 1rem;
+    border-radius: 100px;
+    transition: all 0.2s;
+  }
+
+  .brand-toc__link:hover {
+    background: var(--color-gold);
+    color: var(--color-charcoal);
+  }
+
+  /* ─── Logo Grid ──────────────────────────── */
+  .brand-logo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+  }
+
+  .brand-logo-card {
+    background: var(--color-warm-white);
+    border: 1px solid var(--color-cream-dark);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
+  }
+
+  .brand-logo-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
+  }
+
+  .brand-logo-card__preview {
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  .brand-logo-card__preview--dark { background: #1a1a1a; }
+  .brand-logo-card__preview--light { background: #ffffff; }
+  .brand-logo-card__preview--cyan { background: #4B95B4; }
+
+  .brand-logo-card__preview img {
+    max-width: 240px;
+    max-height: 140px;
+    object-fit: contain;
+  }
+
+  .brand-logo-card__info {
+    padding: var(--space-md);
+  }
+
+  .brand-logo-card__info h3 {
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .brand-logo-card__info p {
+    font-size: 0.85rem;
+    color: var(--color-stone);
+    margin-top: 0.25rem;
+  }
+
+  /* ─── Icon Grid ──────────────────────────── */
+  .brand-icon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+  }
+
+  .brand-icon-card {
+    background: var(--color-cream);
+    border: 1px solid var(--color-cream-dark);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
+  }
+
+  .brand-icon-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
+  }
+
+  .brand-icon-card img {
+    width: 120px;
+    height: 120px;
+    object-fit: contain;
+    margin: 0 auto var(--space-sm);
+  }
+
+  .brand-icon-card h3 {
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  .brand-icon-card p {
+    font-size: 0.8rem;
+    color: var(--color-stone);
+  }
+
+  /* ─── Usage Grid ─────────────────────────── */
+  .brand-usage-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+  }
+
+  @media (max-width: 700px) {
+    .brand-usage-grid { grid-template-columns: 1fr; }
+  }
+
+  .brand-usage-card {
+    background: var(--color-warm-white);
+    border: 1px solid var(--color-cream-dark);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .brand-usage-card__preview {
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+
+  .brand-usage-card__preview img {
+    max-width: 220px;
+    max-height: 130px;
+    object-fit: contain;
+  }
+
+  .brand-usage-card__info {
+    padding: var(--space-md);
+    border-top: 1px solid var(--color-cream-dark);
+  }
+
+  .brand-usage-card__info h3 {
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  .brand-usage-card__info p {
+    font-size: 0.85rem;
+    color: var(--color-stone);
+    margin-top: 0.25rem;
+  }
+
+  /* ─── Do / Don't ─────────────────────────── */
+  .brand-do-dont {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+  }
+
+  @media (max-width: 700px) {
+    .brand-do-dont { grid-template-columns: 1fr; }
+  }
+
+  .brand-do, .brand-dont {
+    background: var(--color-warm-white);
+    border: 1px solid var(--color-cream-dark);
+    border-radius: 12px;
+    padding: var(--space-md);
+  }
+
+  .brand-do h4 { color: #2d8a56; font-family: var(--font-body); font-size: 0.9rem; font-weight: 700; margin-bottom: 1rem; }
+  .brand-dont h4 { color: #c0392b; font-family: var(--font-body); font-size: 0.9rem; font-weight: 700; margin-bottom: 1rem; }
+
+  .brand-do li, .brand-dont li {
+    font-size: 0.9rem;
+    color: var(--color-slate);
+    line-height: 2;
+    list-style: none;
+  }
+
+  /* ─── Color Grid ─────────────────────────── */
+  .brand-color-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+  }
+
+  .brand-color-card {
+    background: var(--color-cream);
+    border: 1px solid var(--color-cream-dark);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .brand-color-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+  }
+
+  .brand-color-swatch {
+    height: 100px;
+    position: relative;
+  }
+
+  .brand-color-hex {
+    position: absolute;
+    bottom: 8px;
+    right: 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.2);
+    color: white;
+    letter-spacing: 0.03em;
+  }
+
+  .brand-color-hex--dark {
+    background: rgba(0, 0, 0, 0.06);
+    color: #333;
+  }
+
+  .brand-color-info {
+    padding: var(--space-sm);
+  }
+
+  .brand-color-info h3 {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  .brand-color-info p {
+    font-size: 0.75rem;
+    color: var(--color-stone);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .brand-color-pantone {
+    font-weight: 500;
+    color: var(--color-slate) !important;
+  }
+
+  .brand-color-desc {
+    margin-top: 0.5rem !important;
+    font-style: italic;
+  }
+
+  .brand-color-note {
+    margin-top: var(--space-lg);
+    background: rgba(75, 149, 180, 0.07);
+    border-left: 3px solid var(--color-cyan, #4B95B4);
+    border-radius: 0 10px 10px 0;
+    padding: var(--space-md);
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--color-slate);
+  }
+
+  .brand-color-note strong {
+    color: var(--color-charcoal);
+  }
+
+  /* ─── Typography Section ─────────────────── */
+  .brand-type-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+    margin-top: var(--space-lg);
+  }
+
+  @media (max-width: 700px) {
+    .brand-type-grid { grid-template-columns: 1fr; }
+  }
+
+  .brand-type-card {
+    background: var(--color-warm-white);
+    border: 1px solid var(--color-cream-dark);
+    border-radius: 12px;
+    padding: var(--space-lg);
+  }
+
+  .brand-type-sample {
+    padding: 0.75rem 0;
+    border-top: 1px solid var(--color-cream-dark);
+  }
+
+  .brand-type-weight {
+    display: block;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-stone);
+    margin-bottom: 0.25rem;
+  }
+
+  .brand-type-text {
+    display: block;
+    line-height: 1.4;
+    color: var(--color-charcoal);
+  }
+
+  /* ─── Voice Grid ─────────────────────────── */
+  .brand-voice-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+  }
+
+  @media (max-width: 700px) {
+    .brand-voice-grid { grid-template-columns: 1fr; }
+  }
+
+  .brand-voice-card {
+    background: var(--color-cream);
+    border: 1px solid var(--color-cream-dark);
+    border-radius: 12px;
+    padding: var(--space-lg);
+  }
+
+  .brand-voice-card h3 {
+    font-family: var(--font-body);
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: var(--space-md);
+  }
+
+  .brand-voice-item {
+    margin-bottom: var(--space-sm);
+  }
+
+  .brand-voice-item h4 {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .brand-voice-item p {
+    font-size: 0.85rem;
+    color: var(--color-stone);
+    margin-top: 0.15rem;
+  }
+</style>
+
+<script>
+  // Click to copy hex values
+  document.querySelectorAll('.brand-color-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      const hex = card.getAttribute('data-hex');
+      if (hex) {
+        navigator.clipboard.writeText(hex).then(() => {
+          const swatch = card.querySelector('.brand-color-hex');
+          if (swatch) {
+            const orig = swatch.textContent;
+            swatch.textContent = 'Copied!';
+            setTimeout(() => { swatch.textContent = orig; }, 1200);
+          }
+        });
+      }
+    });
+  });
+</script>

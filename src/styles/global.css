@@ -8,7 +8,7 @@
 
 /* ─── Custom Properties ─────────────────────────────────────── */
 :root {
-  /* Palette — warm ivory + deep charcoal + golden sunshine */
+  /* Palette — warm ivory + deep charcoal + sunshine yellow + cyan */
   --color-cream:       #FAF7F2;
   --color-cream-dark:  #F0EBE3;
   --color-warm-white:  #FDFCFA;
@@ -16,9 +16,11 @@
   --color-charcoal-70: #2C2C2Cb3;
   --color-slate:       #5A5A58;
   --color-stone:       #8A8A87;
-  --color-gold:        #C4982F;
-  --color-gold-light:  #E8C96A;
-  --color-gold-soft:   #F5E6B8;
+  --color-gold:        #FFD400;
+  --color-gold-light:  #FFE24D;
+  --color-gold-soft:   #FFF4B8;
+  --color-cyan:        #4B95B4;
+  --color-cyan-light:  #7BB5CC;
   --color-sage:        #8B9E7E;
   --color-sage-light:  #C8D4BF;
   --color-blush:       #D4A59A;
@@ -179,7 +181,7 @@ p {
 
 .btn--gold {
   background: var(--color-gold);
-  color: white;
+  color: var(--color-charcoal);
   border: 2px solid var(--color-gold);
 }
 
