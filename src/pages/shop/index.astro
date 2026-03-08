@@ -31,16 +31,38 @@ try {
     </div>
   </section>
 
-  <!-- ═══ FILTERS ═══ -->
+  <!-- ═══ TOOLBAR ═══ -->
   <section class="filters-bar">
     <div class="container">
-      <div class="filters">
-        <button class="filter-btn filter-btn--active" data-filter="all">All</button>
-        <button class="filter-btn" data-filter="furniture">Furniture</button>
-        <button class="filter-btn" data-filter="decor">Decor</button>
-        <button class="filter-btn" data-filter="lighting">Lighting</button>
-        <button class="filter-btn" data-filter="gifts">Gifts</button>
-        <button class="filter-btn" data-filter="kitchenware">Kitchenware</button>
+      <div class="toolbar">
+        <!-- Categories -->
+        <div class="toolbar__categories">
+          <button class="filter-btn filter-btn--active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="furniture">Furniture</button>
+          <button class="filter-btn" data-filter="decor">Decor</button>
+          <button class="filter-btn" data-filter="lighting">Lighting</button>
+          <button class="filter-btn" data-filter="gifts">Gifts</button>
+          <button class="filter-btn" data-filter="kitchenware">Kitchenware</button>
+        </div>
+        <!-- Sort + View controls -->
+        <div class="toolbar__controls">
+          <span class="toolbar__count" id="product-count"></span>
+          <select class="toolbar__sort" id="sort-select" aria-label="Sort products">
+            <option value="best-selling">Best Selling</option>
+            <option value="price-asc">Price: Low → High</option>
+            <option value="price-desc">Price: High → Low</option>
+            <option value="title-asc">A → Z</option>
+            <option value="newest">Newest</option>
+          </select>
+          <div class="toolbar__views">
+            <button class="toolbar__view toolbar__view--active" data-view="grid" aria-label="Grid view">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="0" width="7" height="7" rx="1"/><rect x="9" y="0" width="7" height="7" rx="1"/><rect x="0" y="9" width="7" height="7" rx="1"/><rect x="9" y="9" width="7" height="7" rx="1"/></svg>
+            </button>
+            <button class="toolbar__view" data-view="list" aria-label="List view">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="0" width="16" height="3" rx="1"/><rect x="0" y="4.5" width="16" height="3" rx="1"/><rect x="0" y="9" width="16" height="3" rx="1"/><rect x="0" y="13" width="16" height="3" rx="1"/></svg>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -55,11 +77,18 @@ try {
             const price = product.priceRange.minVariantPrice;
             const compareAt = product.compareAtPriceRange?.minVariantPrice;
             const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.amount);
+            const firstVariant = product.variants.edges[0]?.node;
 
             return (
-              <a href={`/shop/${product.handle}`} class="product-card" data-type={product.productType.toLowerCase()}>
+              <div class="product-card"
+                data-type={product.productType.toLowerCase()}
+                data-price={parseFloat(price.amount)}
+                data-title={product.title}
+                data-handle={product.handle}
+              >
                 {isOnSale && <span class="product-card__badge">Sale</span>}
-                <div class="product-card__image">
+                {!isOnSale && !product.availableForSale && <span class="product-card__badge product-card__badge--sold">Sold Out</span>}
+                <a href={`/shop/${product.handle}`} class="product-card__image">
                   {image ? (
                     <img
                       src={image.url}
@@ -72,19 +101,38 @@ try {
                   ) : (
                     <div class="product-card__image-ph">{product.productType || 'Product'}</div>
                   )}
-                </div>
+                  <!-- Quick View overlay -->
+                  <div class="product-card__overlay">
+                    <button class="product-card__quick-view" data-handle={product.handle}>Quick View</button>
+                  </div>
+                </a>
                 <div class="product-card__info">
-                  <span class="product-card__title">{product.title}</span>
-                  <span class="product-card__price">
-                    ${parseFloat(price.amount).toFixed(2)}
+                  {product.productType && <span class="product-card__type">{product.productType}</span>}
+                  <a href={`/shop/${product.handle}`} class="product-card__title">{product.title}</a>
+                  <div class="product-card__pricing">
+                    <span class="product-card__price">
+                      ${parseFloat(price.amount).toFixed(2)}
+                    </span>
                     {isOnSale && (
                       <span class="product-card__price--compare">
                         ${parseFloat(compareAt.amount).toFixed(2)}
                       </span>
                     )}
-                  </span>
+                  </div>
+                  {product.availableForSale && firstVariant && (
+                    <button class="product-card__add-btn"
+                      data-variant-id={firstVariant.id}
+                      data-title={product.title}
+                      data-price={parseFloat(price.amount)}
+                      data-image={image?.url || ''}
+                      data-handle={product.handle}
+                      data-variant-title={firstVariant.title}
+                    >
+                      Add to Cart
+                    </button>
+                  )}
                 </div>
-              </a>
+              </div>
             );
           })}
         </div>
@@ -152,9 +200,10 @@ try {
     margin: 0 auto;
   }
 
+  /* ─── Toolbar ─────────────────────────── */
   .filters-bar {
     border-bottom: 1px solid var(--color-cream-dark);
-    padding: var(--space-sm) 0;
+    padding: 0.75rem 0;
     position: sticky;
     top: var(--nav-height);
     background: rgba(250, 247, 242, 0.95);
@@ -162,39 +211,194 @@ try {
     z-index: 50;
   }
 
-  .filters {
+  .toolbar {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
-    justify-content: center;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .toolbar__categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
   }
 
   .filter-btn {
-    padding: 0.5rem 1.25rem;
+    padding: 0.4rem 1rem;
     font-size: 0.78rem;
     font-weight: 500;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--color-slate);
     border: 1.5px solid transparent;
-    transition: all 0.3s;
+    border-radius: 100px;
+    transition: all 0.2s;
     background: transparent;
   }
 
-  .filter-btn:hover {
-    color: var(--color-charcoal);
-  }
-
+  .filter-btn:hover { color: var(--color-charcoal); background: var(--color-cream-dark); }
   .filter-btn--active {
     color: var(--color-charcoal);
-    border-color: var(--color-charcoal);
+    background: var(--color-charcoal);
+    color: var(--color-cream);
   }
 
-  .shop-grid-section {
-    min-height: 400px;
+  .toolbar__controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
   }
 
-  /* Placeholder */
+  .toolbar__count {
+    font-size: 0.78rem;
+    color: var(--color-stone);
+    white-space: nowrap;
+  }
+
+  .toolbar__sort {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--color-cream-dark);
+    border-radius: 6px;
+    background: var(--color-warm-white);
+    color: var(--color-charcoal);
+    cursor: pointer;
+    outline: none;
+  }
+  .toolbar__sort:focus { border-color: var(--color-gold); }
+
+  .toolbar__views {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .toolbar__view {
+    padding: 0.4rem;
+    color: var(--color-stone);
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+  .toolbar__view:hover { color: var(--color-charcoal); }
+  .toolbar__view--active { color: var(--color-charcoal); background: var(--color-cream-dark); }
+
+  /* ─── Grid / List views ───────────────── */
+  .shop-grid-section { min-height: 400px; }
+
+  #shop-grid.view-list {
+    grid-template-columns: 1fr !important;
+  }
+
+  #shop-grid.view-list .product-card {
+    flex-direction: row;
+    max-height: 200px;
+  }
+
+  #shop-grid.view-list .product-card__image {
+    aspect-ratio: 1;
+    max-width: 200px;
+    flex-shrink: 0;
+  }
+
+  #shop-grid.view-list .product-card__info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: var(--space-md) var(--space-lg);
+  }
+
+  /* ─── Enhanced Product Card ───────────── */
+  .product-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-warm-white);
+    transition: transform var(--duration) var(--ease-out),
+                box-shadow var(--duration) var(--ease-out);
+    overflow: hidden;
+  }
+
+  .product-card__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(44, 44, 44, 0.0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s;
+    pointer-events: none;
+  }
+
+  .product-card:hover .product-card__overlay {
+    background: rgba(44, 44, 44, 0.25);
+    pointer-events: all;
+  }
+
+  .product-card__quick-view {
+    padding: 0.6rem 1.5rem;
+    background: white;
+    color: var(--color-charcoal);
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-radius: 4px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.3s, transform 0.3s;
+    cursor: pointer;
+  }
+
+  .product-card:hover .product-card__quick-view {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .product-card__type {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+
+  .product-card__pricing {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .product-card__badge--sold {
+    background: var(--color-stone) !important;
+  }
+
+  .product-card__add-btn {
+    margin-top: 0.75rem;
+    width: 100%;
+    padding: 0.6rem 1rem;
+    background: var(--color-charcoal);
+    color: var(--color-cream);
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .product-card__add-btn:hover {
+    background: var(--color-gold);
+    color: var(--color-charcoal);
+  }
+
+  /* ─── Placeholder ─────────────────────── */
   .shop-placeholder {
     text-align: center;
     padding: var(--space-2xl) var(--space-md);
@@ -202,14 +406,8 @@ try {
     margin: 0 auto;
   }
 
-  .shop-placeholder__icon {
-    font-size: 3rem;
-    margin-bottom: var(--space-sm);
-  }
-
-  .shop-placeholder h3 {
-    margin-bottom: 0.75rem;
-  }
+  .shop-placeholder__icon { font-size: 3rem; margin-bottom: var(--space-sm); }
+  .shop-placeholder h3 { margin-bottom: 0.75rem; }
 
   .shop-placeholder code {
     background: var(--color-cream-dark);
@@ -251,6 +449,7 @@ try {
     flex-shrink: 0;
   }
 
+  /* ─── Mission reminder ────────────────── */
   .mission-reminder {
     background: var(--color-gold-soft);
     padding: var(--space-md) 0;
@@ -270,39 +469,149 @@ try {
     text-underline-offset: 2px;
   }
 
-  .mission-reminder__sun {
-    margin-right: 0.25rem;
+  .mission-reminder__sun { margin-right: 0.25rem; }
+
+  @media (max-width: 768px) {
+    .toolbar { flex-direction: column; align-items: stretch; }
+    .toolbar__controls { justify-content: space-between; }
   }
 </style>
 
 <script>
-  // Client-side category filtering
+  // ─── Enhanced Shop Page Logic ───────────────────────────
+  const grid = document.getElementById('shop-grid');
   const filterBtns = document.querySelectorAll('.filter-btn');
-  const productCards = document.querySelectorAll('#shop-grid .product-card');
+  const sortSelect = document.getElementById('sort-select');
+  const viewBtns = document.querySelectorAll('.toolbar__view');
+  const countEl = document.getElementById('product-count');
 
+  let activeFilter = 'all';
+
+  function getCards() {
+    return Array.from(grid?.querySelectorAll('.product-card') || []);
+  }
+
+  function getVisibleCards() {
+    return getCards().filter(c => c.style.display !== 'none');
+  }
+
+  // ─── Category Filter ───────────────────
   filterBtns.forEach((btn) => {
     btn.addEventListener('click', () => {
-      const filter = btn.getAttribute('data-filter');
-
-      filterBtns.forEach((b) => b.classList.remove('filter-btn--active'));
+      activeFilter = btn.getAttribute('data-filter') || 'all';
+      filterBtns.forEach(b => b.classList.remove('filter-btn--active'));
       btn.classList.add('filter-btn--active');
-
-      productCards.forEach((card) => {
-        const type = (card as HTMLElement).getAttribute('data-type') || '';
-        if (filter === 'all' || type.includes(filter!)) {
-          (card as HTMLElement).style.display = '';
-        } else {
-          (card as HTMLElement).style.display = 'none';
-        }
-      });
+      applyFilter();
     });
   });
 
-  // Check URL params for initial filter
+  function applyFilter() {
+    const cards = getCards();
+    let visibleCount = 0;
+    cards.forEach(card => {
+      const type = card.getAttribute('data-type') || '';
+      const show = activeFilter === 'all' || type.includes(activeFilter);
+      card.style.display = show ? '' : 'none';
+      if (show) visibleCount++;
+    });
+    if (countEl) countEl.textContent = `${visibleCount} product${visibleCount !== 1 ? 's' : ''}`;
+  }
+
+  // ─── Sort ──────────────────────────────
+  sortSelect?.addEventListener('change', () => {
+    const cards = getCards();
+    const sortBy = sortSelect.value;
+
+    cards.sort((a, b) => {
+      const priceA = parseFloat(a.dataset.price) || 0;
+      const priceB = parseFloat(b.dataset.price) || 0;
+      const titleA = (a.dataset.title || '').toLowerCase();
+      const titleB = (b.dataset.title || '').toLowerCase();
+
+      switch (sortBy) {
+        case 'price-asc': return priceA - priceB;
+        case 'price-desc': return priceB - priceA;
+        case 'title-asc': return titleA.localeCompare(titleB);
+        case 'newest': return -1; // preserve original (newest first from Shopify)
+        default: return 0;
+      }
+    });
+
+    cards.forEach(card => grid?.appendChild(card));
+  });
+
+  // ─── View Toggle ───────────────────────
+  viewBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      viewBtns.forEach(b => b.classList.remove('toolbar__view--active'));
+      btn.classList.add('toolbar__view--active');
+      const view = btn.dataset.view;
+      if (view === 'list') {
+        grid?.classList.add('view-list');
+      } else {
+        grid?.classList.remove('view-list');
+      }
+    });
+  });
+
+  // ─── Add to Cart from Grid ─────────────
+  grid?.addEventListener('click', (e) => {
+    const btn = (e.target as Element)?.closest('.product-card__add-btn');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const { variantId, title, price, image, handle, variantTitle } = (btn as HTMLElement).dataset;
+    if (!variantId || !title || !price) return;
+
+    // Use the global addToCart from CartDrawer
+    window.addToCart?.({
+      variantId,
+      title,
+      price: parseFloat(price),
+      image: image || '',
+      handle: handle || '',
+      variantTitle: variantTitle || '',
+    });
+
+    // Button feedback
+    const orig = btn.textContent;
+    btn.textContent = '✓ Added';
+    btn.disabled = true;
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.disabled = false;
+    }, 1500);
+  });
+
+  // ─── Quick View (opens product page for now) ──
+  grid?.addEventListener('click', (e) => {
+    const btn = (e.target as Element)?.closest('.product-card__quick-view');
+    if (!btn) return;
+    e.preventDefault();
+    const handle = (btn as HTMLElement).dataset.handle;
+    if (handle) window.location.href = `/shop/${handle}`;
+  });
+
+  // ─── URL params ────────────────────────
   const params = new URLSearchParams(window.location.search);
   const category = params.get('category');
   if (category) {
     const btn = document.querySelector(`[data-filter="${category}"]`) as HTMLElement;
     if (btn) btn.click();
   }
+
+  const searchQuery = params.get('q');
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    getCards().forEach(card => {
+      const title = (card.dataset.title || '').toLowerCase();
+      const type = (card.getAttribute('data-type') || '').toLowerCase();
+      const match = title.includes(q) || type.includes(q);
+      card.style.display = match ? '' : 'none';
+    });
+  }
+
+  // Initial count
+  applyFilter();
 </script>

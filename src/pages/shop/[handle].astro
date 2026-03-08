@@ -127,6 +127,11 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
               class="btn btn--gold pdp-add-to-cart"
               id="add-to-cart"
               data-variant-id={variants[0]?.id}
+              data-product-title={product.title}
+              data-product-price={price.amount}
+              data-product-image={mainImage?.url || ''}
+              data-product-handle={product.handle}
+              data-variant-title={variants[0]?.title || ''}
               disabled={!product.availableForSale}
             >
               {product.availableForSale ? 'Add to Cart' : 'Sold Out'}
@@ -248,6 +253,7 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
 
   .pdp-variant-btn:hover:not(:disabled) { border-color: var(--color-charcoal); }
   .pdp-variant-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .pdp-variant-btn--active { border-color: var(--color-charcoal); background: var(--color-charcoal); color: var(--color-cream); }
 
   .pdp-actions { margin: var(--space-lg) 0; }
 
@@ -287,23 +293,55 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
     });
   });
 
-  // Add to cart — calls Shopify Cart API
-  const addToCartBtn = document.getElementById('add-to-cart');
-  addToCartBtn?.addEventListener('click', async () => {
-    const variantId = (addToCartBtn as HTMLElement).dataset.variantId;
+  // Variant selector
+  const variantBtns = document.querySelectorAll('.pdp-variant-btn');
+  const addToCartBtn = document.getElementById('add-to-cart') as HTMLButtonElement;
+
+  variantBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      variantBtns.forEach(b => b.classList.remove('pdp-variant-btn--active'));
+      btn.classList.add('pdp-variant-btn--active');
+      if (addToCartBtn) {
+        addToCartBtn.dataset.variantId = (btn as HTMLElement).dataset.variantId || '';
+      }
+    });
+  });
+
+  // Add to cart — uses cart store
+  addToCartBtn?.addEventListener('click', () => {
+    const variantId = addToCartBtn.dataset.variantId;
     if (!variantId) return;
 
-    addToCartBtn.textContent = 'Adding...';
-    (addToCartBtn as HTMLButtonElement).disabled = true;
+    const title = addToCartBtn.dataset.productTitle || '';
+    const price = parseFloat(addToCartBtn.dataset.productPrice || '0');
+    const image = addToCartBtn.dataset.productImage || '';
+    const handle = addToCartBtn.dataset.productHandle || '';
+    const variantTitle = addToCartBtn.dataset.variantTitle || '';
 
-    try {
-      // Use Shopify cart API or redirect to Shopify checkout
-      const checkoutUrl = `https://sunnyandranney.myshopify.com/cart/${variantId.split('/').pop()}:1`;
-      window.location.href = checkoutUrl;
-    } catch (err) {
-      console.error('Cart error:', err);
+    window.addToCart?.({
+      variantId,
+      title,
+      price,
+      image,
+      handle,
+      variantTitle,
+    });
+
+    addToCartBtn.textContent = '✓ Added to Cart';
+    addToCartBtn.disabled = true;
+    setTimeout(() => {
       addToCartBtn.textContent = 'Add to Cart';
-      (addToCartBtn as HTMLButtonElement).disabled = false;
-    }
+      addToCartBtn.disabled = false;
+    }, 2000);
   });
+
+  // Track recently viewed
+  import { recentlyViewed } from '@/lib/cart-store.js';
+  const pdpTitle = addToCartBtn?.dataset.productTitle;
+  const pdpHandle = addToCartBtn?.dataset.productHandle;
+  const pdpImage = addToCartBtn?.dataset.productImage;
+  const pdpPrice = addToCartBtn?.dataset.productPrice;
+  if (pdpHandle && pdpTitle) {
+    recentlyViewed.add({ handle: pdpHandle, title: pdpTitle, image: pdpImage, price: pdpPrice });
+  }
 </script>

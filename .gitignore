@@ -21,3 +21,4 @@ Thumbs.db
 
 # cloudflare
 .wrangler/
+package-lock.json
