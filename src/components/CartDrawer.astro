@@ -188,7 +188,12 @@
     background: var(--color-cream-dark);
     flex-shrink: 0;
     overflow: hidden;
+    display: block;
+    border-radius: 4px;
+    transition: opacity 0.2s;
   }
+
+  .cart-item__image:hover { opacity: 0.8; }
 
   .cart-item__image img {
     width: 100%;
@@ -208,7 +213,12 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: block;
+    text-decoration: none;
+    transition: color 0.2s;
   }
+
+  a.cart-item__title:hover { color: var(--color-gold); }
 
   .cart-item__variant {
     font-size: 0.78rem;
@@ -473,11 +483,11 @@
     if (itemsEl) {
       itemsEl.innerHTML = items.map(item => `
         <div class="cart-item" data-id="${item.variantId}">
-          <div class="cart-item__image">
+          <a href="/shop/${item.handle || '#'}" class="cart-item__image" onclick="window.closeCart?.()">
             ${item.image ? `<img src="${item.image}" alt="${item.title}" loading="lazy" />` : ''}
-          </div>
+          </a>
           <div class="cart-item__details">
-            <div class="cart-item__title">${item.title}</div>
+            <a href="/shop/${item.handle || '#'}" class="cart-item__title" onclick="window.closeCart?.()">${item.title}</a>
             ${item.variantTitle && item.variantTitle !== 'Default Title' ? `<div class="cart-item__variant">${item.variantTitle}</div>` : ''}
             <div class="cart-item__bottom">
               <div class="cart-item__qty">

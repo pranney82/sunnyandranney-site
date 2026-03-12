@@ -1,17 +1,24 @@
 ---
 import Base from '@/layouts/Base.astro';
 
-// At build time, attempt to fetch products from Shopify
+// At build time, fetch products from Shopify
 let products: any[] = [];
 let hasShopify = false;
+let hasNextPage = false;
+let endCursor = '';
+let shopifyImageUrl: (url: string, w?: number, h?: number) => string = (url) => url;
+let shopifyImageSrcset: (url: string, widths?: number[]) => string = () => '';
 
 try {
-  const { getProducts } = await import('@/lib/shopify');
-  const result = await getProducts(24);
+  const shopify = await import('@/lib/shopify');
+  const result = await shopify.getProducts(100);
   products = result.products;
   hasShopify = products.length > 0;
+  hasNextPage = result.pageInfo.hasNextPage;
+  endCursor = result.pageInfo.endCursor;
+  shopifyImageUrl = shopify.shopifyImageUrl;
+  shopifyImageSrcset = shopify.shopifyImageSrcset;
 } catch (e) {
-  // Shopify not configured — will show placeholder UI
   console.log('Shopify API not configured. Showing placeholder shop.');
 }
 ---
@@ -64,6 +71,12 @@ try {
           </div>
         </div>
       </div>
+
+      <!-- Active search banner -->
+      <div class="search-banner" id="search-banner" style="display:none;">
+        <span id="search-banner-text"></span>
+        <button class="search-banner__clear" id="search-clear">Clear search</button>
+      </div>
     </div>
   </section>
 
@@ -71,71 +84,138 @@ try {
   <section class="shop-grid-section section">
     <div class="container">
       {hasShopify ? (
-        <div class="product-grid" id="shop-grid">
-          {products.map((product) => {
-            const image = product.images.edges[0]?.node;
-            const price = product.priceRange.minVariantPrice;
-            const compareAt = product.compareAtPriceRange?.minVariantPrice;
-            const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.amount);
-            const firstVariant = product.variants.edges[0]?.node;
+        <>
+          <div class="product-grid" id="shop-grid">
+            {products.map((product, idx) => {
+              const image = product.images.edges[0]?.node;
+              const image2 = product.images.edges[1]?.node;
+              const price = product.priceRange.minVariantPrice;
+              const compareAt = product.compareAtPriceRange?.minVariantPrice;
+              const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.amount);
+              const firstVariant = product.variants.edges[0]?.node;
+              const allImages = product.images.edges.map((e: any) => e.node);
+              const allVariants = product.variants.edges.map((e: any) => e.node);
 
-            return (
-              <div class="product-card"
-                data-type={product.productType.toLowerCase()}
-                data-price={parseFloat(price.amount)}
-                data-title={product.title}
-                data-handle={product.handle}
-              >
-                {isOnSale && <span class="product-card__badge">Sale</span>}
-                {!isOnSale && !product.availableForSale && <span class="product-card__badge product-card__badge--sold">Sold Out</span>}
-                <a href={`/shop/${product.handle}`} class="product-card__image">
-                  {image ? (
-                    <img
-                      src={image.url}
-                      alt={image.altText || product.title}
-                      width={image.width}
-                      height={image.height}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : (
-                    <div class="product-card__image-ph">{product.productType || 'Product'}</div>
-                  )}
-                  <!-- Quick View overlay -->
-                  <div class="product-card__overlay">
-                    <button class="product-card__quick-view" data-handle={product.handle}>Quick View</button>
-                  </div>
-                </a>
-                <div class="product-card__info">
-                  {product.productType && <span class="product-card__type">{product.productType}</span>}
-                  <a href={`/shop/${product.handle}`} class="product-card__title">{product.title}</a>
-                  <div class="product-card__pricing">
-                    <span class="product-card__price">
-                      ${parseFloat(price.amount).toFixed(2)}
-                    </span>
-                    {isOnSale && (
-                      <span class="product-card__price--compare">
-                        ${parseFloat(compareAt.amount).toFixed(2)}
+              return (
+                <div class="product-card"
+                  data-type={product.productType.toLowerCase()}
+                  data-price={parseFloat(price.amount)}
+                  data-title={product.title}
+                  data-handle={product.handle}
+                  data-tags={product.tags?.join(',').toLowerCase() || ''}
+                  data-description={product.description?.toLowerCase().slice(0, 200) || ''}
+                  data-idx={idx}
+                  style={idx >= 24 ? 'display:none;' : ''}
+                  data-page={Math.floor(idx / 24)}
+                >
+                  {isOnSale && <span class="product-card__badge">Sale</span>}
+                  {!isOnSale && !product.availableForSale && <span class="product-card__badge product-card__badge--sold">Sold Out</span>}
+
+                  {/* Wishlist heart */}
+                  <button class="product-card__wishlist" data-handle={product.handle} aria-label="Add to wishlist">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                  </button>
+
+                  <a href={`/shop/${product.handle}`} class="product-card__image">
+                    {image ? (
+                      <>
+                        <img
+                          src={shopifyImageUrl(image.url, 600)}
+                          srcset={shopifyImageSrcset(image.url, [300, 600, 900])}
+                          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          alt={image.altText || product.title}
+                          width={image.width}
+                          height={image.height}
+                          loading={idx < 8 ? 'eager' : 'lazy'}
+                          decoding="async"
+                          class="product-card__img-primary"
+                        />
+                        {image2 && (
+                          <img
+                            src={shopifyImageUrl(image2.url, 600)}
+                            srcset={shopifyImageSrcset(image2.url, [300, 600, 900])}
+                            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                            alt={image2.altText || product.title}
+                            width={image2.width}
+                            height={image2.height}
+                            loading="lazy"
+                            decoding="async"
+                            class="product-card__img-hover"
+                          />
+                        )}
+                      </>
+                    ) : (
+                      <div class="product-card__image-ph">{product.productType || 'Product'}</div>
+                    )}
+                    {/* Quick View overlay */}
+                    <div class="product-card__overlay">
+                      <button
+                        class="product-card__quick-view"
+                        data-handle={product.handle}
+                        data-title={product.title}
+                        data-price={price.amount}
+                        data-compare-price={isOnSale ? compareAt.amount : ''}
+                        data-description={product.description?.slice(0, 300) || ''}
+                        data-images={JSON.stringify(allImages.map((img: any) => img.url))}
+                        data-variants={JSON.stringify(allVariants.map((v: any) => ({
+                          id: v.id,
+                          title: v.title,
+                          price: v.price.amount,
+                          available: v.availableForSale,
+                          image: v.image?.url || ''
+                        })))}
+                        data-type={product.productType}
+                        data-available={String(product.availableForSale)}
+                      >Quick View</button>
+                    </div>
+                  </a>
+                  <div class="product-card__info">
+                    {product.productType && <span class="product-card__type">{product.productType}</span>}
+                    <a href={`/shop/${product.handle}`} class="product-card__title">{product.title}</a>
+                    <div class="product-card__pricing">
+                      <span class="product-card__price">
+                        ${parseFloat(price.amount).toFixed(2)}
                       </span>
+                      {isOnSale && (
+                        <span class="product-card__price--compare">
+                          ${parseFloat(compareAt.amount).toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                    {product.availableForSale && firstVariant && (
+                      <button class="product-card__add-btn"
+                        data-variant-id={firstVariant.id}
+                        data-title={product.title}
+                        data-price={parseFloat(price.amount)}
+                        data-image={image?.url || ''}
+                        data-handle={product.handle}
+                        data-variant-title={firstVariant.title}
+                      >
+                        Add to Cart
+                      </button>
                     )}
                   </div>
-                  {product.availableForSale && firstVariant && (
-                    <button class="product-card__add-btn"
-                      data-variant-id={firstVariant.id}
-                      data-title={product.title}
-                      data-price={parseFloat(price.amount)}
-                      data-image={image?.url || ''}
-                      data-handle={product.handle}
-                      data-variant-title={firstVariant.title}
-                    >
-                      Add to Cart
-                    </button>
-                  )}
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+
+          {/* Load More */}
+          <div class="load-more-wrap" id="load-more-wrap">
+            <button class="btn btn--outline load-more-btn" id="load-more-btn">
+              Load More Products
+            </button>
+            <p class="load-more-count" id="load-more-count"></p>
+          </div>
+
+          {/* No results */}
+          <div class="no-results" id="no-results" style="display:none;">
+            <div class="no-results__icon">🔍</div>
+            <h3>No products found</h3>
+            <p>Try adjusting your search or filters</p>
+            <button class="btn btn--outline" id="no-results-clear">Clear All Filters</button>
+          </div>
+        </>
       ) : (
         <!-- Placeholder: shown when Shopify API is not connected -->
         <div class="shop-placeholder reveal">
@@ -169,6 +249,34 @@ try {
     </div>
   </section>
 
+  <!-- ═══ QUICK VIEW MODAL ═══ -->
+  <div class="qv-overlay" id="qv-overlay" aria-hidden="true"></div>
+  <div class="qv-modal" id="qv-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Quick view">
+    <button class="qv-close" id="qv-close" aria-label="Close quick view">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="qv-body">
+      <div class="qv-gallery">
+        <img class="qv-image" id="qv-image" src="" alt="" />
+        <div class="qv-thumbs" id="qv-thumbs"></div>
+      </div>
+      <div class="qv-info">
+        <span class="qv-type" id="qv-type"></span>
+        <h2 class="qv-title" id="qv-title"></h2>
+        <div class="qv-pricing">
+          <span class="qv-price" id="qv-price"></span>
+          <span class="qv-compare" id="qv-compare"></span>
+        </div>
+        <p class="qv-description" id="qv-description"></p>
+        <div class="qv-variants" id="qv-variants"></div>
+        <div class="qv-actions">
+          <button class="btn btn--gold qv-add" id="qv-add">Add to Cart</button>
+          <a class="btn btn--outline qv-view-full" id="qv-view-full" href="#">View Full Details →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══ MISSION REMINDER ═══ -->
   <section class="mission-reminder">
     <div class="container">
@@ -176,7 +284,7 @@ try {
         <span class="mission-reminder__sun">☀️</span>
         Every purchase you make here directly supports <strong>Sunshine on a Ranney Day</strong>
         — funding home makeovers for kids with special needs.
-        <a href="/charity">Learn more →</a>
+        <a href="https://sunshineonaranneyday.com" target="_blank" rel="noopener noreferrer">Learn more →</a>
       </p>
     </div>
   </section>
@@ -240,7 +348,6 @@ try {
 
   .filter-btn:hover { color: var(--color-charcoal); background: var(--color-cream-dark); }
   .filter-btn--active {
-    color: var(--color-charcoal);
     background: var(--color-charcoal);
     color: var(--color-cream);
   }
@@ -284,6 +391,25 @@ try {
   .toolbar__view:hover { color: var(--color-charcoal); }
   .toolbar__view--active { color: var(--color-charcoal); background: var(--color-cream-dark); }
 
+  /* ─── Search Banner ────────────────────── */
+  .search-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0 0;
+    font-size: 0.85rem;
+    color: var(--color-slate);
+  }
+
+  .search-banner__clear {
+    color: var(--color-gold);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
   /* ─── Grid / List views ───────────────── */
   .shop-grid-section { min-height: 400px; }
 
@@ -293,12 +419,12 @@ try {
 
   #shop-grid.view-list .product-card {
     flex-direction: row;
-    max-height: 200px;
+    max-height: 220px;
   }
 
   #shop-grid.view-list .product-card__image {
     aspect-ratio: 1;
-    max-width: 200px;
+    max-width: 220px;
     flex-shrink: 0;
   }
 
@@ -307,6 +433,11 @@ try {
     flex-direction: column;
     justify-content: center;
     padding: var(--space-md) var(--space-lg);
+  }
+
+  #shop-grid.view-list .product-card__wishlist {
+    right: auto;
+    left: 190px;
   }
 
   /* ─── Enhanced Product Card ───────────── */
@@ -318,6 +449,91 @@ try {
     transition: transform var(--duration) var(--ease-out),
                 box-shadow var(--duration) var(--ease-out);
     overflow: hidden;
+    opacity: 0;
+    animation: cardFadeIn 0.5s var(--ease-out) forwards;
+  }
+
+  @keyframes cardFadeIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Stagger card animations */
+  .product-card:nth-child(1) { animation-delay: 0s; }
+  .product-card:nth-child(2) { animation-delay: 0.05s; }
+  .product-card:nth-child(3) { animation-delay: 0.1s; }
+  .product-card:nth-child(4) { animation-delay: 0.15s; }
+  .product-card:nth-child(5) { animation-delay: 0.2s; }
+  .product-card:nth-child(6) { animation-delay: 0.25s; }
+  .product-card:nth-child(7) { animation-delay: 0.3s; }
+  .product-card:nth-child(8) { animation-delay: 0.35s; }
+
+  /* Wishlist heart */
+  .product-card__wishlist {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    z-index: 3;
+    width: 36px;
+    height: 36px;
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(4px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-stone);
+    transition: all 0.25s;
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
+  .product-card:hover .product-card__wishlist,
+  .product-card__wishlist.is-wished {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .product-card__wishlist:hover {
+    color: #e74c3c;
+    transform: scale(1.15);
+  }
+
+  .product-card__wishlist.is-wished {
+    color: #e74c3c;
+  }
+
+  .product-card__wishlist.is-wished svg {
+    fill: #e74c3c;
+  }
+
+  /* Image swap on hover */
+  .product-card__img-primary,
+  .product-card__img-hover {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.6s var(--ease-out), transform 0.8s var(--ease-out);
+  }
+
+  .product-card__img-hover {
+    opacity: 0;
+  }
+
+  .product-card:hover .product-card__img-primary {
+    opacity: 0;
+  }
+
+  .product-card:hover .product-card__img-hover {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+
+  .product-card:hover .product-card__img-primary:only-child {
+    opacity: 1;
+    transform: scale(1.05);
   }
 
   .product-card__overlay {
@@ -329,6 +545,7 @@ try {
     justify-content: center;
     transition: background 0.3s;
     pointer-events: none;
+    z-index: 2;
   }
 
   .product-card:hover .product-card__overlay {
@@ -348,8 +565,12 @@ try {
     border-radius: 4px;
     opacity: 0;
     transform: translateY(8px);
-    transition: opacity 0.3s, transform 0.3s;
+    transition: opacity 0.3s, transform 0.3s, background 0.2s;
     cursor: pointer;
+  }
+
+  .product-card__quick-view:hover {
+    background: var(--color-gold);
   }
 
   .product-card:hover .product-card__quick-view {
@@ -397,6 +618,221 @@ try {
     background: var(--color-gold);
     color: var(--color-charcoal);
   }
+
+  /* ─── Load More ────────────────────────── */
+  .load-more-wrap {
+    text-align: center;
+    margin-top: var(--space-xl);
+  }
+
+  .load-more-btn {
+    min-width: 220px;
+  }
+
+  .load-more-count {
+    font-size: 0.78rem;
+    color: var(--color-stone);
+    margin-top: 0.75rem;
+  }
+
+  /* ─── No Results ───────────────────────── */
+  .no-results {
+    text-align: center;
+    padding: var(--space-2xl) var(--space-md);
+  }
+
+  .no-results__icon { font-size: 3rem; margin-bottom: 0.75rem; opacity: 0.5; }
+  .no-results h3 { margin-bottom: 0.5rem; }
+  .no-results .btn { margin-top: 1rem; }
+
+  /* ─── Quick View Modal ─────────────────── */
+  .qv-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 500;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+    backdrop-filter: blur(4px);
+  }
+
+  .qv-overlay[aria-hidden="false"] {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .qv-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.95);
+    z-index: 501;
+    background: var(--color-cream);
+    max-width: 900px;
+    width: 92vw;
+    max-height: 88vh;
+    overflow-y: auto;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.35s var(--ease-out);
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15);
+  }
+
+  .qv-modal[aria-hidden="false"] {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  .qv-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 2;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.9);
+    border-radius: 50%;
+    color: var(--color-charcoal);
+    transition: all 0.2s;
+  }
+  .qv-close:hover { background: var(--color-gold); }
+
+  .qv-body {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  @media (min-width: 640px) {
+    .qv-body { grid-template-columns: 1fr 1fr; }
+  }
+
+  .qv-gallery {
+    background: var(--color-cream-dark);
+    aspect-ratio: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .qv-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.3s;
+  }
+
+  .qv-thumbs {
+    position: absolute;
+    bottom: 0.75rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 0.35rem;
+  }
+
+  .qv-thumb {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.5);
+    border: 1.5px solid rgba(255,255,255,0.8);
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 0;
+  }
+
+  .qv-thumb--active,
+  .qv-thumb:hover {
+    background: white;
+    transform: scale(1.2);
+  }
+
+  .qv-info {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .qv-type {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+  }
+
+  .qv-title {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 400;
+    line-height: 1.2;
+    margin: 0;
+  }
+
+  .qv-pricing {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+  }
+
+  .qv-price {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .qv-compare {
+    font-size: 1rem;
+    color: var(--color-stone);
+    text-decoration: line-through;
+  }
+
+  .qv-description {
+    font-size: 0.88rem;
+    color: var(--color-slate);
+    line-height: 1.6;
+    max-width: none;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .qv-variants {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .qv-variant-btn {
+    padding: 0.45rem 1rem;
+    border: 1.5px solid var(--color-cream-dark);
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    cursor: pointer;
+    background: none;
+    font-family: var(--font-body);
+  }
+  .qv-variant-btn:hover { border-color: var(--color-charcoal); }
+  .qv-variant-btn--active { border-color: var(--color-charcoal); background: var(--color-charcoal); color: var(--color-cream); }
+  .qv-variant-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .qv-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+  }
+
+  .qv-add { width: 100%; justify-content: center; }
+  .qv-view-full { width: 100%; justify-content: center; font-size: 0.75rem; }
 
   /* ─── Placeholder ─────────────────────── */
   .shop-placeholder {
@@ -474,78 +910,132 @@ try {
   @media (max-width: 768px) {
     .toolbar { flex-direction: column; align-items: stretch; }
     .toolbar__controls { justify-content: space-between; }
+    #shop-grid.view-list .product-card { flex-direction: column; max-height: none; }
+    #shop-grid.view-list .product-card__image { max-width: none; }
   }
 </style>
 
 <script>
-  // ─── Enhanced Shop Page Logic ───────────────────────────
+  import { wishlist } from '@/lib/cart-store.js';
+
+  // ─── DOM refs ──────────────────────────────────
   const grid = document.getElementById('shop-grid');
   const filterBtns = document.querySelectorAll('.filter-btn');
-  const sortSelect = document.getElementById('sort-select');
+  const sortSelect = document.getElementById('sort-select') as HTMLSelectElement;
   const viewBtns = document.querySelectorAll('.toolbar__view');
   const countEl = document.getElementById('product-count');
+  const loadMoreBtn = document.getElementById('load-more-btn');
+  const loadMoreWrap = document.getElementById('load-more-wrap');
+  const loadMoreCount = document.getElementById('load-more-count');
+  const noResults = document.getElementById('no-results');
+  const noResultsClear = document.getElementById('no-results-clear');
+  const searchBanner = document.getElementById('search-banner');
+  const searchBannerText = document.getElementById('search-banner-text');
+  const searchClear = document.getElementById('search-clear');
 
   let activeFilter = 'all';
+  let activeSearch = '';
+  let visiblePage = 0;
+  const PAGE_SIZE = 24;
 
   function getCards() {
-    return Array.from(grid?.querySelectorAll('.product-card') || []);
+    return Array.from(grid?.querySelectorAll('.product-card') || []) as HTMLElement[];
   }
 
-  function getVisibleCards() {
-    return getCards().filter(c => c.style.display !== 'none');
+  // ─── Filtering + Search + Pagination ────────
+  function applyAll() {
+    const cards = getCards();
+    let matchCount = 0;
+    const matchingCards: HTMLElement[] = [];
+
+    cards.forEach(card => {
+      const type = card.getAttribute('data-type') || '';
+      const title = (card.dataset.title || '').toLowerCase();
+      const tags = card.dataset.tags || '';
+      const desc = card.dataset.description || '';
+
+      const matchesFilter = activeFilter === 'all' || type.includes(activeFilter);
+      const matchesSearch = !activeSearch ||
+        title.includes(activeSearch) ||
+        type.includes(activeSearch) ||
+        tags.includes(activeSearch) ||
+        desc.includes(activeSearch);
+
+      if (matchesFilter && matchesSearch) {
+        matchingCards.push(card);
+        matchCount++;
+      } else {
+        card.style.display = 'none';
+      }
+    });
+
+    // Show cards up to (visiblePage + 1) * PAGE_SIZE
+    const showCount = (visiblePage + 1) * PAGE_SIZE;
+    matchingCards.forEach((card, i) => {
+      card.style.display = i < showCount ? '' : 'none';
+    });
+
+    const shownCount = Math.min(showCount, matchCount);
+
+    // Update count
+    if (countEl) countEl.textContent = `${matchCount} product${matchCount !== 1 ? 's' : ''}`;
+
+    // Load more visibility
+    if (loadMoreWrap) {
+      loadMoreWrap.style.display = matchCount > showCount ? '' : 'none';
+    }
+    if (loadMoreCount) {
+      loadMoreCount.textContent = `Showing ${shownCount} of ${matchCount}`;
+    }
+
+    // No results
+    if (noResults) noResults.style.display = matchCount === 0 ? '' : 'none';
+    if (grid) grid.style.display = matchCount === 0 ? 'none' : '';
   }
 
-  // ─── Category Filter ───────────────────
+  // ─── Category Filter ────────────────────────
   filterBtns.forEach((btn) => {
     btn.addEventListener('click', () => {
-      activeFilter = btn.getAttribute('data-filter') || 'all';
+      activeFilter = (btn as HTMLElement).getAttribute('data-filter') || 'all';
       filterBtns.forEach(b => b.classList.remove('filter-btn--active'));
       btn.classList.add('filter-btn--active');
-      applyFilter();
+      visiblePage = 0;
+      applyAll();
     });
   });
 
-  function applyFilter() {
-    const cards = getCards();
-    let visibleCount = 0;
-    cards.forEach(card => {
-      const type = card.getAttribute('data-type') || '';
-      const show = activeFilter === 'all' || type.includes(activeFilter);
-      card.style.display = show ? '' : 'none';
-      if (show) visibleCount++;
-    });
-    if (countEl) countEl.textContent = `${visibleCount} product${visibleCount !== 1 ? 's' : ''}`;
-  }
-
-  // ─── Sort ──────────────────────────────
+  // ─── Sort ───────────────────────────────────
   sortSelect?.addEventListener('change', () => {
     const cards = getCards();
     const sortBy = sortSelect.value;
 
     cards.sort((a, b) => {
-      const priceA = parseFloat(a.dataset.price) || 0;
-      const priceB = parseFloat(b.dataset.price) || 0;
+      const priceA = parseFloat(a.dataset.price || '0');
+      const priceB = parseFloat(b.dataset.price || '0');
       const titleA = (a.dataset.title || '').toLowerCase();
       const titleB = (b.dataset.title || '').toLowerCase();
+      const idxA = parseInt(a.dataset.idx || '0');
+      const idxB = parseInt(b.dataset.idx || '0');
 
       switch (sortBy) {
         case 'price-asc': return priceA - priceB;
         case 'price-desc': return priceB - priceA;
         case 'title-asc': return titleA.localeCompare(titleB);
-        case 'newest': return -1; // preserve original (newest first from Shopify)
-        default: return 0;
+        case 'newest': return idxA - idxB;
+        default: return idxA - idxB;
       }
     });
 
     cards.forEach(card => grid?.appendChild(card));
+    applyAll();
   });
 
-  // ─── View Toggle ───────────────────────
+  // ─── View Toggle ────────────────────────────
   viewBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       viewBtns.forEach(b => b.classList.remove('toolbar__view--active'));
       btn.classList.add('toolbar__view--active');
-      const view = btn.dataset.view;
+      const view = (btn as HTMLElement).dataset.view;
       if (view === 'list') {
         grid?.classList.add('view-list');
       } else {
@@ -554,7 +1044,53 @@ try {
     });
   });
 
-  // ─── Add to Cart from Grid ─────────────
+  // ─── Load More ──────────────────────────────
+  loadMoreBtn?.addEventListener('click', () => {
+    visiblePage++;
+    applyAll();
+    // Smooth scroll to new products
+    const cards = getCards().filter(c => c.style.display !== 'none');
+    const firstNew = cards[visiblePage * PAGE_SIZE];
+    if (firstNew) {
+      firstNew.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
+
+  // ─── Search ─────────────────────────────────
+  const params = new URLSearchParams(window.location.search);
+  const searchQuery = params.get('q');
+  if (searchQuery) {
+    activeSearch = searchQuery.toLowerCase();
+    if (searchBanner) searchBanner.style.display = '';
+    if (searchBannerText) searchBannerText.textContent = `Results for "${searchQuery}"`;
+  }
+
+  searchClear?.addEventListener('click', () => {
+    activeSearch = '';
+    if (searchBanner) searchBanner.style.display = 'none';
+    window.history.replaceState({}, '', '/shop');
+    applyAll();
+  });
+
+  noResultsClear?.addEventListener('click', () => {
+    activeSearch = '';
+    activeFilter = 'all';
+    filterBtns.forEach(b => b.classList.remove('filter-btn--active'));
+    document.querySelector('[data-filter="all"]')?.classList.add('filter-btn--active');
+    if (searchBanner) searchBanner.style.display = 'none';
+    window.history.replaceState({}, '', '/shop');
+    visiblePage = 0;
+    applyAll();
+  });
+
+  // URL category param
+  const category = params.get('category');
+  if (category) {
+    const btn = document.querySelector(`[data-filter="${category}"]`) as HTMLElement;
+    if (btn) btn.click();
+  }
+
+  // ─── Add to Cart from Grid ──────────────────
   grid?.addEventListener('click', (e) => {
     const btn = (e.target as Element)?.closest('.product-card__add-btn');
     if (!btn) return;
@@ -564,7 +1100,6 @@ try {
     const { variantId, title, price, image, handle, variantTitle } = (btn as HTMLElement).dataset;
     if (!variantId || !title || !price) return;
 
-    // Use the global addToCart from CartDrawer
     window.addToCart?.({
       variantId,
       title,
@@ -574,44 +1109,190 @@ try {
       variantTitle: variantTitle || '',
     });
 
-    // Button feedback
     const orig = btn.textContent;
     btn.textContent = '✓ Added';
-    btn.disabled = true;
+    (btn as HTMLButtonElement).disabled = true;
     setTimeout(() => {
       btn.textContent = orig;
-      btn.disabled = false;
+      (btn as HTMLButtonElement).disabled = false;
     }, 1500);
   });
 
-  // ─── Quick View (opens product page for now) ──
-  grid?.addEventListener('click', (e) => {
-    const btn = (e.target as Element)?.closest('.product-card__quick-view');
-    if (!btn) return;
-    e.preventDefault();
-    const handle = (btn as HTMLElement).dataset.handle;
-    if (handle) window.location.href = `/shop/${handle}`;
-  });
-
-  // ─── URL params ────────────────────────
-  const params = new URLSearchParams(window.location.search);
-  const category = params.get('category');
-  if (category) {
-    const btn = document.querySelector(`[data-filter="${category}"]`) as HTMLElement;
-    if (btn) btn.click();
-  }
-
-  const searchQuery = params.get('q');
-  if (searchQuery) {
-    const q = searchQuery.toLowerCase();
-    getCards().forEach(card => {
-      const title = (card.dataset.title || '').toLowerCase();
-      const type = (card.getAttribute('data-type') || '').toLowerCase();
-      const match = title.includes(q) || type.includes(q);
-      card.style.display = match ? '' : 'none';
+  // ─── Wishlist Hearts ────────────────────────
+  function initWishlistHearts() {
+    document.querySelectorAll('.product-card__wishlist').forEach(btn => {
+      const handle = (btn as HTMLElement).dataset.handle || '';
+      if (wishlist.has(handle)) {
+        btn.classList.add('is-wished');
+      }
     });
   }
 
-  // Initial count
-  applyFilter();
+  grid?.addEventListener('click', (e) => {
+    const btn = (e.target as Element)?.closest('.product-card__wishlist');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const handle = (btn as HTMLElement).dataset.handle || '';
+    wishlist.toggle(handle);
+    btn.classList.toggle('is-wished');
+
+    // Pulse animation
+    btn.animate([
+      { transform: 'scale(1)' },
+      { transform: 'scale(1.3)' },
+      { transform: 'scale(1)' },
+    ], { duration: 300, easing: 'ease-out' });
+  });
+
+  initWishlistHearts();
+
+  // ─── Quick View Modal ───────────────────────
+  const qvOverlay = document.getElementById('qv-overlay');
+  const qvModal = document.getElementById('qv-modal');
+  const qvClose = document.getElementById('qv-close');
+  const qvImage = document.getElementById('qv-image') as HTMLImageElement;
+  const qvThumbs = document.getElementById('qv-thumbs');
+  const qvType = document.getElementById('qv-type');
+  const qvTitle = document.getElementById('qv-title');
+  const qvPrice = document.getElementById('qv-price');
+  const qvCompare = document.getElementById('qv-compare');
+  const qvDescription = document.getElementById('qv-description');
+  const qvVariants = document.getElementById('qv-variants');
+  const qvAdd = document.getElementById('qv-add') as HTMLButtonElement;
+  const qvViewFull = document.getElementById('qv-view-full') as HTMLAnchorElement;
+
+  let qvSelectedVariant: any = null;
+  let qvImages: string[] = [];
+  let qvCurrentImage = 0;
+
+  function openQuickView(data: any) {
+    qvImages = JSON.parse(data.images || '[]');
+    const variants = JSON.parse(data.variants || '[]');
+
+    if (qvImage && qvImages.length) {
+      qvImage.src = qvImages[0];
+      qvImage.alt = data.title;
+      qvCurrentImage = 0;
+    }
+
+    // Thumbs (dots)
+    if (qvThumbs) {
+      qvThumbs.innerHTML = qvImages.length > 1
+        ? qvImages.map((_: string, i: number) =>
+            `<button class="qv-thumb ${i === 0 ? 'qv-thumb--active' : ''}" data-idx="${i}"></button>`
+          ).join('')
+        : '';
+    }
+
+    if (qvType) qvType.textContent = data.type || '';
+    if (qvTitle) qvTitle.textContent = data.title || '';
+    if (qvPrice) qvPrice.textContent = `$${parseFloat(data.price).toFixed(2)}`;
+    if (qvCompare) {
+      if (data.comparePrice) {
+        qvCompare.textContent = `$${parseFloat(data.comparePrice).toFixed(2)}`;
+        qvCompare.style.display = '';
+      } else {
+        qvCompare.style.display = 'none';
+      }
+    }
+    if (qvDescription) qvDescription.textContent = data.description || '';
+
+    // Variants
+    if (qvVariants && variants.length > 1) {
+      qvVariants.innerHTML = variants.map((v: any, i: number) =>
+        `<button class="qv-variant-btn ${i === 0 ? 'qv-variant-btn--active' : ''}"
+          data-idx="${i}" data-variant-id="${v.id}" data-price="${v.price}"
+          ${!v.available ? 'disabled' : ''}>
+          ${v.title}
+        </button>`
+      ).join('');
+      qvVariants.style.display = '';
+    } else if (qvVariants) {
+      qvVariants.innerHTML = '';
+      qvVariants.style.display = 'none';
+    }
+
+    qvSelectedVariant = variants[0] || null;
+    if (qvViewFull) qvViewFull.href = `/shop/${data.handle}`;
+
+    // Disable add if not available
+    if (qvAdd) {
+      qvAdd.disabled = data.available === 'false';
+      qvAdd.textContent = data.available === 'false' ? 'Sold Out' : 'Add to Cart';
+    }
+
+    // Show
+    qvModal?.setAttribute('aria-hidden', 'false');
+    qvOverlay?.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeQuickView() {
+    qvModal?.setAttribute('aria-hidden', 'true');
+    qvOverlay?.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  qvOverlay?.addEventListener('click', closeQuickView);
+  qvClose?.addEventListener('click', closeQuickView);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeQuickView();
+  });
+
+  // Quick view image dots
+  qvThumbs?.addEventListener('click', (e) => {
+    const btn = (e.target as Element)?.closest('.qv-thumb') as HTMLElement;
+    if (!btn) return;
+    const idx = parseInt(btn.dataset.idx || '0');
+    qvCurrentImage = idx;
+    if (qvImage) qvImage.src = qvImages[idx];
+    qvThumbs.querySelectorAll('.qv-thumb').forEach((t, i) => {
+      t.classList.toggle('qv-thumb--active', i === idx);
+    });
+  });
+
+  // Quick view variant selection
+  qvVariants?.addEventListener('click', (e) => {
+    const btn = (e.target as Element)?.closest('.qv-variant-btn') as HTMLElement;
+    if (!btn || btn.hasAttribute('disabled')) return;
+    qvVariants.querySelectorAll('.qv-variant-btn').forEach(b => b.classList.remove('qv-variant-btn--active'));
+    btn.classList.add('qv-variant-btn--active');
+    const price = btn.dataset.price;
+    if (qvPrice && price) qvPrice.textContent = `$${parseFloat(price).toFixed(2)}`;
+    const variants = JSON.parse(btn.closest('.qv-info')?.querySelector('[data-variants]')?.getAttribute('data-variants') || '[]');
+    qvSelectedVariant = { id: btn.dataset.variantId, price };
+  });
+
+  // Quick view add to cart
+  qvAdd?.addEventListener('click', () => {
+    if (!qvSelectedVariant) return;
+    window.addToCart?.({
+      variantId: qvSelectedVariant.id,
+      title: qvTitle?.textContent || '',
+      price: parseFloat(qvSelectedVariant.price),
+      image: qvImage?.src || '',
+      handle: qvViewFull?.href?.split('/shop/')[1] || '',
+      variantTitle: '',
+    });
+    qvAdd.textContent = '✓ Added!';
+    qvAdd.disabled = true;
+    setTimeout(() => {
+      qvAdd.textContent = 'Add to Cart';
+      qvAdd.disabled = false;
+    }, 1500);
+  });
+
+  // Open quick view from card
+  grid?.addEventListener('click', (e) => {
+    const btn = (e.target as Element)?.closest('.product-card__quick-view') as HTMLElement;
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    openQuickView(btn.dataset);
+  });
+
+  // ─── Initial render ─────────────────────────
+  applyAll();
 </script>

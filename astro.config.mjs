@@ -5,10 +5,19 @@ import sitemap from '@astrojs/sitemap';
 export default defineConfig({
   site: 'https://sunnyandranney.com',
   output: 'static',
-  adapter: cloudflare(),
+  adapter: cloudflare({
+    imageService: 'compile', // Optimize images at build time (sharp not available at CF runtime)
+  }),
   integrations: [
     sitemap(),
   ],
+
+  // Prefetch links on hover/focus for instant navigation
+  prefetch: {
+    prefetchAll: false,
+    defaultStrategy: 'hover',
+  },
+
   image: {
     domains: ['cdn.shopify.com'],
   },

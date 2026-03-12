@@ -1,6 +1,39 @@
-# Cache static assets aggressively
+# ═══ Cloudflare Pages Headers ═══
+
+# Early Hints — Cloudflare caches these Link headers and sends them as 103
+# responses on subsequent requests, before the full HTML even arrives
+/*
+  Link: </fonts/DMSans-Variable.woff2>; rel=preload; as=font; type=font/woff2; crossorigin
+  Link: </fonts/TheSeasons-Regular.woff2>; rel=preload; as=font; type=font/woff2; crossorigin
+  Link: <https://cdn.shopify.com>; rel=preconnect
+
+# Hashed build assets — cache forever (Astro adds content hash to filenames)
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Font files — cache aggressively (they don't change)
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+  Access-Control-Allow-Origin: *
+
+# Images — cache for 1 week
+/images/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
+# HTML pages — short cache + stale-while-revalidate for instant loads
+/
+  Cache-Control: public, max-age=300, stale-while-revalidate=3600
+
+/shop
+  Cache-Control: public, max-age=300, stale-while-revalidate=3600
+
+/shop/index.html
+  Cache-Control: public, max-age=300, stale-while-revalidate=3600
+
+# SSR product pages — cache at edge, revalidate often
+/shop/*
+  Cache-Control: public, max-age=60, stale-while-revalidate=3600
+  CDN-Cache-Control: public, max-age=300, stale-while-revalidate=86400
 
 # Security headers on all pages
 /*
@@ -9,3 +42,5 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   X-XSS-Protection: 1; mode=block
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' https://cdn.shopify.com data:; connect-src 'self' https://*.myshopify.com; frame-ancestors 'none'

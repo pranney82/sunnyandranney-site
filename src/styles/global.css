@@ -1,10 +1,60 @@
 /* ═══════════════════════════════════════════════════════════════
    SUNNY & RANNEY — Global Design System
-   Warm editorial aesthetic · Charity-forward · Elevated comfort
+   E-commerce focused · Charity-forward · Elevated comfort
    ═══════════════════════════════════════════════════════════════ */
 
 /* ─── Fonts ─────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+/* DM Sans — self-hosted variable font (eliminates Google Fonts render-blocking chain) */
+@font-face {
+  font-family: 'DM Sans';
+  src: url('/fonts/DMSans-Variable.woff2') format('woff2');
+  font-weight: 300 600;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'DM Sans';
+  src: url('/fonts/DMSans-Italic-Variable.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* The Seasons — premium display font (place .woff2 files in /public/fonts/) */
+@font-face {
+  font-family: 'The Seasons';
+  src: url('/fonts/TheSeasons-Regular.woff2') format('woff2'),
+       url('/fonts/TheSeasons-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'The Seasons';
+  src: url('/fonts/TheSeasons-Light.woff2') format('woff2'),
+       url('/fonts/TheSeasons-Light.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'The Seasons';
+  src: url('/fonts/TheSeasons-Bold.woff2') format('woff2'),
+       url('/fonts/TheSeasons-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'The Seasons';
+  src: url('/fonts/TheSeasons-It.woff2') format('woff2'),
+       url('/fonts/TheSeasons-It.woff') format('woff');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
 
 /* ─── Custom Properties ─────────────────────────────────────── */
 :root {
@@ -27,7 +77,7 @@
   --color-terracotta:  #B87355;
 
   /* Typography */
-  --font-display: 'Cormorant Garamond', 'Georgia', serif;
+  --font-display: 'The Seasons', 'Georgia', serif;
   --font-body:    'DM Sans', 'Helvetica Neue', sans-serif;
 
   /* Spacing scale */
@@ -41,7 +91,7 @@
 
   /* Layout */
   --max-width:   1280px;
-  --nav-height:  80px;
+  --nav-height:  132px;
 
   /* Transitions */
   --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
@@ -218,11 +268,18 @@ p {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.8s var(--ease-out);
+  transition: transform 0.8s var(--ease-out), opacity 0.6s var(--ease-out);
 }
 
-.product-card:hover .product-card__image img {
-  transform: scale(1.05);
+.product-card__image-ph {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  color: var(--color-stone);
+  font-size: 1rem;
 }
 
 .product-card__badge {
@@ -426,8 +483,20 @@ p {
   color: var(--color-charcoal);
 }
 
+/* ─── Content Visibility (skip rendering for off-screen sections) ── */
+.section,
+.value-bar,
+.mission-strip,
+.visit-strip,
+.related-section,
+.recently-section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 500px;
+}
+
 /* ─── Responsive ────────────────────────────────────────────── */
 @media (max-width: 768px) {
+  :root { --nav-height: 92px; }
   .section { padding: var(--space-xl) 0; }
   .section--large { padding: var(--space-2xl) 0; }
 }

@@ -1,868 +1,703 @@
 ---
 import Base from '@/layouts/Base.astro';
+
+let products: any[] = [];
+let hasShopify = false;
+let shopifyImageUrl: (url: string, w?: number, h?: number) => string = (url) => url;
+let shopifyImageSrcset: (url: string, widths?: number[]) => string = () => '';
+
+try {
+  const { getProducts, shopifyImageUrl: siu, shopifyImageSrcset: sis } = await import('@/lib/shopify');
+  shopifyImageUrl = siu;
+  shopifyImageSrcset = sis;
+  const result = await getProducts(24);
+  products = result.products;
+  hasShopify = products.length > 0;
+} catch (e) {
+  console.log('Shopify API not configured.');
+}
+
+// Split products by type for homepage sections
+const onSaleProducts = products.filter(p => {
+  const compare = p.compareAtPriceRange?.minVariantPrice;
+  const price = p.priceRange.minVariantPrice;
+  return compare && parseFloat(compare.amount) > parseFloat(price.amount);
+});
+const featuredProducts = products.slice(0, 8);
+const newArrivals = products.slice(0, 4);
 ---
 
 <Base>
-  <!-- ═══ HERO ═══ -->
-  <section class="hero">
-    <div class="hero__bg">
-      <div class="hero__grain"></div>
-    </div>
-    <div class="hero__content container">
-      <div class="hero__text">
-        <span class="label animate-fade-up" style="color: rgba(255,255,255,0.7);">Roswell, Georgia · 100% of Profits to Charity</span>
-        <h1 class="hero__title animate-fade-up delay-1">
-          Shop with<br />
-          <span class="hero__title-accent">a Purpose</span>
+  <!-- ═══ HERO BANNER ═══ -->
+  <section class="hero-banner">
+    <div class="hero-banner__inner container">
+      <div class="hero-banner__text">
+        <h1 class="hero-banner__title animate-fade-up">
+          Designer Furniture<br/>
+          <span class="hero-banner__accent">& Home Decor</span>
         </h1>
-        <p class="hero__subtitle animate-fade-up delay-2">
-          Looking for the perfect gift or a statement piece for your home?
-          Every dollar you spend at Sunny & Ranney goes to
-          <strong style="color: white;">Sunshine on a Ranney Day</strong>,
-          renovating homes for children with special needs.
+        <p class="hero-banner__sub animate-fade-up delay-1">
+          Curated pieces for every room. Every purchase supports children with special needs.
         </p>
-        <div class="hero__actions animate-fade-up delay-3">
-          <a href="/shop" class="btn btn--primary">Shop the Collection</a>
-          <a href="/charity" class="btn btn--outline">Our Mission</a>
+        <div class="hero-banner__actions animate-fade-up delay-2">
+          <a href="/shop" class="btn btn--gold" data-astro-prefetch="viewport">Shop All Products</a>
         </div>
       </div>
-      <div class="hero__visual animate-fade-up delay-2">
-        <div class="hero__image-frame">
-          <div class="hero__image-placeholder">
-            <!-- Replace with your storefront or showroom hero photo -->
-            <div class="hero__image-text">
-              <span>Your Best</span>
-              <span>Showroom Photo</span>
-              <span class="hero__image-subtext">2400 × 1600px recommended</span>
-            </div>
-          </div>
-          <div class="hero__image-accent"></div>
-        </div>
-      </div>
-    </div>
-    <div class="hero__tagline animate-fade-in delay-4">
-      <span class="tagline-script" style="font-size: clamp(1.1rem, 2vw, 1.5rem); color: var(--color-gold-light);">Together, we're building brighter days for children.</span>
-    </div>
-    <div class="hero__scroll-indicator animate-fade-in delay-5">
-      <span>Scroll</span>
-      <div class="hero__scroll-line"></div>
-    </div>
-  </section>
-
-  <!-- ═══ IMPACT TICKER ═══ -->
-  <section class="impact">
-    <div class="container">
-      <div class="impact__grid reveal">
-        <div class="impact__stat">
-          <span class="impact__number" data-count="20000">20,000+</span>
-          <span class="impact__label">Kids Helped</span>
-        </div>
-        <div class="impact__divider"></div>
-        <div class="impact__stat">
-          <span class="impact__number">100%</span>
-          <span class="impact__label">Profits to Charity</span>
-        </div>
-        <div class="impact__divider"></div>
-        <div class="impact__stat">
-          <span class="impact__number">2012</span>
-          <span class="impact__label">Founded</span>
-        </div>
-        <div class="impact__divider"></div>
-        <div class="impact__stat">
-          <span class="impact__number">☀️</span>
-          <span class="impact__label">Sunshine on a Ranney Day</span>
+      <div class="hero-banner__visual animate-fade-up delay-1">
+        <div class="hero-banner__image-placeholder">
+          <span>Hero Image</span>
+          <span class="hero-banner__image-hint">Replace with lifestyle photo — 1200×800</span>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ═══ STORY TEASER ═══ -->
-  <section class="story section--large">
+  <!-- ═══ CATEGORY TILES ═══ -->
+  <section class="cat-tiles section">
     <div class="container">
-      <div class="story__grid">
-        <div class="story__content reveal">
-          <span class="label">Our Story</span>
-          <h2>More Than a Furniture Store</h2>
-          <hr class="divider" />
-          <p>
-            It started in 2012 with a sermon that sparked a calling bigger than furniture.
-            That moment became <strong>Sunshine on a Ranney Day</strong> — and has since changed
-            the lives of dozens of families in our community.
-          </p>
-          <p>
-            At Sunny & Ranney, we've curated a collection of on-trend designer furniture
-            and home decor that not only transforms your living space but brightens the
-            lives of children with special needs. Every purchase directly funds home
-            makeovers for kids who need them most.
-          </p>
-          <a href="/about" class="btn btn--outline" style="margin-top: 1rem;">
-            Read Our Full Story
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M5 12h14M12 5l7 7-7 7"/>
-            </svg>
-          </a>
-        </div>
-        <div class="story__images reveal delay-2">
-          <div class="story__image story__image--main">
-            <div class="story__image-placeholder">Store Interior</div>
-          </div>
-          <div class="story__image story__image--accent">
-            <div class="story__image-placeholder story__image-placeholder--gold">Charity Event</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══ FEATURED PRODUCTS ═══ -->
-  <section class="featured section" id="featured-products">
-    <div class="container">
-      <div class="featured__header reveal">
-        <span class="label">Curated for You</span>
-        <h2>Featured Pieces</h2>
-        <p>Handpicked favorites from our Roswell showroom. Each piece comes with the knowledge that your purchase is changing a child's life.</p>
-      </div>
-
-      <div class="product-grid reveal delay-2" id="product-grid">
-        <!-- Products loaded via Shopify Storefront API -->
-        <!-- Fallback placeholder cards shown if API is not configured -->
-        <div class="product-card">
-          <div class="product-card__image">
-            <div class="product-card__image-ph">Furniture</div>
-          </div>
-          <div class="product-card__info">
-            <span class="product-card__title">Beautiful Accent Chair</span>
-            <span class="product-card__price">$495.00</span>
-          </div>
-        </div>
-        <div class="product-card">
-          <div class="product-card__image">
-            <div class="product-card__image-ph">Lighting</div>
-          </div>
-          <div class="product-card__info">
-            <span class="product-card__title">Artisan Table Lamp</span>
-            <span class="product-card__price">$185.00</span>
-          </div>
-        </div>
-        <div class="product-card">
-          <div class="product-card__image">
-            <div class="product-card__image-ph">Decor</div>
-          </div>
-          <div class="product-card__info">
-            <span class="product-card__title">Handwoven Throw Pillow</span>
-            <span class="product-card__price">$68.00</span>
-          </div>
-        </div>
-        <div class="product-card">
-          <div class="product-card__image">
-            <div class="product-card__image-ph">Gifts</div>
-          </div>
-          <div class="product-card__info">
-            <span class="product-card__title">Artisan Candle Set</span>
-            <span class="product-card__price">$42.00</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="featured__cta reveal delay-3" style="text-align: center; margin-top: var(--space-xl);">
-        <a href="/shop" class="btn btn--gold">
-          View All Products
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M5 12h14M12 5l7 7-7 7"/>
-          </svg>
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══ CATEGORIES ═══ -->
-  <section class="categories section">
-    <div class="container">
-      <div class="categories__grid">
-        <a href="/shop?category=furniture" class="categories__card reveal">
-          <div class="categories__card-bg"></div>
-          <div class="categories__card-content">
+      <h2 class="section-title reveal">Shop by Category</h2>
+      <div class="cat-tiles__grid">
+        <a href="/shop?category=furniture" class="cat-tile reveal">
+          <div class="cat-tile__bg"></div>
+          <div class="cat-tile__content">
             <h3>Furniture</h3>
-            <span class="categories__card-link">Shop Now →</span>
+            <span>Sofas, chairs, tables & more</span>
           </div>
         </a>
-        <a href="/shop?category=decor" class="categories__card reveal delay-1">
-          <div class="categories__card-bg"></div>
-          <div class="categories__card-content">
+        <a href="/shop?category=decor" class="cat-tile reveal delay-1">
+          <div class="cat-tile__bg cat-tile__bg--sage"></div>
+          <div class="cat-tile__content">
             <h3>Home Decor</h3>
-            <span class="categories__card-link">Shop Now →</span>
+            <span>Accessories, art & accents</span>
           </div>
         </a>
-        <a href="/shop?category=lighting" class="categories__card reveal delay-2">
-          <div class="categories__card-bg"></div>
-          <div class="categories__card-content">
+        <a href="/shop?category=lighting" class="cat-tile reveal delay-2">
+          <div class="cat-tile__bg cat-tile__bg--blush"></div>
+          <div class="cat-tile__content">
             <h3>Lighting</h3>
-            <span class="categories__card-link">Shop Now →</span>
+            <span>Lamps, pendants & fixtures</span>
           </div>
         </a>
-        <a href="/shop?category=gifts" class="categories__card categories__card--wide reveal delay-3">
-          <div class="categories__card-bg categories__card-bg--gold"></div>
-          <div class="categories__card-content">
-            <h3>Gifts & Kitchenware</h3>
-            <span class="categories__card-link">Shop Now →</span>
+        <a href="/shop?category=gifts" class="cat-tile reveal delay-3">
+          <div class="cat-tile__bg cat-tile__bg--gold"></div>
+          <div class="cat-tile__content">
+            <h3>Gifts</h3>
+            <span>Candles, books & unique finds</span>
+          </div>
+        </a>
+        <a href="/shop?category=kitchenware" class="cat-tile reveal delay-4">
+          <div class="cat-tile__bg cat-tile__bg--terracotta"></div>
+          <div class="cat-tile__content">
+            <h3>Kitchenware</h3>
+            <span>Serveware, tools & essentials</span>
           </div>
         </a>
       </div>
     </div>
   </section>
 
-  <!-- ═══ CHARITY CTA ═══ -->
-  <section class="charity-cta section--large">
-    <div class="container">
-      <div class="charity-cta__inner reveal">
-        <div class="charity-cta__logos">
-          <img src="/images/logos/circle-cyan.png" alt="Sunny & Ranney" class="charity-cta__logo" />
-          <span class="charity-cta__supports">supports →</span>
-          <img src="/images/logos/circle-tagline-dark.png" alt="Sunshine on a Ranney Day" class="charity-cta__logo" />
+  <!-- ═══ FEATURED / TRENDING ═══ -->
+  {hasShopify && featuredProducts.length > 0 && (
+    <section class="home-products section">
+      <div class="container">
+        <div class="home-products__header reveal">
+          <h2 class="section-title">Trending Now</h2>
+          <a href="/shop" class="home-products__see-all">See all products →</a>
         </div>
-        <h2>When You Shop Here,<br />You Change a Life</h2>
+        <div class="product-grid reveal" id="home-grid">
+          {featuredProducts.map((product: any, idx: number) => {
+            const image = product.images.edges[0]?.node;
+            const image2 = product.images.edges[1]?.node;
+            const price = product.priceRange.minVariantPrice;
+            const compareAt = product.compareAtPriceRange?.minVariantPrice;
+            const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.amount);
+            const firstVariant = product.variants.edges[0]?.node;
+
+            return (
+              <div class="product-card" data-type={product.productType.toLowerCase()}>
+                {isOnSale && <span class="product-card__badge">Sale</span>}
+                {!isOnSale && !product.availableForSale && <span class="product-card__badge product-card__badge--sold">Sold Out</span>}
+                <a href={`/shop/${product.handle}`} class="product-card__image">
+                  {image ? (
+                    <>
+                      <img
+                        src={shopifyImageUrl(image.url, 600)}
+                        srcset={shopifyImageSrcset(image.url, [300, 600, 900])}
+                        sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                        alt={image.altText || product.title}
+                        width={image.width}
+                        height={image.height}
+                        loading={idx < 4 ? 'eager' : 'lazy'}
+                        fetchpriority={idx === 0 ? 'high' : undefined}
+                        decoding={idx === 0 ? 'sync' : 'async'}
+                        class="product-card__img-primary"
+                      />
+                      {image2 && (
+                        <img
+                          src={shopifyImageUrl(image2.url, 600)}
+                          srcset={shopifyImageSrcset(image2.url, [300, 600, 900])}
+                          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          alt={image2.altText || product.title}
+                          width={image2.width}
+                          height={image2.height}
+                          loading="lazy"
+                          decoding="async"
+                          class="product-card__img-hover"
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <div class="product-card__image-ph">{product.productType || 'Product'}</div>
+                  )}
+                </a>
+                <div class="product-card__info">
+                  {product.productType && <span class="product-card__type">{product.productType}</span>}
+                  <a href={`/shop/${product.handle}`} class="product-card__title">{product.title}</a>
+                  <div class="product-card__pricing">
+                    <span class="product-card__price">${parseFloat(price.amount).toFixed(2)}</span>
+                    {isOnSale && (
+                      <span class="product-card__price--compare">${parseFloat(compareAt.amount).toFixed(2)}</span>
+                    )}
+                  </div>
+                  {product.availableForSale && firstVariant && (
+                    <button class="product-card__add-btn"
+                      data-variant-id={firstVariant.id}
+                      data-title={product.title}
+                      data-price={parseFloat(price.amount)}
+                      data-image={image?.url || ''}
+                      data-handle={product.handle}
+                      data-variant-title={firstVariant.title}
+                    >
+                      Add to Cart
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- ═══ VALUE PROPS BAR ═══ -->
+  <section class="value-bar">
+    <div class="container value-bar__inner">
+      <div class="value-bar__item reveal">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        <div>
+          <strong>Free Shipping</strong>
+          <span>On orders over $200</span>
+        </div>
+      </div>
+      <div class="value-bar__item reveal delay-1">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <div>
+          <strong>Secure Checkout</strong>
+          <span>Powered by Shopify</span>
+        </div>
+      </div>
+      <div class="value-bar__item reveal delay-2">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+        <div>
+          <strong>100% to Charity</strong>
+          <span>Every dollar helps kids</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ ON SALE (if any) ═══ -->
+  {onSaleProducts.length > 0 && (
+    <section class="home-products section">
+      <div class="container">
+        <div class="home-products__header reveal">
+          <h2 class="section-title">On Sale</h2>
+          <a href="/shop" class="home-products__see-all">Shop all deals →</a>
+        </div>
+        <div class="home-scroll reveal">
+          {onSaleProducts.slice(0, 8).map((product: any) => {
+            const image = product.images.edges[0]?.node;
+            const price = product.priceRange.minVariantPrice;
+            const compareAt = product.compareAtPriceRange?.minVariantPrice;
+            return (
+              <a href={`/shop/${product.handle}`} class="home-scroll__card">
+                <div class="home-scroll__image">
+                  <span class="product-card__badge">Sale</span>
+                  {image && <img src={shopifyImageUrl(image.url, 400)} alt={image.altText || product.title} loading="lazy" />}
+                </div>
+                <div class="home-scroll__info">
+                  <span class="home-scroll__title">{product.title}</span>
+                  <div class="home-scroll__pricing">
+                    <span class="home-scroll__price">${parseFloat(price.amount).toFixed(2)}</span>
+                    <span class="home-scroll__compare">${parseFloat(compareAt.amount).toFixed(2)}</span>
+                  </div>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- ═══ MISSION STRIP ═══ -->
+  <section class="mission-strip">
+    <div class="container mission-strip__inner">
+      <div class="mission-strip__text">
+        <h2>When You Shop Here, You Change a Life</h2>
         <p>
           Sunshine on a Ranney Day transforms the bedrooms and living spaces of children
-          with special needs — creating environments where they can thrive. Your purchase
-          makes this possible.
-        </p>
-        <div class="charity-cta__actions">
-          <a href="/charity" class="btn btn--primary">
-            Learn About Our Impact
-          </a>
-          <a href="https://sunshineonaranneyday.com" target="_blank" rel="noopener noreferrer" class="btn btn--outline">
-            Visit the Charity
-          </a>
-        </div>
-        <p class="charity-cta__tagline tagline-script" style="margin-top: var(--space-lg); font-size: clamp(1.2rem, 2.2vw, 1.6rem);">
-          Together, we're building brighter days for children.
+          with special needs. 100% of store profits fund these makeovers.
         </p>
       </div>
-    </div>
-  </section>
-
-  <!-- ═══ VISIT US ═══ -->
-  <section class="visit section">
-    <div class="container">
-      <div class="visit__grid">
-        <div class="visit__info reveal">
-          <span class="label">Come See Us</span>
-          <h2>Visit Our Roswell Showroom</h2>
-          <hr class="divider" />
-          <div class="visit__hours">
-            <p><strong>Tuesday – Thursday:</strong> 10am – 5pm</p>
-            <p><strong>Friday – Saturday:</strong> 10am – 6pm</p>
-            <p><strong>Sunday – Monday:</strong> Closed</p>
-          </div>
-          <p class="visit__address">
-            109A Oak Street, Roswell, GA 30075<br />
-            <a href="tel:6788885140">678.888.5140</a> · <a href="mailto:info@sunnyandranney.com">info@sunnyandranney.com</a>
-          </p>
-          <a href="https://maps.google.com/?q=109A+Oak+Street+Roswell+GA+30075" target="_blank" rel="noopener noreferrer" class="btn btn--outline" style="margin-top: 1rem;">
-            Get Directions
-          </a>
+      <div class="mission-strip__stats">
+        <div class="mission-strip__stat">
+          <span class="mission-strip__number">20,000+</span>
+          <span class="mission-strip__label">Kids Impacted</span>
         </div>
-        <div class="visit__map reveal delay-2">
-          <div class="visit__map-placeholder">
-            <!-- Replace with Google Maps embed or Mapbox -->
-            <div class="visit__map-text">Map Embed</div>
-          </div>
+        <div class="mission-strip__stat">
+          <span class="mission-strip__number">13+</span>
+          <span class="mission-strip__label">Years Giving</span>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ═══ YELLOW TAGLINE BAR ═══ -->
-  <section class="tagline-bar">
-    <div class="container">
-      <h3 class="tagline-bar__title">Visit Sunny & Ranney</h3>
-      <p class="tagline-bar__address">109A Oak St. Roswell, GA 30075 · <a href="https://sunnyandranney.com">sunnyandranney.com</a></p>
-      <p class="tagline-bar__tagline tagline-script">Together, we're building brighter days for children.</p>
+  <!-- ═══ VISIT STRIP ═══ -->
+  <section class="visit-strip section">
+    <div class="container visit-strip__inner">
+      <div class="visit-strip__info">
+        <h3>Visit Our Roswell Showroom</h3>
+        <p>109A Oak Street, Roswell, GA 30075</p>
+        <p>Tue–Thu 10am–5pm &middot; Fri–Sat 10am–6pm</p>
+        <p><a href="tel:6788885140">678.888.5140</a> &middot; <a href="mailto:info@sunnyandranney.com">info@sunnyandranney.com</a></p>
+      </div>
+      <a href="https://maps.google.com/?q=109A+Oak+Street+Roswell+GA+30075" target="_blank" rel="noopener noreferrer" class="btn btn--outline">
+        Get Directions
+      </a>
     </div>
   </section>
 </Base>
 
 <style>
-  /* ─── Hero ───────────────────────────────────────── */
-  .hero {
-    position: relative;
-    min-height: calc(100vh - var(--nav-height));
-    display: flex;
-    align-items: center;
+  /* ─── Hero Banner ──────────────────────── */
+  .hero-banner {
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(75, 149, 180, 0.12) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(255, 212, 0, 0.06) 0%, transparent 40%),
+      var(--color-cyan);
     overflow: hidden;
   }
 
-  .hero__bg {
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(ellipse at 20% 50%, rgba(75, 149, 180, 0.15) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 20%, rgba(255, 212, 0, 0.08) 0%, transparent 40%),
-      var(--color-cyan);
-    z-index: 0;
-  }
-
-  .hero__grain {
-    position: absolute;
-    inset: 0;
-    opacity: 0.15;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.4'/%3E%3C/svg%3E");
-    background-size: 200px;
-  }
-
-  .hero__content {
-    position: relative;
-    z-index: 1;
+  .hero-banner__inner {
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--space-xl);
     align-items: center;
     padding-top: var(--space-xl);
-    padding-bottom: var(--space-2xl);
+    padding-bottom: var(--space-xl);
   }
 
-  @media (min-width: 900px) {
-    .hero__content {
+  @media (min-width: 768px) {
+    .hero-banner__inner {
       grid-template-columns: 1fr 1fr;
       gap: var(--space-2xl);
-      padding-top: 0;
-      padding-bottom: 0;
+      min-height: 420px;
     }
   }
 
-  .hero__title {
-    color: var(--color-gold);
-    margin: 0.75rem 0 1.25rem;
+  .hero-banner__title {
+    color: white;
+    font-size: clamp(2.4rem, 5vw, 4rem);
+    margin: 0 0 1rem;
     line-height: 1.05;
-    font-size: clamp(3.2rem, 6vw, 5.5rem);
   }
 
-  .hero__title-accent {
+  .hero-banner__accent {
     color: var(--color-gold);
     font-style: italic;
     font-weight: 300;
   }
 
-  .hero__subtitle {
-    font-size: clamp(1rem, 1.2vw, 1.15rem);
-    margin-bottom: 0.5rem;
-    color: rgba(255, 255, 255, 0.85);
+  .hero-banner__sub {
+    color: rgba(255,255,255,0.85);
+    font-size: 1rem;
+    margin-bottom: 0;
   }
 
-  .hero__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-top: var(--space-md);
-  }
+  .hero-banner__actions { margin-top: var(--space-md); }
+  .hero-banner__actions .btn--gold:hover { background: white; border-color: white; }
 
-  .hero__actions .btn--primary {
-    background: var(--color-gold);
-    border-color: var(--color-gold);
-    color: var(--color-charcoal);
-  }
-
-  .hero__actions .btn--primary:hover {
-    background: white;
-    border-color: white;
-    color: var(--color-charcoal);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(255, 255, 255, 0.2);
-  }
-
-  .hero__actions .btn--outline {
-    color: white;
-    border-color: rgba(255, 255, 255, 0.5);
-  }
-
-  .hero__actions .btn--outline:hover {
-    background: white;
-    border-color: white;
-    color: var(--color-cyan);
-    transform: translateY(-2px);
-  }
-
-  .hero__image-frame {
-    position: relative;
-  }
-
-  .hero__image-placeholder {
-    aspect-ratio: 4 / 3;
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px dashed rgba(255, 255, 255, 0.3);
+  .hero-banner__image-placeholder {
+    aspect-ratio: 3/2;
+    background: rgba(255,255,255,0.1);
+    border: 2px dashed rgba(255,255,255,0.3);
+    border-radius: 4px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.25rem;
-    border-radius: 4px;
-  }
-
-  .hero__image-text {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     font-family: var(--font-display);
     font-size: 1.3rem;
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(255,255,255,0.4);
+    gap: 0.25rem;
   }
 
-  .hero__image-subtext {
+  .hero-banner__image-hint {
     font-family: var(--font-body);
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.35);
-    margin-top: 0.5rem;
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.3);
   }
 
-  .hero__image-accent {
-    position: absolute;
-    bottom: -16px;
-    right: -16px;
-    width: 60%;
-    height: 60%;
-    border: 2px solid var(--color-gold);
-    z-index: -1;
-    border-radius: 4px;
+  /* ─── Section Title ────────────────────── */
+  .section-title {
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    margin-bottom: var(--space-lg);
   }
 
-  .hero__tagline {
-    position: absolute;
-    bottom: 5rem;
-    left: 50%;
-    transform: translateX(-50%);
-    text-align: center;
-    z-index: 1;
-    white-space: nowrap;
-  }
-
-  @media (max-width: 768px) {
-    .hero__tagline {
-      display: none;
-    }
-  }
-
-  .hero__scroll-indicator {
-    position: absolute;
-    bottom: 1.5rem;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.7rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.5);
-    z-index: 1;
-  }
-
-  .hero__scroll-line {
-    width: 1px;
-    height: 40px;
-    background: var(--color-gold);
-    animation: scrollPulse 2s ease-in-out infinite;
-  }
-
-  @keyframes scrollPulse {
-    0%, 100% { transform: scaleY(1); opacity: 1; }
-    50% { transform: scaleY(0.5); opacity: 0.4; }
-  }
-
-  /* ─── Impact ─────────────────────────────────────── */
-  .impact {
-    background: var(--color-warm-white);
-    border-top: 1px solid var(--color-cream-dark);
-    border-bottom: 1px solid var(--color-cream-dark);
-    padding: var(--space-lg) 0;
-  }
-
-  .impact__grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: var(--space-lg);
-  }
-
-  .impact__stat {
-    text-align: center;
-  }
-
-  .impact__number {
-    display: block;
-    font-family: var(--font-display);
-    font-size: 2.5rem;
-    font-weight: 600;
-    color: var(--color-charcoal);
-    line-height: 1;
-  }
-
-  .impact__label {
-    display: block;
-    font-size: 0.75rem;
-    font-weight: 500;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--color-stone);
-    margin-top: 0.4rem;
-  }
-
-  .impact__divider {
-    width: 1px;
-    height: 40px;
-    background: var(--color-cream-dark);
-    display: none;
-  }
-
-  @media (min-width: 768px) {
-    .impact__divider {
-      display: block;
-    }
-  }
-
-  /* ─── Story Teaser ───────────────────────────────── */
-  .story__grid {
+  /* ─── Category Tiles ───────────────────── */
+  .cat-tiles__grid {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-xl);
-    align-items: center;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
   }
 
   @media (min-width: 768px) {
-    .story__grid {
-      grid-template-columns: 1fr 1fr;
-      gap: var(--space-2xl);
+    .cat-tiles__grid {
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1rem;
     }
   }
 
-  .story__content h2 {
-    margin: 0.75rem 0;
-  }
-
-  .story__content p {
-    margin-top: var(--space-sm);
-  }
-
-  .story__images {
+  .cat-tile {
     position: relative;
-    display: grid;
-    grid-template-columns: 3fr 2fr;
-    gap: var(--space-sm);
-    min-height: 400px;
-  }
-
-  .story__image {
-    overflow: hidden;
-  }
-
-  .story__image-placeholder {
-    width: 100%;
-    height: 100%;
-    min-height: 300px;
-    background: var(--color-cream-dark);
-    border: 2px dashed var(--color-stone);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: var(--font-display);
-    font-size: 1.1rem;
-    color: var(--color-stone);
-  }
-
-  .story__image-placeholder--gold {
-    background: var(--color-gold-soft);
-    border-color: var(--color-gold);
-  }
-
-  /* ─── Featured ───────────────────────────────────── */
-  .featured {
-    background: var(--color-warm-white);
-  }
-
-  .featured__header {
-    text-align: center;
-    margin-bottom: var(--space-xl);
-  }
-
-  .featured__header h2 {
-    margin: 0.5rem 0 0.75rem;
-  }
-
-  .featured__header p {
-    margin: 0 auto;
-    max-width: 50ch;
-  }
-
-  .product-card__image-ph {
-    width: 100%;
-    height: 100%;
-    background: var(--color-cream-dark);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: var(--font-display);
-    font-size: 1.1rem;
-    color: var(--color-stone);
-    aspect-ratio: 4/5;
-  }
-
-  /* ─── Categories ─────────────────────────────────── */
-  .categories__grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-sm);
-  }
-
-  @media (min-width: 768px) {
-    .categories__grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    .categories__card--wide {
-      grid-column: span 3;
-    }
-  }
-
-  .categories__card {
-    position: relative;
-    aspect-ratio: 3 / 2;
+    aspect-ratio: 1;
     overflow: hidden;
     display: flex;
     align-items: flex-end;
-    cursor: pointer;
+    border-radius: 4px;
   }
 
-  @media (min-width: 768px) {
-    .categories__card--wide {
-      aspect-ratio: 4 / 1;
-    }
-  }
-
-  .categories__card-bg {
+  .cat-tile__bg {
     position: absolute;
     inset: 0;
     background: var(--color-charcoal);
     transition: transform 0.6s var(--ease-out);
   }
 
-  .categories__card-bg--gold {
-    background: linear-gradient(135deg, var(--color-gold) 0%, var(--color-terracotta) 100%);
-  }
+  .cat-tile__bg--sage { background: var(--color-sage); }
+  .cat-tile__bg--blush { background: var(--color-blush); }
+  .cat-tile__bg--gold { background: linear-gradient(135deg, var(--color-gold), #e6bf00); }
+  .cat-tile__bg--terracotta { background: var(--color-terracotta); }
 
-  .categories__card:hover .categories__card-bg {
-    transform: scale(1.05);
-  }
+  .cat-tile:hover .cat-tile__bg { transform: scale(1.08); }
 
-  .categories__card-content {
+  .cat-tile__content {
     position: relative;
     z-index: 1;
-    padding: var(--space-md);
+    padding: 1rem;
     color: white;
   }
 
-  .categories__card-content h3 {
-    font-size: 1.8rem;
-    margin-bottom: 0.25rem;
+  .cat-tile__content h3 {
+    font-size: 1.2rem;
+    margin-bottom: 0.15rem;
+    line-height: 1.2;
   }
 
-  .categories__card-link {
-    font-size: 0.8rem;
-    font-weight: 500;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    opacity: 0.7;
-    transition: opacity 0.3s;
+  .cat-tile__content span {
+    font-size: 0.72rem;
+    opacity: 0.75;
   }
 
-  .categories__card:hover .categories__card-link {
-    opacity: 1;
+  .cat-tile__bg--gold + .cat-tile__content { color: var(--color-charcoal); }
+  .cat-tile__bg--gold + .cat-tile__content span { opacity: 0.6; }
+
+  /* ─── Home Products Header ─────────────── */
+  .home-products { background: var(--color-warm-white); }
+
+  .home-products__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
   }
 
-  /* ─── Charity CTA ────────────────────────────────── */
-  .charity-cta {
-    background:
-      linear-gradient(160deg, var(--color-cyan) 0%, #3a7d9a 100%);
-    position: relative;
+  .home-products__header .section-title { margin-bottom: 0; }
+
+  .home-products__see-all {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-gold);
+    letter-spacing: 0.04em;
+    transition: color 0.2s;
+    flex-shrink: 0;
+  }
+
+  .home-products__see-all:hover { color: var(--color-charcoal); }
+
+  .home-products .product-grid {
+    margin-top: var(--space-lg);
+  }
+
+  /* ─── Image hover swap (homepage cards) ── */
+  .product-card__img-primary,
+  .product-card__img-hover {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.6s var(--ease-out), transform 0.8s var(--ease-out);
+  }
+
+  .product-card__img-hover { opacity: 0; }
+  .product-card:hover .product-card__img-primary { opacity: 0; }
+  .product-card:hover .product-card__img-hover { opacity: 1; transform: scale(1.03); }
+  .product-card:hover .product-card__img-primary:only-child { opacity: 1; transform: scale(1.05); }
+
+  /* ─── Horizontal Scroll (deals) ────────── */
+  .home-scroll {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.5rem;
+    margin-top: var(--space-lg);
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-cream-dark) transparent;
+  }
+
+  .home-scroll__card {
+    flex-shrink: 0;
+    width: 220px;
+    scroll-snap-align: start;
+    background: var(--color-cream);
+    transition: transform 0.3s var(--ease-out), box-shadow 0.3s;
     overflow: hidden;
   }
 
-  .charity-cta::before {
-    content: '';
-    position: absolute;
-    width: 500px;
-    height: 500px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(255, 212, 0, 0.08) 0%, transparent 70%);
-    top: -150px;
-    right: -100px;
+  .home-scroll__card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(44,44,44,0.08);
   }
 
-  .charity-cta__logos {
+  .home-scroll__image {
+    aspect-ratio: 4/5;
+    overflow: hidden;
+    background: var(--color-cream-dark);
+    position: relative;
+  }
+
+  .home-scroll__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s var(--ease-out);
+  }
+
+  .home-scroll__card:hover .home-scroll__image img { transform: scale(1.05); }
+
+  .home-scroll__info {
+    padding: 0.75rem;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1.5rem;
-    margin-bottom: var(--space-lg);
+    flex-direction: column;
+    gap: 0.25rem;
   }
 
-  .charity-cta__logo {
-    width: 80px;
-    height: 80px;
-    object-fit: contain;
-    border-radius: 50%;
+  .home-scroll__title {
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--color-charcoal);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .home-scroll__pricing { display: flex; align-items: baseline; gap: 0.5rem; }
+  .home-scroll__price { font-weight: 600; font-size: 0.9rem; color: var(--color-charcoal); }
+  .home-scroll__compare { font-size: 0.8rem; color: var(--color-stone); text-decoration: line-through; }
+
+  /* ─── Value Props Bar ──────────────────── */
+  .value-bar {
+    background: var(--color-cream);
+    border-top: 1px solid var(--color-cream-dark);
+    border-bottom: 1px solid var(--color-cream-dark);
+    padding: var(--space-lg) 0;
+  }
+
+  .value-bar__inner {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    text-align: center;
   }
 
   @media (min-width: 768px) {
-    .charity-cta__logo {
-      width: 100px;
-      height: 100px;
-    }
+    .value-bar__inner { grid-template-columns: repeat(3, 1fr); }
   }
 
-  .charity-cta__supports {
-    font-family: var(--font-body);
-    font-size: 0.85rem;
-    font-weight: 500;
-    letter-spacing: 0.05em;
-    color: rgba(255, 255, 255, 0.7);
+  .value-bar__item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
   }
 
-  .charity-cta__inner {
-    text-align: center;
-    color: white;
-    max-width: 700px;
-    margin: 0 auto;
+  .value-bar__item svg { color: var(--color-gold); flex-shrink: 0; }
+  .value-bar__item strong { display: block; font-size: 0.85rem; color: var(--color-charcoal); }
+  .value-bar__item span { font-size: 0.78rem; color: var(--color-stone); }
+  .value-bar__item div { text-align: left; }
+
+  /* ─── Mission Strip ────────────────────── */
+  .mission-strip {
+    background: linear-gradient(160deg, var(--color-cyan) 0%, #3a7d9a 100%);
+    padding: var(--space-xl) 0;
   }
 
-  .charity-cta__inner h2 {
-    margin: 0 0 1.25rem;
+  .mission-strip__inner {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+    align-items: center;
+  }
+
+  @media (min-width: 768px) {
+    .mission-strip__inner { grid-template-columns: 1.5fr 1fr; }
+  }
+
+  .mission-strip__text h2 {
     color: var(--color-gold);
-    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-size: clamp(1.5rem, 3vw, 2.2rem);
+    margin-bottom: 0.75rem;
   }
 
-  .charity-cta__inner p {
-    color: rgba(255, 255, 255, 0.8);
-    margin: 0 auto 2rem;
+  .mission-strip__text p {
+    color: rgba(255,255,255,0.8);
     max-width: 50ch;
   }
 
-  .charity-cta__actions {
+  .mission-strip__stats {
+    display: flex;
+    gap: var(--space-xl);
+    justify-content: center;
+  }
+
+  .mission-strip__stat { text-align: center; }
+  .mission-strip__number {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: white;
+    line-height: 1;
+  }
+  .mission-strip__label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.6);
+    margin-top: 0.3rem;
+  }
+
+  /* ─── Visit Strip ──────────────────────── */
+  .visit-strip {
+    background: var(--color-gold);
+  }
+
+  .visit-strip__inner {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
-    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
   }
 
-  .charity-cta__actions .btn--primary {
-    background: var(--color-gold);
-    border-color: var(--color-gold);
+  .visit-strip__info h3 {
+    font-size: 1.3rem;
+    margin-bottom: 0.3rem;
     color: var(--color-charcoal);
   }
 
-  .charity-cta__actions .btn--primary:hover {
-    background: white;
-    border-color: white;
+  .visit-strip__info p {
+    font-size: 0.88rem;
     color: var(--color-charcoal);
-    transform: translateY(-2px);
-  }
-
-  .charity-cta__actions .btn--outline {
-    color: white;
-    border-color: rgba(255, 255, 255, 0.5);
-  }
-
-  .charity-cta__actions .btn--outline:hover {
-    background: white;
-    border-color: white;
-    color: var(--color-cyan);
-    transform: translateY(-2px);
-  }
-
-  .charity-cta__tagline {
+    margin: 0.15rem 0;
     max-width: none;
   }
 
-  /* ─── Visit ──────────────────────────────────────── */
-  .visit__grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-xl);
-    align-items: center;
+  .visit-strip__info a { color: var(--color-charcoal); font-weight: 600; }
+
+  .visit-strip .btn--outline {
+    border-color: var(--color-charcoal);
+    color: var(--color-charcoal);
+    flex-shrink: 0;
   }
 
-  @media (min-width: 768px) {
-    .visit__grid {
-      grid-template-columns: 1fr 1fr;
-    }
+  .visit-strip .btn--outline:hover {
+    background: var(--color-charcoal);
+    color: var(--color-gold);
   }
 
-  .visit__info h2 {
-    margin: 0.75rem 0;
-  }
-
-  .visit__hours {
-    margin: var(--space-md) 0;
-  }
-
-  .visit__hours p {
-    margin: 0.3rem 0;
-    font-size: 0.95rem;
-  }
-
-  .visit__address {
-    color: var(--color-stone);
-    font-size: 0.95rem;
-  }
-
-  .visit__map-placeholder {
+  /* ─── Product card add to cart (homepage) ── */
+  .product-card__add-btn {
+    margin-top: 0.75rem;
     width: 100%;
-    aspect-ratio: 4 / 3;
-    background: var(--color-cream-dark);
-    border: 2px dashed var(--color-stone);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .visit__map-text {
-    font-family: var(--font-display);
-    color: var(--color-stone);
-    font-size: 1.2rem;
-  }
-
-  /* ─── Yellow Tagline Bar ────────────────────────── */
-  .tagline-bar {
-    background: var(--color-gold);
-    padding: var(--space-xl) 0;
-    text-align: center;
-  }
-
-  .tagline-bar__title {
-    font-family: var(--font-display);
-    font-size: clamp(1.4rem, 2.5vw, 2rem);
-    color: var(--color-cyan);
-    margin-bottom: 0.25rem;
-  }
-
-  .tagline-bar__address {
-    font-size: 0.9rem;
+    padding: 0.6rem 1rem;
+    background: var(--color-charcoal);
+    color: var(--color-cream);
+    font-family: var(--font-body);
+    font-size: 0.75rem;
     font-weight: 600;
-    color: var(--color-charcoal);
-    margin-bottom: var(--space-sm);
-    max-width: none;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s;
   }
 
-  .tagline-bar__address a {
+  .product-card__add-btn:hover {
+    background: var(--color-gold);
     color: var(--color-charcoal);
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
-
-  .tagline-bar__tagline {
-    font-size: clamp(1.2rem, 2.5vw, 1.8rem) !important;
-    color: var(--color-charcoal) !important;
-    max-width: none;
-    margin-top: var(--space-sm);
   }
 </style>
+
+<script>
+  // Add to cart from homepage product cards
+  const homeGrid = document.getElementById('home-grid');
+
+  homeGrid?.addEventListener('click', (e) => {
+    const btn = (e.target as Element)?.closest('.product-card__add-btn');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const { variantId, title, price, image, handle, variantTitle } = (btn as HTMLElement).dataset;
+    if (!variantId || !title || !price) return;
+
+    window.addToCart?.({
+      variantId,
+      title,
+      price: parseFloat(price),
+      image: image || '',
+      handle: handle || '',
+      variantTitle: variantTitle || '',
+    });
+
+    const orig = btn.textContent;
+    btn.textContent = '✓ Added';
+    (btn as HTMLButtonElement).disabled = true;
+    setTimeout(() => {
+      btn.textContent = orig;
+      (btn as HTMLButtonElement).disabled = false;
+    }, 1500);
+  });
+</script>

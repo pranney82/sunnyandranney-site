@@ -199,6 +199,56 @@ export async function getCollections(first = 12) {
   return data.collections.edges.map((e) => e.node);
 }
 
+// ─── Product Recommendations ────────────────────────────────────────
+
+export async function getProductRecommendations(productId: string, first = 8) {
+  const query = `
+    ${PRODUCT_FRAGMENT}
+    query Recommendations($productId: ID!) {
+      productRecommendations(productId: $productId) {
+        ...ProductFields
+      }
+    }
+  `;
+
+  try {
+    const data = await shopifyFetch<{
+      productRecommendations: Product[];
+    }>(query, { productId });
+    return (data.productRecommendations || []).slice(0, first);
+  } catch {
+    return [];
+  }
+}
+
+export async function getProductsByType(productType: string, first = 8, excludeHandle?: string) {
+  const query = `
+    ${PRODUCT_FRAGMENT}
+    query ProductsByType($first: Int!, $query: String!) {
+      products(first: $first, query: $query, sortKey: BEST_SELLING) {
+        edges {
+          node {
+            ...ProductFields
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    const data = await shopifyFetch<{
+      products: { edges: Array<{ node: Product }> };
+    }>(query, { first: first + 1, query: `product_type:${productType}` });
+
+    return data.products.edges
+      .map(e => e.node)
+      .filter(p => p.handle !== excludeHandle)
+      .slice(0, first);
+  } catch {
+    return [];
+  }
+}
+
 // ─── Cart / Checkout ─────────────────────────────────────────────
 
 export async function createCart(lines: Array<{ merchandiseId: string; quantity: number }>) {
@@ -289,6 +339,35 @@ export async function addToCart(cartId: string, lines: Array<{ merchandiseId: st
   }>(query, { cartId, lines });
 
   return data.cartLinesAdd;
+}
+
+// ─── Image Optimization (Shopify CDN) ───────────────────────────
+
+/**
+ * Resize a Shopify CDN image URL.
+ * Shopify CDN supports on-the-fly resizing via URL params:
+ *   ?width=400&height=500&crop=center
+ * This avoids downloading full-res images for thumbnails/cards.
+ */
+export function shopifyImageUrl(url: string, width?: number, height?: number, crop = 'center'): string {
+  if (!url || !url.includes('cdn.shopify.com')) return url;
+
+  const params = new URLSearchParams();
+  if (width) params.set('width', String(width));
+  if (height) params.set('height', String(height));
+  if (crop && (width || height)) params.set('crop', crop);
+
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}${params.toString()}`;
+}
+
+/**
+ * Generate srcset for responsive Shopify images.
+ * Returns a srcset string for use in <img srcset="...">.
+ */
+export function shopifyImageSrcset(url: string, widths: number[] = [300, 600, 900, 1200]): string {
+  if (!url || !url.includes('cdn.shopify.com')) return '';
+  return widths.map(w => `${shopifyImageUrl(url, w)} ${w}w`).join(', ');
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────

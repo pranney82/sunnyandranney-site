@@ -1,63 +1,81 @@
 ---
 const currentPath = Astro.url.pathname;
 
-const navLinks = [
-  { href: '/about', label: 'Our Story' },
-  { href: '/shop', label: 'Shop' },
-  { href: '/charity', label: 'Our Charity' },
-  { href: '/branding', label: 'Branding' },
+const categories = [
+  { href: '/shop?category=furniture', label: 'Furniture' },
+  { href: '/shop?category=decor', label: 'Decor' },
+  { href: '/shop?category=lighting', label: 'Lighting' },
+  { href: '/shop?category=gifts', label: 'Gifts' },
+  { href: '/shop?category=kitchenware', label: 'Kitchenware' },
 ];
 ---
 
 <header class="nav" id="main-nav">
-  <div class="nav__inner container">
-    <a href="/" class="nav__logo" aria-label="Sunny & Ranney Home">
-      <img src="/images/logos/logo-light-bg.png" alt="Sunny & Ranney" class="nav__logo-img" />
-    </a>
-
-    <nav class="nav__links" aria-label="Main navigation">
-      {navLinks.map((link) => (
-        <a
-          href={link.href}
-          class:list={['nav__link', { 'nav__link--active': currentPath.startsWith(link.href) }]}
-        >
-          {link.label}
-        </a>
-      ))}
-    </nav>
-
-    <div class="nav__actions">
-      <!-- Search toggle -->
-      <button class="nav__search-btn" id="search-toggle" aria-label="Search products">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-      </button>
-
-      <!-- Cart button (opens drawer) -->
-      <button class="nav__cart" aria-label="Shopping cart" id="cart-trigger" onclick="window.openCart?.()">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
-          <line x1="3" y1="6" x2="21" y2="6"/>
-          <path d="M16 10a4 4 0 01-8 0"/>
-        </svg>
-        <span class="nav__cart-count" id="cart-count" style="display:none;">0</span>
-      </button>
-
-      <button class="nav__menu-btn" id="menu-toggle" aria-label="Toggle menu" aria-expanded="false">
-        <span class="nav__menu-line"></span>
-        <span class="nav__menu-line"></span>
-        <span class="nav__menu-line"></span>
-      </button>
+  <!-- Top banner -->
+  <div class="nav__banner">
+    <div class="container nav__banner-inner">
+      <span>☀️ 100% of profits support <strong>Sunshine on a Ranney Day</strong> — home makeovers for kids with special needs</span>
     </div>
   </div>
 
-  <!-- Search bar (slides down) -->
-  <div class="nav__search" id="nav-search" aria-hidden="true">
-    <div class="container nav__search-inner">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="search" id="nav-search-input" placeholder="Search furniture, decor, gifts..." autocomplete="off" />
-      <button class="nav__search-close" id="search-close" aria-label="Close search">
+  <!-- Main nav row -->
+  <div class="nav__main">
+    <div class="container nav__main-inner">
+      <a href="/" class="nav__logo" aria-label="Sunny & Ranney Home">
+        <img src="/images/logos/logo-light-bg.png" alt="Sunny & Ranney" class="nav__logo-img" />
+      </a>
+
+      <!-- Search bar — prominent, center -->
+      <div class="nav__search-bar" id="nav-search-bar">
+        <svg class="nav__search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="search" id="nav-search-input" placeholder="Search furniture, decor, lighting, gifts..." autocomplete="off" />
+        <button class="nav__search-submit" id="nav-search-submit" aria-label="Search">
+          Search
+        </button>
+      </div>
+
+      <div class="nav__actions">
+        <!-- Mobile search toggle -->
+        <button class="nav__icon-btn nav__mobile-search-btn" id="mobile-search-toggle" aria-label="Search">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
+
+        <!-- Cart -->
+        <button class="nav__icon-btn nav__cart" aria-label="Shopping cart" id="cart-trigger" onclick="window.openCart?.()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <path d="M16 10a4 4 0 01-8 0"/>
+          </svg>
+          <span class="nav__cart-count" id="cart-count" style="display:none;">0</span>
+        </button>
+
+        <button class="nav__menu-btn" id="menu-toggle" aria-label="Toggle menu" aria-expanded="false">
+          <span class="nav__menu-line"></span>
+          <span class="nav__menu-line"></span>
+          <span class="nav__menu-line"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category bar -->
+  <div class="nav__categories">
+    <div class="container nav__categories-inner">
+      <a href="/shop" class:list={['nav__cat-link', { 'nav__cat-link--active': currentPath === '/shop' || currentPath === '/shop/' }]}>
+        All Products
+      </a>
+      {categories.map((cat) => (
+        <a href={cat.href} class="nav__cat-link">{cat.label}</a>
+      ))}
+    </div>
+  </div>
+
+  <!-- Mobile search (slides down) -->
+  <div class="nav__mobile-search" id="mobile-search" aria-hidden="true">
+    <div class="container nav__mobile-search-inner">
+      <input type="search" id="mobile-search-input" placeholder="Search products..." autocomplete="off" />
+      <button class="nav__mobile-search-close" id="mobile-search-close" aria-label="Close search">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
@@ -66,8 +84,9 @@ const navLinks = [
   <!-- Mobile menu -->
   <div class="nav__mobile" id="mobile-menu" aria-hidden="true">
     <div class="nav__mobile-inner">
-      {navLinks.map((link) => (
-        <a href={link.href} class="nav__mobile-link">{link.label}</a>
+      <a href="/shop" class="nav__mobile-link">All Products</a>
+      {categories.map((cat) => (
+        <a href={cat.href} class="nav__mobile-link">{cat.label}</a>
       ))}
       <hr class="divider" style="margin: 1rem 0;" />
       <p class="nav__mobile-tagline">100% of profits support kids with special needs</p>
@@ -76,6 +95,19 @@ const navLinks = [
 </header>
 
 <style>
+  /* ─── Banner ───────────────────────────── */
+  .nav__banner {
+    background: var(--color-charcoal);
+    color: var(--color-cream);
+    font-size: 0.72rem;
+    text-align: center;
+    padding: 0.4rem 0;
+    letter-spacing: 0.02em;
+  }
+
+  .nav__banner strong { color: var(--color-gold); }
+
+  /* ─── Main Nav ─────────────────────────── */
   .nav {
     position: fixed;
     top: 0;
@@ -83,99 +115,114 @@ const navLinks = [
     right: 0;
     z-index: 100;
     background: var(--color-cream);
-    border-bottom: 1px solid transparent;
-    transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    transition: box-shadow 0.3s ease;
   }
 
   .nav--scrolled {
-    background: rgba(250, 247, 242, 0.95);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom-color: var(--color-cream-dark);
-    box-shadow: 0 2px 20px rgba(44, 44, 44, 0.04);
+    box-shadow: 0 2px 20px rgba(44, 44, 44, 0.06);
   }
 
-  .nav__inner {
+  .nav__main {
+    border-bottom: 1px solid var(--color-cream-dark);
+  }
+
+  .nav__main-inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: var(--nav-height);
+    height: 60px;
+    gap: 1.5rem;
   }
 
   .nav__logo-img {
-    height: 40px;
+    height: 36px;
     width: auto;
     object-fit: contain;
+    flex-shrink: 0;
   }
 
-  .nav__logo-text {
-    font-family: var(--font-display);
-    font-size: 1.6rem;
-    font-weight: 500;
-    letter-spacing: 0.02em;
-    color: var(--color-charcoal);
-  }
-
-  .nav__logo-text em {
-    color: var(--color-gold);
-    font-style: italic;
-  }
-
-  .nav__links {
+  /* ─── Search Bar (desktop) ─────────────── */
+  .nav__search-bar {
+    flex: 1;
+    max-width: 560px;
     display: none;
     align-items: center;
-    gap: 2.5rem;
+    background: var(--color-warm-white);
+    border: 1.5px solid var(--color-cream-dark);
+    border-radius: 6px;
+    padding: 0 0 0 0.75rem;
+    transition: border-color 0.2s;
+    overflow: hidden;
+  }
+
+  .nav__search-bar:focus-within {
+    border-color: var(--color-gold);
   }
 
   @media (min-width: 768px) {
-    .nav__links {
-      display: flex;
-    }
+    .nav__search-bar { display: flex; }
   }
 
-  .nav__link {
+  .nav__search-icon {
+    color: var(--color-stone);
+    flex-shrink: 0;
+  }
+
+  .nav__search-bar input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
     font-family: var(--font-body);
-    font-size: 0.8rem;
-    font-weight: 500;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    font-size: 0.88rem;
     color: var(--color-charcoal);
-    position: relative;
-    padding: 0.25rem 0;
+    padding: 0.55rem 0.6rem;
   }
 
-  .nav__link::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    width: 0;
-    height: 1.5px;
+  .nav__search-bar input::placeholder { color: var(--color-stone); }
+
+  .nav__search-submit {
+    padding: 0.55rem 1.25rem;
     background: var(--color-gold);
-    transition: width 0.3s var(--ease-out);
+    color: var(--color-charcoal);
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
   }
 
-  .nav__link:hover::after,
-  .nav__link--active::after {
-    width: 100%;
-  }
+  .nav__search-submit:hover { background: var(--color-gold-light); }
 
+  /* ─── Actions ──────────────────────────── */
   .nav__actions {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.5rem;
+    flex-shrink: 0;
   }
 
-  .nav__cart {
-    position: relative;
+  .nav__icon-btn {
     padding: 0.5rem;
     color: var(--color-charcoal);
     transition: color 0.3s;
+    position: relative;
+  }
+  .nav__icon-btn:hover { color: var(--color-gold); }
+
+  .nav__mobile-search-btn {
+    display: flex;
+  }
+  @media (min-width: 768px) {
+    .nav__mobile-search-btn { display: none; }
   }
 
-  .nav__cart:hover {
-    color: var(--color-gold);
-  }
+  .nav__cart { position: relative; padding: 0.5rem; color: var(--color-charcoal); transition: color 0.3s; }
+  .nav__cart:hover { color: var(--color-gold); }
 
   .nav__cart-count {
     position: absolute;
@@ -201,9 +248,7 @@ const navLinks = [
   }
 
   @media (min-width: 768px) {
-    .nav__menu-btn {
-      display: none;
-    }
+    .nav__menu-btn { display: none; }
   }
 
   .nav__menu-line {
@@ -217,16 +262,105 @@ const navLinks = [
   .nav__menu-btn[aria-expanded="true"] .nav__menu-line:nth-child(1) {
     transform: rotate(45deg) translate(4px, 5px);
   }
-  .nav__menu-btn[aria-expanded="true"] .nav__menu-line:nth-child(2) {
-    opacity: 0;
-  }
+  .nav__menu-btn[aria-expanded="true"] .nav__menu-line:nth-child(2) { opacity: 0; }
   .nav__menu-btn[aria-expanded="true"] .nav__menu-line:nth-child(3) {
     transform: rotate(-45deg) translate(4px, -5px);
   }
 
+  /* ─── Category Bar ─────────────────────── */
+  .nav__categories {
+    border-bottom: 1px solid var(--color-cream-dark);
+    display: none;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .nav__categories::-webkit-scrollbar { display: none; }
+
+  @media (min-width: 768px) {
+    .nav__categories { display: block; }
+  }
+
+  .nav__categories-inner {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    white-space: nowrap;
+  }
+
+  .nav__cat-link {
+    padding: 0.6rem 1.25rem;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-slate);
+    transition: color 0.2s, background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .nav__cat-link:hover {
+    color: var(--color-charcoal);
+    background: var(--color-cream-dark);
+  }
+
+  .nav__cat-link--active {
+    color: var(--color-charcoal);
+    border-bottom: 2px solid var(--color-gold);
+  }
+
+  /* ─── Mobile Search ────────────────────── */
+  .nav__mobile-search {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--color-cream);
+    border-bottom: 1px solid var(--color-cream-dark);
+    padding: 0.75rem 0;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: all 0.3s var(--ease-out);
+    z-index: 98;
+  }
+
+  .nav__mobile-search[aria-hidden="false"] {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .nav__mobile-search-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .nav__mobile-search-inner input {
+    flex: 1;
+    background: var(--color-warm-white);
+    border: 1.5px solid var(--color-cream-dark);
+    border-radius: 6px;
+    padding: 0.6rem 0.75rem;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    color: var(--color-charcoal);
+    outline: none;
+  }
+
+  .nav__mobile-search-inner input:focus { border-color: var(--color-gold); }
+  .nav__mobile-search-inner input::placeholder { color: var(--color-stone); }
+
+  .nav__mobile-search-close {
+    padding: 0.5rem;
+    color: var(--color-stone);
+  }
+
+  /* ─── Mobile Menu ──────────────────────── */
   .nav__mobile {
     position: fixed;
-    top: var(--nav-height);
+    top: calc(32px + 60px);
     left: 0;
     right: 0;
     bottom: 0;
@@ -251,96 +385,32 @@ const navLinks = [
 
   .nav__mobile-link {
     font-family: var(--font-display);
-    font-size: 2rem;
+    font-size: 1.8rem;
     font-weight: 400;
     color: var(--color-charcoal);
     transition: color 0.3s;
   }
 
-  .nav__mobile-link:hover {
-    color: var(--color-gold);
-  }
+  .nav__mobile-link:hover { color: var(--color-gold); }
 
   .nav__mobile-tagline {
     font-size: 0.85rem;
     color: var(--color-stone);
     max-width: 30ch;
   }
-
-  /* ─── Search ─────────────────────────── */
-  .nav__search-btn {
-    padding: 0.5rem;
-    color: var(--color-charcoal);
-    transition: color 0.3s;
-  }
-  .nav__search-btn:hover { color: var(--color-gold); }
-
-  .nav__search {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: rgba(250, 247, 242, 0.98);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--color-cream-dark);
-    padding: 0.75rem 0;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-8px);
-    transition: all 0.3s var(--ease-out);
-    z-index: 98;
-  }
-
-  .nav__search[aria-hidden="false"] {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-  }
-
-  .nav__search-inner {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    color: var(--color-stone);
-  }
-
-  .nav__search-inner input {
-    flex: 1;
-    background: none;
-    border: none;
-    outline: none;
-    font-family: var(--font-body);
-    font-size: 1rem;
-    color: var(--color-charcoal);
-    padding: 0.5rem 0;
-  }
-
-  .nav__search-inner input::placeholder {
-    color: var(--color-stone);
-  }
-
-  .nav__search-close {
-    padding: 0.5rem;
-    color: var(--color-stone);
-    transition: color 0.2s;
-  }
-  .nav__search-close:hover { color: var(--color-charcoal); }
 </style>
 
 <script>
   // Scroll behavior
   const nav = document.getElementById('main-nav');
-  let lastScroll = 0;
 
   window.addEventListener('scroll', () => {
-    const currentScroll = window.scrollY;
-    if (currentScroll > 20) {
+    if (window.scrollY > 20) {
       nav?.classList.add('nav--scrolled');
     } else {
       nav?.classList.remove('nav--scrolled');
     }
-    lastScroll = currentScroll;
-  });
+  }, { passive: true });
 
   // Mobile menu toggle
   const menuToggle = document.getElementById('menu-toggle');
@@ -353,32 +423,44 @@ const navLinks = [
     document.body.style.overflow = isOpen ? '' : 'hidden';
   });
 
-  // Search toggle
-  const searchToggle = document.getElementById('search-toggle');
-  const navSearch = document.getElementById('nav-search');
-  const searchInput = document.getElementById('nav-search-input');
-  const searchClose = document.getElementById('search-close');
+  // Desktop search
+  const searchInput = document.getElementById('nav-search-input') as HTMLInputElement;
+  const searchSubmit = document.getElementById('nav-search-submit');
 
-  searchToggle?.addEventListener('click', () => {
-    navSearch?.setAttribute('aria-hidden', 'false');
-    searchInput?.focus();
-  });
-
-  searchClose?.addEventListener('click', () => {
-    navSearch?.setAttribute('aria-hidden', 'true');
-  });
-
-  // Search submit — redirect to /shop with query
-  searchInput?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && searchInput.value.trim()) {
-      window.location.href = `/shop?q=${encodeURIComponent(searchInput.value.trim())}`;
+  function doSearch(input: HTMLInputElement) {
+    const q = input.value.trim();
+    if (q) {
+      window.location.href = `/shop?q=${encodeURIComponent(q)}`;
     }
+  }
+
+  searchInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') doSearch(searchInput);
+  });
+  searchSubmit?.addEventListener('click', () => { if (searchInput) doSearch(searchInput); });
+
+  // Mobile search
+  const mobileSearchToggle = document.getElementById('mobile-search-toggle');
+  const mobileSearch = document.getElementById('mobile-search');
+  const mobileSearchInput = document.getElementById('mobile-search-input') as HTMLInputElement;
+  const mobileSearchClose = document.getElementById('mobile-search-close');
+
+  mobileSearchToggle?.addEventListener('click', () => {
+    mobileSearch?.setAttribute('aria-hidden', 'false');
+    mobileSearchInput?.focus();
   });
 
-  // Close search on Escape
+  mobileSearchClose?.addEventListener('click', () => {
+    mobileSearch?.setAttribute('aria-hidden', 'true');
+  });
+
+  mobileSearchInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') doSearch(mobileSearchInput);
+  });
+
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      navSearch?.setAttribute('aria-hidden', 'true');
+      mobileSearch?.setAttribute('aria-hidden', 'true');
     }
   });
 </script>
