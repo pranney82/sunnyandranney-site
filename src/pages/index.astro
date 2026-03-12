@@ -10,15 +10,16 @@ import Base from '@/layouts/Base.astro';
     </div>
     <div class="hero__content container">
       <div class="hero__text">
-        <img src="/images/logos/gracie.png" alt="Gracie the Pig" class="hero__mascot animate-fade-up" style="width: 56px; margin-bottom: 1rem; opacity: 0.85;" />
-        <span class="label animate-fade-up">Roswell, Georgia</span>
+        <span class="label animate-fade-up" style="color: rgba(255,255,255,0.7);">Roswell, Georgia · 100% of Profits to Charity</span>
         <h1 class="hero__title animate-fade-up delay-1">
-          Designer Furniture<br />
-          <span class="hero__title-accent">With Purpose</span>
+          Shop with<br />
+          <span class="hero__title-accent">a Purpose</span>
         </h1>
         <p class="hero__subtitle animate-fade-up delay-2">
-          Every piece you bring home transforms the life of a child with special needs.
-          Curated furniture, decor & gifts — where style meets heart.
+          Looking for the perfect gift or a statement piece for your home?
+          Every dollar you spend at Sunny & Ranney goes to
+          <strong style="color: white;">Sunshine on a Ranney Day</strong>,
+          renovating homes for children with special needs.
         </p>
         <div class="hero__actions animate-fade-up delay-3">
           <a href="/shop" class="btn btn--primary">Shop the Collection</a>
@@ -28,7 +29,7 @@ import Base from '@/layouts/Base.astro';
       <div class="hero__visual animate-fade-up delay-2">
         <div class="hero__image-frame">
           <div class="hero__image-placeholder">
-            <!-- Replace with your hero image -->
+            <!-- Replace with your storefront or showroom hero photo -->
             <div class="hero__image-text">
               <span>Your Best</span>
               <span>Showroom Photo</span>
@@ -38,6 +39,9 @@ import Base from '@/layouts/Base.astro';
           <div class="hero__image-accent"></div>
         </div>
       </div>
+    </div>
+    <div class="hero__tagline animate-fade-in delay-4">
+      <span class="tagline-script" style="font-size: clamp(1.1rem, 2vw, 1.5rem); color: var(--color-gold-light);">Together, we're building brighter days for children.</span>
     </div>
     <div class="hero__scroll-indicator animate-fade-in delay-5">
       <span>Scroll</span>
@@ -211,7 +215,11 @@ import Base from '@/layouts/Base.astro';
   <section class="charity-cta section--large">
     <div class="container">
       <div class="charity-cta__inner reveal">
-        <span class="label" style="color: var(--color-gold-light);">Our Mission</span>
+        <div class="charity-cta__logos">
+          <img src="/images/logos/circle-cyan.png" alt="Sunny & Ranney" class="charity-cta__logo" />
+          <span class="charity-cta__supports">supports →</span>
+          <img src="/images/logos/circle-tagline-dark.png" alt="Sunshine on a Ranney Day" class="charity-cta__logo" />
+        </div>
         <h2>When You Shop Here,<br />You Change a Life</h2>
         <p>
           Sunshine on a Ranney Day transforms the bedrooms and living spaces of children
@@ -219,13 +227,16 @@ import Base from '@/layouts/Base.astro';
           makes this possible.
         </p>
         <div class="charity-cta__actions">
-          <a href="/charity" class="btn btn--primary" style="background: white; color: var(--color-charcoal); border-color: white;">
+          <a href="/charity" class="btn btn--primary">
             Learn About Our Impact
           </a>
-          <a href="https://sunshineonaranneyday.com" target="_blank" rel="noopener noreferrer" class="btn btn--outline" style="color: white; border-color: rgba(255,255,255,0.4);">
+          <a href="https://sunshineonaranneyday.com" target="_blank" rel="noopener noreferrer" class="btn btn--outline">
             Visit the Charity
           </a>
         </div>
+        <p class="charity-cta__tagline tagline-script" style="margin-top: var(--space-lg); font-size: clamp(1.2rem, 2.2vw, 1.6rem);">
+          Together, we're building brighter days for children.
+        </p>
       </div>
     </div>
   </section>
@@ -260,6 +271,15 @@ import Base from '@/layouts/Base.astro';
       </div>
     </div>
   </section>
+
+  <!-- ═══ YELLOW TAGLINE BAR ═══ -->
+  <section class="tagline-bar">
+    <div class="container">
+      <h3 class="tagline-bar__title">Visit Sunny & Ranney</h3>
+      <p class="tagline-bar__address">109A Oak St. Roswell, GA 30075 · <a href="https://sunnyandranney.com">sunnyandranney.com</a></p>
+      <p class="tagline-bar__tagline tagline-script">Together, we're building brighter days for children.</p>
+    </div>
+  </section>
 </Base>
 
 <style>
@@ -276,16 +296,16 @@ import Base from '@/layouts/Base.astro';
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(ellipse at 20% 50%, var(--color-gold-soft) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 20%, var(--color-sage-light) 0%, transparent 40%),
-      var(--color-cream);
+      radial-gradient(ellipse at 20% 50%, rgba(75, 149, 180, 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(255, 212, 0, 0.08) 0%, transparent 40%),
+      var(--color-cyan);
     z-index: 0;
   }
 
   .hero__grain {
     position: absolute;
     inset: 0;
-    opacity: 0.3;
+    opacity: 0.15;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.4'/%3E%3C/svg%3E");
     background-size: 200px;
   }
@@ -298,7 +318,7 @@ import Base from '@/layouts/Base.astro';
     gap: var(--space-xl);
     align-items: center;
     padding-top: var(--space-xl);
-    padding-bottom: var(--space-xl);
+    padding-bottom: var(--space-2xl);
   }
 
   @media (min-width: 900px) {
@@ -311,9 +331,10 @@ import Base from '@/layouts/Base.astro';
   }
 
   .hero__title {
-    color: var(--color-charcoal);
+    color: var(--color-gold);
     margin: 0.75rem 0 1.25rem;
     line-height: 1.05;
+    font-size: clamp(3.2rem, 6vw, 5.5rem);
   }
 
   .hero__title-accent {
@@ -325,6 +346,7 @@ import Base from '@/layouts/Base.astro';
   .hero__subtitle {
     font-size: clamp(1rem, 1.2vw, 1.15rem);
     margin-bottom: 0.5rem;
+    color: rgba(255, 255, 255, 0.85);
   }
 
   .hero__actions {
@@ -334,19 +356,46 @@ import Base from '@/layouts/Base.astro';
     margin-top: var(--space-md);
   }
 
+  .hero__actions .btn--primary {
+    background: var(--color-gold);
+    border-color: var(--color-gold);
+    color: var(--color-charcoal);
+  }
+
+  .hero__actions .btn--primary:hover {
+    background: white;
+    border-color: white;
+    color: var(--color-charcoal);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(255, 255, 255, 0.2);
+  }
+
+  .hero__actions .btn--outline {
+    color: white;
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+
+  .hero__actions .btn--outline:hover {
+    background: white;
+    border-color: white;
+    color: var(--color-cyan);
+    transform: translateY(-2px);
+  }
+
   .hero__image-frame {
     position: relative;
   }
 
   .hero__image-placeholder {
     aspect-ratio: 4 / 3;
-    background: var(--color-cream-dark);
-    border: 2px dashed var(--color-stone);
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px dashed rgba(255, 255, 255, 0.3);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 0.25rem;
+    border-radius: 4px;
   }
 
   .hero__image-text {
@@ -355,29 +404,46 @@ import Base from '@/layouts/Base.astro';
     align-items: center;
     font-family: var(--font-display);
     font-size: 1.3rem;
-    color: var(--color-stone);
+    color: rgba(255, 255, 255, 0.5);
   }
 
   .hero__image-subtext {
     font-family: var(--font-body);
     font-size: 0.75rem;
-    color: var(--color-stone);
+    color: rgba(255, 255, 255, 0.35);
     margin-top: 0.5rem;
   }
 
   .hero__image-accent {
     position: absolute;
-    bottom: -20px;
-    right: -20px;
+    bottom: -16px;
+    right: -16px;
     width: 60%;
     height: 60%;
     border: 2px solid var(--color-gold);
     z-index: -1;
+    border-radius: 4px;
+  }
+
+  .hero__tagline {
+    position: absolute;
+    bottom: 5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    z-index: 1;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 768px) {
+    .hero__tagline {
+      display: none;
+    }
   }
 
   .hero__scroll-indicator {
     position: absolute;
-    bottom: 2rem;
+    bottom: 1.5rem;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -387,7 +453,8 @@ import Base from '@/layouts/Base.astro';
     font-size: 0.7rem;
     letter-spacing: 0.15em;
     text-transform: uppercase;
-    color: var(--color-stone);
+    color: rgba(255, 255, 255, 0.5);
+    z-index: 1;
   }
 
   .hero__scroll-line {
@@ -615,18 +682,50 @@ import Base from '@/layouts/Base.astro';
   /* ─── Charity CTA ────────────────────────────────── */
   .charity-cta {
     background:
-      linear-gradient(160deg, var(--color-charcoal) 0%, #1a1a1a 100%);
+      linear-gradient(160deg, var(--color-cyan) 0%, #3a7d9a 100%);
     position: relative;
     overflow: hidden;
   }
 
   .charity-cta::before {
-    content: '☀️';
+    content: '';
     position: absolute;
-    font-size: 20rem;
-    opacity: 0.03;
-    top: -5rem;
-    right: -3rem;
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 212, 0, 0.08) 0%, transparent 70%);
+    top: -150px;
+    right: -100px;
+  }
+
+  .charity-cta__logos {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: var(--space-lg);
+  }
+
+  .charity-cta__logo {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: 50%;
+  }
+
+  @media (min-width: 768px) {
+    .charity-cta__logo {
+      width: 100px;
+      height: 100px;
+    }
+  }
+
+  .charity-cta__supports {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    color: rgba(255, 255, 255, 0.7);
   }
 
   .charity-cta__inner {
@@ -637,13 +736,13 @@ import Base from '@/layouts/Base.astro';
   }
 
   .charity-cta__inner h2 {
-    margin: 0.75rem 0 1.25rem;
-    color: white;
+    margin: 0 0 1.25rem;
+    color: var(--color-gold);
     font-size: clamp(2rem, 4vw, 3.5rem);
   }
 
   .charity-cta__inner p {
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.8);
     margin: 0 auto 2rem;
     max-width: 50ch;
   }
@@ -653,6 +752,35 @@ import Base from '@/layouts/Base.astro';
     flex-wrap: wrap;
     justify-content: center;
     gap: 1rem;
+  }
+
+  .charity-cta__actions .btn--primary {
+    background: var(--color-gold);
+    border-color: var(--color-gold);
+    color: var(--color-charcoal);
+  }
+
+  .charity-cta__actions .btn--primary:hover {
+    background: white;
+    border-color: white;
+    color: var(--color-charcoal);
+    transform: translateY(-2px);
+  }
+
+  .charity-cta__actions .btn--outline {
+    color: white;
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+
+  .charity-cta__actions .btn--outline:hover {
+    background: white;
+    border-color: white;
+    color: var(--color-cyan);
+    transform: translateY(-2px);
+  }
+
+  .charity-cta__tagline {
+    max-width: none;
   }
 
   /* ─── Visit ──────────────────────────────────────── */
@@ -701,5 +829,40 @@ import Base from '@/layouts/Base.astro';
     font-family: var(--font-display);
     color: var(--color-stone);
     font-size: 1.2rem;
+  }
+
+  /* ─── Yellow Tagline Bar ────────────────────────── */
+  .tagline-bar {
+    background: var(--color-gold);
+    padding: var(--space-xl) 0;
+    text-align: center;
+  }
+
+  .tagline-bar__title {
+    font-family: var(--font-display);
+    font-size: clamp(1.4rem, 2.5vw, 2rem);
+    color: var(--color-cyan);
+    margin-bottom: 0.25rem;
+  }
+
+  .tagline-bar__address {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-charcoal);
+    margin-bottom: var(--space-sm);
+    max-width: none;
+  }
+
+  .tagline-bar__address a {
+    color: var(--color-charcoal);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .tagline-bar__tagline {
+    font-size: clamp(1.2rem, 2.5vw, 1.8rem) !important;
+    color: var(--color-charcoal) !important;
+    max-width: none;
+    margin-top: var(--space-sm);
   }
 </style>

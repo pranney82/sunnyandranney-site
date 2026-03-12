@@ -75,8 +75,8 @@ const currentYear = new Date().getFullYear();
 
   <div class="footer__bottom container">
     <p>&copy; {currentYear} Sunny & Ranney. All rights reserved.</p>
-    <p class="footer__credit">
-      Built with purpose. Every purchase changes a life.
+    <p class="footer__tagline">
+      <em>Together, we're building brighter days for children.</em>
     </p>
   </div>
 </footer>
@@ -217,5 +217,11 @@ const currentYear = new Date().getFullYear();
   .footer__bottom p {
     color: var(--color-stone);
     font-size: 0.8rem;
+  }
+
+  .footer__tagline {
+    font-family: var(--font-display);
+    color: var(--color-gold) !important;
+    font-size: 0.9rem !important;
   }
 </style>

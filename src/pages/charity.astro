@@ -166,8 +166,8 @@ import Base from '@/layouts/Base.astro';
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(ellipse at 50% 30%, rgba(255, 212, 0, 0.12) 0%, transparent 60%),
-      var(--color-charcoal);
+      radial-gradient(ellipse at 50% 30%, rgba(255, 212, 0, 0.1) 0%, transparent 60%),
+      var(--color-cyan);
   }
 
   .charity-hero__content {
@@ -412,10 +412,10 @@ import Base from '@/layouts/Base.astro';
   .cta-card p { margin: 0 auto var(--space-md); max-width: 35ch; }
 
   .cta-card--gold {
-    background: var(--color-charcoal);
+    background: var(--color-cyan);
     color: white;
   }
 
-  .cta-card--gold h3 { color: white; }
-  .cta-card--gold p { color: rgba(255, 255, 255, 0.7); }
+  .cta-card--gold h3 { color: var(--color-gold); }
+  .cta-card--gold p { color: rgba(255, 255, 255, 0.8); }
 </style>

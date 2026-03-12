@@ -353,6 +353,63 @@ p {
   transform: translateY(0);
 }
 
+/* ─── Cyan Section Utilities ───────────────────────────────── */
+.section--cyan {
+  background: var(--color-cyan);
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.section--cyan h1,
+.section--cyan h2,
+.section--cyan h3 {
+  color: var(--color-gold);
+}
+
+.section--cyan p {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.section--cyan .label {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.section--cyan .divider {
+  background: var(--color-gold);
+}
+
+.section--cyan .btn--primary {
+  background: var(--color-gold);
+  border-color: var(--color-gold);
+  color: var(--color-charcoal);
+}
+
+.section--cyan .btn--primary:hover {
+  background: white;
+  border-color: white;
+  color: var(--color-charcoal);
+}
+
+.section--cyan .btn--outline {
+  color: white;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.section--cyan .btn--outline:hover {
+  background: white;
+  border-color: white;
+  color: var(--color-cyan);
+}
+
+/* ─── Tagline Utility ──────────────────────────────────────── */
+.tagline-script {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 300;
+  color: var(--color-gold);
+}
+
 /* ─── Misc ──────────────────────────────────────────────────── */
 .divider {
   width: 60px;

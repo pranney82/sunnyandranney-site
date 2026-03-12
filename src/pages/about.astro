@@ -9,9 +9,9 @@ import Base from '@/layouts/Base.astro';
   <!-- ═══ PAGE HERO ═══ -->
   <section class="page-hero">
     <div class="container">
-      <span class="label animate-fade-up">Our Story</span>
+      <span class="label animate-fade-up" style="color: rgba(255,255,255,0.7);">Our Story</span>
       <h1 class="animate-fade-up delay-1">Where Style<br /><span class="accent">Meets Purpose</span></h1>
-      <hr class="divider animate-fade-up delay-2" />
+      <hr class="divider animate-fade-up delay-2" style="background: var(--color-gold);" />
     </div>
   </section>
 
@@ -123,21 +123,21 @@ import Base from '@/layouts/Base.astro';
   </section>
 
   <!-- ═══ VISIT CTA ═══ -->
-  <section class="visit-cta section">
+  <section class="visit-cta section" style="background: var(--color-cyan);">
     <div class="container">
       <div class="visit-cta__inner reveal">
-        <h2>Come See Us in Roswell</h2>
-        <p>
+        <h2 style="color: var(--color-gold);">Come See Us in Roswell</h2>
+        <p style="color: rgba(255,255,255,0.85);">
           There's nothing like experiencing our collection in person. Stop by, say hello,
           and find your next favorite piece — all while supporting an incredible cause.
         </p>
-        <div class="visit-cta__details">
+        <div class="visit-cta__details" style="color: rgba(255,255,255,0.8);">
           <div>
-            <strong>109A Oak Street, Roswell, GA 30075</strong><br />
+            <strong style="color: white;">109A Oak Street, Roswell, GA 30075</strong><br />
             Tue–Thu: 10am – 5pm · Fri–Sat: 10am – 6pm<br />
             <a href="tel:6788885140" style="color: var(--color-gold);">678.888.5140</a>
           </div>
-          <a href="https://maps.google.com/?q=109A+Oak+Street+Roswell+GA+30075" target="_blank" rel="noopener noreferrer" class="btn btn--primary">
+          <a href="https://maps.google.com/?q=109A+Oak+Street+Roswell+GA+30075" target="_blank" rel="noopener noreferrer" class="btn btn--primary" style="background: var(--color-gold); border-color: var(--color-gold); color: var(--color-charcoal);">
             Get Directions
           </a>
         </div>
@@ -150,12 +150,13 @@ import Base from '@/layouts/Base.astro';
   .page-hero {
     padding: var(--space-2xl) 0 var(--space-xl);
     background:
-      radial-gradient(ellipse at 30% 70%, var(--color-gold-soft) 0%, transparent 50%),
-      var(--color-cream);
+      radial-gradient(ellipse at 30% 70%, rgba(255, 212, 0, 0.1) 0%, transparent 50%),
+      var(--color-cyan);
   }
 
   .page-hero h1 {
     margin: 0.75rem 0 1rem;
+    color: white;
   }
 
   .accent {
