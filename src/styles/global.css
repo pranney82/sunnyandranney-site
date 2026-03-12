@@ -496,7 +496,7 @@ p {
 
 /* ─── Responsive ────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  :root { --nav-height: 92px; }
+  :root { --nav-height: 80px; }
   .section { padding: var(--space-xl) 0; }
   .section--large { padding: var(--space-2xl) 0; }
 

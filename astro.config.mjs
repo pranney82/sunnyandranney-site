@@ -7,6 +7,7 @@ export default defineConfig({
   output: 'static',
   adapter: cloudflare({
     imageService: 'compile', // Optimize images at build time (sharp not available at CF runtime)
+    platformProxy: { enabled: false },
   }),
   integrations: [
     sitemap(),
