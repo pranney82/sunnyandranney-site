@@ -215,10 +215,7 @@ const categories = [
   .nav__icon-btn:hover { color: var(--color-gold); }
 
   .nav__mobile-search-btn {
-    display: flex;
-  }
-  @media (min-width: 768px) {
-    .nav__mobile-search-btn { display: none; }
+    display: none;
   }
 
   .nav__cart { position: relative; padding: 0.5rem; color: var(--color-charcoal); transition: color 0.3s; }
@@ -241,14 +238,10 @@ const categories = [
   }
 
   .nav__menu-btn {
-    display: flex;
+    display: none;
     flex-direction: column;
     gap: 5px;
     padding: 0.5rem;
-  }
-
-  @media (min-width: 768px) {
-    .nav__menu-btn { display: none; }
   }
 
   .nav__menu-line {
