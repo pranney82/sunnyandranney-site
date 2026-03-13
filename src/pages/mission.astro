@@ -139,8 +139,17 @@ try {
 
   <!-- ═══ THE STORY ═══ -->
   <section class="mission-story section">
-    <div class="container mission-story__inner">
-      <div class="mission-story__content reveal">
+    <div class="container mission-story__grid">
+      <div class="mission-story__image reveal">
+        <img
+          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/founders-reunion-2026/w=600,q=80"
+          alt="Peter and Holly Ranney, founders of Sunshine on a Ranney Day"
+          width="600"
+          height="600"
+          loading="lazy"
+        />
+      </div>
+      <div class="mission-story__content reveal delay-1">
         <span class="label">The Story</span>
         <h2>Sunshine on a Ranney Day</h2>
         <p>
@@ -328,6 +337,29 @@ try {
   /* ─── Story ─────────────────────────────── */
   .mission-story {
     background: var(--color-warm-white);
+  }
+
+  .mission-story__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto;
+  }
+
+  @media (min-width: 768px) {
+    .mission-story__grid {
+      grid-template-columns: 1fr 1.2fr;
+    }
+  }
+
+  .mission-story__image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+    aspect-ratio: 1 / 1;
   }
 
   .mission-story__inner {
