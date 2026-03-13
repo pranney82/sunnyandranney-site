@@ -1,9 +1,9 @@
 ---
-/* Stacy — AI shopping assistant chat widget (Cloudflare Workers AI) */
+/* Staci — AI shopping assistant chat widget (Cloudflare Workers AI) */
 ---
 
 <!-- Chat toggle button -->
-<button id="stacy-toggle" aria-label="Chat with Stacy" title="Chat with Stacy">
+<button id="stacy-toggle" aria-label="Chat with Staci" title="Chat with Staci">
   <svg id="stacy-icon-chat" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
   </svg>
@@ -16,9 +16,9 @@
 <div id="stacy-panel" aria-hidden="true">
   <div class="stacy-header">
     <div class="stacy-header__info">
-      <img class="stacy-avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/nav" loading="lazy" alt="Stacy" />
+      <img class="stacy-avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/nav" loading="lazy" alt="Staci" />
       <div>
-        <strong>Stacy</strong>
+        <strong>Staci</strong>
         <span class="stacy-status">AI Shopping Assistant</span>
       </div>
     </div>
@@ -26,8 +26,8 @@
 
   <div id="stacy-messages" class="stacy-messages">
     <div class="stacy-msg stacy-msg--bot">
-      <img class="stacy-msg__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/nav" loading="lazy" alt="Stacy" />
-      <div class="stacy-msg__bubble">Hi! I'm Stacy, your shopping assistant. How can I help you today?</div>
+      <img class="stacy-msg__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/nav" loading="lazy" alt="Staci" />
+      <div class="stacy-msg__bubble">Hi! I'm Staci, your shopping assistant. How can I help you today?</div>
     </div>
   </div>
 
@@ -35,7 +35,7 @@
     <input
       id="stacy-input"
       type="text"
-      placeholder="Ask Stacy anything…"
+      placeholder="Ask Staci anything…"
       autocomplete="off"
       aria-label="Type a message"
     />
@@ -299,7 +299,7 @@
       const msg = document.createElement('div');
       msg.className = `stacy-msg stacy-msg--${isUser ? 'user' : 'bot'}`;
       msg.innerHTML = `
-        ${isUser ? '<span class="stacy-msg__avatar">Y</span>' : '<img class="stacy-msg__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/nav" loading="lazy" alt="Stacy" />'}
+        ${isUser ? '<span class="stacy-msg__avatar">Y</span>' : '<img class="stacy-msg__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/nav" loading="lazy" alt="Staci" />'}
         <div class="stacy-msg__bubble">${escapeHtml(text)}</div>
       `;
       messagesEl.appendChild(msg);
@@ -311,7 +311,7 @@
       typing.className = 'stacy-msg stacy-msg--bot stacy-typing';
       typing.id = 'stacy-typing';
       typing.innerHTML = `
-        <img class="stacy-msg__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/nav" loading="lazy" alt="Stacy" />
+        <img class="stacy-msg__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/nav" loading="lazy" alt="Staci" />
         <div class="stacy-msg__bubble">
           <span class="stacy-dot"></span>
           <span class="stacy-dot"></span>
