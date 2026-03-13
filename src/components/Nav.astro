@@ -77,6 +77,9 @@ const categories = [
       {categories.map((cat) => (
         <a href={cat.href} class:list={['nav__cat-link', { 'nav__cat-link--sale': cat.highlight }]}>{cat.label}</a>
       ))}
+      <span class="nav__cat-divider"></span>
+      <a href="/mission" class:list={['nav__cat-link', { 'nav__cat-link--active': currentPath === '/mission' || currentPath === '/mission/' }]}>Mission</a>
+      <a href="/team" class:list={['nav__cat-link', { 'nav__cat-link--active': currentPath === '/team' || currentPath === '/team/' }]}>Our Team</a>
     </div>
   </div>
 </header>
@@ -431,6 +434,14 @@ const categories = [
   .nav__cat-link--sale:hover {
     color: #c0392b;
     background: #fdf2f2;
+  }
+
+  .nav__cat-divider {
+    width: 1px;
+    height: 16px;
+    background: var(--color-cream-dark);
+    flex-shrink: 0;
+    margin: 0 0.25rem;
   }
 </style>
 

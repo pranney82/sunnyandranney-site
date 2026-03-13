@@ -250,13 +250,6 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
                 <span class="pdp-delivery__date" id="delivery-date">Ships within 3–5 business days</span>
               </div>
             </div>
-            <div class="pdp-delivery__item">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-              <div>
-                <strong class="pdp-delivery__label">Free Returns</strong>
-                <span class="pdp-delivery__date">30-day hassle-free returns</span>
-              </div>
-            </div>
             {parseFloat(price.amount) < 200 && (
               <div class="pdp-delivery__free-hint">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>

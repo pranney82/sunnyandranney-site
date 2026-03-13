@@ -1,0 +1,572 @@
+---
+import Base from '@/layouts/Base.astro';
+
+let products: any[] = [];
+let hasShopify = false;
+let shopifyImageUrl: any;
+let shopifyImageSrcset: any;
+
+try {
+  const shopify = await import('@/lib/shopify');
+  const result = await shopify.getProducts(100);
+  products = result.products;
+  hasShopify = products.length > 0;
+  shopifyImageUrl = shopify.shopifyImageUrl;
+  shopifyImageSrcset = shopify.shopifyImageSrcset;
+} catch (e) {
+  console.log('Shopify API not configured.');
+}
+---
+
+<Base title="Our Mission — Sunny & Ranney" description="100% of Sunny & Ranney profits fund Sunshine on a Ranney Day — life-changing home makeovers for children with special needs in the greater Atlanta area.">
+
+  <!-- ═══ HERO ═══ -->
+  <section class="mission-hero">
+    <div class="container mission-hero__inner">
+      <h1 class="mission-hero__title animate-fade-up">
+        Shop with a <span class="mission-hero__accent">Purpose</span>
+      </h1>
+      <p class="mission-hero__sub animate-fade-up delay-1">
+        100% of profits fund life-changing home makeovers for children with special needs.
+      </p>
+    </div>
+  </section>
+
+  <!-- ═══ PRODUCTS ═══ -->
+  {hasShopify && (
+    <section class="mission-products section">
+      <div class="container">
+        <div class="product-grid">
+          {products.map((product, idx) => {
+            const firstVariant = product.variants?.edges?.[0]?.node;
+            const price = firstVariant?.price || product.priceRange?.minVariantPrice;
+            const compareAt = firstVariant?.compareAtPrice || product.compareAtPriceRange?.minVariantPrice;
+            const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.amount);
+            const image = product.images?.edges?.[0]?.node;
+            const image2 = product.images?.edges?.[1]?.node;
+
+            return (
+              <div class="product-card">
+                {isOnSale && <span class="product-card__badge">Sale</span>}
+                {!isOnSale && !product.availableForSale && <span class="product-card__badge product-card__badge--sold">Sold Out</span>}
+
+                <a href={`/shop/${product.handle}`} class="product-card__image">
+                  {image ? (
+                    <>
+                      <img
+                        src={shopifyImageUrl(image.url, 600)}
+                        srcset={shopifyImageSrcset(image.url, [300, 600, 900])}
+                        sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                        alt={image.altText || product.title}
+                        width={image.width}
+                        height={image.height}
+                        loading={idx < 8 ? 'eager' : 'lazy'}
+                        class="product-card__img-primary"
+                      />
+                      {image2 && (
+                        <img
+                          src={shopifyImageUrl(image2.url, 600)}
+                          srcset={shopifyImageSrcset(image2.url, [300, 600, 900])}
+                          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          alt={image2.altText || product.title}
+                          width={image2.width}
+                          height={image2.height}
+                          loading="lazy"
+                          class="product-card__img-hover"
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <div class="product-card__image-ph">{product.productType || 'Product'}</div>
+                  )}
+                </a>
+
+                <div class="product-card__info">
+                  {product.productType && <span class="product-card__type">{product.productType}</span>}
+                  <a href={`/shop/${product.handle}`} class="product-card__title">{product.title}</a>
+                  <div class="product-card__pricing">
+                    <span class="product-card__price">
+                      ${parseFloat(price.amount).toFixed(2)}
+                    </span>
+                    {isOnSale && (
+                      <span class="product-card__price--compare">
+                        ${parseFloat(compareAt.amount).toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                  {product.availableForSale && firstVariant && (
+                    <button class="product-card__add-btn"
+                      data-variant-id={firstVariant.id}
+                      data-title={product.title}
+                      data-price={parseFloat(price.amount)}
+                      data-image={image?.url || ''}
+                      data-handle={product.handle}
+                      data-variant-title={firstVariant.title}
+                    >
+                      Add to Cart
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- ═══ IMPACT STATS ═══ -->
+  <section class="mission-stats">
+    <div class="container mission-stats__inner">
+      <div class="mission-stats__stat reveal">
+        <span class="mission-stats__number">269+</span>
+        <span class="mission-stats__label">Room Makeovers</span>
+      </div>
+      <div class="mission-stats__stat reveal delay-1">
+        <span class="mission-stats__number">203+</span>
+        <span class="mission-stats__label">Children Served</span>
+      </div>
+      <div class="mission-stats__stat reveal delay-2">
+        <span class="mission-stats__number">17,000+</span>
+        <span class="mission-stats__label">Lives Impacted</span>
+      </div>
+      <div class="mission-stats__stat reveal delay-3">
+        <span class="mission-stats__number">14</span>
+        <span class="mission-stats__label">Years Giving</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ THE STORY ═══ -->
+  <section class="mission-story section">
+    <div class="container mission-story__inner">
+      <div class="mission-story__content reveal">
+        <span class="label">The Story</span>
+        <h2>Sunshine on a Ranney Day</h2>
+        <p>
+          In 2012, Peter and Holly Ranney were inspired by a church sermon to do something simple but powerful — give a child with special needs a bedroom they could truly call their own. That first project was for 11-year-old Mathew, who dreamed of a military-themed bunker bedroom. Seeing how a thoughtfully designed space transformed Mathew's life changed everything.
+        </p>
+        <p>
+          What started as one room has grown into a 501(c)(3) nonprofit creating <strong>wheelchair-accessible bathrooms, dream bedrooms, and in-home therapy spaces</strong> for children with special needs in the greater Atlanta area — completely free to families. Every makeover is designed around the child's unique needs, personality, and dreams.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ MILESTONES ═══ -->
+  <section class="mission-timeline section">
+    <div class="container">
+      <div class="mission-timeline__header reveal">
+        <h2>Our Journey</h2>
+      </div>
+      <div class="mission-timeline__grid">
+        <div class="mission-timeline__item reveal">
+          <span class="mission-timeline__year">2012</span>
+          <h3>It All Began</h3>
+          <p>Peter and Holly Ranney complete their first room makeover for 11-year-old Mathew — and a mission is born.</p>
+        </div>
+        <div class="mission-timeline__item reveal delay-1">
+          <span class="mission-timeline__year">2013</span>
+          <h3>National Attention</h3>
+          <p>A whole-home makeover for Tripp Halstead draws 1.6 million viewers on WSB-TV's livestream, putting SOARD on the map.</p>
+        </div>
+        <div class="mission-timeline__item reveal delay-2">
+          <span class="mission-timeline__year">2016</span>
+          <h3>The Today Show</h3>
+          <p>Featured on NBC's Today Show for creating parent sleep rooms at Children's Healthcare of Atlanta.</p>
+        </div>
+        <div class="mission-timeline__item reveal delay-3">
+          <span class="mission-timeline__year">2018</span>
+          <h3>Community Heroes</h3>
+          <p>Holly and Peter are honored as Atlanta Braves Community Heroes for their impact on children's lives.</p>
+        </div>
+        <div class="mission-timeline__item reveal delay-4">
+          <span class="mission-timeline__year">2020</span>
+          <h3>Sunny & Ranney Opens</h3>
+          <p>The nonprofit furnishings store opens in Roswell, GA — 100% of profits fund room makeovers.</p>
+        </div>
+        <div class="mission-timeline__item reveal delay-5">
+          <span class="mission-timeline__year">2024</span>
+          <h3>100+ Rooms</h3>
+          <p>Surpassed the 100-room milestone, with 269+ total makeovers completed and counting.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ HOW IT WORKS ═══ -->
+  <section class="mission-how section">
+    <div class="container">
+      <div class="mission-how__header reveal">
+        <h2>How Your Purchase Helps</h2>
+        <p>Every dollar you spend at Sunny & Ranney directly funds a child's room transformation.</p>
+      </div>
+      <div class="mission-how__steps">
+        <div class="mission-how__step reveal">
+          <div class="mission-how__step-num">1</div>
+          <h3>You Shop</h3>
+          <p>Browse our curated collection of designer furniture, home decor, lighting, and gifts.</p>
+        </div>
+        <div class="mission-how__step reveal delay-1">
+          <div class="mission-how__step-num">2</div>
+          <h3>We Donate</h3>
+          <p>100% of store profits go directly to Sunshine on a Ranney Day. No middleman, no overhead.</p>
+        </div>
+        <div class="mission-how__step reveal delay-2">
+          <div class="mission-how__step-num">3</div>
+          <h3>Lives Change</h3>
+          <p>A child gets a custom makeover — a wheelchair-accessible bathroom, dream bedroom, or therapy space designed just for them.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ QUOTE / HIGHLIGHT ═══ -->
+  <section class="mission-highlight">
+    <div class="container mission-highlight__inner">
+      <blockquote class="mission-highlight__quote reveal">
+        <p>"Every child deserves a space that reflects their personality, brings them joy, and supports their unique needs."</p>
+      </blockquote>
+    </div>
+  </section>
+
+  <!-- ═══ CTA ═══ -->
+  <section class="mission-cta">
+    <div class="container mission-cta__inner">
+      <h2 class="reveal">Shop With Purpose</h2>
+      <p class="reveal delay-1">
+        Beautiful furniture for your home. Brighter futures for kids who need it most.
+      </p>
+      <div class="mission-cta__actions reveal delay-2">
+        <a href="/shop" class="btn btn--gold">Shop Now</a>
+        <a href="/team" class="btn btn--outline">Meet the Team</a>
+      </div>
+    </div>
+  </section>
+
+</Base>
+
+<style>
+  /* ─── Hero ──────────────────────────────── */
+  .mission-hero {
+    background:
+      radial-gradient(ellipse at 30% 50%, rgba(75, 149, 180, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 20%, rgba(255, 212, 0, 0.05) 0%, transparent 40%),
+      var(--color-cream);
+    padding: var(--space-xl) 0 var(--space-lg);
+    text-align: center;
+  }
+
+  .mission-hero__inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .mission-hero__title {
+    font-size: clamp(2rem, 4vw, 3rem);
+    margin: 0 0 var(--space-xs);
+    line-height: 1.1;
+  }
+
+  .mission-hero__accent {
+    color: var(--color-gold);
+    font-style: italic;
+    font-weight: 300;
+  }
+
+  .mission-hero__sub {
+    font-size: clamp(0.95rem, 1.2vw, 1.1rem);
+    max-width: 48ch;
+    text-align: center;
+    margin: 0;
+    color: var(--color-slate);
+  }
+
+  /* ─── Products ───────────────────────────── */
+  .mission-products {
+    background: var(--color-warm-white);
+    padding: var(--space-xl) 0;
+  }
+
+  /* ─── Impact Stats ──────────────────────── */
+  .mission-stats {
+    background: linear-gradient(160deg, var(--color-cyan) 0%, #3a7d9a 100%);
+    padding: var(--space-xl) 0;
+  }
+
+  .mission-stats__inner {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-2xl);
+    flex-wrap: wrap;
+  }
+
+  .mission-stats__stat {
+    text-align: center;
+  }
+
+  .mission-stats__number {
+    display: block;
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 5vw, 3.5rem);
+    font-weight: 600;
+    color: white;
+    line-height: 1;
+  }
+
+  .mission-stats__label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 0.5rem;
+  }
+
+  /* ─── Story ─────────────────────────────── */
+  .mission-story {
+    background: var(--color-warm-white);
+  }
+
+  .mission-story__inner {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .mission-story__content .label {
+    color: var(--color-gold);
+  }
+
+  .mission-story__content h2 {
+    font-size: clamp(1.8rem, 3vw, 2.5rem);
+    margin: var(--space-sm) 0 var(--space-md);
+  }
+
+  .mission-story__content p {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: var(--color-slate);
+    margin-bottom: var(--space-md);
+  }
+
+  .mission-story__content p strong {
+    color: var(--color-charcoal);
+  }
+
+  /* ─── Timeline ──────────────────────────── */
+  .mission-timeline {
+    background: var(--color-cream);
+  }
+
+  .mission-timeline__header {
+    text-align: center;
+    margin-bottom: var(--space-xl);
+  }
+
+  .mission-timeline__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  @media (min-width: 600px) {
+    .mission-timeline__grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 900px) {
+    .mission-timeline__grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .mission-timeline__item {
+    padding: var(--space-lg);
+    background: var(--color-warm-white);
+    border: 1px solid var(--color-cream-dark);
+    transition: transform var(--duration) var(--ease-out), box-shadow var(--duration);
+  }
+
+  .mission-timeline__item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 48px rgba(44, 44, 44, 0.08);
+  }
+
+  .mission-timeline__year {
+    display: inline-block;
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--color-gold);
+    background: rgba(255, 212, 0, 0.1);
+    padding: 0.2rem 0.6rem;
+    border-radius: 3px;
+    margin-bottom: var(--space-sm);
+  }
+
+  .mission-timeline__item h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .mission-timeline__item p {
+    font-size: 0.88rem;
+    color: var(--color-stone);
+    line-height: 1.6;
+  }
+
+  /* ─── How It Works ──────────────────────── */
+  .mission-how {
+    background: var(--color-warm-white);
+  }
+
+  .mission-how__header {
+    text-align: center;
+    margin-bottom: var(--space-xl);
+  }
+
+  .mission-how__header h2 {
+    margin-bottom: 0.5rem;
+  }
+
+  .mission-how__header p {
+    margin: 0 auto;
+  }
+
+  .mission-how__steps {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  @media (min-width: 768px) {
+    .mission-how__steps {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .mission-how__step {
+    text-align: center;
+    padding: var(--space-lg);
+    background: var(--color-cream);
+    border: 1px solid var(--color-cream-dark);
+    transition: transform var(--duration) var(--ease-out), box-shadow var(--duration);
+  }
+
+  .mission-how__step:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 60px rgba(44, 44, 44, 0.08);
+  }
+
+  .mission-how__step-num {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--color-gold);
+    color: var(--color-charcoal);
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--space-md);
+  }
+
+  .mission-how__step h3 {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .mission-how__step p {
+    font-size: 0.9rem;
+    color: var(--color-stone);
+    max-width: 28ch;
+    margin: 0 auto;
+  }
+
+  /* ─── Quote Highlight ───────────────────── */
+  .mission-highlight {
+    background: linear-gradient(160deg, var(--color-cyan) 0%, #3a7d9a 100%);
+    padding: var(--space-2xl) 0;
+  }
+
+  .mission-highlight__inner {
+    max-width: 700px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .mission-highlight__quote p {
+    font-family: var(--font-display);
+    font-size: clamp(1.3rem, 2.5vw, 1.8rem);
+    font-weight: 400;
+    font-style: italic;
+    color: white;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  /* ─── CTA ───────────────────────────────── */
+  .mission-cta {
+    background: var(--color-gold);
+    padding: var(--space-2xl) 0;
+    text-align: center;
+  }
+
+  .mission-cta__inner {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .mission-cta h2 {
+    color: var(--color-charcoal);
+    font-size: clamp(1.8rem, 3vw, 2.5rem);
+    margin-bottom: var(--space-sm);
+  }
+
+  .mission-cta > .container > p,
+  .mission-cta__inner > p {
+    color: var(--color-charcoal);
+    max-width: 45ch;
+    margin: 0 auto;
+  }
+
+  .mission-cta__actions {
+    display: flex;
+    gap: var(--space-sm);
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: var(--space-lg);
+  }
+
+  .mission-cta__actions .btn--gold {
+    background: var(--color-charcoal);
+    border-color: var(--color-charcoal);
+    color: var(--color-cream);
+  }
+
+  .mission-cta__actions .btn--gold:hover {
+    background: white;
+    border-color: white;
+    color: var(--color-charcoal);
+  }
+
+  .mission-cta__actions .btn--outline {
+    border-color: var(--color-charcoal);
+    color: var(--color-charcoal);
+  }
+
+  .mission-cta__actions .btn--outline:hover {
+    background: var(--color-charcoal);
+    color: var(--color-gold);
+  }
+</style>

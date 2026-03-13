@@ -306,14 +306,15 @@ const categoryTiles = Object.values(categoryMap);
           Sunshine on a Ranney Day transforms the bedrooms and living spaces of children
           with special needs. 100% of store profits fund these makeovers.
         </p>
+        <a href="/mission" class="mission-strip__link">Learn our story &rarr;</a>
       </div>
       <div class="mission-strip__stats">
         <div class="mission-strip__stat">
-          <span class="mission-strip__number">20,000+</span>
-          <span class="mission-strip__label">Kids Impacted</span>
+          <span class="mission-strip__number">269+</span>
+          <span class="mission-strip__label">Room Makeovers</span>
         </div>
         <div class="mission-strip__stat">
-          <span class="mission-strip__number">13+</span>
+          <span class="mission-strip__number">14</span>
           <span class="mission-strip__label">Years Giving</span>
         </div>
       </div>
@@ -720,6 +721,20 @@ const categoryTiles = Object.values(categoryMap);
   .mission-strip__text p {
     color: rgba(255,255,255,0.8);
     max-width: 50ch;
+  }
+
+  .mission-strip__link {
+    display: inline-block;
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-gold);
+    letter-spacing: 0.04em;
+    transition: color 0.2s;
+  }
+
+  .mission-strip__link:hover {
+    color: white;
   }
 
   .mission-strip__stats {
