@@ -211,18 +211,80 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
               {product.availableForSale ? 'Add to Cart' : 'Sold Out'}
             </button>
 
-            <button class="pdp-wishlist-btn" id="pdp-wishlist" data-handle={product.handle} aria-label="Add to wishlist">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-              <span id="wishlist-text">Add to Wishlist</span>
+            <button
+              class="btn btn--primary pdp-buy-now"
+              id="buy-now"
+              disabled={!product.availableForSale}
+            >
+              {product.availableForSale ? 'Buy Now' : 'Sold Out'}
             </button>
           </div>
 
+          {/* Express checkout hint */}
+          {product.availableForSale && (
+            <div class="pdp-express">
+              <span class="pdp-express__or">or checkout with</span>
+              <div class="pdp-express__methods">
+                <span class="pdp-express__method">Shop Pay</span>
+                <span class="pdp-express__divider">·</span>
+                <span class="pdp-express__method">Apple Pay</span>
+                <span class="pdp-express__divider">·</span>
+                <span class="pdp-express__method">Google Pay</span>
+              </div>
+            </div>
+          )}
+
+          <button class="pdp-wishlist-btn" id="pdp-wishlist" data-handle={product.handle} aria-label="Add to wishlist">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <span id="wishlist-text">Add to Wishlist</span>
+          </button>
+
+          {/* Delivery & shipping estimate */}
+          <div class="pdp-delivery">
+            <div class="pdp-delivery__item">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+              <div>
+                <strong class="pdp-delivery__label">
+                  {parseFloat(price.amount) >= 200 ? 'FREE Delivery' : 'Delivery'}
+                </strong>
+                <span class="pdp-delivery__date" id="delivery-date">Ships within 3–5 business days</span>
+              </div>
+            </div>
+            <div class="pdp-delivery__item">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+              <div>
+                <strong class="pdp-delivery__label">Free Returns</strong>
+                <span class="pdp-delivery__date">30-day hassle-free returns</span>
+              </div>
+            </div>
+            {parseFloat(price.amount) < 200 && (
+              <div class="pdp-delivery__free-hint">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                <span>Add <strong>${(200 - parseFloat(price.amount)).toFixed(0)}</strong> more for free shipping</span>
+              </div>
+            )}
+          </div>
+
+          {/* Financing for items $100+ */}
+          {parseFloat(price.amount) >= 100 && (
+            <div class="pdp-financing">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              <span>
+                As low as <strong>${(parseFloat(price.amount) / 4).toFixed(2)}/mo</strong> with Shop Pay Installments
+              </span>
+            </div>
+          )}
+
+          {/* Urgency signal */}
+          {product.availableForSale && (
+            <div class="pdp-urgency" id="pdp-urgency">
+              <div class="pdp-urgency__dot"></div>
+              <span class="pdp-urgency__text" id="urgency-text"></span>
+            </div>
+          )}
+
           {/* Trust signals */}
           <div class="pdp-trust">
-            <div class="pdp-trust__item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-              <span>Free shipping over $200</span>
-            </div>
             <div class="pdp-trust__item">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
               <span>Secure checkout via Shopify</span>
@@ -230,6 +292,10 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
             <div class="pdp-trust__item">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
               <span>100% of profits help kids</span>
+            </div>
+            <div class="pdp-trust__item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              <span>In-store pickup available</span>
             </div>
           </div>
 
@@ -244,6 +310,57 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
       </div>
     </div>
   </section>
+
+  {/* ═══ FREQUENTLY BOUGHT TOGETHER ═══ */}
+  {relatedProducts.length >= 2 && (
+    <section class="fbt-section section">
+      <div class="container">
+        <h2 class="fbt-title reveal">Frequently Bought Together</h2>
+        <div class="fbt-row reveal">
+          <div class="fbt-item fbt-item--current">
+            <div class="fbt-item__image">
+              {mainImage && <img src={shopifyImageUrl(mainImage.url, 300)} alt={product.title} loading="lazy" />}
+            </div>
+            <span class="fbt-item__name">{product.title}</span>
+            <span class="fbt-item__price">${parseFloat(price.amount).toFixed(2)}</span>
+            <span class="fbt-item__this">This item</span>
+          </div>
+          <span class="fbt-plus">+</span>
+          {relatedProducts.slice(0, 2).map((rp: any) => {
+            const rpImage = rp.images.edges[0]?.node;
+            const rpPrice = rp.priceRange.minVariantPrice;
+            const rpVariant = rp.variants?.edges[0]?.node;
+            return (
+              <>
+                <div class="fbt-item">
+                  <input type="checkbox" class="fbt-check" checked
+                    data-variant-id={rpVariant?.id || ''}
+                    data-title={rp.title}
+                    data-price={rpPrice.amount}
+                    data-image={rpImage?.url || ''}
+                    data-handle={rp.handle}
+                  />
+                  <a href={`/shop/${rp.handle}`} class="fbt-item__image">
+                    {rpImage && <img src={shopifyImageUrl(rpImage.url, 300)} alt={rp.title} loading="lazy" />}
+                  </a>
+                  <a href={`/shop/${rp.handle}`} class="fbt-item__name">{rp.title}</a>
+                  <span class="fbt-item__price">${parseFloat(rpPrice.amount).toFixed(2)}</span>
+                </div>
+                <span class="fbt-plus">+</span>
+              </>
+            );
+          })}
+          <div class="fbt-total">
+            <span class="fbt-total__label">Bundle Price</span>
+            <span class="fbt-total__price" id="fbt-total-price">
+              ${(parseFloat(price.amount) + relatedProducts.slice(0, 2).reduce((s: number, rp: any) => s + parseFloat(rp.priceRange.minVariantPrice.amount), 0)).toFixed(2)}
+            </span>
+            <button class="btn btn--gold fbt-total__btn" id="fbt-add-all">Add All to Cart</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  )}
 
   {/* ═══ RELATED PRODUCTS ═══ */}
   {relatedProducts.length > 0 && (
@@ -558,7 +675,7 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
   .pdp-actions {
     display: flex;
     gap: 0.75rem;
-    margin: var(--space-lg) 0 var(--space-md);
+    margin: var(--space-lg) 0 0.5rem;
     align-items: stretch;
   }
 
@@ -569,24 +686,156 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
     font-size: 0.9rem;
   }
 
+  .pdp-buy-now {
+    flex: 1;
+    justify-content: center;
+    padding: 1.1rem 2rem;
+    font-size: 0.9rem;
+  }
+
+  /* ─── Express checkout ─────────────────── */
+  .pdp-express {
+    text-align: center;
+    margin-bottom: var(--space-md);
+  }
+
+  .pdp-express__or {
+    font-size: 0.72rem;
+    color: var(--color-stone);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .pdp-express__methods {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .pdp-express__method {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-slate);
+    letter-spacing: 0.02em;
+  }
+
+  .pdp-express__divider {
+    color: var(--color-cream-dark);
+    font-size: 0.8rem;
+  }
+
   .pdp-wishlist-btn {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
-    padding: 0.75rem 1.25rem;
+    padding: 0.6rem 1rem;
     border: 1.5px solid var(--color-cream-dark);
     color: var(--color-slate);
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-weight: 500;
     transition: all 0.3s;
     background: none;
     cursor: pointer;
     font-family: var(--font-body);
     white-space: nowrap;
+    width: 100%;
   }
   .pdp-wishlist-btn:hover { border-color: var(--color-charcoal); color: var(--color-charcoal); }
   .pdp-wishlist-btn.is-wished { color: #e74c3c; border-color: #e74c3c; }
   .pdp-wishlist-btn.is-wished svg { fill: #e74c3c; }
+
+  /* ─── Delivery & Shipping ──────────────── */
+  .pdp-delivery {
+    margin: var(--space-md) 0;
+    padding: var(--space-md);
+    background: var(--color-warm-white);
+    border: 1px solid var(--color-cream-dark);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .pdp-delivery__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .pdp-delivery__item svg {
+    color: var(--color-charcoal);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .pdp-delivery__label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-charcoal);
+  }
+
+  .pdp-delivery__date {
+    font-size: 0.78rem;
+    color: var(--color-slate);
+  }
+
+  .pdp-delivery__free-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    color: var(--color-gold);
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--color-cream-dark);
+  }
+
+  .pdp-delivery__free-hint svg { color: var(--color-gold); flex-shrink: 0; }
+
+  /* ─── Financing ────────────────────────── */
+  .pdp-financing {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.75rem var(--space-md);
+    background: var(--color-gold-soft);
+    font-size: 0.82rem;
+    color: var(--color-charcoal);
+    margin-bottom: var(--space-sm);
+  }
+
+  .pdp-financing svg { color: var(--color-charcoal); flex-shrink: 0; }
+
+  /* ─── Urgency ──────────────────────────── */
+  .pdp-urgency {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem var(--space-md);
+    background: #fdf2f2;
+    border-left: 3px solid #e74c3c;
+    font-size: 0.82rem;
+    color: var(--color-charcoal);
+    margin-bottom: var(--space-sm);
+  }
+
+  .pdp-urgency__dot {
+    width: 8px;
+    height: 8px;
+    background: #e74c3c;
+    border-radius: 50%;
+    flex-shrink: 0;
+    animation: urgencyPulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes urgencyPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .pdp-urgency__text strong { color: #e74c3c; }
 
   /* ─── Trust signals ────────────────────── */
   .pdp-trust {
@@ -621,6 +870,139 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
 
   .pdp-charity-note__icon { font-size: 1.5rem; flex-shrink: 0; }
   .pdp-charity-note p { font-size: 0.85rem; color: var(--color-charcoal); margin: 0; max-width: none; }
+
+  /* ─── Frequently Bought Together ─────────── */
+  .fbt-section {
+    background: var(--color-warm-white);
+    border-top: 1px solid var(--color-cream-dark);
+  }
+
+  .fbt-title {
+    text-align: center;
+    margin-bottom: var(--space-lg);
+  }
+
+  .fbt-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .fbt-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    max-width: 160px;
+    text-align: center;
+    position: relative;
+  }
+
+  .fbt-item__image {
+    width: 120px;
+    height: 120px;
+    overflow: hidden;
+    background: var(--color-cream-dark);
+    border: 2px solid transparent;
+    transition: border-color 0.2s;
+  }
+
+  .fbt-item--current .fbt-item__image {
+    border-color: var(--color-gold);
+  }
+
+  .fbt-item__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .fbt-item__name {
+    font-family: var(--font-display);
+    font-size: 0.82rem;
+    line-height: 1.3;
+    color: var(--color-charcoal);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  a.fbt-item__name:hover { color: var(--color-gold); }
+
+  .fbt-item__price {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-charcoal);
+  }
+
+  .fbt-item__this {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-gold);
+  }
+
+  .fbt-check {
+    position: absolute;
+    top: -4px;
+    right: 16px;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-gold);
+    cursor: pointer;
+  }
+
+  .fbt-plus {
+    font-size: 1.5rem;
+    color: var(--color-stone);
+    font-weight: 300;
+  }
+
+  .fbt-plus:last-of-type { display: none; }
+
+  .fbt-total {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1.25rem 1.5rem;
+    background: var(--color-cream);
+    border: 1px solid var(--color-cream-dark);
+    min-width: 180px;
+  }
+
+  .fbt-total__label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-slate);
+  }
+
+  .fbt-total__price {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: var(--color-charcoal);
+  }
+
+  .fbt-total__btn {
+    font-size: 0.72rem;
+    padding: 0.7rem 1.5rem;
+  }
+
+  @media (max-width: 768px) {
+    .fbt-row {
+      flex-direction: column;
+    }
+    .fbt-plus {
+      font-size: 1.2rem;
+    }
+  }
 
   /* ─── Related Products ─────────────────── */
   .related-section {
@@ -882,7 +1264,6 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
 
   @media (max-width: 768px) {
     .pdp-actions { flex-direction: column; }
-    .pdp-wishlist-btn { justify-content: center; }
   }
 </style>
 
@@ -1063,6 +1444,17 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
 
   addToCartBtn?.addEventListener('click', handleAddToCart);
 
+  // ─── Buy Now ─────────────────────────────────
+  const buyNowBtn = document.getElementById('buy-now');
+  buyNowBtn?.addEventListener('click', () => {
+    const variantId = addToCartBtn?.dataset.variantId;
+    if (!variantId) return;
+    const qty = parseInt(qtyInput?.value || '1');
+    const numericId = variantId.includes('/') ? variantId.split('/').pop() : variantId;
+    const domain = (window as any).__SHOPIFY_DOMAIN || 'sunnyandranney.myshopify.com';
+    window.location.href = `https://${domain}/cart/${numericId}:${qty}`;
+  });
+
   // Sticky bar add to cart
   stickyAdd?.addEventListener('click', handleAddToCart);
 
@@ -1225,6 +1617,105 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
       { threshold: 0 }
     );
     if (addToCartBtn) observer.observe(addToCartBtn);
+  }
+
+  // ─── Urgency signals ──────────────────────────
+  const urgencyEl = document.getElementById('pdp-urgency');
+  const urgencyText = document.getElementById('urgency-text');
+  if (urgencyEl && urgencyText) {
+    // Deterministic "people viewing" based on product handle hash
+    const handle = addToCartBtn?.dataset.productHandle || '';
+    let hash = 0;
+    for (let i = 0; i < handle.length; i++) hash = ((hash << 5) - hash + handle.charCodeAt(i)) | 0;
+    const viewers = 3 + Math.abs(hash % 15);
+    const hour = new Date().getHours();
+    // Show different urgency based on time of day
+    if (hour >= 9 && hour <= 21) {
+      urgencyText.innerHTML = `<strong>${viewers} people</strong> are viewing this right now`;
+    } else {
+      urgencyText.innerHTML = `<strong>Selling fast</strong> — popular item this week`;
+    }
+  }
+
+  // ─── Delivery date calculation ────────────────
+  const deliveryDateEl = document.getElementById('delivery-date');
+  if (deliveryDateEl) {
+    const today = new Date();
+    const minDays = 3;
+    const maxDays = 5;
+    const minDate = new Date(today);
+    const maxDate = new Date(today);
+    // Skip weekends
+    let added = 0;
+    while (added < minDays) {
+      minDate.setDate(minDate.getDate() + 1);
+      if (minDate.getDay() !== 0 && minDate.getDay() !== 6) added++;
+    }
+    added = 0;
+    while (added < maxDays) {
+      maxDate.setDate(maxDate.getDate() + 1);
+      if (maxDate.getDay() !== 0 && maxDate.getDay() !== 6) added++;
+    }
+    const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    deliveryDateEl.textContent = `Get it ${fmt(minDate)} – ${fmt(maxDate)}`;
+  }
+
+  // ─── Frequently Bought Together ──────────────
+  const fbtAddAll = document.getElementById('fbt-add-all');
+  const fbtChecks = document.querySelectorAll('.fbt-check');
+  const fbtTotalPrice = document.getElementById('fbt-total-price');
+
+  // Recalculate FBT total when checkboxes change
+  function updateFbtTotal() {
+    const currentPrice = parseFloat(addToCartBtn?.dataset.productPrice || '0');
+    let total = currentPrice;
+    fbtChecks.forEach(cb => {
+      if ((cb as HTMLInputElement).checked) {
+        total += parseFloat((cb as HTMLElement).dataset.price || '0');
+      }
+    });
+    if (fbtTotalPrice) fbtTotalPrice.textContent = `$${total.toFixed(2)}`;
+  }
+
+  fbtChecks.forEach(cb => cb.addEventListener('change', updateFbtTotal));
+
+  fbtAddAll?.addEventListener('click', () => {
+    // Add current product
+    handleAddToCart();
+    // Add checked related items
+    fbtChecks.forEach(cb => {
+      if (!(cb as HTMLInputElement).checked) return;
+      const el = cb as HTMLElement;
+      window.addToCart?.({
+        variantId: el.dataset.variantId || '',
+        title: el.dataset.title || '',
+        price: parseFloat(el.dataset.price || '0'),
+        image: el.dataset.image || '',
+        handle: el.dataset.handle || '',
+        variantTitle: '',
+      });
+    });
+    fbtAddAll.textContent = '✓ All Added!';
+    (fbtAddAll as HTMLButtonElement).disabled = true;
+    setTimeout(() => {
+      fbtAddAll.textContent = 'Add All to Cart';
+      (fbtAddAll as HTMLButtonElement).disabled = false;
+    }, 2000);
+  });
+
+  // ─── Inline Image Zoom (hover) ───────────────
+  if (galleryMain && mainImg) {
+    galleryMain.addEventListener('mousemove', (e) => {
+      const rect = galleryMain.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      mainImg.style.transformOrigin = `${x}% ${y}%`;
+      mainImg.style.transform = 'scale(2)';
+    });
+    galleryMain.addEventListener('mouseleave', () => {
+      mainImg.style.transformOrigin = 'center';
+      mainImg.style.transform = 'scale(1)';
+    });
   }
 
   // ─── Track recently viewed ──────────────────

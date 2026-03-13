@@ -4,7 +4,7 @@ import Nav from '@/components/Nav.astro';
 import Footer from '@/components/Footer.astro';
 import CartDrawer from '@/components/CartDrawer.astro';
 import BottomNav from '@/components/BottomNav.astro';
-import StacyChat from '@/components/StacyChat.astro';
+import StaciChat from '@/components/StaciChat.astro';
 import SEO from '@/components/SEO.astro';
 import '@/styles/global.css';
 
@@ -56,7 +56,7 @@ const props = Astro.props;
     <Footer />
     <CartDrawer transition:persist />
     <BottomNav transition:persist />
-    <StacyChat transition:persist />
+    <StaciChat transition:persist />
 
     <!-- Expose public Shopify config for client-side search typeahead -->
     <script is:inline define:vars={{

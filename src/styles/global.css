@@ -310,8 +310,8 @@ p {
 /* ─── Product Grid ──────────────────────────────────────────── */
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--space-md);
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-sm);
 }
 
 @media (min-width: 768px) {

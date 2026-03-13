@@ -2,11 +2,13 @@
 const currentPath = Astro.url.pathname;
 
 const categories = [
-  { href: '/shop?category=furniture', label: 'Furniture' },
-  { href: '/shop?category=decor', label: 'Decor' },
-  { href: '/shop?category=lighting', label: 'Lighting' },
-  { href: '/shop?category=gifts', label: 'Gifts' },
-  { href: '/shop?category=kitchenware', label: 'Kitchenware' },
+  { href: '/shop?sort=newest', label: 'New Arrivals', highlight: false },
+  { href: '/shop?category=furniture', label: 'Furniture', highlight: false },
+  { href: '/shop?category=decor', label: 'Decor', highlight: false },
+  { href: '/shop?category=lighting', label: 'Lighting', highlight: false },
+  { href: '/shop?category=gifts', label: 'Gifts', highlight: false },
+  { href: '/shop?category=kitchenware', label: 'Kitchenware', highlight: false },
+  { href: '/shop?sale=true', label: 'Sale', highlight: true },
 ];
 ---
 
@@ -14,7 +16,7 @@ const categories = [
   <!-- Top banner -->
   <div class="nav__banner">
     <div class="container nav__banner-inner">
-      <span>☀️ 100% of profits support <strong>Sunshine on a Ranney Day</strong> — home makeovers for kids with special needs</span>
+      <span>100% of profits support <strong>Sunshine on a Ranney Day</strong> — home makeovers for kids with special needs</span>
     </div>
   </div>
 
