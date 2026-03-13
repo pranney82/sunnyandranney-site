@@ -20,6 +20,16 @@
 /images/*
   Cache-Control: public, max-age=604800, stale-while-revalidate=86400
 
+# Favicons & manifest — cache for 1 week (rarely change)
+/favicon.ico
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+/favicon.svg
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+/apple-touch-icon.png
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+/site.webmanifest
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
 # HTML pages — short cache + stale-while-revalidate for instant loads
 /
   Cache-Control: public, max-age=300, stale-while-revalidate=3600
