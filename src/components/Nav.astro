@@ -97,6 +97,22 @@ const categories = [
 
   .nav__banner strong { color: var(--color-gold); }
 
+  /* Desktop: slim banner, disappears on scroll (via JS) */
+  @media (min-width: 768px) {
+    .nav__banner {
+      font-size: 0.68rem;
+      padding: 0.3rem 0;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+    .nav--scrolled .nav__banner {
+      transform: translateY(-100%);
+      opacity: 0;
+      height: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+  }
+
   .nav__banner-slider { position: relative; height: 1.1em; overflow: hidden; }
 
   .nav__banner-slide {
@@ -211,6 +227,13 @@ const categories = [
     flex-shrink: 0;
   }
 
+  /* Desktop: taller, more premium feel */
+  @media (min-width: 768px) {
+    .nav__main { border-bottom: none; }
+    .nav__main-inner { height: 56px; }
+    .nav__logo-img { height: 32px; }
+  }
+
   /* ─── Search Bar (desktop) ─────────────── */
   .nav__search-bar {
     flex: 1;
@@ -221,12 +244,25 @@ const categories = [
     border: 1.5px solid var(--color-cream-dark);
     border-radius: 6px;
     padding: 0 0 0 0.75rem;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
     overflow: hidden;
   }
 
   .nav__search-bar:focus-within {
     border-color: var(--color-gold);
+    box-shadow: 0 0 0 3px rgba(255, 212, 0, 0.1);
+  }
+
+  @media (min-width: 768px) {
+    .nav__search-bar {
+      max-width: 480px;
+      border-radius: 100px;
+      background: var(--color-cream);
+      border-color: var(--color-cream-dark);
+    }
+    .nav__search-submit {
+      border-radius: 0 100px 100px 0;
+    }
   }
 
   .nav__search-icon {
@@ -394,8 +430,9 @@ const categories = [
 
   .nav__categories::-webkit-scrollbar { display: none; }
 
+  /* Desktop: hide category bar for minimal nav */
   @media (min-width: 768px) {
-    .nav__categories { display: block; }
+    .nav__categories { display: none; }
   }
 
   .nav__categories-inner {

@@ -598,6 +598,24 @@ const categoryTiles = Object.values(categoryMap);
   .product-card:hover .product-card__img-hover { opacity: 1; transform: scale(1.03); }
   .product-card:hover .product-card__img-primary:only-child { opacity: 1; transform: scale(1.05); }
 
+  /* Desktop: hide add-to-cart until hover on homepage too */
+  @media (min-width: 768px) {
+    .product-card__add-btn {
+      opacity: 0;
+      max-height: 0;
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+      transition: opacity 0.3s, max-height 0.3s, padding 0.3s, margin 0.3s;
+    }
+    .product-card:hover .product-card__add-btn {
+      opacity: 1;
+      max-height: 48px;
+      padding: 0.55rem 1rem;
+      margin-top: 0.5rem;
+    }
+  }
+
   /* ─── Horizontal Scroll (deals) ────────── */
   .home-scroll {
     display: flex;
@@ -821,6 +839,19 @@ const categoryTiles = Object.values(categoryMap);
   .product-card__add-btn:hover {
     background: var(--color-gold);
     color: var(--color-charcoal);
+  }
+
+  /* Desktop: match premium card styling */
+  @media (min-width: 768px) {
+    .home-products .product-card {
+      border-radius: 4px;
+    }
+    .home-products .product-card__info {
+      padding: 1rem 0.25rem 0.25rem;
+    }
+    .home-products .product-card__type {
+      display: none;
+    }
   }
 
   /* ─── Recently Viewed (homepage) ────────── */
