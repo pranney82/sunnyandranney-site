@@ -19,6 +19,8 @@ const GOOGLE_RATING = 4.9;
 const REVIEW_COUNT = 117;
 const GOOGLE_PLACE_URL = 'https://www.google.com/maps/place/Sunny+%26+Ranney/@34.0234,-84.3616,17z/';
 
+const AVATAR_COLORS = ['#4285F4', '#EA4335', '#34A853', '#FBBC05', '#8E44AD', '#E67E22'];
+
 const FEATURED_REVIEWS = [
   {
     name: 'Sarah M.',
@@ -87,7 +89,12 @@ const stars = renderStars(GOOGLE_RATING);
               ))}
             </div>
             <p class="review-card__text">"{review.text}"</p>
-            <cite class="review-card__author">— {review.name}</cite>
+            <div class="review-card__footer">
+              <div class="review-card__avatar" style={`background-color: ${AVATAR_COLORS[FEATURED_REVIEWS.indexOf(review) % AVATAR_COLORS.length]}`}>
+                {review.name.charAt(0)}
+              </div>
+              <cite class="review-card__author">— {review.name}</cite>
+            </div>
           </blockquote>
         ))}
       </div>
@@ -230,12 +237,32 @@ const stars = renderStars(GOOGLE_RATING);
     max-width: none;
   }
 
+  .review-card__footer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: auto;
+  }
+
+  .review-card__avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-family: var(--font-display);
+    flex-shrink: 0;
+  }
+
   .review-card__author {
     font-size: 0.78rem;
     font-weight: 600;
     color: var(--color-charcoal);
     font-style: normal;
-    margin-top: auto;
   }
 
   .reviews__cta {

@@ -18,7 +18,7 @@ const categories = [
     <div class="container nav__banner-inner">
       <div class="nav__banner-slider" id="banner-slider">
         <span class="nav__banner-slide nav__banner-slide--active">100% of profits support <strong>Sunshine on a Ranney Day</strong> — home makeovers for kids with special needs</span>
-        <span class="nav__banner-slide">FREE SHIPPING on orders over $200 — <a href="/shop" style="color:var(--color-gold);text-decoration:underline;">Shop Now</a></span>
+        <span class="nav__banner-slide">LOCAL PICKUP ONLY — <a href="/shop" style="color:var(--color-gold);text-decoration:underline;">Shop Now</a></span>
         <span class="nav__banner-slide">Visit our Roswell showroom — Tue–Sat, 10am–6pm</span>
       </div>
     </div>
@@ -40,7 +40,15 @@ const categories = [
   <div class="nav__main">
     <div class="container nav__main-inner">
       <a href="/" class="nav__logo" aria-label="Sunny & Ranney Home">
-        <img src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/logo-tagline-light-bg/nav" alt="Sunny & Ranney" class="nav__logo-img" />
+        <img
+          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/logo-tagline-light-bg/nav"
+          alt="Sunny & Ranney"
+          class="nav__logo-img"
+          width="120"
+          height="120"
+          fetchpriority="high"
+          decoding="async"
+        />
       </a>
 
       <!-- Search bar — prominent, center (desktop) -->
@@ -125,6 +133,17 @@ const categories = [
     transform: translateY(100%);
     transition: opacity 0.5s, transform 0.5s;
     white-space: nowrap;
+  }
+
+  @media (max-width: 767px) {
+    .nav__banner { font-size: 0.6rem; }
+    .nav__banner-slider { height: 2.4em; }
+    .nav__banner-slide {
+      white-space: normal;
+      text-align: center;
+      line-height: 1.2;
+      padding: 0 0.25rem;
+    }
   }
 
   .nav__banner-slide--active {
@@ -225,13 +244,14 @@ const categories = [
     width: auto;
     object-fit: contain;
     flex-shrink: 0;
+    aspect-ratio: 1 / 1;
   }
 
   /* Desktop: taller, more premium feel */
   @media (min-width: 768px) {
     .nav__main { border-bottom: none; }
     .nav__main-inner { height: 56px; }
-    .nav__logo-img { height: 32px; }
+    .nav__logo-img { height: 40px; }
   }
 
   /* ─── Search Bar (desktop) ─────────────── */
@@ -430,9 +450,8 @@ const categories = [
 
   .nav__categories::-webkit-scrollbar { display: none; }
 
-  /* Desktop: hide category bar for minimal nav */
   @media (min-width: 768px) {
-    .nav__categories { display: none; }
+    .nav__categories { display: block; }
   }
 
   .nav__categories-inner {

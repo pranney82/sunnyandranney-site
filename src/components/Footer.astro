@@ -6,7 +6,6 @@ const currentYear = new Date().getFullYear();
   <div class="footer__charity-bar">
     <div class="container">
       <p class="footer__charity-text">
-        <span class="footer__sun">☀️</span>
         100% of profits support <strong>Sunshine on a Ranney Day</strong> — transforming the lives of kids with special needs
       </p>
     </div>
@@ -15,7 +14,15 @@ const currentYear = new Date().getFullYear();
   <div class="footer__main container">
     <div class="footer__grid">
       <div class="footer__brand">
-        <img src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/logo-tagline-dark-bg/footer" alt="Sunny & Ranney" class="footer__logo-img" />
+        <img
+          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/logo-tagline-dark-bg/footer"
+          alt="Sunny & Ranney"
+          class="footer__logo-img"
+          width="200"
+          height="200"
+          loading="lazy"
+          decoding="async"
+        />
         <p class="footer__description">
           Curated designer furniture & home decor in Roswell, Georgia.
           Every purchase brightens a child's life.
@@ -131,6 +138,7 @@ const currentYear = new Date().getFullYear();
     object-fit: contain;
     display: block;
     margin-bottom: var(--space-sm);
+    aspect-ratio: 1 / 1;
   }
 
   .footer__logo {

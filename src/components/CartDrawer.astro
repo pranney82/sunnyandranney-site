@@ -14,12 +14,9 @@
     </button>
   </div>
 
-  <!-- Free shipping progress -->
+  <!-- Local pickup notice -->
   <div class="cart-drawer__shipping" id="cart-shipping">
-    <div class="shipping-bar">
-      <div class="shipping-bar__fill" id="shipping-fill"></div>
-    </div>
-    <p class="shipping-bar__text" id="shipping-text"></p>
+    <p class="shipping-bar__text" id="shipping-text" style="text-align:center;">Local pickup only — no shipping available</p>
   </div>
 
   <!-- Cart items -->
@@ -40,9 +37,9 @@
       <span>Subtotal</span>
       <span class="cart-footer__total" id="cart-total">$0.00</span>
     </div>
-    <p class="cart-footer__note">Shipping & taxes calculated at checkout</p>
+    <p class="cart-footer__note">Taxes calculated at checkout · Local pickup only</p>
     <button class="btn btn--gold cart-footer__checkout" id="cart-checkout" style="width:100%; justify-content:center;">
-      Proceed to Checkout →
+      Proceed to Checkout
     </button>
     <div class="cart-footer__trust">
       <span>Secure checkout</span>
@@ -375,7 +372,7 @@
 <script>
   import { cart } from '@/lib/cart-store.js';
 
-  const FREE_SHIP_THRESHOLD = 200; // $200 free shipping
+  // No shipping — local pickup only
 
   // DOM refs
   const overlay = document.getElementById('cart-overlay');
@@ -387,7 +384,6 @@
   const countEl = document.getElementById('cart-drawer-count');
   const totalEl = document.getElementById('cart-total');
   const navCount = document.getElementById('cart-count');
-  const shippingFill = document.getElementById('shipping-fill');
   const shippingText = document.getElementById('shipping-text');
   const checkoutBtn = document.getElementById('cart-checkout');
 
@@ -570,16 +566,9 @@
       if (footerEl) footerEl.style.display = 'block';
     }
 
-    // Shipping progress
-    const pct = Math.min(100, (total / FREE_SHIP_THRESHOLD) * 100);
-    if (shippingFill) shippingFill.style.width = pct + '%';
+    // Local pickup notice (static)
     if (shippingText) {
-      if (total >= FREE_SHIP_THRESHOLD) {
-        shippingText.innerHTML = 'You\'ve earned <strong>free shipping!</strong>';
-      } else {
-        const remaining = (FREE_SHIP_THRESHOLD - total).toFixed(2);
-        shippingText.innerHTML = `Add <strong>$${remaining}</strong> more for free shipping`;
-      }
+      shippingText.textContent = 'Local pickup only — no shipping available';
     }
 
     // Total

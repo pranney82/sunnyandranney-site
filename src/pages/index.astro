@@ -56,9 +56,13 @@ const categoryTiles = Object.values(categoryMap);
   <section class="hero-banner">
     <div class="hero-banner__inner container">
       <div class="hero-banner__text">
+        <img
+          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/logo-tagline-dark-bg/footer"
+          alt="Sunny & Ranney"
+          class="hero-banner__logo animate-fade-up"
+        />
         <h1 class="hero-banner__title animate-fade-up">
-          Designer Furniture<br/>
-          <span class="hero-banner__accent">& Home Decor</span>
+          Shop with a Purpose
         </h1>
         <p class="hero-banner__sub animate-fade-up delay-1">
           Curated pieces for every room. Every purchase supports children with special needs.
@@ -144,7 +148,7 @@ const categoryTiles = Object.values(categoryMap);
       <div class="container">
         <div class="home-products__header reveal">
           <h2 class="section-title">Trending Now</h2>
-          <a href="/shop" class="home-products__see-all">See all products →</a>
+          <a href="/shop" class="home-products__see-all">See all products</a>
         </div>
         <div class="product-grid reveal" id="home-grid">
           {featuredProducts.map((product: any, idx: number) => {
@@ -228,8 +232,8 @@ const categoryTiles = Object.values(categoryMap);
       <div class="value-bar__item reveal">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         <div>
-          <strong>Free Shipping</strong>
-          <span>On orders over $200</span>
+          <strong>Local Pickup</strong>
+          <span>No shipping — pickup only</span>
         </div>
       </div>
       <div class="value-bar__item reveal delay-1">
@@ -258,7 +262,7 @@ const categoryTiles = Object.values(categoryMap);
       <div class="container">
         <div class="home-products__header reveal">
           <h2 class="section-title">On Sale</h2>
-          <a href="/shop" class="home-products__see-all">Shop all deals →</a>
+          <a href="/shop" class="home-products__see-all">Shop all deals</a>
         </div>
         <div class="home-scroll reveal">
           {onSaleProducts.slice(0, 8).map((product: any) => {
@@ -306,7 +310,7 @@ const categoryTiles = Object.values(categoryMap);
           Sunshine on a Ranney Day transforms the bedrooms and living spaces of children
           with special needs. 100% of store profits fund these makeovers.
         </p>
-        <a href="/mission" class="mission-strip__link">Learn our story &rarr;</a>
+        <a href="/mission" class="mission-strip__link">Learn our story</a>
       </div>
       <div class="mission-strip__stats">
         <div class="mission-strip__stat">
@@ -341,7 +345,7 @@ const categoryTiles = Object.values(categoryMap);
     <div class="container">
       <div class="home-products__header">
         <h2 class="section-title">Pick Up Where You Left Off</h2>
-        <a href="/shop" class="home-products__see-all">Continue shopping →</a>
+        <a href="/shop" class="home-products__see-all">Continue shopping</a>
       </div>
       <div class="home-recent__scroll" id="home-recent-scroll"></div>
     </div>
@@ -359,6 +363,20 @@ const categoryTiles = Object.values(categoryMap);
       radial-gradient(ellipse at 80% 20%, rgba(255, 212, 0, 0.06) 0%, transparent 40%),
       var(--color-cyan);
     overflow: hidden;
+  }
+
+  .hero-banner__logo {
+    display: block;
+    height: 60px;
+    width: auto;
+    object-fit: contain;
+    margin-bottom: var(--space-md);
+  }
+
+  @media (min-width: 768px) {
+    .hero-banner__logo {
+      height: 80px;
+    }
   }
 
   .hero-banner__inner {
@@ -992,7 +1010,7 @@ const categoryTiles = Object.values(categoryMap);
     });
 
     const orig = btn.textContent;
-    btn.textContent = '✓ Added';
+    btn.textContent = 'Added';
     (btn as HTMLButtonElement).disabled = true;
     setTimeout(() => {
       btn.textContent = orig;

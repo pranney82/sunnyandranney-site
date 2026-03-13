@@ -45,7 +45,11 @@ const props = Astro.props;
     <!-- Preconnect to external CDNs for faster images -->
     <link rel="preconnect" href="https://cdn.shopify.com" />
     <link rel="dns-prefetch" href="https://cdn.shopify.com" />
+    <link rel="preconnect" href="https://imagedelivery.net" />
     <link rel="dns-prefetch" href="https://imagedelivery.net" />
+
+    <!-- Preload nav logo — above-fold LCP candidate -->
+    <link rel="preload" href="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/logo-tagline-light-bg/nav" as="image" type="image/png" />
 
     <!-- Preload critical fonts (eliminates FOIT, avoids render-blocking chain) -->
     <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />

@@ -67,9 +67,9 @@ try {
           <span class="toolbar__count" id="product-count"></span>
           <select class="toolbar__sort" id="sort-select" aria-label="Sort products">
             <option value="best-selling">Best Selling</option>
-            <option value="price-asc">Price: Low → High</option>
-            <option value="price-desc">Price: High → Low</option>
-            <option value="title-asc">A → Z</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+            <option value="title-asc">A to Z</option>
             <option value="newest">Newest</option>
           </select>
           <div class="toolbar__views">
@@ -117,7 +117,7 @@ try {
                         Every purchase transforms a child's room. 100% of profits fund
                         <strong> Sunshine on a Ranney Day</strong> home makeovers.
                       </p>
-                      <a href="/mission" class="grid-editorial__link">Learn more &rarr;</a>
+                      <a href="/mission" class="grid-editorial__link">Learn more</a>
                     </div>
                   </div>
                 )}
@@ -254,7 +254,7 @@ try {
           <div class="shop-placeholder__steps">
             <div class="shop-placeholder__step">
               <span class="shop-placeholder__step-num">1</span>
-              <span>Go to Shopify Admin → Settings → Apps → Develop apps</span>
+              <span>Go to Shopify Admin, Settings, Apps, Develop apps</span>
             </div>
             <div class="shop-placeholder__step">
               <span class="shop-placeholder__step-num">2</span>
@@ -267,7 +267,7 @@ try {
           </div>
           <p style="margin-top: 1.5rem;">
             <a href="https://sunnyandranney.myshopify.com" target="_blank" rel="noopener noreferrer" class="btn btn--primary">
-              Visit Your Current Shopify Store →
+              Visit Your Current Shopify Store
             </a>
           </p>
         </div>
@@ -297,7 +297,7 @@ try {
         <div class="qv-variants" id="qv-variants"></div>
         <div class="qv-actions">
           <button class="btn btn--gold qv-add" id="qv-add">Add to Cart</button>
-          <a class="btn btn--outline qv-view-full" id="qv-view-full" href="#">View Full Details →</a>
+          <a class="btn btn--outline qv-view-full" id="qv-view-full" href="#">View Full Details</a>
         </div>
       </div>
     </div>
@@ -307,10 +307,10 @@ try {
   <section class="mission-reminder">
     <div class="container">
       <p class="mission-reminder__text reveal">
-        <span class="mission-reminder__sun">☀️</span>
+        <span class="mission-reminder__sun"></span>
         Every purchase you make here directly supports <strong>Sunshine on a Ranney Day</strong>
         — funding home makeovers for kids with special needs.
-        <a href="https://sunshineonaranneyday.com" target="_blank" rel="noopener noreferrer">Learn more →</a>
+        <a href="https://sunshineonaranneyday.com" target="_blank" rel="noopener noreferrer">Learn more</a>
       </p>
     </div>
   </section>
@@ -1450,7 +1450,7 @@ try {
     });
 
     const orig = btn.textContent;
-    btn.textContent = '✓ Added';
+    btn.textContent = 'Added';
     (btn as HTMLButtonElement).disabled = true;
     setTimeout(() => {
       btn.textContent = orig;
@@ -1651,7 +1651,7 @@ try {
       handle: qvViewFull?.href?.split('/shop/')[1] || '',
       variantTitle: '',
     });
-    qvAdd.textContent = '✓ Added!';
+    qvAdd.textContent = 'Added!';
     qvAdd.disabled = true;
     setTimeout(() => {
       qvAdd.textContent = 'Add to Cart';
