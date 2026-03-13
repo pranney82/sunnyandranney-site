@@ -51,11 +51,6 @@
 </aside>
 
 <!-- Toast notification -->
-<div class="cart-toast" id="cart-toast" aria-live="polite" aria-hidden="true">
-  <span class="cart-toast__icon">✓</span>
-  <span class="cart-toast__text" id="cart-toast-text"></span>
-  <a href="#" class="cart-toast__view" id="cart-toast-view">View Cart</a>
-</div>
 
 <style>
   /* ─── Overlay ─────────────────────────── */
@@ -340,47 +335,6 @@
     max-width: none;
   }
 
-  /* ─── Toast ───────────────────────────── */
-  .cart-toast {
-    position: fixed;
-    bottom: calc(90px + env(safe-area-inset-bottom, 0px));
-    left: 50%;
-    transform: translateX(-50%) translateY(120%);
-    background: var(--color-charcoal);
-    color: white;
-    padding: 0.75rem 1.25rem;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    font-size: 0.85rem;
-    font-weight: 500;
-    z-index: 300;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
-    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    white-space: nowrap;
-  }
-
-  @media (min-width: 768px) {
-    .cart-toast { bottom: 1.5rem; }
-  }
-
-  .cart-toast[aria-hidden="false"] {
-    transform: translateX(-50%) translateY(0);
-  }
-
-  .cart-toast__icon {
-    color: var(--color-gold);
-    font-weight: 700;
-  }
-
-  .cart-toast__view {
-    color: var(--color-gold);
-    font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-    margin-left: 0.25rem;
-  }
 
   /* Cart badge bounce on add */
   @keyframes cartBadgeBounce {
@@ -418,9 +372,6 @@
   const shippingFill = document.getElementById('shipping-fill');
   const shippingText = document.getElementById('shipping-text');
   const checkoutBtn = document.getElementById('cart-checkout');
-  const toast = document.getElementById('cart-toast');
-  const toastText = document.getElementById('cart-toast-text');
-  const toastView = document.getElementById('cart-toast-view');
 
   // ─── Focus Trap ─────────────────────────
   function trapFocus(container, e) {
@@ -477,27 +428,15 @@
   window.openCart = openCart;
   window.closeCart = closeCart;
 
-  // ─── Toast ───────────────────────────────
-  let toastTimer;
-  window.showCartToast = function(text) {
-    if (toastText) toastText.textContent = text;
-    toast?.setAttribute('aria-hidden', 'false');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast?.setAttribute('aria-hidden', 'true'), 3500);
-    // Bounce cart badges
+  // ─── Badge bounce on add ────────────────
+  window.showCartToast = function() {
     [navCount, document.getElementById('bottom-nav-cart-count')].forEach(el => {
       if (!el) return;
       el.classList.remove('bounce');
-      void el.offsetWidth; // force reflow to restart animation
+      void el.offsetWidth;
       el.classList.add('bounce');
     });
   };
-
-  toastView?.addEventListener('click', (e) => {
-    e.preventDefault();
-    toast?.setAttribute('aria-hidden', 'true');
-    openCart();
-  });
 
   function createCartItem(item) {
     const el = document.createElement('div');
