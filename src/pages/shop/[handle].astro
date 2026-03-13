@@ -2,6 +2,7 @@
 export const prerender = false;
 
 import Base from '@/layouts/Base.astro';
+import GoogleReviews from '@/components/GoogleReviews.astro';
 
 const { handle } = Astro.params;
 
@@ -124,6 +125,7 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
         <div class="pdp-info">
           {product.productType && <span class="label">{product.productType}</span>}
           <h1>{product.title}</h1>
+          <GoogleReviews variant="compact" />
 
           <div class="pdp-price" id="pdp-price-area">
             <span class="pdp-price__current" id="pdp-current-price">
@@ -776,7 +778,8 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
   /* ─── Sticky Mobile Bar ────────────────── */
   .sticky-bar {
     position: fixed;
-    bottom: 0;
+    /* Sit above the bottom nav (64px + safe area) */
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
     left: 0;
     right: 0;
     background: var(--color-cream);
@@ -798,6 +801,10 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
 
   @media (max-width: 768px) {
     .sticky-bar { display: flex; }
+  }
+
+  @media (min-width: 769px) {
+    .sticky-bar { bottom: 0; }
   }
 
   .sticky-bar__info {
@@ -1022,16 +1029,22 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
   const lightboxCounter = document.getElementById('lightbox-counter');
   let lightboxIdx = 0;
 
+  let lightboxPrevFocus: HTMLElement | null = null;
+
   function openLightbox(idx: number) {
+    lightboxPrevFocus = document.activeElement as HTMLElement;
     lightboxIdx = idx;
     updateLightbox();
     lightbox?.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
+    setTimeout(() => lightboxClose?.focus(), 50);
   }
 
   function closeLightbox() {
     lightbox?.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
+    lightboxPrevFocus?.focus();
+    lightboxPrevFocus = null;
   }
 
   function updateLightbox() {
@@ -1097,15 +1110,38 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
     const items = recentlyViewed.getItems().filter((i: any) => i.handle !== pdpHandle);
     if (items.length > 0) {
       recentSection.style.display = '';
-      recentScroll.innerHTML = items.slice(0, 8).map((item: any) => `
-        <a href="/shop/${item.handle}" class="recently-card">
-          <div class="recently-card__image">
-            ${item.image ? `<img src="${item.image}" alt="${item.title}" loading="lazy" />` : ''}
-          </div>
-          <span class="recently-card__title">${item.title}</span>
-          ${item.price ? `<span class="recently-card__price">$${parseFloat(item.price).toFixed(2)}</span>` : ''}
-        </a>
-      `).join('');
+      const frag = document.createDocumentFragment();
+      items.slice(0, 8).forEach((item: any) => {
+        const card = document.createElement('a');
+        card.href = `/shop/${encodeURIComponent(item.handle)}`;
+        card.className = 'recently-card';
+
+        const imgWrap = document.createElement('div');
+        imgWrap.className = 'recently-card__image';
+        if (item.image) {
+          const img = document.createElement('img');
+          img.src = item.image;
+          img.alt = item.title || '';
+          img.loading = 'lazy';
+          imgWrap.appendChild(img);
+        }
+        card.appendChild(imgWrap);
+
+        const titleEl = document.createElement('span');
+        titleEl.className = 'recently-card__title';
+        titleEl.textContent = item.title;
+        card.appendChild(titleEl);
+
+        if (item.price) {
+          const priceEl = document.createElement('span');
+          priceEl.className = 'recently-card__price';
+          priceEl.textContent = `$${parseFloat(item.price).toFixed(2)}`;
+          card.appendChild(priceEl);
+        }
+
+        frag.appendChild(card);
+      });
+      recentScroll.replaceChildren(frag);
     }
   }
 </script>

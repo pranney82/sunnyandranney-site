@@ -1,0 +1,179 @@
+---
+/**
+ * Email capture / newsletter signup.
+ * Form submits to a configurable endpoint.
+ * Replace ACTION_URL with your email service (Mailchimp, Klaviyo, ConvertKit, etc.)
+ */
+---
+
+<section class="email-capture" id="email-capture">
+  <div class="container email-capture__inner">
+    <div class="email-capture__text">
+      <h2>Get 10% Off Your First Order</h2>
+      <p>
+        Join the Sunny & Ranney list for exclusive deals, new arrivals, and updates
+        on how your purchases are changing lives.
+      </p>
+    </div>
+    <form class="email-capture__form" id="email-form">
+      <div class="email-capture__input-wrap">
+        <input
+          type="email"
+          id="email-input"
+          placeholder="Enter your email"
+          required
+          autocomplete="email"
+          aria-label="Email address"
+        />
+        <button type="submit" class="email-capture__btn">
+          Subscribe
+        </button>
+      </div>
+      <p class="email-capture__privacy">
+        No spam, ever. Unsubscribe anytime. <span>Your email supports our mission.</span>
+      </p>
+      <p class="email-capture__success" id="email-success" style="display:none;">
+        You're in! Check your inbox for your 10% off code.
+      </p>
+    </form>
+  </div>
+</section>
+
+<style>
+  .email-capture {
+    background: var(--color-charcoal);
+    padding: var(--space-xl) 0;
+  }
+
+  .email-capture__inner {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+    align-items: center;
+  }
+
+  @media (min-width: 768px) {
+    .email-capture__inner {
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2xl);
+    }
+  }
+
+  .email-capture__text h2 {
+    color: var(--color-gold);
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    margin-bottom: 0.5rem;
+  }
+
+  .email-capture__text p {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.92rem;
+    max-width: 40ch;
+  }
+
+  .email-capture__input-wrap {
+    display: flex;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .email-capture__input-wrap:focus-within {
+    border-color: var(--color-gold);
+  }
+
+  .email-capture__form input[type="email"] {
+    flex: 1;
+    padding: 0.9rem 1.25rem;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    color: white;
+    min-width: 0;
+  }
+
+  .email-capture__form input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  .email-capture__btn {
+    padding: 0.9rem 1.75rem;
+    background: var(--color-gold);
+    color: var(--color-charcoal);
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .email-capture__btn:hover {
+    background: var(--color-gold-light);
+  }
+
+  .email-capture__btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .email-capture__privacy {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.35);
+    margin-top: 0.5rem;
+    max-width: none;
+  }
+
+  .email-capture__privacy span {
+    color: var(--color-gold);
+    opacity: 0.7;
+  }
+
+  .email-capture__success {
+    font-size: 0.88rem;
+    color: var(--color-gold);
+    font-weight: 500;
+    margin-top: 0.5rem;
+    max-width: none;
+  }
+</style>
+
+<script>
+  const form = document.getElementById('email-form') as HTMLFormElement;
+  const input = document.getElementById('email-input') as HTMLInputElement;
+  const success = document.getElementById('email-success');
+
+  form?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = input?.value.trim();
+    if (!email) return;
+
+    // TODO: Replace with your email service endpoint (Klaviyo, Mailchimp, etc.)
+    // Example Klaviyo:
+    // fetch('https://a.klaviyo.com/api/v2/list/LIST_ID/subscribe', {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify({ api_key: 'YOUR_KEY', profiles: [{ email }] }),
+    // });
+
+    // For now, store locally and show success
+    const subs = JSON.parse(localStorage.getItem('sr_email_subs') || '[]');
+    if (!subs.includes(email)) subs.push(email);
+    localStorage.setItem('sr_email_subs', JSON.stringify(subs));
+
+    // Show success
+    const inputWrap = form.querySelector('.email-capture__input-wrap') as HTMLElement;
+    const privacy = form.querySelector('.email-capture__privacy') as HTMLElement;
+    if (inputWrap) inputWrap.style.display = 'none';
+    if (privacy) privacy.style.display = 'none';
+    if (success) success.style.display = 'block';
+  });
+</script>

@@ -401,21 +401,56 @@
   const toastText = document.getElementById('cart-toast-text');
   const toastView = document.getElementById('cart-toast-view');
 
+  // ─── Focus Trap ─────────────────────────
+  function trapFocus(container, e) {
+    const focusable = container.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
   // ─── Open / Close ────────────────────────
+  let previousFocus = null;
+
   function openCart() {
+    previousFocus = document.activeElement;
     drawer?.setAttribute('aria-hidden', 'false');
     overlay?.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
+    // Focus the close button
+    setTimeout(() => closeBtn?.focus(), 50);
   }
 
   function closeCart() {
     drawer?.setAttribute('aria-hidden', 'true');
     overlay?.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
+    // Restore focus
+    if (previousFocus && typeof previousFocus.focus === 'function') {
+      previousFocus.focus();
+    }
+    previousFocus = null;
   }
 
   overlay?.addEventListener('click', closeCart);
   closeBtn?.addEventListener('click', closeCart);
+
+  // Escape key and focus trap
+  document.addEventListener('keydown', (e) => {
+    if (drawer?.getAttribute('aria-hidden') === 'false') {
+      if (e.key === 'Escape') closeCart();
+      if (e.key === 'Tab') trapFocus(drawer, e);
+    }
+  });
 
   // Expose globally for nav cart button
   window.openCart = openCart;
@@ -435,6 +470,98 @@
     toast?.setAttribute('aria-hidden', 'true');
     openCart();
   });
+
+  // ─── Helpers ─────────────────────────────
+  function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = str || '';
+    return d.innerHTML;
+  }
+
+  function createCartItem(item) {
+    const el = document.createElement('div');
+    el.className = 'cart-item';
+    el.dataset.id = item.variantId;
+
+    const safeHandle = encodeURIComponent(item.handle || '');
+    const link = `/shop/${safeHandle}`;
+
+    // Image
+    const imgLink = document.createElement('a');
+    imgLink.href = link;
+    imgLink.className = 'cart-item__image';
+    imgLink.addEventListener('click', () => window.closeCart?.());
+    if (item.image) {
+      const img = document.createElement('img');
+      img.src = item.image;
+      img.alt = item.title || '';
+      img.loading = 'lazy';
+      imgLink.appendChild(img);
+    }
+    el.appendChild(imgLink);
+
+    // Details
+    const details = document.createElement('div');
+    details.className = 'cart-item__details';
+
+    const titleLink = document.createElement('a');
+    titleLink.href = link;
+    titleLink.className = 'cart-item__title';
+    titleLink.textContent = item.title;
+    titleLink.addEventListener('click', () => window.closeCart?.());
+    details.appendChild(titleLink);
+
+    if (item.variantTitle && item.variantTitle !== 'Default Title') {
+      const variant = document.createElement('div');
+      variant.className = 'cart-item__variant';
+      variant.textContent = item.variantTitle;
+      details.appendChild(variant);
+    }
+
+    const bottom = document.createElement('div');
+    bottom.className = 'cart-item__bottom';
+
+    const qtyWrap = document.createElement('div');
+    qtyWrap.className = 'cart-item__qty';
+
+    const minusBtn = document.createElement('button');
+    minusBtn.textContent = '−';
+    minusBtn.setAttribute('aria-label', 'Decrease quantity');
+    minusBtn.addEventListener('click', () => {
+      const current = cart.getItems().find(i => i.variantId === item.variantId);
+      if (current && current.qty > 1) cart.updateQty(item.variantId, current.qty - 1);
+      else cart.remove(item.variantId);
+    });
+
+    const qtySpan = document.createElement('span');
+    qtySpan.textContent = String(item.qty);
+
+    const plusBtn = document.createElement('button');
+    plusBtn.textContent = '+';
+    plusBtn.setAttribute('aria-label', 'Increase quantity');
+    plusBtn.addEventListener('click', () => {
+      const current = cart.getItems().find(i => i.variantId === item.variantId);
+      if (current) cart.updateQty(item.variantId, current.qty + 1);
+    });
+
+    qtyWrap.append(minusBtn, qtySpan, plusBtn);
+
+    const priceSpan = document.createElement('span');
+    priceSpan.className = 'cart-item__price';
+    priceSpan.textContent = `$${(item.price * item.qty).toFixed(2)}`;
+
+    bottom.append(qtyWrap, priceSpan);
+    details.appendChild(bottom);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'cart-item__remove';
+    removeBtn.textContent = 'Remove';
+    removeBtn.addEventListener('click', () => cart.remove(item.variantId));
+    details.appendChild(removeBtn);
+
+    el.appendChild(details);
+    return el;
+  }
 
   // ─── Render ──────────────────────────────
   function renderCart(items) {
@@ -479,48 +606,9 @@
     // Total
     if (totalEl) totalEl.textContent = '$' + total.toFixed(2);
 
-    // Items
+    // Items — DOM-based rendering (no innerHTML with user data)
     if (itemsEl) {
-      itemsEl.innerHTML = items.map(item => `
-        <div class="cart-item" data-id="${item.variantId}">
-          <a href="/shop/${item.handle || '#'}" class="cart-item__image" onclick="window.closeCart?.()">
-            ${item.image ? `<img src="${item.image}" alt="${item.title}" loading="lazy" />` : ''}
-          </a>
-          <div class="cart-item__details">
-            <a href="/shop/${item.handle || '#'}" class="cart-item__title" onclick="window.closeCart?.()">${item.title}</a>
-            ${item.variantTitle && item.variantTitle !== 'Default Title' ? `<div class="cart-item__variant">${item.variantTitle}</div>` : ''}
-            <div class="cart-item__bottom">
-              <div class="cart-item__qty">
-                <button class="cart-qty-minus" data-id="${item.variantId}" aria-label="Decrease quantity">−</button>
-                <span>${item.qty}</span>
-                <button class="cart-qty-plus" data-id="${item.variantId}" aria-label="Increase quantity">+</button>
-              </div>
-              <span class="cart-item__price">$${(item.price * item.qty).toFixed(2)}</span>
-            </div>
-            <button class="cart-item__remove" data-id="${item.variantId}">Remove</button>
-          </div>
-        </div>
-      `).join('');
-
-      // Bind qty/remove events
-      itemsEl.querySelectorAll('.cart-qty-minus').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const id = btn.dataset.id;
-          const item = cart.getItems().find(i => i.variantId === id);
-          if (item && item.qty > 1) cart.updateQty(id, item.qty - 1);
-          else cart.remove(id);
-        });
-      });
-      itemsEl.querySelectorAll('.cart-qty-plus').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const id = btn.dataset.id;
-          const item = cart.getItems().find(i => i.variantId === id);
-          if (item) cart.updateQty(id, item.qty + 1);
-        });
-      });
-      itemsEl.querySelectorAll('.cart-item__remove').forEach(btn => {
-        btn.addEventListener('click', () => cart.remove(btn.dataset.id));
-      });
+      itemsEl.replaceChildren(...items.map(createCartItem));
     }
   }
 

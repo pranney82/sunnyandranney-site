@@ -16,7 +16,7 @@
 <div id="stacy-panel" aria-hidden="true">
   <div class="stacy-header">
     <div class="stacy-header__info">
-      <span class="stacy-avatar">S</span>
+      <img class="stacy-avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/avatar" alt="Stacy" />
       <div>
         <strong>Stacy</strong>
         <span class="stacy-status">AI Shopping Assistant</span>
@@ -26,7 +26,7 @@
 
   <div id="stacy-messages" class="stacy-messages">
     <div class="stacy-msg stacy-msg--bot">
-      <span class="stacy-msg__avatar">S</span>
+      <img class="stacy-msg__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/avatar" alt="Stacy" />
       <div class="stacy-msg__bubble">Hi! I'm Stacy, your shopping assistant. How can I help you today?</div>
     </div>
   </div>
@@ -134,14 +134,7 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: var(--color-gold);
-    color: var(--color-charcoal);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 1rem;
+    object-fit: cover;
     flex-shrink: 0;
   }
 
@@ -171,20 +164,19 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: var(--color-gold);
-    color: var(--color-charcoal);
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  span.stacy-msg__avatar {
+    background: var(--color-cyan);
+    color: white;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: var(--font-display);
     font-weight: 700;
     font-size: 0.75rem;
-    flex-shrink: 0;
-  }
-
-  .stacy-msg--user .stacy-msg__avatar {
-    background: var(--color-cyan);
-    color: white;
   }
 
   .stacy-msg__bubble {
@@ -307,7 +299,7 @@
       const msg = document.createElement('div');
       msg.className = `stacy-msg stacy-msg--${isUser ? 'user' : 'bot'}`;
       msg.innerHTML = `
-        <span class="stacy-msg__avatar">${isUser ? 'Y' : 'S'}</span>
+        ${isUser ? '<span class="stacy-msg__avatar">Y</span>' : '<img class="stacy-msg__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/avatar" alt="Stacy" />'}
         <div class="stacy-msg__bubble">${escapeHtml(text)}</div>
       `;
       messagesEl.appendChild(msg);
@@ -319,7 +311,7 @@
       typing.className = 'stacy-msg stacy-msg--bot stacy-typing';
       typing.id = 'stacy-typing';
       typing.innerHTML = `
-        <span class="stacy-msg__avatar">S</span>
+        <img class="stacy-msg__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/avatar" alt="Stacy" />
         <div class="stacy-msg__bubble">
           <span class="stacy-dot"></span>
           <span class="stacy-dot"></span>
@@ -374,7 +366,7 @@
     });
   }
 
-  // Run on load and after View Transitions
+  // Run once — component uses transition:persist so DOM + listeners survive navigations.
+  // Do NOT re-init on astro:after-swap or listeners will duplicate.
   initStacy();
-  document.addEventListener('astro:after-swap', initStacy);
 </script>

@@ -51,6 +51,17 @@ try {
           <button class="filter-btn" data-filter="gifts">Gifts</button>
           <button class="filter-btn" data-filter="kitchenware">Kitchenware</button>
         </div>
+        <!-- Price Range Filter -->
+        <div class="toolbar__price" id="price-filter">
+          <label class="toolbar__price-label">Price</label>
+          <div class="toolbar__price-inputs">
+            <input type="number" id="price-min" placeholder="Min" min="0" step="1" aria-label="Minimum price" />
+            <span class="toolbar__price-dash">–</span>
+            <input type="number" id="price-max" placeholder="Max" min="0" step="1" aria-label="Maximum price" />
+            <button class="toolbar__price-go" id="price-go" aria-label="Apply price filter">Go</button>
+          </div>
+        </div>
+
         <!-- Sort + View controls -->
         <div class="toolbar__controls">
           <span class="toolbar__count" id="product-count"></span>
@@ -350,6 +361,72 @@ try {
   .filter-btn--active {
     background: var(--color-charcoal);
     color: var(--color-cream);
+  }
+
+  /* ─── Price Range Filter ──────────────── */
+  .toolbar__price {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .toolbar__price-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-slate);
+    white-space: nowrap;
+  }
+
+  .toolbar__price-inputs {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .toolbar__price-inputs input {
+    width: 68px;
+    padding: 0.4rem 0.5rem;
+    border: 1px solid var(--color-cream-dark);
+    border-radius: 4px;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    background: var(--color-warm-white);
+    color: var(--color-charcoal);
+    outline: none;
+    -moz-appearance: textfield;
+  }
+
+  .toolbar__price-inputs input::-webkit-inner-spin-button,
+  .toolbar__price-inputs input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  .toolbar__price-inputs input:focus { border-color: var(--color-gold); }
+
+  .toolbar__price-dash {
+    color: var(--color-stone);
+    font-size: 0.8rem;
+  }
+
+  .toolbar__price-go {
+    padding: 0.4rem 0.75rem;
+    background: var(--color-charcoal);
+    color: var(--color-cream);
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .toolbar__price-go:hover { background: var(--color-gold); color: var(--color-charcoal); }
+
+  @media (max-width: 767px) {
+    .toolbar__price { display: none; }
   }
 
   .toolbar__controls {
@@ -935,8 +1012,14 @@ try {
 
   let activeFilter = 'all';
   let activeSearch = '';
+  let priceMin = 0;
+  let priceMax = Infinity;
   let visiblePage = 0;
   const PAGE_SIZE = 24;
+
+  const priceMinInput = document.getElementById('price-min') as HTMLInputElement;
+  const priceMaxInput = document.getElementById('price-max') as HTMLInputElement;
+  const priceGoBtn = document.getElementById('price-go');
 
   function getCards() {
     return Array.from(grid?.querySelectorAll('.product-card') || []) as HTMLElement[];
@@ -954,14 +1037,16 @@ try {
       const tags = card.dataset.tags || '';
       const desc = card.dataset.description || '';
 
+      const cardPrice = parseFloat(card.dataset.price || '0');
       const matchesFilter = activeFilter === 'all' || type.includes(activeFilter);
       const matchesSearch = !activeSearch ||
         title.includes(activeSearch) ||
         type.includes(activeSearch) ||
         tags.includes(activeSearch) ||
         desc.includes(activeSearch);
+      const matchesPrice = cardPrice >= priceMin && cardPrice <= priceMax;
 
-      if (matchesFilter && matchesSearch) {
+      if (matchesFilter && matchesSearch && matchesPrice) {
         matchingCards.push(card);
         matchCount++;
       } else {
@@ -1003,6 +1088,20 @@ try {
       applyAll();
     });
   });
+
+  // ─── Price Range Filter ─────────────────────
+  function applyPriceFilter() {
+    const min = parseFloat(priceMinInput?.value || '0') || 0;
+    const max = parseFloat(priceMaxInput?.value || '') || Infinity;
+    priceMin = min;
+    priceMax = max;
+    visiblePage = 0;
+    applyAll();
+  }
+
+  priceGoBtn?.addEventListener('click', applyPriceFilter);
+  priceMinInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyPriceFilter(); });
+  priceMaxInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyPriceFilter(); });
 
   // ─── Sort ───────────────────────────────────
   sortSelect?.addEventListener('change', () => {

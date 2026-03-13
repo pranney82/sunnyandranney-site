@@ -40,6 +40,8 @@ const categories = [
         <button class="nav__search-submit" id="nav-search-submit" aria-label="Search">
           Search
         </button>
+        <!-- Typeahead suggestions dropdown -->
+        <div class="search-suggest" id="search-suggest" role="listbox" aria-label="Search suggestions" style="display:none;"></div>
       </div>
 
       <div class="nav__actions">
@@ -216,6 +218,91 @@ const categories = [
 
   .nav__search-submit:hover { background: var(--color-gold-light); }
 
+  /* ─── Search Suggestions ────────────────── */
+  .search-suggest {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--color-warm-white);
+    border: 1px solid var(--color-cream-dark);
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 8px 24px rgba(44, 44, 44, 0.1);
+    z-index: 50;
+    max-height: 360px;
+    overflow-y: auto;
+  }
+
+  .search-suggest__item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    text-decoration: none;
+    color: var(--color-charcoal);
+    transition: background 0.15s;
+  }
+
+  .search-suggest__item:hover,
+  .search-suggest__item[aria-selected="true"] {
+    background: var(--color-cream-dark);
+  }
+
+  .search-suggest__img {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--color-cream-dark);
+    flex-shrink: 0;
+  }
+
+  .search-suggest__img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .search-suggest__info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .search-suggest__title {
+    font-size: 0.85rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+  }
+
+  .search-suggest__price {
+    font-size: 0.75rem;
+    color: var(--color-slate);
+  }
+
+  .search-suggest__all {
+    display: block;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-gold);
+    text-align: center;
+    border-top: 1px solid var(--color-cream-dark);
+    transition: background 0.15s;
+  }
+
+  .search-suggest__all:hover {
+    background: var(--color-cream-dark);
+    color: var(--color-charcoal);
+  }
+
+  .nav__search-bar {
+    position: relative;
+  }
+
   /* ─── Actions ──────────────────────────── */
   .nav__actions {
     display: flex;
@@ -326,5 +413,128 @@ const categories = [
   const mobileTopbarSearch = document.getElementById('mobile-topbar-search') as HTMLInputElement;
   mobileTopbarSearch?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') doSearch(mobileTopbarSearch);
+  });
+
+  // ─── Typeahead / Autocomplete ──────────────
+  const suggestEl = document.getElementById('search-suggest');
+  let debounceTimer: ReturnType<typeof setTimeout>;
+  let productIndex: Array<{ title: string; handle: string; price: string; image: string; type: string }> | null = null;
+
+  // Fetch the product index once (lightweight — just titles, handles, images, prices)
+  async function loadProductIndex() {
+    if (productIndex) return productIndex;
+    try {
+      const domain = (window as any).__SHOPIFY_DOMAIN || 'sunnyandranney.myshopify.com';
+      const token = (window as any).__SHOPIFY_TOKEN || '';
+      if (!token) return [];
+      const res = await fetch(`https://${domain}/api/2025-01/graphql.json`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Storefront-Access-Token': token,
+        },
+        body: JSON.stringify({
+          query: `{ products(first: 100, sortKey: BEST_SELLING) { edges { node { title handle productType priceRange { minVariantPrice { amount } } images(first: 1) { edges { node { url } } } } } } }`
+        }),
+      });
+      const json = await res.json();
+      productIndex = (json.data?.products?.edges || []).map((e: any) => ({
+        title: e.node.title,
+        handle: e.node.handle,
+        price: e.node.priceRange.minVariantPrice.amount,
+        image: e.node.images.edges[0]?.node?.url || '',
+        type: (e.node.productType || '').toLowerCase(),
+      }));
+      return productIndex;
+    } catch {
+      return [];
+    }
+  }
+
+  function showSuggestions(query: string, items: typeof productIndex) {
+    if (!suggestEl || !items || !query) {
+      if (suggestEl) suggestEl.style.display = 'none';
+      return;
+    }
+
+    const q = query.toLowerCase();
+    const matches = items.filter(p =>
+      p.title.toLowerCase().includes(q) ||
+      p.type.includes(q)
+    ).slice(0, 5);
+
+    if (matches.length === 0) {
+      suggestEl.style.display = 'none';
+      return;
+    }
+
+    const frag = document.createDocumentFragment();
+    matches.forEach((p) => {
+      const link = document.createElement('a');
+      link.href = `/shop/${p.handle}`;
+      link.className = 'search-suggest__item';
+      link.setAttribute('role', 'option');
+
+      if (p.image) {
+        const imgWrap = document.createElement('div');
+        imgWrap.className = 'search-suggest__img';
+        const img = document.createElement('img');
+        // Use small Shopify CDN image
+        img.src = p.image.includes('cdn.shopify.com') ? `${p.image}?width=80` : p.image;
+        img.alt = p.title;
+        img.loading = 'lazy';
+        imgWrap.appendChild(img);
+        link.appendChild(imgWrap);
+      }
+
+      const info = document.createElement('div');
+      info.className = 'search-suggest__info';
+      const title = document.createElement('span');
+      title.className = 'search-suggest__title';
+      title.textContent = p.title;
+      info.appendChild(title);
+      const price = document.createElement('span');
+      price.className = 'search-suggest__price';
+      price.textContent = `$${parseFloat(p.price).toFixed(2)}`;
+      info.appendChild(price);
+      link.appendChild(info);
+
+      frag.appendChild(link);
+    });
+
+    // "View all results" link
+    const allLink = document.createElement('a');
+    allLink.href = `/shop?q=${encodeURIComponent(query)}`;
+    allLink.className = 'search-suggest__all';
+    allLink.textContent = `View all results for "${query}"`;
+    frag.appendChild(allLink);
+
+    suggestEl.replaceChildren(frag);
+    suggestEl.style.display = 'block';
+  }
+
+  searchInput?.addEventListener('input', () => {
+    const q = searchInput.value.trim();
+    clearTimeout(debounceTimer);
+    if (!q || q.length < 2) {
+      if (suggestEl) suggestEl.style.display = 'none';
+      return;
+    }
+    debounceTimer = setTimeout(async () => {
+      const items = await loadProductIndex();
+      showSuggestions(q, items);
+    }, 200);
+  });
+
+  // Hide suggestions on click outside
+  document.addEventListener('click', (e) => {
+    if (suggestEl && !suggestEl.contains(e.target as Node) && e.target !== searchInput) {
+      suggestEl.style.display = 'none';
+    }
+  });
+
+  // Hide on Escape
+  searchInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && suggestEl) suggestEl.style.display = 'none';
   });
 </script>
