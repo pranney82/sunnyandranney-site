@@ -1,19 +1,27 @@
 // ═══════════════════════════════════════════════════════
 //  Sunny & Ranney — Lightweight Cart Store
 //  Zero dependencies, ~2KB. Pub/sub pattern with
-//  localStorage persistence.
+//  localStorage persistence + in-memory cache.
 // ═══════════════════════════════════════════════════════
 
 const STORAGE_KEY = 'sr_cart';
 const listeners = new Set();
 
+// In-memory cache — avoids JSON.parse on every read
+let _cache = null;
+
 function load() {
+  if (_cache) return _cache;
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-  } catch { return []; }
+    _cache = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } catch {
+    _cache = [];
+  }
+  return _cache;
 }
 
 function save(items) {
+  _cache = items;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
 }
 
@@ -35,14 +43,14 @@ export const cart = {
   getCount() { return load().reduce((n, i) => n + i.qty, 0); },
   getTotal() { return load().reduce((s, i) => s + i.price * i.qty, 0); },
 
-  /** Add item. If already in cart, increment qty. */
-  add(product) {
+  /** Add item. If already in cart, increment qty. Supports qty param. */
+  add(product, qty = 1) {
     const items = load();
     const idx = items.findIndex(i => i.variantId === product.variantId);
     if (idx >= 0) {
-      items[idx].qty += 1;
+      items[idx].qty += qty;
     } else {
-      items.push({ ...product, qty: 1 });
+      items.push({ ...product, qty });
     }
     save(items);
     notify(items);

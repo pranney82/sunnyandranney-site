@@ -333,7 +333,7 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.4s var(--ease-out);
+    transition: transform 0.4s var(--ease-out), opacity 0.25s ease;
   }
 
   .pdp-gallery__main:hover img {
@@ -975,16 +975,14 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
     const variantTitle = addToCartBtn.dataset.variantTitle || '';
     const qty = parseInt(qtyInput?.value || '1');
 
-    for (let i = 0; i < qty; i++) {
-      window.addToCart?.({
-        variantId,
-        title,
-        price,
-        image,
-        handle,
-        variantTitle,
-      });
-    }
+    window.addToCart?.({
+      variantId,
+      title,
+      price,
+      image,
+      handle,
+      variantTitle,
+    }, qty);
 
     addToCartBtn.textContent = '✓ Added to Cart';
     addToCartBtn.disabled = true;
@@ -1020,6 +1018,28 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
 
   updateWishlistUI();
 
+  // ─── Touch swipe helper ────────────────────
+  function addSwipe(el: HTMLElement, onLeft: () => void, onRight: () => void) {
+    let startX = 0;
+    let startY = 0;
+    let tracking = false;
+    el.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      tracking = true;
+    }, { passive: true });
+    el.addEventListener('touchend', (e) => {
+      if (!tracking) return;
+      tracking = false;
+      const dx = e.changedTouches[0].clientX - startX;
+      const dy = e.changedTouches[0].clientY - startY;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+        if (dx < 0) onLeft();
+        else onRight();
+      }
+    }, { passive: true });
+  }
+
   // ─── Lightbox ───────────────────────────────
   const lightbox = document.getElementById('lightbox');
   const lightboxImg = document.getElementById('lightbox-img') as HTMLImageElement;
@@ -1030,6 +1050,12 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
   let lightboxIdx = 0;
 
   let lightboxPrevFocus: HTMLElement | null = null;
+
+  // Optimize image URL for lightbox (1400px max vs full-size)
+  function optimizedUrl(url: string, width = 1400) {
+    if (!url || !url.includes('cdn.shopify.com')) return url;
+    return url.includes('?') ? `${url}&width=${width}` : `${url}?width=${width}`;
+  }
 
   function openLightbox(idx: number) {
     lightboxPrevFocus = document.activeElement as HTMLElement;
@@ -1048,12 +1074,28 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
   }
 
   function updateLightbox() {
-    if (lightboxImg) lightboxImg.src = imageUrls[lightboxIdx] || '';
+    if (lightboxImg) lightboxImg.src = optimizedUrl(imageUrls[lightboxIdx] || '');
     if (lightboxCounter && imageUrls.length > 1) {
       lightboxCounter.textContent = `${lightboxIdx + 1} / ${imageUrls.length}`;
     }
     if (lightboxPrev) lightboxPrev.style.display = imageUrls.length > 1 ? '' : 'none';
     if (lightboxNext) lightboxNext.style.display = imageUrls.length > 1 ? '' : 'none';
+    // Preload adjacent images
+    if (imageUrls.length > 1) {
+      const nextIdx = (lightboxIdx + 1) % imageUrls.length;
+      const img = new Image();
+      img.src = optimizedUrl(imageUrls[nextIdx]);
+    }
+  }
+
+  function lightboxGoNext() {
+    lightboxIdx = (lightboxIdx + 1) % imageUrls.length;
+    updateLightbox();
+  }
+
+  function lightboxGoPrev() {
+    lightboxIdx = (lightboxIdx - 1 + imageUrls.length) % imageUrls.length;
+    updateLightbox();
   }
 
   galleryMain?.addEventListener('click', () => openLightbox(currentImageIdx));
@@ -1064,24 +1106,54 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
 
   lightboxPrev?.addEventListener('click', (e) => {
     e.stopPropagation();
-    lightboxIdx = (lightboxIdx - 1 + imageUrls.length) % imageUrls.length;
-    updateLightbox();
+    lightboxGoPrev();
   });
 
   lightboxNext?.addEventListener('click', (e) => {
     e.stopPropagation();
-    lightboxIdx = (lightboxIdx + 1) % imageUrls.length;
-    updateLightbox();
+    lightboxGoNext();
   });
+
+  // Touch swipe on lightbox
+  if (lightbox) addSwipe(lightbox, lightboxGoNext, lightboxGoPrev);
 
   // Keyboard navigation
   document.addEventListener('keydown', (e) => {
     if (lightbox?.getAttribute('aria-hidden') === 'false') {
       if (e.key === 'Escape') closeLightbox();
-      if (e.key === 'ArrowLeft') { lightboxIdx = (lightboxIdx - 1 + imageUrls.length) % imageUrls.length; updateLightbox(); }
-      if (e.key === 'ArrowRight') { lightboxIdx = (lightboxIdx + 1) % imageUrls.length; updateLightbox(); }
+      if (e.key === 'ArrowLeft') lightboxGoPrev();
+      if (e.key === 'ArrowRight') lightboxGoNext();
     }
   });
+
+  // ─── Touch swipe on main gallery image ─────
+  if (galleryMain && imageUrls.length > 1) {
+    addSwipe(galleryMain, () => {
+      // Swipe left = next image
+      currentImageIdx = (currentImageIdx + 1) % imageUrls.length;
+      thumbs.forEach(t => t.classList.remove('pdp-thumb--active'));
+      thumbs[currentImageIdx]?.classList.add('pdp-thumb--active');
+      if (mainImg) {
+        mainImg.style.opacity = '0';
+        setTimeout(() => {
+          mainImg.src = imageUrls[currentImageIdx];
+          mainImg.style.opacity = '1';
+        }, 150);
+      }
+    }, () => {
+      // Swipe right = prev image
+      currentImageIdx = (currentImageIdx - 1 + imageUrls.length) % imageUrls.length;
+      thumbs.forEach(t => t.classList.remove('pdp-thumb--active'));
+      thumbs[currentImageIdx]?.classList.add('pdp-thumb--active');
+      if (mainImg) {
+        mainImg.style.opacity = '0';
+        setTimeout(() => {
+          mainImg.src = imageUrls[currentImageIdx];
+          mainImg.style.opacity = '1';
+        }, 150);
+      }
+    });
+  }
 
   // ─── Sticky mobile bar ─────────────────────
   if (stickyBar) {
@@ -1120,7 +1192,8 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
         imgWrap.className = 'recently-card__image';
         if (item.image) {
           const img = document.createElement('img');
-          img.src = item.image;
+          // Optimize: 320px (2x retina for 160px card)
+          img.src = item.image.includes('cdn.shopify.com') ? `${item.image}?width=320&crop=center` : item.image;
           img.alt = item.title || '';
           img.loading = 'lazy';
           imgWrap.appendChild(img);

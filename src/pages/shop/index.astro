@@ -138,7 +138,8 @@ try {
                           width={image.width}
                           height={image.height}
                           loading={idx < 8 ? 'eager' : 'lazy'}
-                          decoding="async"
+                          fetchpriority={idx === 0 ? 'high' : undefined}
+                          decoding={idx === 0 ? 'sync' : 'async'}
                           class="product-card__img-primary"
                         />
                         {image2 && (
@@ -426,7 +427,10 @@ try {
   .toolbar__price-go:hover { background: var(--color-gold); color: var(--color-charcoal); }
 
   @media (max-width: 767px) {
-    .toolbar__price { display: none; }
+    .toolbar__price {
+      width: 100%;
+      justify-content: space-between;
+    }
   }
 
   .toolbar__controls {
@@ -1360,8 +1364,10 @@ try {
     btn.classList.add('qv-variant-btn--active');
     const price = btn.dataset.price;
     if (qvPrice && price) qvPrice.textContent = `$${parseFloat(price).toFixed(2)}`;
-    const variants = JSON.parse(btn.closest('.qv-info')?.querySelector('[data-variants]')?.getAttribute('data-variants') || '[]');
     qvSelectedVariant = { id: btn.dataset.variantId, price };
+    // Switch to variant image if available
+    const idx = parseInt(btn.dataset.idx || '0');
+    if (qvImages[idx] && qvImage) qvImage.src = qvImages[idx];
   });
 
   // Quick view add to cart

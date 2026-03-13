@@ -343,7 +343,7 @@
   /* ─── Toast ───────────────────────────── */
   .cart-toast {
     position: fixed;
-    bottom: 1.5rem;
+    bottom: calc(90px + env(safe-area-inset-bottom, 0px));
     left: 50%;
     transform: translateX(-50%) translateY(120%);
     background: var(--color-charcoal);
@@ -359,6 +359,10 @@
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     white-space: nowrap;
+  }
+
+  @media (min-width: 768px) {
+    .cart-toast { bottom: 1.5rem; }
   }
 
   .cart-toast[aria-hidden="false"] {
@@ -493,7 +497,8 @@
     imgLink.addEventListener('click', () => window.closeCart?.());
     if (item.image) {
       const img = document.createElement('img');
-      img.src = item.image;
+      // Optimize: request 160px (2x for retina) instead of full-size
+      img.src = item.image.includes('cdn.shopify.com') ? `${item.image}?width=160&crop=center` : item.image;
       img.alt = item.title || '';
       img.loading = 'lazy';
       imgLink.appendChild(img);
@@ -622,8 +627,8 @@
   });
 
   // ─── Global: Add to cart from anywhere ───
-  window.addToCart = function(product) {
-    cart.add(product);
+  window.addToCart = function(product, qty = 1) {
+    cart.add(product, qty);
     window.showCartToast(`${product.title} added to cart`);
   };
 </script>
