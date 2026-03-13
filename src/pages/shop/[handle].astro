@@ -1188,8 +1188,7 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
   /* ─── Sticky Mobile Bar ────────────────── */
   .sticky-bar {
     position: fixed;
-    /* Sit above the bottom nav (64px + safe area) */
-    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    bottom: 0;
     left: 0;
     right: 0;
     background: var(--color-cream);

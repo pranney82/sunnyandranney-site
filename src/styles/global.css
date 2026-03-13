@@ -529,12 +529,7 @@ p {
 
 /* ─── Responsive ────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  :root { --nav-height: 80px; }
+  :root { --nav-height: 168px; }
   .section { padding: var(--space-xl) 0; }
   .section--large { padding: var(--space-2xl) 0; }
-
-  /* Space for floating bottom nav */
-  body {
-    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
-  }
 }

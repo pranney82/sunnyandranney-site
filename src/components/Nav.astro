@@ -24,12 +24,35 @@ const categories = [
     </div>
   </div>
 
-  <!-- Mobile search bar (always visible, Wayfair-style) -->
+  <!-- Mobile header: logo + cart (mirrors desktop nav row) -->
+  <div class="nav__mobile-header">
+    <a href="/" class="nav__logo" aria-label="Sunny & Ranney Home">
+      <img
+        src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/logo-tagline-light-bg/w=500,h=200,fit=scale-down"
+        alt="Sunny & Ranney"
+        class="nav__logo-img"
+        width="500"
+        height="200"
+        fetchpriority="high"
+        decoding="async"
+      />
+    </a>
+    <button class="nav__icon-btn nav__cart" aria-label="Shopping cart" id="mobile-cart-trigger" onclick="window.openCart?.()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <path d="M16 10a4 4 0 01-8 0"/>
+      </svg>
+      <span class="nav__cart-count" id="mobile-cart-count" style="display:none;">0</span>
+    </button>
+  </div>
+
+  <!-- Mobile search bar -->
   <div class="nav__mobile-topbar">
     <div class="nav__mobile-search-wrap">
       <div class="nav__mobile-topbar-inner">
         <svg class="nav__mobile-topbar-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="search" id="mobile-topbar-search" placeholder="Search Sunny & Ranney" autocomplete="off" />
+        <input type="search" id="mobile-topbar-search" placeholder="Search furniture, decor, lighting, gifts..." autocomplete="off" />
       </div>
       <!-- Mobile typeahead suggestions -->
       <div class="search-suggest search-suggest--mobile" id="mobile-search-suggest" role="listbox" aria-label="Search suggestions" style="display:none;"></div>
@@ -41,11 +64,11 @@ const categories = [
     <div class="container nav__main-inner">
       <a href="/" class="nav__logo" aria-label="Sunny & Ranney Home">
         <img
-          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/logo-tagline-light-bg/nav"
+          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/logo-tagline-light-bg/w=500,h=200,fit=scale-down"
           alt="Sunny & Ranney"
           class="nav__logo-img"
-          width="120"
-          height="120"
+          width="500"
+          height="200"
           fetchpriority="high"
           decoding="async"
         />
@@ -166,21 +189,46 @@ const categories = [
     box-shadow: 0 2px 20px rgba(44, 44, 44, 0.06);
   }
 
-  /* ─── Mobile Top Search Bar ─────────────── */
+  /* ─── Mobile Header (logo + cart) ──────── */
+  .nav__mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    height: 52px;
+    border-bottom: 1px solid var(--color-cream-dark);
+  }
+
+  .nav__mobile-header .nav__logo-img {
+    height: 32px;
+  }
+
+  @media (min-width: 768px) {
+    .nav__mobile-header { display: none; }
+  }
+
+  /* ─── Mobile Search Bar ──────────────────── */
   .nav__mobile-topbar {
     display: block;
     padding: 8px 12px;
-    background: var(--color-charcoal);
+    background: var(--color-cream);
   }
 
   .nav__mobile-topbar-inner {
     display: flex;
     align-items: center;
     background: var(--color-warm-white);
-    border-radius: 28px;
+    border: 1.5px solid var(--color-cream-dark);
+    border-radius: 100px;
     padding: 0 14px;
-    height: 40px;
+    height: 38px;
     gap: 8px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .nav__mobile-topbar-inner:focus-within {
+    border-color: var(--color-gold);
+    box-shadow: 0 0 0 3px rgba(255, 212, 0, 0.1);
   }
 
   .nav__mobile-topbar-icon {
@@ -194,7 +242,7 @@ const categories = [
     border: none;
     outline: none;
     font-family: var(--font-body);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: var(--color-charcoal);
     padding: 0;
   }
@@ -240,18 +288,18 @@ const categories = [
   }
 
   .nav__logo-img {
-    height: 36px;
+    height: 44px;
     width: auto;
     object-fit: contain;
     flex-shrink: 0;
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 5 / 2;
   }
 
   /* Desktop: taller, more premium feel */
   @media (min-width: 768px) {
     .nav__main { border-bottom: none; }
-    .nav__main-inner { height: 56px; }
-    .nav__logo-img { height: 40px; }
+    .nav__main-inner { height: 72px; }
+    .nav__logo-img { height: 52px; }
   }
 
   /* ─── Search Bar (desktop) ─────────────── */
@@ -440,25 +488,29 @@ const categories = [
     justify-content: center;
   }
 
-  /* ─── Category Bar ─────────────────────── */
+  /* ─── Category Bar (shared desktop + mobile) ── */
   .nav__categories {
     border-bottom: 1px solid var(--color-cream-dark);
-    display: none;
+    display: block;
     overflow-x: auto;
     scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
 
   .nav__categories::-webkit-scrollbar { display: none; }
-
-  @media (min-width: 768px) {
-    .nav__categories { display: block; }
-  }
 
   .nav__categories-inner {
     display: flex;
     align-items: center;
     gap: 0;
     white-space: nowrap;
+  }
+
+  /* Mobile: slightly smaller text, tighter padding */
+  @media (max-width: 767px) {
+    .nav__categories {
+      padding: 0 4px;
+    }
   }
 
   .nav__cat-link {
@@ -470,6 +522,13 @@ const categories = [
     color: var(--color-slate);
     transition: color 0.2s, background 0.2s;
     flex-shrink: 0;
+  }
+
+  @media (max-width: 767px) {
+    .nav__cat-link {
+      padding: 0.5rem 0.85rem;
+      font-size: 0.7rem;
+    }
   }
 
   .nav__cat-link:hover {
@@ -792,4 +851,29 @@ const categories = [
       }, 4000);
     }
   }
+
+  // ─── Sync mobile cart badge with desktop cart badge ────
+  function syncMobileCartBadge() {
+    const headerCount = document.getElementById('cart-count');
+    const mobileCount = document.getElementById('mobile-cart-count');
+    if (!headerCount || !mobileCount) return;
+
+    const update = () => {
+      const count = headerCount.textContent || '0';
+      const visible = headerCount.style.display !== 'none';
+      mobileCount.textContent = count;
+      mobileCount.style.display = visible ? 'flex' : 'none';
+    };
+
+    new MutationObserver(update).observe(headerCount, {
+      childList: true,
+      attributes: true,
+      attributeFilter: ['style'],
+    });
+
+    update();
+  }
+
+  syncMobileCartBadge();
+  document.addEventListener('astro:after-swap', syncMobileCartBadge);
 </script>

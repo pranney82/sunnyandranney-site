@@ -364,7 +364,7 @@
     animation: cartBadgeBounce 0.5s var(--ease-out);
   }
 
-  :global(.bottom-nav__badge.bounce) {
+  :global(#mobile-cart-count.bounce) {
     animation: cartBadgeBounce 0.5s var(--ease-out);
   }
 </style>
@@ -444,7 +444,7 @@
 
   // ─── Badge bounce on add ────────────────
   window.showCartToast = function() {
-    [navCount, document.getElementById('bottom-nav-cart-count')].forEach(el => {
+    [navCount, document.getElementById('mobile-cart-count')].forEach(el => {
       if (!el) return;
       el.classList.remove('bounce');
       void el.offsetWidth;

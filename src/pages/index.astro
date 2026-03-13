@@ -67,6 +67,7 @@ const heroImages = products
           src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/logo-tagline-dark-bg/footer"
           alt="Sunny & Ranney"
           class="hero-banner__logo animate-fade-up"
+          fetchpriority="high"
         />
         <h1 class="hero-banner__title animate-fade-up">
           Shop with a Purpose
@@ -383,15 +384,15 @@ const heroImages = products
 
   .hero-banner__logo {
     display: block;
-    height: 60px;
-    width: auto;
-    object-fit: contain;
+    width: 280px;
+    max-width: 70%;
+    height: auto;
     margin-bottom: var(--space-md);
   }
 
   @media (min-width: 768px) {
     .hero-banner__logo {
-      height: 80px;
+      width: 360px;
     }
   }
 
