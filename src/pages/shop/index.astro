@@ -1,40 +1,64 @@
 ---
 import Base from '@/layouts/Base.astro';
 
-// At build time, fetch products from Shopify
+export const prerender = false;
+
+// Read optional collection filter from URL
+const url = new URL(Astro.request.url);
+const collectionHandle = url.searchParams.get('collection') || '';
+
+// Fetch products — from a specific collection or all products
 let products: any[] = [];
 let hasShopify = false;
 let hasNextPage = false;
 let endCursor = '';
+let collectionTitle = '';
 let shopifyImageUrl: (url: string, w?: number, h?: number) => string = (url) => url;
 let shopifyImageSrcset: (url: string, widths?: number[]) => string = () => '';
 
 try {
   const shopify = await import('@/lib/shopify');
-  const result = await shopify.getProducts(100);
-  products = result.products;
-  hasShopify = products.length > 0;
-  hasNextPage = result.pageInfo.hasNextPage;
-  endCursor = result.pageInfo.endCursor;
   shopifyImageUrl = shopify.shopifyImageUrl;
   shopifyImageSrcset = shopify.shopifyImageSrcset;
+
+  if (collectionHandle) {
+    const collection = await shopify.getCollectionByHandle(collectionHandle, 100);
+    if (collection) {
+      products = collection.products;
+      collectionTitle = collection.title;
+      hasNextPage = collection.pageInfo.hasNextPage;
+      endCursor = collection.pageInfo.endCursor;
+    }
+  }
+
+  if (!products.length && !collectionHandle) {
+    const result = await shopify.getProducts(100);
+    products = result.products;
+    hasNextPage = result.pageInfo.hasNextPage;
+    endCursor = result.pageInfo.endCursor;
+  }
+
+  hasShopify = products.length > 0;
 } catch (e) {
   console.log('Shopify API not configured. Showing placeholder shop.');
 }
 ---
 
 <Base
-  title="Shop Our Collection"
+  title={collectionTitle ? `${collectionTitle} — Sunny & Ranney` : "Shop Our Collection"}
   description="Browse curated designer furniture, home decor, lighting, and gifts at Sunny & Ranney. Every purchase supports kids with special needs through Sunshine on a Ranney Day."
 >
   <!-- ═══ SHOP HERO ═══ -->
   <section class="shop-hero">
     <div class="container">
       <span class="label animate-fade-up">Shop</span>
-      <h1 class="animate-fade-up delay-1">The Collection</h1>
+      <h1 class="animate-fade-up delay-1">{collectionTitle || 'The Collection'}</h1>
       <p class="shop-hero__subtitle animate-fade-up delay-2">
         Every piece you choose helps transform the life of a child.
       </p>
+      {collectionHandle && (
+        <a href="/shop" class="shop-hero__clear animate-fade-up delay-2">← View All Products</a>
+      )}
     </div>
   </section>
 
@@ -333,6 +357,17 @@ try {
     max-width: 40ch;
     margin: 0 auto;
   }
+
+  .shop-hero__clear {
+    display: inline-block;
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-cyan);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .shop-hero__clear:hover { color: var(--color-charcoal); }
 
   /* Desktop: minimal header, content-first */
   @media (min-width: 768px) {

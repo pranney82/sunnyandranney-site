@@ -199,6 +199,49 @@ export async function getCollections(first = 12) {
   return data.collections.edges.map((e) => e.node);
 }
 
+export async function getCollectionByHandle(handle: string, first = 100) {
+  const query = `
+    ${PRODUCT_FRAGMENT}
+    query CollectionByHandle($handle: String!, $first: Int!) {
+      collection(handle: $handle) {
+        id
+        title
+        handle
+        description
+        image {
+          url
+          altText
+          width
+          height
+        }
+        products(first: $first, sortKey: BEST_SELLING) {
+          pageInfo {
+            hasNextPage
+            endCursor
+          }
+          edges {
+            node {
+              ...ProductFields
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const data = await shopifyFetch<{
+    collection: Collection & { products: { pageInfo: { hasNextPage: boolean; endCursor: string }; edges: Array<{ node: Product }> } };
+  }>(query, { handle, first });
+
+  if (!data.collection) return null;
+
+  return {
+    ...data.collection,
+    products: data.collection.products.edges.map((e) => e.node),
+    pageInfo: data.collection.products.pageInfo,
+  };
+}
+
 // ─── Product Recommendations ────────────────────────────────────────
 
 export async function getProductRecommendations(productId: string, first = 8) {
