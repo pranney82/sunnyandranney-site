@@ -1347,7 +1347,7 @@ try {
   qvOverlay?.addEventListener('click', closeQuickView);
   qvClose?.addEventListener('click', closeQuickView);
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeQuickView();
+    if (e.key === 'Escape' && qvModal?.getAttribute('aria-hidden') === 'false') closeQuickView();
   });
 
   // Quick view image dots

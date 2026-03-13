@@ -32,14 +32,16 @@ const props = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content={Astro.generator} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#FAF7F2" />
     <SEO {...props} />
 
     <!-- View Transitions for SPA-like navigation -->
     <ViewTransitions />
 
-    <!-- Preconnect to Shopify CDN for faster images -->
+    <!-- Preconnect to external CDNs for faster images -->
     <link rel="preconnect" href="https://cdn.shopify.com" />
     <link rel="dns-prefetch" href="https://cdn.shopify.com" />
+    <link rel="dns-prefetch" href="https://imagedelivery.net" />
 
     <!-- Preload critical fonts (eliminates FOIT, avoids render-blocking chain) -->
     <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
