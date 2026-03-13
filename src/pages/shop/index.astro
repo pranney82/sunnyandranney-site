@@ -1193,6 +1193,35 @@ try {
     if (btn) btn.click();
   }
 
+  // URL sort param (for New Arrivals nav link)
+  const sortParam = params.get('sort');
+  if (sortParam && sortSelect) {
+    const optMap: Record<string, string> = {
+      'newest': 'newest',
+      'price-asc': 'price-asc',
+      'price-desc': 'price-desc',
+    };
+    if (optMap[sortParam]) {
+      sortSelect.value = optMap[sortParam];
+      sortSelect.dispatchEvent(new Event('change'));
+    }
+  }
+
+  // URL sale param (for Sale nav link)
+  const saleParam = params.get('sale');
+  if (saleParam === 'true') {
+    // Filter to only on-sale items
+    const cards = getCards();
+    cards.forEach(card => {
+      const badge = card.querySelector('.product-card__badge');
+      if (!badge || badge.textContent?.trim() !== 'Sale') {
+        card.style.display = 'none';
+      }
+    });
+    if (searchBanner) searchBanner.style.display = '';
+    if (searchBannerText) searchBannerText.textContent = 'Sale Items';
+  }
+
   // ─── Add to Cart from Grid ──────────────────
   grid?.addEventListener('click', (e) => {
     const btn = (e.target as Element)?.closest('.product-card__add-btn');

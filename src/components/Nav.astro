@@ -16,7 +16,11 @@ const categories = [
   <!-- Top banner -->
   <div class="nav__banner">
     <div class="container nav__banner-inner">
-      <span>100% of profits support <strong>Sunshine on a Ranney Day</strong> — home makeovers for kids with special needs</span>
+      <div class="nav__banner-slider" id="banner-slider">
+        <span class="nav__banner-slide nav__banner-slide--active">100% of profits support <strong>Sunshine on a Ranney Day</strong> — home makeovers for kids with special needs</span>
+        <span class="nav__banner-slide">FREE SHIPPING on orders over $200 — <a href="/shop" style="color:var(--color-gold);text-decoration:underline;">Shop Now</a></span>
+        <span class="nav__banner-slide">Visit our Roswell showroom — Tue–Sat, 10am–6pm</span>
+      </div>
     </div>
   </div>
 
@@ -71,7 +75,7 @@ const categories = [
         All Products
       </a>
       {categories.map((cat) => (
-        <a href={cat.href} class="nav__cat-link">{cat.label}</a>
+        <a href={cat.href} class:list={['nav__cat-link', { 'nav__cat-link--sale': cat.highlight }]}>{cat.label}</a>
       ))}
     </div>
   </div>
@@ -89,6 +93,25 @@ const categories = [
   }
 
   .nav__banner strong { color: var(--color-gold); }
+
+  .nav__banner-slider { position: relative; height: 1.1em; overflow: hidden; }
+
+  .nav__banner-slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: translateY(100%);
+    transition: opacity 0.5s, transform 0.5s;
+    white-space: nowrap;
+  }
+
+  .nav__banner-slide--active {
+    opacity: 1;
+    transform: translateY(0);
+  }
 
   /* ─── Main Nav ─────────────────────────── */
   .nav {
@@ -399,6 +422,16 @@ const categories = [
     color: var(--color-charcoal);
     border-bottom: 2px solid var(--color-gold);
   }
+
+  .nav__cat-link--sale {
+    color: #e74c3c;
+    font-weight: 600;
+  }
+
+  .nav__cat-link--sale:hover {
+    color: #c0392b;
+    background: #fdf2f2;
+  }
 </style>
 
 <script>
@@ -678,4 +711,18 @@ const categories = [
       mobileSuggestEl.style.display = 'none';
     }
   });
+
+  // ─── Rotating banner ────────────────────────
+  const bannerSlider = document.getElementById('banner-slider');
+  if (bannerSlider) {
+    const slides = bannerSlider.querySelectorAll('.nav__banner-slide');
+    let currentSlide = 0;
+    if (slides.length > 1) {
+      setInterval(() => {
+        slides[currentSlide].classList.remove('nav__banner-slide--active');
+        currentSlide = (currentSlide + 1) % slides.length;
+        slides[currentSlide].classList.add('nav__banner-slide--active');
+      }, 4000);
+    }
+  }
 </script>

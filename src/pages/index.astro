@@ -335,6 +335,17 @@ const categoryTiles = Object.values(categoryMap);
     </div>
   </section>
 
+  <!-- ═══ RECENTLY VIEWED ═══ -->
+  <section class="home-recent section" id="home-recent-section" style="display:none;">
+    <div class="container">
+      <div class="home-products__header">
+        <h2 class="section-title">Pick Up Where You Left Off</h2>
+        <a href="/shop" class="home-products__see-all">Continue shopping →</a>
+      </div>
+      <div class="home-recent__scroll" id="home-recent-scroll"></div>
+    </div>
+  </section>
+
   <!-- ═══ EMAIL CAPTURE ═══ -->
   <EmailCapture />
 </Base>
@@ -796,9 +807,123 @@ const categoryTiles = Object.values(categoryMap);
     background: var(--color-gold);
     color: var(--color-charcoal);
   }
+
+  /* ─── Recently Viewed (homepage) ────────── */
+  .home-recent { background: var(--color-cream); }
+
+  .home-recent__scroll {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.5rem;
+    margin-top: var(--space-lg);
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-cream-dark) transparent;
+  }
+
+  .home-recent__card {
+    flex-shrink: 0;
+    width: 200px;
+    scroll-snap-align: start;
+    background: var(--color-warm-white);
+    transition: transform 0.3s var(--ease-out), box-shadow 0.3s;
+    overflow: hidden;
+  }
+
+  .home-recent__card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(44,44,44,0.08);
+  }
+
+  .home-recent__image {
+    aspect-ratio: 4/5;
+    overflow: hidden;
+    background: var(--color-cream-dark);
+  }
+
+  .home-recent__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s var(--ease-out);
+  }
+
+  .home-recent__card:hover .home-recent__image img { transform: scale(1.05); }
+
+  .home-recent__info {
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .home-recent__title {
+    font-family: var(--font-display);
+    font-size: 0.88rem;
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--color-charcoal);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .home-recent__price {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-charcoal);
+  }
 </style>
 
 <script>
+  // ─── Recently viewed on homepage ───────────
+  const recentSection = document.getElementById('home-recent-section');
+  const recentScroll = document.getElementById('home-recent-scroll');
+  if (recentSection && recentScroll) {
+    try {
+      const items = JSON.parse(localStorage.getItem('sr_recent') || '[]');
+      if (items.length > 0) {
+        recentSection.style.display = '';
+        const frag = document.createDocumentFragment();
+        items.slice(0, 8).forEach((item: any) => {
+          const card = document.createElement('a');
+          card.href = `/shop/${encodeURIComponent(item.handle)}`;
+          card.className = 'home-recent__card';
+
+          const imgWrap = document.createElement('div');
+          imgWrap.className = 'home-recent__image';
+          if (item.image) {
+            const img = document.createElement('img');
+            img.src = item.image.includes('cdn.shopify.com') ? `${item.image}?width=400&crop=center` : item.image;
+            img.alt = item.title || '';
+            img.loading = 'lazy';
+            imgWrap.appendChild(img);
+          }
+          card.appendChild(imgWrap);
+
+          const info = document.createElement('div');
+          info.className = 'home-recent__info';
+          const title = document.createElement('span');
+          title.className = 'home-recent__title';
+          title.textContent = item.title;
+          info.appendChild(title);
+          if (item.price) {
+            const price = document.createElement('span');
+            price.className = 'home-recent__price';
+            price.textContent = `$${parseFloat(item.price).toFixed(2)}`;
+            info.appendChild(price);
+          }
+          card.appendChild(info);
+          frag.appendChild(card);
+        });
+        recentScroll.replaceChildren(frag);
+      }
+    } catch {}
+  }
+
   // Add to cart from homepage product cards
   const homeGrid = document.getElementById('home-grid');
 
