@@ -29,7 +29,7 @@
 
   <!-- Empty state -->
   <div class="cart-drawer__empty" id="cart-empty" style="display:none;">
-    <div class="cart-empty__icon">🛒</div>
+    <div class="cart-empty__icon"></div>
     <p>Your cart is empty</p>
     <a href="/shop" class="btn btn--primary" style="margin-top: 1rem;">Start Shopping</a>
   </div>
@@ -575,7 +575,7 @@
     if (shippingFill) shippingFill.style.width = pct + '%';
     if (shippingText) {
       if (total >= FREE_SHIP_THRESHOLD) {
-        shippingText.innerHTML = '🎉 You\'ve earned <strong>free shipping!</strong>';
+        shippingText.innerHTML = 'You\'ve earned <strong>free shipping!</strong>';
       } else {
         const remaining = (FREE_SHIP_THRESHOLD - total).toFixed(2);
         shippingText.innerHTML = `Add <strong>$${remaining}</strong> more for free shipping`;
