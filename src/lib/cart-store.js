@@ -59,7 +59,9 @@ export const cart = {
 
   /** Remove item by variantId */
   remove(variantId) {
-    const items = load().filter(i => i.variantId !== variantId);
+    const items = load();
+    const idx = items.findIndex(i => i.variantId === variantId);
+    if (idx >= 0) items.splice(idx, 1);
     save(items);
     notify(items);
     return items;

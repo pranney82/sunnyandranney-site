@@ -400,14 +400,17 @@ const categories = [
 </style>
 
 <script>
-  // Scroll behavior
+  // Scroll behavior — rAF-throttled for perf
   const nav = document.getElementById('main-nav');
+  let scrollTicking = false;
 
   window.addEventListener('scroll', () => {
-    if (window.scrollY > 20) {
-      nav?.classList.add('nav--scrolled');
-    } else {
-      nav?.classList.remove('nav--scrolled');
+    if (!scrollTicking) {
+      scrollTicking = true;
+      requestAnimationFrame(() => {
+        nav?.classList.toggle('nav--scrolled', window.scrollY > 20);
+        scrollTicking = false;
+      });
     }
   }, { passive: true });
 
@@ -551,9 +554,30 @@ const categories = [
     }
   });
 
-  // Hide on Escape
+  // Keyboard navigation in suggestions
   searchInput?.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && suggestEl) suggestEl.style.display = 'none';
+    if (e.key === 'Escape' && suggestEl) { suggestEl.style.display = 'none'; return; }
+    if (!suggestEl || suggestEl.style.display === 'none') return;
+    const items = suggestEl.querySelectorAll('.search-suggest__item');
+    if (!items.length) return;
+    const active = suggestEl.querySelector('[aria-selected="true"]') as HTMLElement;
+    let idx = active ? Array.from(items).indexOf(active) : -1;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (active) active.removeAttribute('aria-selected');
+      idx = (idx + 1) % items.length;
+      items[idx].setAttribute('aria-selected', 'true');
+      (items[idx] as HTMLElement).scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (active) active.removeAttribute('aria-selected');
+      idx = idx <= 0 ? items.length - 1 : idx - 1;
+      items[idx].setAttribute('aria-selected', 'true');
+      (items[idx] as HTMLElement).scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter' && active) {
+      e.preventDefault();
+      (active as HTMLAnchorElement).click();
+    }
   });
 
   // ─── Mobile typeahead ──────────────────────────
@@ -620,6 +644,30 @@ const categories = [
       mobileSuggestEl.replaceChildren(frag);
       mobileSuggestEl.style.display = 'block';
     }, 200);
+  });
+
+  // Mobile keyboard navigation in suggestions
+  mobileTopbarSearch?.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && mobileSuggestEl) { mobileSuggestEl.style.display = 'none'; return; }
+    if (!mobileSuggestEl || mobileSuggestEl.style.display === 'none') return;
+    const items = mobileSuggestEl.querySelectorAll('.search-suggest__item');
+    if (!items.length) return;
+    const active = mobileSuggestEl.querySelector('[aria-selected="true"]') as HTMLElement;
+    let idx = active ? Array.from(items).indexOf(active) : -1;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (active) active.removeAttribute('aria-selected');
+      idx = (idx + 1) % items.length;
+      items[idx].setAttribute('aria-selected', 'true');
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (active) active.removeAttribute('aria-selected');
+      idx = idx <= 0 ? items.length - 1 : idx - 1;
+      items[idx].setAttribute('aria-selected', 'true');
+    } else if (e.key === 'Enter' && active) {
+      e.preventDefault();
+      (active as HTMLAnchorElement).click();
+    }
   });
 
   // Hide mobile suggestions on click outside

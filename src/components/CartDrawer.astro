@@ -381,6 +381,23 @@
     text-underline-offset: 2px;
     margin-left: 0.25rem;
   }
+
+  /* Cart badge bounce on add */
+  @keyframes cartBadgeBounce {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.5); }
+    50% { transform: scale(0.9); }
+    70% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+
+  :global(.nav__cart-count.bounce) {
+    animation: cartBadgeBounce 0.5s var(--ease-out);
+  }
+
+  :global(.bottom-nav__badge.bounce) {
+    animation: cartBadgeBounce 0.5s var(--ease-out);
+  }
 </style>
 
 <script>
@@ -467,6 +484,13 @@
     toast?.setAttribute('aria-hidden', 'false');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => toast?.setAttribute('aria-hidden', 'true'), 3500);
+    // Bounce cart badges
+    [navCount, document.getElementById('bottom-nav-cart-count')].forEach(el => {
+      if (!el) return;
+      el.classList.remove('bounce');
+      void el.offsetWidth; // force reflow to restart animation
+      el.classList.add('bounce');
+    });
   };
 
   toastView?.addEventListener('click', (e) => {
@@ -474,13 +498,6 @@
     toast?.setAttribute('aria-hidden', 'true');
     openCart();
   });
-
-  // ─── Helpers ─────────────────────────────
-  function esc(str) {
-    const d = document.createElement('div');
-    d.textContent = str || '';
-    return d.innerHTML;
-  }
 
   function createCartItem(item) {
     const el = document.createElement('div');

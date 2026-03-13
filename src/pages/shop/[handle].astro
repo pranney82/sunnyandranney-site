@@ -106,18 +106,31 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
             </div>
           </div>
           {images.length > 1 && (
-            <div class="pdp-gallery__thumbs">
-              {images.map((img: any, i: number) => (
-                <button
-                  class:list={['pdp-thumb', { 'pdp-thumb--active': i === 0 }]}
-                  data-url={img.url}
-                  data-alt={img.altText || product.title}
-                  data-idx={i}
-                >
-                  <img src={shopifyImageUrl(img.url, 150)} alt={img.altText || `${product.title} ${i + 1}`} loading="lazy" />
-                </button>
-              ))}
-            </div>
+            <>
+              {/* Mobile dot indicators */}
+              <div class="pdp-gallery__dots" id="gallery-dots">
+                {images.map((_: any, i: number) => (
+                  <button
+                    class:list={['pdp-dot', { 'pdp-dot--active': i === 0 }]}
+                    data-idx={i}
+                    aria-label={`Image ${i + 1}`}
+                  />
+                ))}
+              </div>
+              {/* Desktop thumbnails */}
+              <div class="pdp-gallery__thumbs">
+                {images.map((img: any, i: number) => (
+                  <button
+                    class:list={['pdp-thumb', { 'pdp-thumb--active': i === 0 }]}
+                    data-url={img.url}
+                    data-alt={img.altText || product.title}
+                    data-idx={i}
+                  >
+                    <img src={shopifyImageUrl(img.url, 150)} alt={img.altText || `${product.title} ${i + 1}`} loading="lazy" />
+                  </button>
+                ))}
+              </div>
+            </>
           )}
         </div>
 
@@ -370,13 +383,46 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
     color: var(--color-stone);
   }
 
-  .pdp-gallery__thumbs {
+  /* Mobile dot indicators */
+  .pdp-gallery__dots {
     display: flex;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-top: 0.6rem;
+  }
+
+  @media (min-width: 768px) {
+    .pdp-gallery__dots { display: none; }
+  }
+
+  .pdp-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-cream-dark);
+    border: 1.5px solid var(--color-stone);
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .pdp-dot--active {
+    background: var(--color-charcoal);
+    border-color: var(--color-charcoal);
+    transform: scale(1.2);
+  }
+
+  .pdp-gallery__thumbs {
+    display: none;
     gap: 0.5rem;
     margin-top: 0.75rem;
     overflow-x: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--color-cream-dark) transparent;
+  }
+
+  @media (min-width: 768px) {
+    .pdp-gallery__thumbs { display: flex; }
   }
 
   .pdp-thumb {
@@ -865,6 +911,28 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
   const imageUrls = Array.from(thumbs).map(t => (t as HTMLElement).dataset.url || '');
   if (mainImg && !imageUrls.length) imageUrls.push(mainImg.src);
   let currentImageIdx = 0;
+  const galleryDots = document.querySelectorAll('.pdp-dot');
+
+  function syncDots(idx: number) {
+    galleryDots.forEach((d, i) => d.classList.toggle('pdp-dot--active', i === idx));
+  }
+
+  // Dot click → change image
+  galleryDots.forEach((dot, i) => {
+    dot.addEventListener('click', () => {
+      currentImageIdx = i;
+      syncDots(i);
+      thumbs.forEach(t => t.classList.remove('pdp-thumb--active'));
+      thumbs[i]?.classList.add('pdp-thumb--active');
+      if (mainImg) {
+        mainImg.style.opacity = '0';
+        setTimeout(() => {
+          mainImg.src = imageUrls[i];
+          mainImg.style.opacity = '1';
+        }, 150);
+      }
+    });
+  });
 
   // ─── Thumbnail gallery ──────────────────────
   thumbs.forEach((thumb, i) => {
@@ -872,6 +940,7 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
       thumbs.forEach(t => t.classList.remove('pdp-thumb--active'));
       thumb.classList.add('pdp-thumb--active');
       currentImageIdx = i;
+      syncDots(i);
       if (mainImg) {
         mainImg.style.opacity = '0';
         setTimeout(() => {
@@ -1128,11 +1197,11 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
 
   // ─── Touch swipe on main gallery image ─────
   if (galleryMain && imageUrls.length > 1) {
-    addSwipe(galleryMain, () => {
-      // Swipe left = next image
-      currentImageIdx = (currentImageIdx + 1) % imageUrls.length;
+    function swipeTo(idx: number) {
+      currentImageIdx = idx;
       thumbs.forEach(t => t.classList.remove('pdp-thumb--active'));
       thumbs[currentImageIdx]?.classList.add('pdp-thumb--active');
+      syncDots(currentImageIdx);
       if (mainImg) {
         mainImg.style.opacity = '0';
         setTimeout(() => {
@@ -1140,19 +1209,11 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
           mainImg.style.opacity = '1';
         }, 150);
       }
-    }, () => {
-      // Swipe right = prev image
-      currentImageIdx = (currentImageIdx - 1 + imageUrls.length) % imageUrls.length;
-      thumbs.forEach(t => t.classList.remove('pdp-thumb--active'));
-      thumbs[currentImageIdx]?.classList.add('pdp-thumb--active');
-      if (mainImg) {
-        mainImg.style.opacity = '0';
-        setTimeout(() => {
-          mainImg.src = imageUrls[currentImageIdx];
-          mainImg.style.opacity = '1';
-        }, 150);
-      }
-    });
+    }
+    addSwipe(galleryMain,
+      () => swipeTo((currentImageIdx + 1) % imageUrls.length),
+      () => swipeTo((currentImageIdx - 1 + imageUrls.length) % imageUrls.length)
+    );
   }
 
   // ─── Sticky mobile bar ─────────────────────

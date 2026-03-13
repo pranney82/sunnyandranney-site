@@ -1270,12 +1270,18 @@ try {
   let qvImages: string[] = [];
   let qvCurrentImage = 0;
 
+  function qvOptimize(url: string) {
+    if (!url || !url.includes('cdn.shopify.com')) return url;
+    return url.includes('?') ? `${url}&width=600` : `${url}?width=600`;
+  }
+
   function openQuickView(data: any) {
     qvImages = JSON.parse(data.images || '[]');
     const variants = JSON.parse(data.variants || '[]');
 
     if (qvImage && qvImages.length) {
-      qvImage.src = qvImages[0];
+      // Optimize: request 600px for QV modal instead of full-size
+      qvImage.src = qvOptimize(qvImages[0]);
       qvImage.alt = data.title;
       qvCurrentImage = 0;
     }
@@ -1350,11 +1356,38 @@ try {
     if (!btn) return;
     const idx = parseInt(btn.dataset.idx || '0');
     qvCurrentImage = idx;
-    if (qvImage) qvImage.src = qvImages[idx];
+    if (qvImage) qvImage.src = qvOptimize(qvImages[idx]);
     qvThumbs.querySelectorAll('.qv-thumb').forEach((t, i) => {
       t.classList.toggle('qv-thumb--active', i === idx);
     });
   });
+
+  // Quick view touch swipe
+  if (qvImage) {
+    let qvStartX = 0;
+    let qvStartY = 0;
+    let qvTracking = false;
+    qvImage.addEventListener('touchstart', (e) => {
+      qvStartX = e.touches[0].clientX;
+      qvStartY = e.touches[0].clientY;
+      qvTracking = true;
+    }, { passive: true });
+    qvImage.addEventListener('touchend', (e) => {
+      if (!qvTracking || qvImages.length < 2) return;
+      qvTracking = false;
+      const dx = e.changedTouches[0].clientX - qvStartX;
+      const dy = e.changedTouches[0].clientY - qvStartY;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+        qvCurrentImage = dx < 0
+          ? (qvCurrentImage + 1) % qvImages.length
+          : (qvCurrentImage - 1 + qvImages.length) % qvImages.length;
+        qvImage.src = qvOptimize(qvImages[qvCurrentImage]);
+        qvThumbs?.querySelectorAll('.qv-thumb').forEach((t, i) => {
+          t.classList.toggle('qv-thumb--active', i === qvCurrentImage);
+        });
+      }
+    }, { passive: true });
+  }
 
   // Quick view variant selection
   qvVariants?.addEventListener('click', (e) => {
@@ -1367,7 +1400,7 @@ try {
     qvSelectedVariant = { id: btn.dataset.variantId, price };
     // Switch to variant image if available
     const idx = parseInt(btn.dataset.idx || '0');
-    if (qvImages[idx] && qvImage) qvImage.src = qvImages[idx];
+    if (qvImages[idx] && qvImage) qvImage.src = qvOptimize(qvImages[idx]);
   });
 
   // Quick view add to cart
