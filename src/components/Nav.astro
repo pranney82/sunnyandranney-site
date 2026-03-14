@@ -28,11 +28,11 @@ const categories = [
   <div class="nav__mobile-header">
     <a href="/" class="nav__logo" aria-label="Sunny & Ranney Home">
       <img
-        src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/logo-tagline-light-bg/w=320,h=128,fit=scale-down"
+        src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/logo-tagline-light-bg/w=160,h=64,fit=scale-down"
         alt="Sunny & Ranney"
         class="nav__logo-img"
-        width="320"
-        height="128"
+        width="160"
+        height="64"
         fetchpriority="high"
         decoding="async"
       />
@@ -279,7 +279,7 @@ const categories = [
     display: block;
     background: var(--color-cream);
     transition: max-height 0.25s ease, padding 0.25s ease, opacity 0.25s ease;
-    will-change: opacity;
+    will-change: opacity, max-height;
     /* Hidden by default — revealed when user taps search icon */
     max-height: 0;
     padding: 0 12px;

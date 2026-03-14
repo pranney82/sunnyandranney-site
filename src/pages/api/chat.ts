@@ -2,89 +2,18 @@ import type { APIRoute } from 'astro';
 
 export const prerender = false;
 
-// ─── Product catalog cache (refreshes every 5 min per isolate) ───
-let productCache: string | null = null;
-let cacheTimestamp = 0;
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-const PRODUCTS_QUERY = `
-  query ($cursor: String) {
-    products(first: 250, after: $cursor, sortKey: BEST_SELLING) {
-      pageInfo { hasNextPage endCursor }
-      edges {
-        node {
-          title
-          handle
-          productType
-          availableForSale
-          priceRange { minVariantPrice { amount } }
-          compareAtPriceRange { minVariantPrice { amount } }
-        }
-      }
-    }
-  }
-`;
-
-// Compact format to stay within model context window (24k tokens)
-function formatProduct(node: any): string {
-  const price = parseFloat(node.priceRange.minVariantPrice.amount).toFixed(0);
-  const sold = !node.availableForSale ? ' SOLD OUT' : '';
-  return `${node.title} $${price}${sold} /shop/${node.handle}`;
+// ─── Types ───────────────────────────────────────────────────
+interface Product {
+  title: string;
+  handle: string;
+  productType: string;
+  availableForSale: boolean;
+  price: string;
+  compareAtPrice: string;
 }
 
-const MAX_CATALOG_PRODUCTS = 200;
-
-async function getProductCatalog(runtimeEnv: Record<string, any>): Promise<string> {
-  if (productCache && Date.now() - cacheTimestamp < CACHE_TTL) {
-    return productCache;
-  }
-
-  const domain = runtimeEnv.PUBLIC_SHOPIFY_STORE_DOMAIN || 'sunnyandranney.myshopify.com';
-  const token = runtimeEnv.PUBLIC_SHOPIFY_STOREFRONT_TOKEN || '';
-
-  if (!token) return 'Product catalog unavailable.';
-
-  try {
-    const allProducts: string[] = [];
-    let cursor: string | null = null;
-    let hasNextPage = true;
-
-    // Paginate through products (capped to fit model context window)
-    while (hasNextPage && allProducts.length < MAX_CATALOG_PRODUCTS) {
-      const res: Response = await fetch(`https://${domain}/api/2025-01/graphql.json`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Shopify-Storefront-Access-Token': token,
-        },
-        body: JSON.stringify({ query: PRODUCTS_QUERY, variables: { cursor } }),
-      });
-
-      const json: any = await res.json();
-      const data: any = json.data?.products;
-      if (!data) break;
-
-      for (const edge of data.edges) {
-        allProducts.push(formatProduct(edge.node));
-      }
-
-      hasNextPage = data.pageInfo.hasNextPage;
-      cursor = data.pageInfo.endCursor;
-    }
-
-    const catalog = allProducts.join('\n');
-    productCache = catalog;
-    cacheTimestamp = Date.now();
-    return catalog;
-  } catch (err) {
-    console.error('Failed to fetch product catalog:', err);
-    return 'Product catalog temporarily unavailable.';
-  }
-}
-
-// ─── System prompt ───────────────────────────────────────────
-function buildSystemPrompt(catalog: string): string {
-  return `You are Staci, the AI shopping assistant for **Sunny & Ranney** — a home goods store in Roswell, GA where 100% of profits go to **Sunshine on a Ranney Day**, a charity that provides home makeovers for children with special needs.
+// ─── System prompt (static — no catalog stuffed in) ──────────
+const SYSTEM_PROMPT = `You are Staci, the AI shopping assistant for **Sunny & Ranney** — a home goods store in Roswell, GA where 100% of profits go to **Sunshine on a Ranney Day**, a charity that provides home makeovers for children with special needs.
 
 ## Store Details
 - **What we sell:** Furniture, home decor, lighting, gifts, kitchenware, and accessories. New inventory arrives regularly.
@@ -98,15 +27,67 @@ function buildSystemPrompt(catalog: string): string {
 ## Mission
 Sunny & Ranney exists to fund Sunshine on a Ranney Day (SOARD). Every single dollar of profit goes directly to providing bedroom makeovers, furniture, and home essentials for children with special needs and their families. When a customer buys from us, they are directly changing a child's life.
 
-## Product Catalog (name, price, link)
-${catalog}
-
 ## Rules
-- Warm, concise (2-4 sentences). Use **bold** for key info.
-- Recommend products as [Name](/shop/handle) with price.
-- If SOLD OUT, say so and suggest alternatives.
-- If not in catalog, say inventory changes often — visit in person or browse /shop.
-- Never invent products. Occasionally mention the mission.`;
+- Warm, concise (2-4 sentences unless detail is requested). Use **bold** for key info.
+- When recommending products, include the name, price, and link formatted as [Product Name](/shop/handle).
+- If a product is SOLD OUT, let the customer know and suggest similar items.
+- If asked about something not in the provided products, say inventory changes often and suggest they visit in person or browse /shop.
+- Never invent products that aren't in the provided context.
+- Occasionally mention the mission — customers love knowing their purchase matters.
+- If a customer seems to be browsing, proactively suggest 2-3 relevant items from the provided products.`;
+
+// ─── Helpers ─────────────────────────────────────────────────
+
+function formatProductForLLM(meta: Product): string {
+  const price = parseFloat(meta.price).toFixed(2);
+  const compareAt = parseFloat(meta.compareAtPrice || '0');
+  const onSale = compareAt > parseFloat(price);
+  return [
+    `**${meta.title}**`,
+    `$${price}${onSale ? ` (was $${compareAt.toFixed(2)})` : ''}`,
+    meta.productType ? `Category: ${meta.productType}` : '',
+    !meta.availableForSale ? 'SOLD OUT' : '',
+    `[View](/shop/${meta.handle})`,
+  ].filter(Boolean).join(' | ');
+}
+
+/** Build the user's latest query for embedding — uses last user message + recent context */
+function getSearchQuery(messages: { role: string; content: string }[]): string {
+  const userMessages = messages.filter(m => m.role === 'user');
+  // Use last 2 user messages for better context
+  return userMessages.slice(-2).map(m => m.content).join(' ');
+}
+
+// ─── RAG: embed query → search Vectorize → retrieve relevant products ───
+
+async function searchProducts(
+  ai: any,
+  vectorize: any,
+  query: string,
+  topK = 15,
+): Promise<string> {
+  // Generate embedding for the user's query
+  const embeddingResult = await ai.run('@cf/baai/bge-base-en-v1.5', {
+    text: [query],
+  });
+
+  const queryVector = embeddingResult.data?.[0];
+  if (!queryVector) return 'No products found.';
+
+  // Search Vectorize for the most relevant products
+  const results = await vectorize.query(queryVector, {
+    topK,
+    returnMetadata: 'all',
+  });
+
+  if (!results.matches?.length) return 'No matching products found.';
+
+  // Format matched products for the LLM
+  const products = results.matches
+    .filter((m: any) => m.metadata)
+    .map((m: any) => formatProductForLLM(m.metadata as Product));
+
+  return products.join('\n');
 }
 
 // ─── API handler ─────────────────────────────────────────────
@@ -123,6 +104,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const runtime = (locals as any).runtime;
     const ai = runtime?.env?.AI;
+    const vectorize = runtime?.env?.VECTORIZE;
 
     if (!ai) {
       return new Response(
@@ -131,12 +113,27 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    // Fetch product catalog (cached)
-    const catalog = await getProductCatalog(runtime.env);
-    const systemMessage = { role: 'system', content: buildSystemPrompt(catalog) };
+    // RAG: search for relevant products based on user's query
+    let productContext = '';
+    if (vectorize) {
+      const query = getSearchQuery(messages);
+      productContext = await searchProducts(ai, vectorize, query);
+    }
+
+    // Build messages with product context injected
+    const systemMessage = { role: 'system', content: SYSTEM_PROMPT };
+    const contextMessage = productContext
+      ? { role: 'system', content: `## Relevant Products From Our Shop\n${productContext}` }
+      : null;
+
+    const llmMessages = [
+      systemMessage,
+      ...(contextMessage ? [contextMessage] : []),
+      ...messages,
+    ];
 
     const response = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
-      messages: [systemMessage, ...messages],
+      messages: llmMessages,
       max_tokens: 400,
     });
 

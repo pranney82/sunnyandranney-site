@@ -202,7 +202,7 @@ const lcpImage = products[0]?.images?.edges[0]?.node?.url
                           alt={image.altText || product.title}
                           width={image.width}
                           height={image.height}
-                          loading={idx < 8 ? 'eager' : 'lazy'}
+                          loading={idx < 4 ? 'eager' : 'lazy'}
                           fetchpriority={idx === 0 ? 'high' : undefined}
                           decoding={idx === 0 ? 'sync' : 'async'}
                           class="product-card__img-primary"
@@ -453,8 +453,7 @@ const lcpImage = products[0]?.images?.edges[0]?.node?.url
     padding: 0.75rem 0;
     position: sticky;
     top: var(--nav-height);
-    background: rgba(250, 247, 242, 0.95);
-    backdrop-filter: blur(8px);
+    background: var(--color-cream);
     z-index: 50;
   }
 
@@ -717,7 +716,11 @@ const lcpImage = products[0]?.images?.edges[0]?.node?.url
   }
 
   /* ─── Grid / List views ───────────────── */
-  .shop-grid-section { min-height: 400px; }
+  .shop-grid-section {
+    min-height: 400px;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 2000px;
+  }
 
   #shop-grid.view-list {
     grid-template-columns: 1fr !important;
@@ -755,24 +758,7 @@ const lcpImage = products[0]?.images?.edges[0]?.node?.url
     transition: transform var(--duration) var(--ease-out),
                 box-shadow var(--duration) var(--ease-out);
     overflow: hidden;
-    opacity: 0;
-    animation: cardFadeIn 0.5s var(--ease-out) forwards;
   }
-
-  @keyframes cardFadeIn {
-    from { opacity: 0; transform: translateY(16px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  /* Stagger card animations */
-  .product-card:nth-child(1) { animation-delay: 0s; }
-  .product-card:nth-child(2) { animation-delay: 0.05s; }
-  .product-card:nth-child(3) { animation-delay: 0.1s; }
-  .product-card:nth-child(4) { animation-delay: 0.15s; }
-  .product-card:nth-child(5) { animation-delay: 0.2s; }
-  .product-card:nth-child(6) { animation-delay: 0.25s; }
-  .product-card:nth-child(7) { animation-delay: 0.3s; }
-  .product-card:nth-child(8) { animation-delay: 0.35s; }
 
   /* Wishlist heart */
   .product-card__wishlist {
@@ -1367,6 +1353,13 @@ const lcpImage = products[0]?.images?.edges[0]?.node?.url
   const searchBannerText = document.getElementById('search-banner-text');
   const searchClear = document.getElementById('search-clear');
 
+  // ─── Debounce helper ────────────────────────────
+  let _applyTimer: ReturnType<typeof setTimeout>;
+  function applyAllDebounced() {
+    clearTimeout(_applyTimer);
+    _applyTimer = setTimeout(applyAll, 60);
+  }
+
   // ─── Filter & Sort panel toggle ───────────────
   const filterToggle = document.getElementById('filter-toggle');
   const filterPanel = document.getElementById('filter-panel');
@@ -1457,7 +1450,7 @@ const lcpImage = products[0]?.images?.edges[0]?.node?.url
       filterBtns.forEach(b => b.classList.remove('filter-btn--active'));
       btn.classList.add('filter-btn--active');
       visiblePage = 0;
-      applyAll();
+      applyAllDebounced();
     });
   });
 
@@ -1468,7 +1461,7 @@ const lcpImage = products[0]?.images?.edges[0]?.node?.url
     priceMin = min;
     priceMax = max;
     visiblePage = 0;
-    applyAll();
+    applyAllDebounced();
   }
 
   priceGoBtn?.addEventListener('click', applyPriceFilter);

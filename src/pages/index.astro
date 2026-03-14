@@ -53,7 +53,7 @@ const featuredProducts = products.slice(0, 8);
 
 ---
 
-<Base>
+<Base lcpImage="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=480,h=600,fit=cover,q=80,format=auto">
   <!-- ═══ HERO ═══ -->
   <section class="hero">
     <div class="container hero__inner">
@@ -62,7 +62,7 @@ const featuredProducts = products.slice(0, 8);
         <h1 class="hero__title animate-fade-up delay-1">Shop with<br/>a Purpose</h1>
         <p class="hero__sub animate-fade-up delay-2">Curated furniture & home decor where every purchase transforms a child's room through <strong>Sunshine on a Ranney Day</strong>.</p>
         <div class="hero__actions animate-fade-up delay-3">
-          <a href="/shop" class="btn btn--gold btn--hero" data-astro-prefetch="viewport">Shop Now</a>
+          <a href="/shop" class="btn btn--gold btn--hero" data-astro-prefetch="viewport">Shop &amp; Give Back</a>
         </div>
         <div class="hero__trust animate-fade-up delay-3">
           <span class="hero__trust-item">
@@ -84,8 +84,8 @@ const featuredProducts = products.slice(0, 8);
       <div class="hero__media animate-fade-up delay-2">
         <div class="hero__img-wrap">
           <img
-            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=480,h=600,fit=cover,q=80"
-            srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=320,h=400,fit=cover,q=75 320w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=480,h=600,fit=cover,q=80 480w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=640,h=800,fit=cover,q=80 640w"
+            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=480,h=600,fit=cover,q=80,format=auto"
+            srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=320,h=400,fit=cover,q=75,format=auto 320w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=480,h=600,fit=cover,q=80,format=auto 480w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=640,h=800,fit=cover,q=80,format=auto 640w"
             sizes="(max-width: 767px) 260px, (max-width: 1023px) 340px, 420px"
             alt="Sunshine on a Ranney Day room makeover"
             width="480"
@@ -99,9 +99,9 @@ const featuredProducts = products.slice(0, 8);
     </div>
     <div class="hero__ribbon">
       <div class="container hero__ribbon-inner">
-        <span class="hero__ribbon-stat" data-count="269">0</span><span>+ rooms transformed</span>
+        <span class="hero__ribbon-stat" data-count="269" data-suffix="+">0</span><span> rooms transformed</span>
         <span class="hero__ribbon-sep" aria-hidden="true"></span>
-        <span class="hero__ribbon-stat" data-count="14">0</span><span> years of giving</span>
+        <span class="hero__ribbon-stat" data-count="14" data-suffix="">0</span><span> years of giving</span>
         <span class="hero__ribbon-sep" aria-hidden="true"></span>
         <span><strong>100%</strong> of profits donated</span>
       </div>
@@ -133,7 +133,7 @@ const featuredProducts = products.slice(0, 8);
                       width="500"
                       height="500"
                       loading={idx < 4 ? 'eager' : 'lazy'}
-                      decoding={idx < 2 ? 'sync' : 'async'}
+                      decoding="async"
                     />
                   ) : (
                     <div class="collection-tile__placeholder">
@@ -242,7 +242,9 @@ const featuredProducts = products.slice(0, 8);
       <div class="mission__media reveal">
         <div class="mission__img-wrap">
           <img
-            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/founders-reunion-2026/w=600,q=80"
+            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/founders-reunion-2026/w=600,q=80,format=auto"
+            srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/founders-reunion-2026/w=600,q=80,format=auto 600w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/founders-reunion-2026/w=900,q=80,format=auto 900w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/founders-reunion-2026/w=1200,q=80,format=auto 1200w"
+            sizes="(max-width: 767px) 90vw, (max-width: 1024px) 45vw, 540px"
             alt="Sunshine on a Ranney Day founders"
             width="600"
             height="400"
