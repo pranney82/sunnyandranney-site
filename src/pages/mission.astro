@@ -1,22 +1,6 @@
 ---
 import Base from '@/layouts/Base.astro';
 
-let products: any[] = [];
-let hasShopify = false;
-let shopifyImageUrl: any;
-let shopifyImageSrcset: any;
-
-try {
-  const shopify = await import('@/lib/shopify');
-  const result = await shopify.getProducts(100);
-  products = result.products;
-  hasShopify = products.length > 0;
-  shopifyImageUrl = shopify.shopifyImageUrl;
-  shopifyImageSrcset = shopify.shopifyImageSrcset;
-} catch (e) {
-  console.log('Shopify API not configured.');
-}
-
 // Fetch live impact stats from SOARD site — falls back to hardcoded values
 const fallbackStats = { roomMakeovers: 269, childrenServed: 203, livesImpacted: 17000, yearsGiving: 14 };
 let stats = fallbackStats;
@@ -44,89 +28,6 @@ try {
       </p>
     </div>
   </section>
-
-  <!-- ═══ PRODUCTS ═══ -->
-  {hasShopify && (
-    <section class="mission-products section">
-      <div class="container">
-        <div class="product-grid">
-          {products.map((product, idx) => {
-            const firstVariant = product.variants?.edges?.[0]?.node;
-            const price = firstVariant?.price || product.priceRange?.minVariantPrice;
-            const compareAt = firstVariant?.compareAtPrice || product.compareAtPriceRange?.minVariantPrice;
-            const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.amount);
-            const image = product.images?.edges?.[0]?.node;
-            const image2 = product.images?.edges?.[1]?.node;
-
-            return (
-              <div class="product-card">
-                {isOnSale && <span class="product-card__badge">Sale</span>}
-                {!isOnSale && !product.availableForSale && <span class="product-card__badge product-card__badge--sold">Sold Out</span>}
-
-                <a href={`/shop/${product.handle}`} class="product-card__image">
-                  {image ? (
-                    <>
-                      <img
-                        src={shopifyImageUrl(image.url, 600)}
-                        srcset={shopifyImageSrcset(image.url, [300, 600, 900])}
-                        sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                        alt={image.altText || product.title}
-                        width={image.width}
-                        height={image.height}
-                        loading={idx < 8 ? 'eager' : 'lazy'}
-                        class="product-card__img-primary"
-                      />
-                      {image2 && (
-                        <img
-                          src={shopifyImageUrl(image2.url, 600)}
-                          srcset={shopifyImageSrcset(image2.url, [300, 600, 900])}
-                          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                          alt={image2.altText || product.title}
-                          width={image2.width}
-                          height={image2.height}
-                          loading="lazy"
-                          class="product-card__img-hover"
-                        />
-                      )}
-                    </>
-                  ) : (
-                    <div class="product-card__image-ph">{product.productType || 'Product'}</div>
-                  )}
-                </a>
-
-                <div class="product-card__info">
-                  {product.productType && <span class="product-card__type">{product.productType}</span>}
-                  <a href={`/shop/${product.handle}`} class="product-card__title">{product.title}</a>
-                  <div class="product-card__pricing">
-                    <span class="product-card__price">
-                      ${parseFloat(price.amount).toFixed(2)}
-                    </span>
-                    {isOnSale && (
-                      <span class="product-card__price--compare">
-                        ${parseFloat(compareAt.amount).toFixed(2)}
-                      </span>
-                    )}
-                  </div>
-                  {product.availableForSale && firstVariant && (
-                    <button class="product-card__add-btn"
-                      data-variant-id={firstVariant.id}
-                      data-title={product.title}
-                      data-price={parseFloat(price.amount)}
-                      data-image={image?.url || ''}
-                      data-handle={product.handle}
-                      data-variant-title={firstVariant.title}
-                    >
-                      Add to Cart
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  )}
 
   <!-- ═══ IMPACT STATS ═══ -->
   <section class="mission-stats">
@@ -335,12 +236,6 @@ try {
     text-align: center;
     margin: 0;
     color: var(--color-slate);
-  }
-
-  /* ─── Products ───────────────────────────── */
-  .mission-products {
-    background: var(--color-warm-white);
-    padding: var(--space-xl) 0;
   }
 
   /* ─── Impact Stats ──────────────────────── */

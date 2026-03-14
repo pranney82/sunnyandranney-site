@@ -12,33 +12,33 @@ const categories = [
 ];
 ---
 
-<header class="nav" id="main-nav">
+<header class="nav" id="main-nav" transition:persist="main-nav" transition:animate="none">
   <!-- Top banner -->
-  <div class="nav__banner">
+  <div class="nav__banner" role="status" aria-live="polite">
     <div class="container nav__banner-inner">
       <div class="nav__banner-slider" id="banner-slider">
         <span class="nav__banner-slide nav__banner-slide--active">100% of profits support <strong>Sunshine on a Ranney Day</strong> — home makeovers for kids with special needs</span>
-        <span class="nav__banner-slide">LOCAL PICKUP ONLY — <a href="/shop" style="color:var(--color-gold);text-decoration:underline;">Shop Now</a></span>
+        <span class="nav__banner-slide">LOCAL PICKUP ONLY — <a href="/shop" class="nav__banner-link">Shop Now</a></span>
         <span class="nav__banner-slide">Visit our Roswell showroom — Tue–Sat, 10am–6pm</span>
       </div>
     </div>
   </div>
 
-  <!-- Mobile header: logo + cart (mirrors desktop nav row) -->
+  <!-- Mobile header: logo + cart -->
   <div class="nav__mobile-header">
     <a href="/" class="nav__logo" aria-label="Sunny & Ranney Home">
       <img
-        src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/logo-tagline-light-bg/w=500,h=200,fit=scale-down"
+        src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/logo-tagline-light-bg/w=320,h=128,fit=scale-down"
         alt="Sunny & Ranney"
         class="nav__logo-img"
-        width="500"
-        height="200"
+        width="320"
+        height="128"
         fetchpriority="high"
         decoding="async"
       />
     </a>
-    <button class="nav__icon-btn nav__cart" aria-label="Shopping cart" id="mobile-cart-trigger" onclick="window.openCart?.()">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <button class="nav__icon-btn nav__cart" aria-label="Shopping cart" id="mobile-cart-trigger">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
         <line x1="3" y1="6" x2="21" y2="6"/>
         <path d="M16 10a4 4 0 01-8 0"/>
@@ -51,10 +51,19 @@ const categories = [
   <div class="nav__mobile-topbar">
     <div class="nav__mobile-search-wrap">
       <div class="nav__mobile-topbar-inner">
-        <svg class="nav__mobile-topbar-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="search" id="mobile-topbar-search" placeholder="Search furniture, decor, lighting, gifts..." autocomplete="off" />
+        <svg class="nav__mobile-topbar-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <label for="mobile-topbar-search" class="sr-only">Search products</label>
+        <input
+          type="search"
+          id="mobile-topbar-search"
+          placeholder="Search furniture, decor, lighting, gifts..."
+          autocomplete="off"
+          role="combobox"
+          aria-expanded="false"
+          aria-controls="mobile-search-suggest"
+          aria-autocomplete="list"
+        />
       </div>
-      <!-- Mobile typeahead suggestions -->
       <div class="search-suggest search-suggest--mobile" id="mobile-search-suggest" role="listbox" aria-label="Search suggestions" style="display:none;"></div>
     </div>
   </div>
@@ -74,21 +83,29 @@ const categories = [
         />
       </a>
 
-      <!-- Search bar — prominent, center (desktop) -->
+      <!-- Search bar -->
       <div class="nav__search-bar" id="nav-search-bar">
-        <svg class="nav__search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="search" id="nav-search-input" placeholder="Search furniture, decor, lighting, gifts..." autocomplete="off" />
+        <svg class="nav__search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <label for="nav-search-input" class="sr-only">Search products</label>
+        <input
+          type="search"
+          id="nav-search-input"
+          placeholder="Search furniture, decor, lighting, gifts..."
+          autocomplete="off"
+          role="combobox"
+          aria-expanded="false"
+          aria-controls="search-suggest"
+          aria-autocomplete="list"
+        />
         <button class="nav__search-submit" id="nav-search-submit" aria-label="Search">
           Search
         </button>
-        <!-- Typeahead suggestions dropdown -->
         <div class="search-suggest" id="search-suggest" role="listbox" aria-label="Search suggestions" style="display:none;"></div>
       </div>
 
       <div class="nav__actions">
-        <!-- Cart (desktop only — mobile uses bottom nav) -->
-        <button class="nav__icon-btn nav__cart" aria-label="Shopping cart" id="cart-trigger" onclick="window.openCart?.()">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <button class="nav__icon-btn nav__cart" aria-label="Shopping cart" id="cart-trigger">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
             <line x1="3" y1="6" x2="21" y2="6"/>
             <path d="M16 10a4 4 0 01-8 0"/>
@@ -99,23 +116,36 @@ const categories = [
     </div>
   </div>
 
-  <!-- Category bar (desktop) -->
-  <div class="nav__categories">
+  <!-- Category bar -->
+  <nav class="nav__categories" aria-label="Product categories">
     <div class="container nav__categories-inner">
-      <a href="/shop" class:list={['nav__cat-link', { 'nav__cat-link--active': currentPath === '/shop' || currentPath === '/shop/' }]}>
+      <a href="/shop" data-astro-prefetch class:list={['nav__cat-link', { 'nav__cat-link--active': currentPath === '/shop' || currentPath === '/shop/' }]}>
         All Products
       </a>
       {categories.map((cat) => (
-        <a href={cat.href} class:list={['nav__cat-link', { 'nav__cat-link--sale': cat.highlight }]}>{cat.label}</a>
+        <a href={cat.href} data-astro-prefetch class:list={['nav__cat-link', { 'nav__cat-link--sale': cat.highlight }]}>{cat.label}</a>
       ))}
-      <span class="nav__cat-divider"></span>
-      <a href="/mission" class:list={['nav__cat-link', { 'nav__cat-link--active': currentPath === '/mission' || currentPath === '/mission/' }]}>Mission</a>
-      <a href="/team" class:list={['nav__cat-link', { 'nav__cat-link--active': currentPath === '/team' || currentPath === '/team/' }]}>Our Team</a>
+      <span class="nav__cat-divider" role="separator"></span>
+      <a href="/mission" data-astro-prefetch class:list={['nav__cat-link', { 'nav__cat-link--active': currentPath === '/mission' || currentPath === '/mission/' }]}>Mission</a>
+      <a href="/team" data-astro-prefetch class:list={['nav__cat-link', { 'nav__cat-link--active': currentPath === '/team' || currentPath === '/team/' }]}>Our Team</a>
     </div>
-  </div>
+  </nav>
 </header>
 
 <style>
+  /* ─── Screen-reader only ────────────────── */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   /* ─── Banner ───────────────────────────── */
   .nav__banner {
     background: var(--color-charcoal);
@@ -128,19 +158,25 @@ const categories = [
 
   .nav__banner strong { color: var(--color-gold); }
 
-  /* Desktop: slim banner, disappears on scroll (via JS) */
+  .nav__banner-link {
+    color: var(--color-gold);
+    text-decoration: underline;
+  }
+
+  /* Desktop: GPU-only banner hide on scroll */
   @media (min-width: 768px) {
     .nav__banner {
       font-size: 0.68rem;
       padding: 0.3rem 0;
+      will-change: transform, opacity;
       transition: transform 0.3s ease, opacity 0.3s ease;
     }
     .nav--scrolled .nav__banner {
       transform: translateY(-100%);
       opacity: 0;
-      height: 0;
-      padding: 0;
-      overflow: hidden;
+      pointer-events: none;
+      position: absolute;
+      inset: 0 0 auto 0;
     }
   }
 
@@ -201,6 +237,7 @@ const categories = [
 
   .nav__mobile-header .nav__logo-img {
     height: 32px;
+    width: auto;
   }
 
   @media (min-width: 768px) {
@@ -295,7 +332,6 @@ const categories = [
     aspect-ratio: 5 / 2;
   }
 
-  /* Desktop: taller, more premium feel */
   @media (min-width: 768px) {
     .nav__main { border-bottom: none; }
     .nav__main-inner { height: 72px; }
@@ -314,6 +350,7 @@ const categories = [
     padding: 0 0 0 0.75rem;
     transition: border-color 0.2s, box-shadow 0.2s;
     overflow: hidden;
+    position: relative;
   }
 
   .nav__search-bar:focus-within {
@@ -449,10 +486,6 @@ const categories = [
     color: var(--color-charcoal);
   }
 
-  .nav__search-bar {
-    position: relative;
-  }
-
   /* ─── Actions ──────────────────────────── */
   .nav__actions {
     display: flex;
@@ -488,7 +521,7 @@ const categories = [
     justify-content: center;
   }
 
-  /* ─── Category Bar (shared desktop + mobile) ── */
+  /* ─── Category Bar ─────────────────────── */
   .nav__categories {
     border-bottom: 1px solid var(--color-cream-dark);
     display: block;
@@ -506,7 +539,6 @@ const categories = [
     white-space: nowrap;
   }
 
-  /* Mobile: slightly smaller text, tighter padding */
   @media (max-width: 767px) {
     .nav__categories {
       padding: 0 4px;
@@ -522,6 +554,7 @@ const categories = [
     color: var(--color-slate);
     transition: color 0.2s, background 0.2s;
     flex-shrink: 0;
+    border-bottom: 2px solid transparent;
   }
 
   @media (max-width: 767px) {
@@ -538,7 +571,7 @@ const categories = [
 
   .nav__cat-link--active {
     color: var(--color-charcoal);
-    border-bottom: 2px solid var(--color-gold);
+    border-bottom-color: var(--color-gold);
   }
 
   .nav__cat-link--sale {
@@ -561,7 +594,7 @@ const categories = [
 </style>
 
 <script>
-  // Scroll behavior — rAF-throttled for perf
+  // ─── Scroll behavior — rAF-throttled ────────────
   const nav = document.getElementById('main-nav');
   let scrollTicking = false;
 
@@ -575,35 +608,29 @@ const categories = [
     }
   }, { passive: true });
 
-  // Desktop search
-  const searchInput = document.getElementById('nav-search-input') as HTMLInputElement;
-  const searchSubmit = document.getElementById('nav-search-submit');
+  // ─── Cart buttons (no inline onclick) ────────────
+  document.getElementById('cart-trigger')?.addEventListener('click', () => window.openCart?.());
+  document.getElementById('mobile-cart-trigger')?.addEventListener('click', () => window.openCart?.());
 
+  // ─── Search submit ──────────────────────────────
   function doSearch(input: HTMLInputElement) {
     const q = input.value.trim();
-    if (q) {
-      window.location.href = `/shop?q=${encodeURIComponent(q)}`;
-    }
+    if (q) window.location.href = `/shop?q=${encodeURIComponent(q)}`;
   }
 
-  searchInput?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') doSearch(searchInput);
-  });
-  searchSubmit?.addEventListener('click', () => { if (searchInput) doSearch(searchInput); });
-
-  // Mobile top search bar
+  const searchInput = document.getElementById('nav-search-input') as HTMLInputElement;
+  const searchSubmit = document.getElementById('nav-search-submit');
   const mobileTopbarSearch = document.getElementById('mobile-topbar-search') as HTMLInputElement;
-  mobileTopbarSearch?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') doSearch(mobileTopbarSearch);
-  });
 
-  // ─── Typeahead / Autocomplete ──────────────
-  const suggestEl = document.getElementById('search-suggest');
-  let debounceTimer: ReturnType<typeof setTimeout>;
-  let productIndex: Array<{ title: string; handle: string; price: string; image: string; type: string }> | null = null;
+  searchInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(searchInput); });
+  searchSubmit?.addEventListener('click', () => { if (searchInput) doSearch(searchInput); });
+  mobileTopbarSearch?.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(mobileTopbarSearch); });
 
-  // Fetch the product index once (lightweight — just titles, handles, images, prices)
-  async function loadProductIndex() {
+  // ─── Shared typeahead engine ────────────────────
+  type Product = { title: string; handle: string; price: string; image: string; type: string };
+  let productIndex: Product[] | null = null;
+
+  async function loadProductIndex(): Promise<Product[]> {
     if (productIndex) return productIndex;
     try {
       const domain = (window as any).__SHOPIFY_DOMAIN || 'sunnyandranney.myshopify.com';
@@ -627,22 +654,16 @@ const categories = [
         image: e.node.images.edges[0]?.node?.url || '',
         type: (e.node.productType || '').toLowerCase(),
       }));
-      return productIndex;
+      return productIndex!;
     } catch {
       return [];
     }
   }
 
-  function showSuggestions(query: string, items: typeof productIndex) {
-    if (!suggestEl || !items || !query) {
-      if (suggestEl) suggestEl.style.display = 'none';
-      return;
-    }
-
+  function renderSuggestions(suggestEl: HTMLElement, query: string, items: Product[]) {
     const q = query.toLowerCase();
     const matches = items.filter(p =>
-      p.title.toLowerCase().includes(q) ||
-      p.type.includes(q)
+      p.title.toLowerCase().includes(q) || p.type.includes(q)
     ).slice(0, 5);
 
     if (matches.length === 0) {
@@ -661,7 +682,6 @@ const categories = [
         const imgWrap = document.createElement('div');
         imgWrap.className = 'search-suggest__img';
         const img = document.createElement('img');
-        // Use small Shopify CDN image
         img.src = p.image.includes('cdn.shopify.com') ? `${p.image}?width=80` : p.image;
         img.alt = p.title;
         img.loading = 'lazy';
@@ -680,11 +700,9 @@ const categories = [
       price.textContent = `$${parseFloat(p.price).toFixed(2)}`;
       info.appendChild(price);
       link.appendChild(info);
-
       frag.appendChild(link);
     });
 
-    // "View all results" link
     const allLink = document.createElement('a');
     allLink.href = `/shop?q=${encodeURIComponent(query)}`;
     allLink.className = 'search-suggest__all';
@@ -695,164 +713,90 @@ const categories = [
     suggestEl.style.display = 'block';
   }
 
-  searchInput?.addEventListener('input', () => {
-    const q = searchInput.value.trim();
-    clearTimeout(debounceTimer);
-    if (!q || q.length < 2) {
-      if (suggestEl) suggestEl.style.display = 'none';
-      return;
-    }
-    debounceTimer = setTimeout(async () => {
-      const items = await loadProductIndex();
-      showSuggestions(q, items);
-    }, 200);
-  });
+  function setupTypeahead(input: HTMLInputElement, suggestEl: HTMLElement) {
+    let timer: ReturnType<typeof setTimeout>;
 
-  // Hide suggestions on click outside
-  document.addEventListener('click', (e) => {
-    if (suggestEl && !suggestEl.contains(e.target as Node) && e.target !== searchInput) {
-      suggestEl.style.display = 'none';
-    }
-  });
-
-  // Keyboard navigation in suggestions
-  searchInput?.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && suggestEl) { suggestEl.style.display = 'none'; return; }
-    if (!suggestEl || suggestEl.style.display === 'none') return;
-    const items = suggestEl.querySelectorAll('.search-suggest__item');
-    if (!items.length) return;
-    const active = suggestEl.querySelector('[aria-selected="true"]') as HTMLElement;
-    let idx = active ? Array.from(items).indexOf(active) : -1;
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      if (active) active.removeAttribute('aria-selected');
-      idx = (idx + 1) % items.length;
-      items[idx].setAttribute('aria-selected', 'true');
-      (items[idx] as HTMLElement).scrollIntoView({ block: 'nearest' });
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      if (active) active.removeAttribute('aria-selected');
-      idx = idx <= 0 ? items.length - 1 : idx - 1;
-      items[idx].setAttribute('aria-selected', 'true');
-      (items[idx] as HTMLElement).scrollIntoView({ block: 'nearest' });
-    } else if (e.key === 'Enter' && active) {
-      e.preventDefault();
-      (active as HTMLAnchorElement).click();
-    }
-  });
-
-  // ─── Mobile typeahead ──────────────────────────
-  const mobileSuggestEl = document.getElementById('mobile-search-suggest');
-  let mobileDebounceTimer: ReturnType<typeof setTimeout>;
-
-  mobileTopbarSearch?.addEventListener('input', () => {
-    const q = mobileTopbarSearch.value.trim();
-    clearTimeout(mobileDebounceTimer);
-    if (!q || q.length < 2) {
-      if (mobileSuggestEl) mobileSuggestEl.style.display = 'none';
-      return;
-    }
-    mobileDebounceTimer = setTimeout(async () => {
-      const items = await loadProductIndex();
-      if (!mobileSuggestEl || !items || !q) return;
-
-      const lq = q.toLowerCase();
-      const matches = items.filter(p =>
-        p.title.toLowerCase().includes(lq) || p.type.includes(lq)
-      ).slice(0, 5);
-
-      if (matches.length === 0) {
-        mobileSuggestEl.style.display = 'none';
+    input.addEventListener('input', () => {
+      const q = input.value.trim();
+      clearTimeout(timer);
+      if (!q || q.length < 2) {
+        suggestEl.style.display = 'none';
+        input.setAttribute('aria-expanded', 'false');
         return;
       }
+      timer = setTimeout(async () => {
+        const items = await loadProductIndex();
+        renderSuggestions(suggestEl, q, items);
+        input.setAttribute('aria-expanded', suggestEl.style.display !== 'none' ? 'true' : 'false');
+      }, 200);
+    });
 
-      const frag = document.createDocumentFragment();
-      matches.forEach((p) => {
-        const link = document.createElement('a');
-        link.href = `/shop/${p.handle}`;
-        link.className = 'search-suggest__item';
-        link.setAttribute('role', 'option');
-        if (p.image) {
-          const imgWrap = document.createElement('div');
-          imgWrap.className = 'search-suggest__img';
-          const img = document.createElement('img');
-          img.src = p.image.includes('cdn.shopify.com') ? `${p.image}?width=80` : p.image;
-          img.alt = p.title;
-          img.loading = 'lazy';
-          imgWrap.appendChild(img);
-          link.appendChild(imgWrap);
-        }
-        const info = document.createElement('div');
-        info.className = 'search-suggest__info';
-        const title = document.createElement('span');
-        title.className = 'search-suggest__title';
-        title.textContent = p.title;
-        info.appendChild(title);
-        const price = document.createElement('span');
-        price.className = 'search-suggest__price';
-        price.textContent = `$${parseFloat(p.price).toFixed(2)}`;
-        info.appendChild(price);
-        link.appendChild(info);
-        frag.appendChild(link);
-      });
+    // Keyboard navigation
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        suggestEl.style.display = 'none';
+        input.setAttribute('aria-expanded', 'false');
+        return;
+      }
+      if (suggestEl.style.display === 'none') return;
+      const items = suggestEl.querySelectorAll('.search-suggest__item');
+      if (!items.length) return;
+      const active = suggestEl.querySelector('[aria-selected="true"]') as HTMLElement;
+      let idx = active ? Array.from(items).indexOf(active) : -1;
 
-      const allLink = document.createElement('a');
-      allLink.href = `/shop?q=${encodeURIComponent(q)}`;
-      allLink.className = 'search-suggest__all';
-      allLink.textContent = `View all results for "${q}"`;
-      frag.appendChild(allLink);
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (active) active.removeAttribute('aria-selected');
+        idx = (idx + 1) % items.length;
+        items[idx].setAttribute('aria-selected', 'true');
+        (items[idx] as HTMLElement).scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (active) active.removeAttribute('aria-selected');
+        idx = idx <= 0 ? items.length - 1 : idx - 1;
+        items[idx].setAttribute('aria-selected', 'true');
+        (items[idx] as HTMLElement).scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter' && active) {
+        e.preventDefault();
+        (active as HTMLAnchorElement).click();
+      }
+    });
 
-      mobileSuggestEl.replaceChildren(frag);
-      mobileSuggestEl.style.display = 'block';
-    }, 200);
-  });
+    // Close on click outside
+    document.addEventListener('click', (e) => {
+      if (!suggestEl.contains(e.target as Node) && e.target !== input) {
+        suggestEl.style.display = 'none';
+        input.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
 
-  // Mobile keyboard navigation in suggestions
-  mobileTopbarSearch?.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && mobileSuggestEl) { mobileSuggestEl.style.display = 'none'; return; }
-    if (!mobileSuggestEl || mobileSuggestEl.style.display === 'none') return;
-    const items = mobileSuggestEl.querySelectorAll('.search-suggest__item');
-    if (!items.length) return;
-    const active = mobileSuggestEl.querySelector('[aria-selected="true"]') as HTMLElement;
-    let idx = active ? Array.from(items).indexOf(active) : -1;
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      if (active) active.removeAttribute('aria-selected');
-      idx = (idx + 1) % items.length;
-      items[idx].setAttribute('aria-selected', 'true');
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      if (active) active.removeAttribute('aria-selected');
-      idx = idx <= 0 ? items.length - 1 : idx - 1;
-      items[idx].setAttribute('aria-selected', 'true');
-    } else if (e.key === 'Enter' && active) {
-      e.preventDefault();
-      (active as HTMLAnchorElement).click();
-    }
-  });
+  // Wire up both search bars with shared logic
+  const suggestEl = document.getElementById('search-suggest');
+  const mobileSuggestEl = document.getElementById('mobile-search-suggest');
+  if (searchInput && suggestEl) setupTypeahead(searchInput, suggestEl);
+  if (mobileTopbarSearch && mobileSuggestEl) setupTypeahead(mobileTopbarSearch, mobileSuggestEl);
 
-  // Hide mobile suggestions on click outside
-  document.addEventListener('click', (e) => {
-    if (mobileSuggestEl && !mobileSuggestEl.contains(e.target as Node) && e.target !== mobileTopbarSearch) {
-      mobileSuggestEl.style.display = 'none';
-    }
-  });
+  // ─── Rotating banner (with cleanup for persist) ────
+  let bannerInterval: ReturnType<typeof setInterval> | undefined;
 
-  // ─── Rotating banner ────────────────────────
-  const bannerSlider = document.getElementById('banner-slider');
-  if (bannerSlider) {
+  function startBanner() {
+    if (bannerInterval) clearInterval(bannerInterval);
+    const bannerSlider = document.getElementById('banner-slider');
+    if (!bannerSlider) return;
     const slides = bannerSlider.querySelectorAll('.nav__banner-slide');
     let currentSlide = 0;
     if (slides.length > 1) {
-      setInterval(() => {
+      bannerInterval = setInterval(() => {
         slides[currentSlide].classList.remove('nav__banner-slide--active');
         currentSlide = (currentSlide + 1) % slides.length;
         slides[currentSlide].classList.add('nav__banner-slide--active');
       }, 4000);
     }
   }
+  startBanner();
 
-  // ─── Sync mobile cart badge with desktop cart badge ────
+  // ─── Sync mobile cart badge ────────────────────
   function syncMobileCartBadge() {
     const headerCount = document.getElementById('cart-count');
     const mobileCount = document.getElementById('mobile-cart-count');
@@ -876,4 +820,29 @@ const categories = [
 
   syncMobileCartBadge();
   document.addEventListener('astro:after-swap', syncMobileCartBadge);
+
+  // ─── Update active tab on client after persist ────
+  function updateActiveTab() {
+    const path = window.location.pathname.replace(/\/$/, '') || '/';
+    const search = window.location.search;
+    const links = document.querySelectorAll('.nav__cat-link');
+
+    links.forEach((link) => {
+      const href = link.getAttribute('href') || '';
+      const [linkPath, linkSearch] = href.split('?');
+      const normalizedLinkPath = linkPath.replace(/\/$/, '') || '/';
+
+      let isActive = false;
+      if (linkSearch) {
+        isActive = normalizedLinkPath === path && search.includes(linkSearch);
+      } else {
+        isActive = normalizedLinkPath === path && !search;
+      }
+
+      link.classList.toggle('nav__cat-link--active', isActive);
+    });
+  }
+
+  updateActiveTab();
+  document.addEventListener('astro:after-swap', updateActiveTab);
 </script>

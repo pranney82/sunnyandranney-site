@@ -51,65 +51,60 @@ const onSaleProducts = products.filter(p => {
 });
 const featuredProducts = products.slice(0, 8);
 
-// Hero images — use first 3 products with images for a dynamic collage
-const heroImages = products
-  .filter(p => p.images.edges.length > 0)
-  .slice(0, 3)
-  .map(p => p.images.edges[0].node);
 ---
 
 <Base>
-  <!-- ═══ HERO BANNER ═══ -->
-  <section class="hero-banner">
-    <div class="hero-banner__inner container">
-      <div class="hero-banner__text">
-        <h1 class="hero-banner__title animate-fade-up">
-          Shop with a Purpose
-        </h1>
-        <p class="hero-banner__sub animate-fade-up delay-1">
-          Curated pieces for every room. Every purchase supports children with special needs.
-        </p>
-        <div class="hero-banner__actions animate-fade-up delay-2">
-          <a href="/shop" class="btn btn--gold" data-astro-prefetch="viewport">Shop All Products</a>
+  <!-- ═══ HERO ═══ -->
+  <section class="hero">
+    <div class="container hero__inner">
+      <div class="hero__text">
+        <p class="hero__kicker animate-fade-up">Furniture with Heart</p>
+        <h1 class="hero__title animate-fade-up delay-1">Shop with<br/>a Purpose</h1>
+        <p class="hero__sub animate-fade-up delay-2">Curated furniture & home decor where every purchase transforms a child's room through <strong>Sunshine on a Ranney Day</strong>.</p>
+        <div class="hero__actions animate-fade-up delay-3">
+          <a href="/shop" class="btn btn--gold" data-astro-prefetch="viewport">Shop the Collection</a>
+          <a href="/mission" class="hero__mission-link">Our Mission &rarr;</a>
+        </div>
+        <div class="hero__trust animate-fade-up delay-3">
+          <span class="hero__trust-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Secure Checkout
+          </span>
+          <span class="hero__trust-sep"></span>
+          <span class="hero__trust-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            4.9 on Google
+          </span>
+          <span class="hero__trust-sep"></span>
+          <span class="hero__trust-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+            Roswell Pickup
+          </span>
         </div>
       </div>
-      <div class="hero-banner__visual animate-fade-up delay-1">
-        {heroImages.length > 0 ? (
-          <div class="hero-collage">
-            <div class="hero-collage__main">
-              <img
-                src={shopifyImageUrl(heroImages[0].url, 800)}
-                srcset={shopifyImageSrcset(heroImages[0].url, [400, 800, 1200])}
-                sizes="(max-width: 768px) 90vw, 45vw"
-                alt={heroImages[0].altText || 'Featured product'}
-                width={heroImages[0].width}
-                height={heroImages[0].height}
-                fetchpriority="high"
-                decoding="sync"
-              />
-            </div>
-            {heroImages.length > 1 && (
-              <div class="hero-collage__side">
-                {heroImages.slice(1, 3).map((img: any) => (
-                  <div class="hero-collage__thumb">
-                    <img
-                      src={shopifyImageUrl(img.url, 400)}
-                      alt={img.altText || 'Featured product'}
-                      width={img.width}
-                      height={img.height}
-                      loading="eager"
-                      decoding="async"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div class="hero-banner__image-placeholder">
-            <span>Hero Image</span>
-          </div>
-        )}
+      <div class="hero__media animate-fade-up delay-2">
+        <div class="hero__img-wrap">
+          <img
+            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=480,h=600,fit=cover,q=80"
+            srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=320,h=400,fit=cover,q=75 320w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=480,h=600,fit=cover,q=80 480w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=640,h=800,fit=cover,q=80 640w"
+            sizes="(max-width: 767px) 260px, (max-width: 1023px) 340px, 420px"
+            alt="Sunshine on a Ranney Day room makeover"
+            width="480"
+            height="600"
+            fetchpriority="high"
+            decoding="async"
+          />
+        </div>
+        <div class="hero__accent" aria-hidden="true"></div>
+      </div>
+    </div>
+    <div class="hero__ribbon">
+      <div class="container hero__ribbon-inner">
+        <span class="hero__ribbon-stat" data-count="269">0</span><span>+ rooms transformed</span>
+        <span class="hero__ribbon-sep" aria-hidden="true"></span>
+        <span class="hero__ribbon-stat" data-count="14">0</span><span> years of giving</span>
+        <span class="hero__ribbon-sep" aria-hidden="true"></span>
+        <span><strong>100%</strong> of profits donated</span>
       </div>
     </div>
   </section>
@@ -118,7 +113,10 @@ const heroImages = products
   {collections.length > 0 && (
     <section class="collections-grid section">
       <div class="container">
-        <h2 class="section-title reveal">Shop by Collection</h2>
+        <div class="collections-grid__header reveal">
+          <h2 class="section-title">Shop by Collection</h2>
+          <a href="/shop" class="collections-grid__link">View all &rarr;</a>
+        </div>
         <div class="collections-grid__items">
           {collections.map((col: any, idx: number) => {
             const colImage = col.image;
@@ -143,8 +141,10 @@ const heroImages = products
                       <span>{col.title.charAt(0)}</span>
                     </div>
                   )}
+                  <div class="collection-tile__overlay">
+                    <span>{col.title}</span>
+                  </div>
                 </div>
-                <h3 class="collection-tile__title">{col.title}</h3>
               </a>
             );
           })}
@@ -159,7 +159,7 @@ const heroImages = products
       <div class="container">
         <div class="home-products__header reveal">
           <h2 class="section-title">Trending Now</h2>
-          <a href="/shop" class="home-products__see-all">See all products</a>
+          <a href="/shop" class="home-products__see-all">See all &rarr;</a>
         </div>
         <div class="product-grid reveal" id="home-grid">
           {featuredProducts.map((product: any, idx: number) => {
@@ -237,29 +237,31 @@ const heroImages = products
     </section>
   )}
 
-  <!-- ═══ VALUE PROPS BAR ═══ -->
-  <section class="value-bar">
-    <div class="container value-bar__inner">
-      <div class="value-bar__item reveal">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        <div>
-          <strong>Local Pickup</strong>
-          <span>No shipping — pickup only</span>
+  <!-- ═══ MISSION ═══ -->
+  <section class="mission" id="mission">
+    <div class="container mission__inner">
+      <div class="mission__media reveal">
+        <div class="mission__img-wrap">
+          <img
+            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/founders-reunion-2026/w=600,q=80"
+            alt="Sunshine on a Ranney Day founders"
+            width="600"
+            height="400"
+            loading="lazy"
+            decoding="async"
+          />
         </div>
       </div>
-      <div class="value-bar__item reveal delay-1">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        <div>
-          <strong>Secure Checkout</strong>
-          <span>Powered by Shopify</span>
-        </div>
-      </div>
-      <div class="value-bar__item reveal delay-2">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-        <div>
-          <strong>100% to Charity</strong>
-          <span>Every dollar helps kids</span>
-        </div>
+      <div class="mission__content reveal delay-1">
+        <p class="mission__kicker">Our Why</p>
+        <h2 class="mission__title">Every Purchase Changes a Child's World</h2>
+        <p class="mission__body">
+          When you shop at Sunny and Ranney, you're not just buying furniture.
+          Through <strong>Sunshine on a Ranney Day</strong>, 100% of store profits
+          fund bedroom and living space makeovers for children with special needs.
+          269 rooms transformed. 14 years and counting.
+        </p>
+        <a href="/mission" class="btn btn--outline mission__cta">Read Our Full Story</a>
       </div>
     </div>
   </section>
@@ -269,11 +271,11 @@ const heroImages = products
 
   <!-- ═══ ON SALE (if any) ═══ -->
   {onSaleProducts.length > 0 && (
-    <section class="home-products section">
+    <section class="home-products home-products--deals section">
       <div class="container">
         <div class="home-products__header reveal">
           <h2 class="section-title">On Sale</h2>
-          <a href="/shop" class="home-products__see-all">Shop all deals</a>
+          <a href="/shop" class="home-products__see-all">Shop all deals &rarr;</a>
         </div>
         <div class="home-scroll reveal">
           {onSaleProducts.slice(0, 8).map((product: any) => {
@@ -312,30 +314,6 @@ const heroImages = products
     </section>
   )}
 
-  <!-- ═══ MISSION STRIP ═══ -->
-  <section class="mission-strip" id="mission">
-    <div class="container mission-strip__inner">
-      <div class="mission-strip__text">
-        <h2>When You Shop Here, You Change a Life</h2>
-        <p>
-          Sunshine on a Ranney Day transforms the bedrooms and living spaces of children
-          with special needs. 100% of store profits fund these makeovers.
-        </p>
-        <a href="/mission" class="mission-strip__link">Learn our story</a>
-      </div>
-      <div class="mission-strip__stats">
-        <div class="mission-strip__stat">
-          <span class="mission-strip__number">269+</span>
-          <span class="mission-strip__label">Room Makeovers</span>
-        </div>
-        <div class="mission-strip__stat">
-          <span class="mission-strip__number">14</span>
-          <span class="mission-strip__label">Years Giving</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- ═══ VISIT STRIP ═══ -->
   <section class="visit-strip section">
     <div class="container visit-strip__inner">
@@ -356,7 +334,7 @@ const heroImages = products
     <div class="container">
       <div class="home-products__header">
         <h2 class="section-title">Pick Up Where You Left Off</h2>
-        <a href="/shop" class="home-products__see-all">Continue shopping</a>
+        <a href="/shop" class="home-products__see-all">Continue shopping &rarr;</a>
       </div>
       <div class="home-recent__scroll" id="home-recent-scroll"></div>
     </div>
@@ -367,129 +345,213 @@ const heroImages = products
 </Base>
 
 <style>
-  /* ─── Hero Banner ──────────────────────── */
-  .hero-banner {
-    background:
-      radial-gradient(ellipse at 20% 50%, rgba(75, 149, 180, 0.12) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 20%, rgba(255, 212, 0, 0.06) 0%, transparent 40%),
-      var(--color-cyan);
+  /* ─── Hero ─────────────────────────────── */
+  .hero {
+    background: linear-gradient(165deg, var(--color-cyan) 0%, #3d8aaa 60%, #357a98 100%);
     overflow: hidden;
   }
 
-
-  .hero-banner__inner {
+  .hero__inner {
     display: grid;
     grid-template-columns: 1fr;
-    gap: var(--space-xl);
+    gap: var(--space-lg);
+    padding-top: clamp(2rem, 5vh, 3.5rem);
+    padding-bottom: 0;
     align-items: center;
-    padding-top: var(--space-xl);
-    padding-bottom: var(--space-xl);
   }
 
-  @media (min-width: 768px) {
-    .hero-banner__inner {
-      grid-template-columns: 1fr 1fr;
-      gap: var(--space-2xl);
-      min-height: 420px;
-    }
+  .hero__text {
+    padding-bottom: var(--space-lg);
   }
 
-  .hero-banner__title {
-    color: white;
-    font-size: clamp(2.4rem, 5vw, 4rem);
-    margin: 0 0 1rem;
-    line-height: 1.05;
-  }
-
-  .hero-banner__accent {
+  .hero__kicker {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
     color: var(--color-gold);
-    font-style: italic;
-    font-weight: 300;
+    margin: 0 0 var(--space-sm);
   }
 
-  .hero-banner__sub {
-    color: rgba(255,255,255,0.85);
-    font-size: 1rem;
-    margin-bottom: 0;
+  .hero__title {
+    font-size: clamp(2.6rem, 8vw, 5.2rem);
+    line-height: 0.92;
+    letter-spacing: -0.025em;
+    color: white;
+    margin: 0 0 var(--space-md);
   }
 
-  .hero-banner__actions { margin-top: var(--space-md); }
-  .hero-banner__actions .btn--gold:hover { background: white; border-color: white; }
+  .hero__sub {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: clamp(0.92rem, 1.1vw, 1.05rem);
+    max-width: 38ch;
+    margin: 0 0 var(--space-lg);
+    line-height: 1.65;
+  }
 
-  .hero-banner__image-placeholder {
-    aspect-ratio: 3/2;
-    background: rgba(255,255,255,0.1);
-    border: 2px dashed rgba(255,255,255,0.3);
-    border-radius: 4px;
+  .hero__sub strong {
+    color: var(--color-gold);
+    font-weight: 600;
+  }
+
+  .hero__actions {
     display: flex;
     align-items: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    margin-bottom: var(--space-md);
+  }
+
+  .hero__mission-link {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.9);
+    letter-spacing: 0.02em;
+    transition: color 0.2s;
+  }
+
+  .hero__mission-link:hover {
+    color: var(--color-gold);
+  }
+
+  /* Trust signals — inline in hero */
+  .hero__trust {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  .hero__trust-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: rgba(255,255,255,0.65);
+    letter-spacing: 0.02em;
+  }
+
+  .hero__trust-item svg {
+    opacity: 0.6;
+  }
+
+  .hero__trust-sep {
+    width: 1px;
+    height: 12px;
+    background: rgba(255,255,255,0.2);
+  }
+
+  /* Hero image — contained, rounded, with accent */
+  .hero__media {
+    position: relative;
+    display: flex;
     justify-content: center;
-    font-family: var(--font-display);
-    font-size: 1.3rem;
-    color: rgba(255,255,255,0.4);
+    padding-bottom: var(--space-md);
   }
 
-  /* ─── Hero Collage ──────────────────────── */
-  .hero-collage {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-    border-radius: 8px;
+  .hero__img-wrap {
+    position: relative;
+    z-index: 1;
+    width: 85%;
+    max-width: 300px;
+    border-radius: 20px;
     overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.2), 0 8px 20px rgba(0,0,0,0.12);
   }
 
-  @media (min-width: 480px) {
-    .hero-collage {
-      grid-template-columns: 2fr 1fr;
-    }
-  }
-
-  .hero-collage__main {
-    aspect-ratio: 4/5;
-    overflow: hidden;
-    border-radius: 8px;
-  }
-
-  @media (min-width: 480px) {
-    .hero-collage__main { aspect-ratio: 3/4; }
-  }
-
-  .hero-collage__main img {
+  .hero__img-wrap img {
     width: 100%;
-    height: 100%;
+    height: auto;
+    display: block;
+    aspect-ratio: 4/5;
     object-fit: cover;
     transition: transform 0.8s var(--ease-out);
   }
 
-  .hero-collage:hover .hero-collage__main img {
+  .hero__img-wrap:hover img {
     transform: scale(1.03);
   }
 
-  .hero-collage__side {
-    display: none;
-    flex-direction: column;
-    gap: 0.5rem;
+  .hero__accent {
+    position: absolute;
+    bottom: -8px;
+    right: -8px;
+    width: 55%;
+    height: 50%;
+    background: var(--color-gold);
+    border-radius: 20px;
+    opacity: 0.2;
+    z-index: 0;
   }
 
-  @media (min-width: 480px) {
-    .hero-collage__side { display: flex; }
+  /* Gold ribbon with inline stats */
+  .hero__ribbon {
+    background: var(--color-gold);
+    padding: 0.6rem 0;
   }
 
-  .hero-collage__thumb {
-    flex: 1;
-    overflow: hidden;
-    border-radius: 8px;
+  .hero__ribbon-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--color-charcoal);
   }
 
-  .hero-collage__thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.6s var(--ease-out);
+  .hero__ribbon-stat {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 700;
   }
 
-  .hero-collage__thumb:hover img {
-    transform: scale(1.05);
+  .hero__ribbon-sep {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--color-charcoal);
+    opacity: 0.3;
+    margin: 0 0.3rem;
+  }
+
+  @media (min-width: 768px) {
+    .hero__inner {
+      grid-template-columns: 1.2fr 0.8fr;
+      padding-top: clamp(2.5rem, 6vh, 4.5rem);
+      gap: var(--space-xl);
+    }
+
+    .hero__text {
+      padding-bottom: var(--space-xl);
+    }
+
+    .hero__media {
+      justify-content: flex-end;
+      padding-bottom: var(--space-lg);
+    }
+
+    .hero__img-wrap {
+      width: 100%;
+      max-width: 340px;
+    }
+
+    .hero__ribbon-inner {
+      font-size: 0.78rem;
+    }
+
+    .hero__ribbon-stat {
+      font-size: 0.92rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .hero__img-wrap {
+      max-width: 380px;
+    }
   }
 
   /* ─── Section Title ────────────────────── */
@@ -499,34 +561,52 @@ const heroImages = products
   }
 
   /* ─── Collections Grid ────────────────── */
+  .collections-grid__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .collections-grid__header .section-title { margin-bottom: 0; }
+
+  .collections-grid__link {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-cyan);
+    letter-spacing: 0.03em;
+    transition: color 0.2s;
+    flex-shrink: 0;
+  }
+
+  .collections-grid__link:hover { color: var(--color-charcoal); }
+
   .collections-grid__items {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
+    gap: 0.75rem;
+    margin-top: var(--space-lg);
   }
 
   @media (min-width: 640px) {
     .collections-grid__items {
       grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
     }
   }
 
   @media (min-width: 1024px) {
     .collections-grid__items {
       grid-template-columns: repeat(4, 1fr);
-      gap: 1.25rem;
+      gap: 1rem;
     }
   }
 
   .collection-tile {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 0.75rem;
+    display: block;
     text-decoration: none;
     color: var(--color-charcoal);
-    transition: transform 0.3s var(--ease-out);
+    transition: transform 0.4s var(--ease-out);
   }
 
   .collection-tile:hover {
@@ -534,10 +614,11 @@ const heroImages = products
   }
 
   .collection-tile__image {
+    position: relative;
     width: 100%;
     aspect-ratio: 1;
     overflow: hidden;
-    border-radius: 6px;
+    border-radius: 12px;
     background: var(--color-cream-dark);
   }
 
@@ -552,6 +633,29 @@ const heroImages = products
     transform: scale(1.06);
   }
 
+  .collection-tile__overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 60%);
+    display: flex;
+    align-items: flex-end;
+    padding: 0.75rem;
+    transition: background 0.3s;
+  }
+
+  .collection-tile:hover .collection-tile__overlay {
+    background: linear-gradient(0deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.05) 70%);
+  }
+
+  .collection-tile__overlay span {
+    font-family: var(--font-display);
+    font-size: clamp(0.82rem, 1.2vw, 0.95rem);
+    font-weight: 600;
+    color: white;
+    line-height: 1.2;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+
   .collection-tile__placeholder {
     width: 100%;
     height: 100%;
@@ -563,20 +667,6 @@ const heroImages = products
     font-family: var(--font-display);
     font-size: 2.5rem;
     font-weight: 300;
-  }
-
-  .collection-tile__title {
-    font-family: var(--font-display);
-    font-size: 0.95rem;
-    font-weight: 500;
-    line-height: 1.3;
-    margin: 0;
-  }
-
-  @media (min-width: 768px) {
-    .collection-tile__title {
-      font-size: 1.05rem;
-    }
   }
 
   /* ─── Home Products Header ─────────────── */
@@ -595,8 +685,8 @@ const heroImages = products
   .home-products__see-all {
     font-size: 0.82rem;
     font-weight: 600;
-    color: var(--color-gold);
-    letter-spacing: 0.04em;
+    color: var(--color-cyan);
+    letter-spacing: 0.03em;
     transition: color 0.2s;
     flex-shrink: 0;
   }
@@ -623,7 +713,6 @@ const heroImages = products
   .product-card:hover .product-card__img-hover { opacity: 1; transform: scale(1.03); }
   .product-card:hover .product-card__img-primary:only-child { opacity: 1; transform: scale(1.05); }
 
-  /* Desktop: hide add-to-cart until hover on homepage too */
   @media (min-width: 768px) {
     .product-card__add-btn {
       opacity: 0;
@@ -659,6 +748,7 @@ const heroImages = products
     width: 220px;
     scroll-snap-align: start;
     background: var(--color-cream);
+    border-radius: 8px;
     transition: transform 0.3s var(--ease-out), box-shadow 0.3s;
     overflow: hidden;
   }
@@ -707,102 +797,87 @@ const heroImages = products
   .home-scroll__price { font-weight: 600; font-size: 0.9rem; color: var(--color-charcoal); }
   .home-scroll__compare { font-size: 0.8rem; color: var(--color-stone); text-decoration: line-through; }
 
-  /* ─── Value Props Bar ──────────────────── */
-  .value-bar {
-    background: var(--color-cream);
-    border-top: 1px solid var(--color-cream-dark);
-    border-bottom: 1px solid var(--color-cream-dark);
-    padding: var(--space-lg) 0;
+  /* ─── Mission Section ──────────────────── */
+  .mission {
+    background: var(--color-charcoal);
+    padding: clamp(3rem, 8vh, 5rem) 0;
   }
 
-  .value-bar__inner {
+  .mission__inner {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 1.5rem;
-    text-align: center;
-  }
-
-  @media (min-width: 768px) {
-    .value-bar__inner { grid-template-columns: repeat(3, 1fr); }
-  }
-
-  .value-bar__item {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-  }
-
-  .value-bar__item svg { color: var(--color-gold); flex-shrink: 0; }
-  .value-bar__item strong { display: block; font-size: 0.85rem; color: var(--color-charcoal); }
-  .value-bar__item span { font-size: 0.78rem; color: var(--color-stone); }
-  .value-bar__item div { text-align: left; }
-
-  /* ─── Mission Strip ────────────────────── */
-  .mission-strip {
-    background: linear-gradient(160deg, var(--color-cyan) 0%, #3a7d9a 100%);
-    padding: var(--space-xl) 0;
-  }
-
-  .mission-strip__inner {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-lg);
-    align-items: center;
-  }
-
-  @media (min-width: 768px) {
-    .mission-strip__inner { grid-template-columns: 1.5fr 1fr; }
-  }
-
-  .mission-strip__text h2 {
-    color: var(--color-gold);
-    font-size: clamp(1.5rem, 3vw, 2.2rem);
-    margin-bottom: 0.75rem;
-  }
-
-  .mission-strip__text p {
-    color: rgba(255,255,255,0.8);
-    max-width: 50ch;
-  }
-
-  .mission-strip__link {
-    display: inline-block;
-    margin-top: 0.75rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--color-gold);
-    letter-spacing: 0.04em;
-    transition: color 0.2s;
-  }
-
-  .mission-strip__link:hover {
-    color: white;
-  }
-
-  .mission-strip__stats {
-    display: flex;
     gap: var(--space-xl);
-    justify-content: center;
+    align-items: center;
   }
 
-  .mission-strip__stat { text-align: center; }
-  .mission-strip__number {
-    display: block;
-    font-family: var(--font-display);
-    font-size: 2.5rem;
-    font-weight: 600;
-    color: white;
-    line-height: 1;
+  @media (min-width: 768px) {
+    .mission__inner {
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: var(--space-2xl);
+    }
   }
-  .mission-strip__label {
+
+  .mission__media {
+    order: -1;
+  }
+
+  .mission__img-wrap {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.3);
+  }
+
+  .mission__img-wrap img {
+    width: 100%;
+    height: auto;
     display: block;
-    font-size: 0.72rem;
-    font-weight: 500;
-    letter-spacing: 0.1em;
+    aspect-ratio: 3/2;
+    object-fit: cover;
+    transition: transform 0.8s var(--ease-out);
+  }
+
+  .mission__img-wrap:hover img {
+    transform: scale(1.03);
+  }
+
+  .mission__kicker {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: rgba(255,255,255,0.6);
-    margin-top: 0.3rem;
+    color: var(--color-cyan);
+    margin: 0 0 var(--space-sm);
+  }
+
+  .mission__title {
+    color: white;
+    font-size: clamp(1.6rem, 3.5vw, 2.5rem);
+    line-height: 1.1;
+    margin-bottom: var(--space-md);
+  }
+
+  .mission__body {
+    color: rgba(255,255,255,0.75);
+    font-size: 0.95rem;
+    line-height: 1.7;
+    max-width: 52ch;
+    margin: 0 0 var(--space-lg);
+  }
+
+  .mission__body strong {
+    color: var(--color-gold);
+    font-weight: 600;
+  }
+
+  .mission__cta {
+    border-color: rgba(255,255,255,0.3);
+    color: white;
+  }
+
+  .mission__cta:hover {
+    background: var(--color-gold);
+    border-color: var(--color-gold);
+    color: var(--color-charcoal);
   }
 
   /* ─── Visit Strip ──────────────────────── */
@@ -866,7 +941,6 @@ const heroImages = products
     color: var(--color-charcoal);
   }
 
-  /* Desktop: match premium card styling */
   @media (min-width: 768px) {
     .home-products .product-card {
       border-radius: 4px;
@@ -899,6 +973,7 @@ const heroImages = products
     width: 200px;
     scroll-snap-align: start;
     background: var(--color-warm-white);
+    border-radius: 8px;
     transition: transform 0.3s var(--ease-out), box-shadow 0.3s;
     overflow: hidden;
   }
@@ -950,6 +1025,32 @@ const heroImages = products
 </style>
 
 <script>
+  // ─── Animated counters ───────────────────
+  const counterEls = document.querySelectorAll('[data-count]');
+  if (counterEls.length > 0) {
+    const animateCounter = (el: Element) => {
+      const target = parseInt(el.getAttribute('data-count') || '0', 10);
+      const duration = 1600;
+      const start = performance.now();
+      const step = (now: number) => {
+        const progress = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        el.textContent = Math.round(eased * target).toString() + (target === 269 ? '+' : '');
+        if (progress < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    };
+    const counterObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          animateCounter(entry.target);
+          counterObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.5 });
+    counterEls.forEach(el => counterObserver.observe(el));
+  }
+
   // ─── Recently viewed on homepage ───────────
   const recentSection = document.getElementById('home-recent-section');
   const recentScroll = document.getElementById('home-recent-scroll');

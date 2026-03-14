@@ -73,7 +73,7 @@
 
   /* Layout */
   --max-width:   1280px;
-  --nav-height:  88px;
+  --nav-height:  132px;
 
   /* Transitions */
   --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
@@ -92,7 +92,6 @@
 
 html {
   font-size: 16px;
-  scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -511,6 +510,12 @@ p {
   outline-offset: 2px;
 }
 
+/* ─── Focus Visible (keyboard accessibility) ─────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
 ::selection {
   background: var(--color-gold-soft);
   color: var(--color-charcoal);
@@ -520,11 +525,22 @@ p {
 .section,
 .value-bar,
 .mission-strip,
+.mission,
 .visit-strip,
 .related-section,
 .recently-section {
   content-visibility: auto;
   contain-intrinsic-size: auto 500px;
+}
+
+/* ─── Reduced Motion ───────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal { opacity: 1; transform: none; }
 }
 
 /* ─── Responsive ────────────────────────────────────────────── */

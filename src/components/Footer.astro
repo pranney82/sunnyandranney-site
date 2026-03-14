@@ -81,7 +81,23 @@ const currentYear = new Date().getFullYear();
   </div>
 
   <div class="footer__map-strip">
-    <div id="footer-map" class="footer__map"></div>
+    <a
+      href="https://www.google.com/maps/place/Sunny+%26+Ranney/@34.02335,-84.36175,16z"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="footer__map-link"
+      aria-label="Open in Google Maps"
+    >
+      <img
+        src={`https://maps.googleapis.com/maps/api/staticmap?center=34.02335,-84.36175&zoom=16&size=1200x320&scale=2&markers=color:red%7C34.02335,-84.36175&style=element:geometry%7Ccolor:0x212121&style=element:labels.text.stroke%7Ccolor:0x212121&style=element:labels.text.fill%7Ccolor:0x757575&style=feature:administrative.locality%7Celement:labels.text.fill%7Ccolor:0xbdbdbd&style=feature:poi%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:poi.park%7Celement:geometry%7Ccolor:0x181818&style=feature:road%7Celement:geometry.fill%7Ccolor:0x2c2c2c&style=feature:road%7Celement:labels.text.fill%7Ccolor:0x8a8a8a&style=feature:road.arterial%7Celement:geometry%7Ccolor:0x373737&style=feature:road.highway%7Celement:geometry%7Ccolor:0x3c3c3c&style=feature:water%7Celement:geometry%7Ccolor:0x000000&key=${import.meta.env.PUBLIC_GOOGLE_MAPS_KEY}`}
+        alt="Map showing Sunny & Ranney at 109A Oak Street, Roswell, GA"
+        class="footer__map"
+        width="1200"
+        height="320"
+        loading="lazy"
+        decoding="async"
+      />
+    </a>
   </div>
 
   <div class="footer__bottom container">
@@ -242,60 +258,15 @@ const currentYear = new Date().getFullYear();
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
+  .footer__map-link {
+    display: block;
+  }
+
   .footer__map {
     width: 100%;
-    height: 280px;
-  }
-
-  @media (min-width: 768px) {
-    .footer__map {
-      height: 320px;
-    }
+    height: auto;
+    display: block;
+    object-fit: cover;
+    max-height: 320px;
   }
 </style>
-
-<script is:inline define:vars={{ mapsKey: import.meta.env.PUBLIC_GOOGLE_MAPS_KEY }}>
-  (function () {
-    if (!mapsKey) return;
-
-    window.initFooterMap = function () {
-      var location = { lat: 34.02335, lng: -84.36175 };
-      var map = new google.maps.Map(document.getElementById('footer-map'), {
-        center: location,
-        zoom: 16,
-        disableDefaultUI: true,
-        zoomControl: true,
-        styles: [
-          { elementType: 'geometry', stylers: [{ color: '#212121' }] },
-          { elementType: 'labels.text.stroke', stylers: [{ color: '#212121' }] },
-          { elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
-          { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#bdbdbd' }] },
-          { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
-          { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#181818' }] },
-          { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#616161' }] },
-          { featureType: 'road', elementType: 'geometry.fill', stylers: [{ color: '#2c2c2c' }] },
-          { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#8a8a8a' }] },
-          { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#373737' }] },
-          { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#3c3c3c' }] },
-          { featureType: 'road.highway.controlled_access', elementType: 'geometry', stylers: [{ color: '#4e4e4e' }] },
-          { featureType: 'road.local', elementType: 'labels.text.fill', stylers: [{ color: '#616161' }] },
-          { featureType: 'transit', elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
-          { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#000000' }] },
-          { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#3d3d3d' }] },
-        ],
-      });
-
-      new google.maps.marker.AdvancedMarkerElement({
-        position: location,
-        map: map,
-        title: 'Sunny & Ranney — 109A Oak Street, Roswell, GA',
-      });
-    };
-
-    var script = document.createElement('script');
-    script.src = 'https://maps.googleapis.com/maps/api/js?key=' + mapsKey + '&callback=initFooterMap&loading=async&libraries=marker';
-    script.async = true;
-    script.defer = true;
-    document.head.appendChild(script);
-  })();
-</script>
