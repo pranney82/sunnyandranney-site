@@ -46,14 +46,36 @@ export const POST: APIRoute = async ({ request, locals }) => {
     });
   }
 
-  // Simple auth — require a secret header to prevent public access
-  const authHeader = request.headers.get('x-sync-secret');
+  // Auth: accept either Shopify HMAC signature or manual x-sync-secret header
   const syncSecret = env.SYNC_SECRET || '';
-  if (syncSecret && authHeader !== syncSecret) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
+  if (syncSecret) {
+    const shopifyHmac = request.headers.get('x-shopify-hmac-sha256');
+    const manualSecret = request.headers.get('x-sync-secret');
+
+    if (shopifyHmac) {
+      // Verify Shopify webhook HMAC-SHA256 signature
+      const body = await request.clone().text();
+      const key = await crypto.subtle.importKey(
+        'raw',
+        new TextEncoder().encode(syncSecret),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign'],
+      );
+      const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(body));
+      const computed = btoa(String.fromCharCode(...new Uint8Array(sig)));
+      if (computed !== shopifyHmac) {
+        return new Response(JSON.stringify({ error: 'Invalid signature' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    } else if (manualSecret !== syncSecret) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
   }
 
   const domain = env.PUBLIC_SHOPIFY_STORE_DOMAIN || 'sunnyandranney.myshopify.com';

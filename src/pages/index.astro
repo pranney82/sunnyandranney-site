@@ -427,14 +427,14 @@ const featuredProducts = products.slice(0, 8);
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
-    font-size: 0.7rem;
+    font-size: 0.78rem;
     font-weight: 500;
-    color: rgba(255,255,255,0.65);
+    color: rgba(255,255,255,0.85);
     letter-spacing: 0.02em;
   }
 
   .hero__trust-item svg {
-    opacity: 0.6;
+    opacity: 0.8;
   }
 
   .hero__trust-sep {
@@ -1070,14 +1070,24 @@ const featuredProducts = products.slice(0, 8);
   // ─── Animated counters ───────────────────
   const counterEls = document.querySelectorAll('[data-count]');
   if (counterEls.length > 0) {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     const animateCounter = (el: Element) => {
       const target = parseInt(el.getAttribute('data-count') || '0', 10);
+      const suffix = el.getAttribute('data-suffix') || '';
+
+      // Respect reduced motion — show final value immediately
+      if (prefersReducedMotion) {
+        el.textContent = target.toString() + suffix;
+        return;
+      }
+
       const duration = 1600;
       const start = performance.now();
       const step = (now: number) => {
         const progress = Math.min((now - start) / duration, 1);
         const eased = 1 - Math.pow(1 - progress, 3);
-        el.textContent = Math.round(eased * target).toString() + (target === 269 ? '+' : '');
+        el.textContent = Math.round(eased * target).toString() + suffix;
         if (progress < 1) requestAnimationFrame(step);
       };
       requestAnimationFrame(step);
@@ -1135,7 +1145,9 @@ const featuredProducts = products.slice(0, 8);
         });
         recentScroll.replaceChildren(frag);
       }
-    } catch {}
+    } catch (e) {
+      console.warn('Recently viewed failed to load:', e);
+    }
   }
 
   // Add to cart from homepage product cards
