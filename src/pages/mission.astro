@@ -16,6 +16,19 @@ try {
 } catch (e) {
   console.log('Shopify API not configured.');
 }
+
+// Fetch live impact stats from SOARD site — falls back to hardcoded values
+const fallbackStats = { roomMakeovers: 269, childrenServed: 203, livesImpacted: 17000, yearsGiving: 14 };
+let stats = fallbackStats;
+try {
+  const statsUrl = import.meta.env.SOARD_STATS_URL;
+  if (statsUrl) {
+    const res = await fetch(statsUrl);
+    if (res.ok) stats = { ...fallbackStats, ...await res.json() };
+  }
+} catch (e) {
+  console.log('SOARD stats fetch failed, using fallback values.');
+}
 ---
 
 <Base title="Our Mission — Sunny & Ranney" description="100% of Sunny & Ranney profits fund Sunshine on a Ranney Day — life-changing home makeovers for children with special needs in the greater Atlanta area.">
@@ -119,19 +132,19 @@ try {
   <section class="mission-stats">
     <div class="container mission-stats__inner">
       <div class="mission-stats__stat reveal">
-        <span class="mission-stats__number">269+</span>
+        <span class="mission-stats__number">{stats.roomMakeovers.toLocaleString()}+</span>
         <span class="mission-stats__label">Room Makeovers</span>
       </div>
       <div class="mission-stats__stat reveal delay-1">
-        <span class="mission-stats__number">203+</span>
+        <span class="mission-stats__number">{stats.childrenServed.toLocaleString()}+</span>
         <span class="mission-stats__label">Children Served</span>
       </div>
       <div class="mission-stats__stat reveal delay-2">
-        <span class="mission-stats__number">17,000+</span>
+        <span class="mission-stats__number">{stats.livesImpacted.toLocaleString()}+</span>
         <span class="mission-stats__label">Lives Impacted</span>
       </div>
       <div class="mission-stats__stat reveal delay-3">
-        <span class="mission-stats__number">14</span>
+        <span class="mission-stats__number">{stats.yearsGiving}</span>
         <span class="mission-stats__label">Years Giving</span>
       </div>
     </div>
@@ -158,6 +171,37 @@ try {
         <p>
           What started as one room has grown into a 501(c)(3) nonprofit creating <strong>wheelchair-accessible bathrooms, dream bedrooms, and in-home therapy spaces</strong> for children with special needs in the greater Atlanta area — completely free to families. Every makeover is designed around the child's unique needs, personality, and dreams.
         </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ WHY THE PIG ═══ -->
+  <section class="mission-mascot section">
+    <div class="container mission-mascot__grid">
+      <div class="mission-mascot__content reveal">
+        <span class="label">Our Mascot</span>
+        <h2>Why the Pig?</h2>
+        <p>
+          Gracie was inspired by an unforgettable wedding gift — when Peter surprised Holly with a baby pot-bellied pig named Gracie. What started as a unique and heartfelt gesture has since grown into something magical.
+        </p>
+        <p>
+          Over the years, Gracie has transformed into our golden, high-flying mascot, soaring above the clouds in her signature cape, always on the lookout for children and families in need of a little extra sunshine.
+        </p>
+        <p>
+          With her trusty handsaw and a heart full of hope, Gracie leads her team of Sunshiners to build wheelchair-accessible bathrooms, dream bedrooms, and in-home therapy spaces — spaces that bring comfort, independence, and joy to children facing daily challenges.
+        </p>
+        <p>
+          She's a reminder that with creativity, compassion, and a whole lot of heart, <strong>anything is possible with a little bit of Sunshine.</strong>
+        </p>
+      </div>
+      <div class="mission-mascot__image reveal delay-1">
+        <img
+          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=600,q=80"
+          alt="Gracie the Pig — the real pot-bellied pig that inspired SOARD's mascot"
+          width="600"
+          height="600"
+          loading="lazy"
+        />
       </div>
     </div>
   </section>
@@ -235,6 +279,7 @@ try {
     <div class="container mission-highlight__inner">
       <blockquote class="mission-highlight__quote reveal">
         <p>"Every child deserves a space that reflects their personality, brings them joy, and supports their unique needs."</p>
+        <footer class="mission-highlight__attribution">— Peter & Holly Ranney</footer>
       </blockquote>
     </div>
   </section>
@@ -248,7 +293,7 @@ try {
       </p>
       <div class="mission-cta__actions reveal delay-2">
         <a href="/shop" class="btn btn--gold">Shop Now</a>
-        <a href="/team" class="btn btn--outline">Meet the Team</a>
+        <a href="https://www.sunshineonarranneyday.org" target="_blank" rel="noopener noreferrer" class="btn btn--outline">Learn More About SOARD</a>
       </div>
     </div>
   </section>
@@ -354,12 +399,23 @@ try {
     }
   }
 
+  .mission-story__image {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(44, 44, 44, 0.12);
+  }
+
   .mission-story__image img {
     width: 100%;
     height: auto;
     display: block;
     object-fit: cover;
     aspect-ratio: 1 / 1;
+    transition: transform 0.6s var(--ease-out);
+  }
+
+  .mission-story__image:hover img {
+    transform: scale(1.03);
   }
 
   .mission-story__inner {
@@ -385,6 +441,65 @@ try {
 
   .mission-story__content p strong {
     color: var(--color-charcoal);
+  }
+
+  /* ─── Mascot ──────────────────────────── */
+  .mission-mascot {
+    background: var(--color-warm-white);
+  }
+
+  .mission-mascot__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto;
+  }
+
+  @media (min-width: 768px) {
+    .mission-mascot__grid {
+      grid-template-columns: 1.2fr 1fr;
+    }
+  }
+
+  .mission-mascot__content .label {
+    color: var(--color-gold);
+  }
+
+  .mission-mascot__content h2 {
+    font-size: clamp(1.8rem, 3vw, 2.5rem);
+    margin: var(--space-sm) 0 var(--space-md);
+  }
+
+  .mission-mascot__content p {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: var(--color-slate);
+    margin-bottom: var(--space-md);
+  }
+
+  .mission-mascot__content p strong {
+    color: var(--color-charcoal);
+  }
+
+  .mission-mascot__image {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(44, 44, 44, 0.12);
+  }
+
+  .mission-mascot__image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+    aspect-ratio: 1 / 1;
+    transition: transform 0.6s var(--ease-out);
+  }
+
+  .mission-mascot__image:hover img {
+    transform: scale(1.03);
   }
 
   /* ─── Timeline ──────────────────────────── */
@@ -421,6 +536,7 @@ try {
     padding: var(--space-lg);
     background: var(--color-warm-white);
     border: 1px solid var(--color-cream-dark);
+    border-radius: 12px;
     transition: transform var(--duration) var(--ease-out), box-shadow var(--duration);
   }
 
@@ -490,6 +606,7 @@ try {
     padding: var(--space-lg);
     background: var(--color-cream);
     border: 1px solid var(--color-cream-dark);
+    border-radius: 12px;
     transition: transform var(--duration) var(--ease-out), box-shadow var(--duration);
   }
 
@@ -545,6 +662,15 @@ try {
     color: white;
     line-height: 1.5;
     margin: 0;
+  }
+
+  .mission-highlight__attribution {
+    display: block;
+    margin-top: var(--space-md);
+    font-size: 0.9rem;
+    font-style: normal;
+    color: rgba(255, 255, 255, 0.6);
+    letter-spacing: 0.05em;
   }
 
   /* ─── CTA ───────────────────────────────── */

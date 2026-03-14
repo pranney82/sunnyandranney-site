@@ -80,6 +80,10 @@ const currentYear = new Date().getFullYear();
     </div>
   </div>
 
+  <div class="footer__map-strip">
+    <div id="footer-map" class="footer__map"></div>
+  </div>
+
   <div class="footer__bottom container">
     <p>&copy; {currentYear} Sunny & Ranney. All rights reserved.</p>
     <p class="footer__tagline">
@@ -232,4 +236,66 @@ const currentYear = new Date().getFullYear();
     color: var(--color-gold) !important;
     font-size: 0.9rem !important;
   }
+
+  .footer__map-strip {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .footer__map {
+    width: 100%;
+    height: 280px;
+  }
+
+  @media (min-width: 768px) {
+    .footer__map {
+      height: 320px;
+    }
+  }
 </style>
+
+<script is:inline define:vars={{ mapsKey: import.meta.env.PUBLIC_GOOGLE_MAPS_KEY }}>
+  (function () {
+    if (!mapsKey) return;
+
+    window.initFooterMap = function () {
+      var location = { lat: 34.02335, lng: -84.36175 };
+      var map = new google.maps.Map(document.getElementById('footer-map'), {
+        center: location,
+        zoom: 16,
+        disableDefaultUI: true,
+        zoomControl: true,
+        styles: [
+          { elementType: 'geometry', stylers: [{ color: '#212121' }] },
+          { elementType: 'labels.text.stroke', stylers: [{ color: '#212121' }] },
+          { elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
+          { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#bdbdbd' }] },
+          { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
+          { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#181818' }] },
+          { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#616161' }] },
+          { featureType: 'road', elementType: 'geometry.fill', stylers: [{ color: '#2c2c2c' }] },
+          { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#8a8a8a' }] },
+          { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#373737' }] },
+          { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#3c3c3c' }] },
+          { featureType: 'road.highway.controlled_access', elementType: 'geometry', stylers: [{ color: '#4e4e4e' }] },
+          { featureType: 'road.local', elementType: 'labels.text.fill', stylers: [{ color: '#616161' }] },
+          { featureType: 'transit', elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
+          { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#000000' }] },
+          { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#3d3d3d' }] },
+        ],
+      });
+
+      new google.maps.Marker({
+        position: location,
+        map: map,
+        title: 'Sunny & Ranney — 109A Oak Street, Roswell, GA',
+      });
+    };
+
+    var script = document.createElement('script');
+    script.src = 'https://maps.googleapis.com/maps/api/js?key=' + mapsKey + '&callback=initFooterMap&loading=async';
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+  })();
+</script>

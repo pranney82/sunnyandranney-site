@@ -26,6 +26,7 @@ export default defineConfig({
     define: {
       'import.meta.env.PUBLIC_SHOPIFY_STORE_DOMAIN': JSON.stringify(process.env.PUBLIC_SHOPIFY_STORE_DOMAIN || 'sunnyandranney.myshopify.com'),
       'import.meta.env.PUBLIC_SHOPIFY_STOREFRONT_TOKEN': JSON.stringify(process.env.PUBLIC_SHOPIFY_STOREFRONT_TOKEN || ''),
+      'import.meta.env.PUBLIC_GOOGLE_MAPS_KEY': JSON.stringify(process.env.PUBLIC_GOOGLE_MAPS_KEY || ''),
     },
   },
 });

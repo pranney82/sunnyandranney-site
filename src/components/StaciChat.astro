@@ -276,97 +276,112 @@
 </style>
 
 <script>
-  function initStacy() {
-    const toggle = document.getElementById('stacy-toggle')!;
-    const panel = document.getElementById('stacy-panel')!;
-    const form = document.getElementById('stacy-form')! as HTMLFormElement;
-    const input = document.getElementById('stacy-input')! as HTMLInputElement;
-    const messagesEl = document.getElementById('stacy-messages')!;
-    const iconChat = document.getElementById('stacy-icon-chat')!;
-    const iconClose = document.getElementById('stacy-icon-close')!;
+  let conversationHistory: { role: string; content: string }[] = [];
+  let stacyInitialized = false;
 
-    let conversationHistory: { role: string; content: string }[] = [];
-
-    toggle.addEventListener('click', () => {
-      const isOpen = panel.getAttribute('aria-hidden') === 'false';
-      panel.setAttribute('aria-hidden', isOpen ? 'true' : 'false');
-      iconChat.style.display = isOpen ? 'block' : 'none';
-      iconClose.style.display = isOpen ? 'none' : 'block';
-      if (!isOpen) input.focus();
-    });
-
-    function addMessage(text: string, isUser: boolean) {
-      const msg = document.createElement('div');
-      msg.className = `stacy-msg stacy-msg--${isUser ? 'user' : 'bot'}`;
-      msg.innerHTML = `
-        ${isUser ? '<span class="stacy-msg__avatar">Y</span>' : '<img class="stacy-msg__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/nav" loading="lazy" alt="Staci" />'}
-        <div class="stacy-msg__bubble">${escapeHtml(text)}</div>
-      `;
-      messagesEl.appendChild(msg);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-
-    function showTyping() {
-      const typing = document.createElement('div');
-      typing.className = 'stacy-msg stacy-msg--bot stacy-typing';
-      typing.id = 'stacy-typing';
-      typing.innerHTML = `
-        <img class="stacy-msg__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/nav" loading="lazy" alt="Staci" />
-        <div class="stacy-msg__bubble">
-          <span class="stacy-dot"></span>
-          <span class="stacy-dot"></span>
-          <span class="stacy-dot"></span>
-        </div>
-      `;
-      messagesEl.appendChild(typing);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-
-    function removeTyping() {
-      document.getElementById('stacy-typing')?.remove();
-    }
-
-    function escapeHtml(str: string) {
-      const div = document.createElement('div');
-      div.textContent = str;
-      return div.innerHTML;
-    }
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const text = input.value.trim();
-      if (!text) return;
-
-      addMessage(text, true);
-      input.value = '';
-      conversationHistory.push({ role: 'user', content: text });
-
-      showTyping();
-
-      try {
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: conversationHistory }),
-        });
-
-        removeTyping();
-
-        if (!res.ok) throw new Error('Request failed');
-
-        const data = await res.json();
-        const reply = data.reply || "Sorry, I couldn't process that. Please try again.";
-
-        conversationHistory.push({ role: 'assistant', content: reply });
-        addMessage(reply, false);
-      } catch {
-        removeTyping();
-        addMessage("Oops — I'm having trouble connecting. Please try again in a moment.", false);
-      }
-    });
+  function escapeHtml(str: string) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
   }
 
-  // Run once — component uses transition:persist so DOM + listeners survive navigations.
-  // Do NOT re-init on astro:after-swap or listeners will duplicate.
-  initStacy();
+  function addMessage(text: string, isUser: boolean) {
+    const messagesEl = document.getElementById('stacy-messages');
+    if (!messagesEl) return;
+    const msg = document.createElement('div');
+    msg.className = `stacy-msg stacy-msg--${isUser ? 'user' : 'bot'}`;
+    msg.innerHTML = `
+      ${isUser ? '<span class="stacy-msg__avatar">Y</span>' : '<img class="stacy-msg__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/nav" loading="lazy" alt="Staci" />'}
+      <div class="stacy-msg__bubble">${escapeHtml(text)}</div>
+    `;
+    messagesEl.appendChild(msg);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function showTyping() {
+    const messagesEl = document.getElementById('stacy-messages');
+    if (!messagesEl) return;
+    const typing = document.createElement('div');
+    typing.className = 'stacy-msg stacy-msg--bot stacy-typing';
+    typing.id = 'stacy-typing';
+    typing.innerHTML = `
+      <img class="stacy-msg__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/nav" loading="lazy" alt="Staci" />
+      <div class="stacy-msg__bubble">
+        <span class="stacy-dot"></span>
+        <span class="stacy-dot"></span>
+        <span class="stacy-dot"></span>
+      </div>
+    `;
+    messagesEl.appendChild(typing);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function removeTyping() {
+    document.getElementById('stacy-typing')?.remove();
+  }
+
+  async function handleSubmit(e: Event) {
+    e.preventDefault();
+    const input = document.getElementById('stacy-input') as HTMLInputElement | null;
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+
+    addMessage(text, true);
+    input.value = '';
+    conversationHistory.push({ role: 'user', content: text });
+
+    showTyping();
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: conversationHistory }),
+      });
+
+      removeTyping();
+
+      if (!res.ok) throw new Error('Request failed');
+
+      const data = await res.json();
+      const reply = data.reply || "Sorry, I couldn't process that. Please try again.";
+
+      conversationHistory.push({ role: 'assistant', content: reply });
+      addMessage(reply, false);
+    } catch {
+      removeTyping();
+      addMessage("Oops — I'm having trouble connecting. Please try again in a moment.", false);
+    }
+  }
+
+  // Use event delegation so clicks work even if DOM is swapped by View Transitions
+  document.addEventListener('click', (e) => {
+    const toggle = (e.target as Element).closest('#stacy-toggle');
+    if (!toggle) return;
+
+    const panel = document.getElementById('stacy-panel');
+    const iconChat = document.getElementById('stacy-icon-chat');
+    const iconClose = document.getElementById('stacy-icon-close');
+    const input = document.getElementById('stacy-input') as HTMLInputElement | null;
+    if (!panel) return;
+
+    const isOpen = panel.getAttribute('aria-hidden') === 'false';
+    panel.setAttribute('aria-hidden', isOpen ? 'true' : 'false');
+    if (iconChat) iconChat.style.display = isOpen ? 'block' : 'none';
+    if (iconClose) iconClose.style.display = isOpen ? 'none' : 'block';
+    if (!isOpen && input) input.focus();
+  });
+
+  function initStacyForm() {
+    if (stacyInitialized) return;
+    const form = document.getElementById('stacy-form');
+    if (!form) return;
+    stacyInitialized = true;
+    form.addEventListener('submit', handleSubmit);
+  }
+
+  // Init form on load and after View Transition navigations
+  initStacyForm();
+  document.addEventListener('astro:page-load', initStacyForm);
 </script>
