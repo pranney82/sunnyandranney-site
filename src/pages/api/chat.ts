@@ -25,27 +25,22 @@ const PRODUCTS_QUERY = `
   }
 `;
 
+// Compact format to stay within model context window (24k tokens)
 function formatProduct(node: any): string {
-  const price = parseFloat(node.priceRange.minVariantPrice.amount).toFixed(2);
-  const compareAt = parseFloat(node.compareAtPriceRange?.minVariantPrice?.amount || '0');
-  const onSale = compareAt > parseFloat(price);
-
-  return [
-    `- **${node.title}**`,
-    `$${price}${onSale ? ` (was $${compareAt.toFixed(2)})` : ''}`,
-    node.productType ? `Category: ${node.productType}` : '',
-    !node.availableForSale ? 'SOLD OUT' : '',
-    `Link: /shop/${node.handle}`,
-  ].filter(Boolean).join(' | ');
+  const price = parseFloat(node.priceRange.minVariantPrice.amount).toFixed(0);
+  const sold = !node.availableForSale ? ' SOLD OUT' : '';
+  return `${node.title} $${price}${sold} /shop/${node.handle}`;
 }
 
-async function getProductCatalog(): Promise<string> {
+const MAX_CATALOG_PRODUCTS = 200;
+
+async function getProductCatalog(runtimeEnv: Record<string, any>): Promise<string> {
   if (productCache && Date.now() - cacheTimestamp < CACHE_TTL) {
     return productCache;
   }
 
-  const domain = import.meta.env.PUBLIC_SHOPIFY_STORE_DOMAIN || 'sunnyandranney.myshopify.com';
-  const token = import.meta.env.PUBLIC_SHOPIFY_STOREFRONT_TOKEN || '';
+  const domain = runtimeEnv.PUBLIC_SHOPIFY_STORE_DOMAIN || 'sunnyandranney.myshopify.com';
+  const token = runtimeEnv.PUBLIC_SHOPIFY_STOREFRONT_TOKEN || '';
 
   if (!token) return 'Product catalog unavailable.';
 
@@ -54,8 +49,8 @@ async function getProductCatalog(): Promise<string> {
     let cursor: string | null = null;
     let hasNextPage = true;
 
-    // Paginate through all products (250 per page, Shopify max)
-    while (hasNextPage) {
+    // Paginate through products (capped to fit model context window)
+    while (hasNextPage && allProducts.length < MAX_CATALOG_PRODUCTS) {
       const res: Response = await fetch(`https://${domain}/api/2025-01/graphql.json`, {
         method: 'POST',
         headers: {
@@ -103,21 +98,15 @@ function buildSystemPrompt(catalog: string): string {
 ## Mission
 Sunny & Ranney exists to fund Sunshine on a Ranney Day (SOARD). Every single dollar of profit goes directly to providing bedroom makeovers, furniture, and home essentials for children with special needs and their families. When a customer buys from us, they are directly changing a child's life.
 
-## Current Product Catalog
-Here are the products currently in the shop. Use this to answer product questions. When recommending products, include the link so customers can view them.
-
+## Product Catalog (name, price, link)
 ${catalog}
 
-## Your Personality & Rules
-- Warm, friendly, and concise — like a knowledgeable friend working at the shop
-- Keep responses SHORT (2-4 sentences max unless the customer asks for detail)
-- Use **bold** for emphasis on key info
-- When recommending products, mention the name, price, and include the link formatted as [Product Name](/shop/handle)
-- If a product is marked SOLD OUT, let the customer know and suggest similar items
-- If asked about something not in the catalog, say inventory changes often and suggest they visit in person or browse the shop
-- Never make up products that aren't in the catalog above
-- Occasionally mention the mission — customers love knowing their purchase matters
-- If a customer seems to be browsing, proactively suggest 2-3 relevant items from the catalog`;
+## Rules
+- Warm, concise (2-4 sentences). Use **bold** for key info.
+- Recommend products as [Name](/shop/handle) with price.
+- If SOLD OUT, say so and suggest alternatives.
+- If not in catalog, say inventory changes often — visit in person or browse /shop.
+- Never invent products. Occasionally mention the mission.`;
 }
 
 // ─── API handler ─────────────────────────────────────────────
@@ -136,15 +125,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const ai = runtime?.env?.AI;
 
     if (!ai) {
-      console.error('AI binding missing. runtime keys:', Object.keys(runtime || {}), 'env keys:', Object.keys(runtime?.env || {}));
       return new Response(
-        JSON.stringify({ error: 'AI binding not available. Make sure AI is enabled in wrangler.toml and Cloudflare dashboard.' }),
+        JSON.stringify({ error: 'AI binding not available.' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
     // Fetch product catalog (cached)
-    const catalog = await getProductCatalog();
+    const catalog = await getProductCatalog(runtime.env);
     const systemMessage = { role: 'system', content: buildSystemPrompt(catalog) };
 
     const response = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
@@ -156,8 +144,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err: any) {
-    console.error('Chat API error:', err?.message, err?.stack, JSON.stringify(err));
-    return new Response(JSON.stringify({ error: 'Something went wrong. Please try again.', debug: err?.message }), {
+    console.error('Chat API error:', err?.message);
+    return new Response(JSON.stringify({ error: 'Something went wrong. Please try again.' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

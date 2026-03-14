@@ -73,7 +73,7 @@
 
   /* Layout */
   --max-width:   1280px;
-  --nav-height:  132px;
+  --nav-height:  120px;
 
   /* Transitions */
   --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
@@ -221,6 +221,18 @@ p {
   border-color: var(--color-charcoal);
   color: var(--color-cream);
   transform: translateY(-2px);
+}
+
+.btn--hero {
+  padding: 1rem 2.8rem;
+  font-size: 0.85rem;
+  border-radius: 7px;
+  transition: all 0.35s var(--ease-out);
+}
+
+.btn--hero:hover {
+  transform: scale(1.03);
+  box-shadow: 0 8px 30px rgba(255, 212, 0, 0.35);
 }
 
 /* ─── Cards ─────────────────────────────────────────────────── */
@@ -545,7 +557,7 @@ p {
 
 /* ─── Responsive ────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  :root { --nav-height: 172px; }
+  :root { --nav-height: 120px; }
   .section { padding: var(--space-xl) 0; }
   .section--large { padding: var(--space-2xl) 0; }
 }

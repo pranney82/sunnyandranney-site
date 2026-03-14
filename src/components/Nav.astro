@@ -37,14 +37,19 @@ const categories = [
         decoding="async"
       />
     </a>
-    <button class="nav__icon-btn nav__cart" aria-label="Shopping cart" id="mobile-cart-trigger">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
-        <line x1="3" y1="6" x2="21" y2="6"/>
-        <path d="M16 10a4 4 0 01-8 0"/>
-      </svg>
-      <span class="nav__cart-count" id="mobile-cart-count" style="display:none;">0</span>
-    </button>
+    <div class="nav__mobile-actions">
+      <button class="nav__icon-btn nav__search-toggle" aria-label="Search products" id="mobile-search-toggle">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+      <button class="nav__icon-btn nav__cart" aria-label="Shopping cart" id="mobile-cart-trigger">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <path d="M16 10a4 4 0 01-8 0"/>
+        </svg>
+        <span class="nav__cart-count" id="mobile-cart-count" style="display:none;">0</span>
+      </button>
+    </div>
   </div>
 
   <!-- Mobile search bar -->
@@ -163,20 +168,23 @@ const categories = [
     text-decoration: underline;
   }
 
-  /* Desktop: GPU-only banner hide on scroll */
+  /* Smooth banner collapse on scroll — no position:absolute jump */
+  .nav__banner {
+    transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.2s ease;
+    max-height: 40px;
+    overflow: hidden;
+  }
+  .nav--scrolled .nav__banner {
+    max-height: 0;
+    padding: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
   @media (min-width: 768px) {
     .nav__banner {
       font-size: 0.82rem;
       padding: 0.5rem 0;
-      will-change: transform, opacity;
-      transition: transform 0.3s ease, opacity 0.3s ease;
-    }
-    .nav--scrolled .nav__banner {
-      transform: translateY(-100%);
-      opacity: 0;
-      pointer-events: none;
-      position: absolute;
-      inset: 0 0 auto 0;
     }
   }
 
@@ -240,14 +248,27 @@ const categories = [
     width: auto;
   }
 
-  /* 44px minimum touch target for mobile cart */
-  .nav__mobile-header .nav__cart {
+  .nav__mobile-actions {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+
+  /* 44px minimum touch target for mobile icons */
+  .nav__mobile-header .nav__cart,
+  .nav__mobile-header .nav__search-toggle {
     min-width: 44px;
     min-height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
+
+  .nav__search-toggle {
+    color: var(--color-charcoal);
+    transition: color 0.2s;
+  }
+  .nav__search-toggle:hover { color: var(--color-gold); }
 
   @media (min-width: 768px) {
     .nav__mobile-header { display: none; }
@@ -256,20 +277,31 @@ const categories = [
   /* ─── Mobile Search Bar ──────────────────── */
   .nav__mobile-topbar {
     display: block;
-    padding: 6px 12px;
     background: var(--color-cream);
-    transition: transform 0.25s ease, opacity 0.25s ease;
-    will-change: transform, opacity;
+    transition: max-height 0.25s ease, padding 0.25s ease, opacity 0.25s ease;
+    will-change: opacity;
+    /* Hidden by default — revealed when user taps search icon */
+    max-height: 0;
+    padding: 0 12px;
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
   }
 
-  /* Hide search bar on scroll to reclaim viewport space */
-  .nav--scrolled .nav__mobile-topbar {
-    transform: translateY(-100%);
+  /* Hide search (scroll down or default) */
+  .nav__mobile-topbar.is-hidden {
+    max-height: 0;
+    padding: 0 12px;
     opacity: 0;
-    height: 0;
-    padding: 0;
-    overflow: hidden;
     pointer-events: none;
+  }
+
+  /* Show when user taps search icon */
+  .nav__mobile-topbar.is-forced-open {
+    max-height: 60px;
+    padding: 6px 12px;
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .nav__mobile-topbar-inner {
@@ -564,6 +596,10 @@ const categories = [
     .nav__categories {
       padding: 0 4px;
     }
+    /* Hide nav categories on shop page — shop has its own filter pills */
+    .nav--shop-active .nav__categories {
+      display: none;
+    }
   }
 
   .nav__cat-link {
@@ -618,19 +654,65 @@ const categories = [
 </style>
 
 <script>
-  // ─── Scroll behavior — rAF-throttled ────────────
+  // ─── Dynamic nav height → CSS variable (drives main margin-top) ─────
   const nav = document.getElementById('main-nav');
+  if (nav) {
+    const syncHeight = () => {
+      const h = nav.getBoundingClientRect().height;
+      document.documentElement.style.setProperty('--nav-height', `${h}px`);
+    };
+    new ResizeObserver(syncHeight).observe(nav);
+    syncHeight();
+  }
+
+  // ─── Scroll behavior ────────────────────────────────────────
+  const mobileSearch = nav?.querySelector('.nav__mobile-topbar') as HTMLElement;
+  let lastScrollY = 0;
   let scrollTicking = false;
 
   window.addEventListener('scroll', () => {
     if (!scrollTicking) {
       scrollTicking = true;
       requestAnimationFrame(() => {
-        nav?.classList.toggle('nav--scrolled', window.scrollY > 20);
+        const y = window.scrollY;
+        nav?.classList.toggle('nav--scrolled', y > 20);
+
+        // Auto-close search bar on scroll down when user opened it
+        if (mobileSearch?.classList.contains('is-forced-open') && y > 60 && y > lastScrollY) {
+          mobileSearch.classList.remove('is-forced-open');
+          mobileSearch.classList.add('is-hidden');
+        }
+        lastScrollY = y;
         scrollTicking = false;
       });
     }
   }, { passive: true });
+
+  // ─── Mobile search toggle — tap icon to reveal/hide search ────────────
+  const searchToggle = document.getElementById('mobile-search-toggle');
+  const mobileSearchInput = document.getElementById('mobile-topbar-search') as HTMLInputElement;
+
+  searchToggle?.addEventListener('click', () => {
+    if (!mobileSearch) return;
+    const isOpen = mobileSearch.classList.contains('is-forced-open');
+    if (isOpen) {
+      mobileSearch.classList.remove('is-forced-open');
+      mobileSearch.classList.add('is-hidden');
+    } else {
+      mobileSearch.classList.remove('is-hidden');
+      mobileSearch.classList.add('is-forced-open');
+      setTimeout(() => mobileSearchInput?.focus(), 260);
+    }
+  });
+
+  // Close search bar when input loses focus and user has scrolled
+  mobileSearchInput?.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (mobileSearch && window.scrollY > 60) {
+        mobileSearch.classList.remove('is-forced-open');
+      }
+    }, 300);
+  });
 
   // ─── Cart buttons (no inline onclick) ────────────
   document.getElementById('cart-trigger')?.addEventListener('click', () => window.openCart?.());

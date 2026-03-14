@@ -377,13 +377,13 @@ const lcpImage = products[0]?.images?.edges[0]?.node?.url
   .shop-hero__inner {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    padding-top: var(--space-lg);
-    padding-bottom: var(--space-md);
+    gap: 0.15rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.5rem;
   }
 
   .shop-hero__title {
-    font-size: clamp(2.2rem, 5vw, 3.5rem);
+    font-size: clamp(1.6rem, 5vw, 3.5rem);
     line-height: 0.95;
     letter-spacing: -0.02em;
     color: white;
@@ -392,7 +392,7 @@ const lcpImage = products[0]?.images?.edges[0]?.node?.url
 
   .shop-hero__sub {
     color: rgba(255, 255, 255, 0.5);
-    font-size: 0.88rem;
+    font-size: 0.8rem;
     margin: 0;
   }
 
@@ -410,11 +410,11 @@ const lcpImage = products[0]?.images?.edges[0]?.node?.url
   .shop-hero__ribbon {
     background: var(--color-gold);
     text-align: center;
-    padding: 0.5rem var(--space-md);
+    padding: 0.35rem var(--space-md);
   }
 
   .shop-hero__ribbon p {
-    font-size: 0.75rem;
+    font-size: 0.68rem;
     font-weight: 500;
     letter-spacing: 0.04em;
     color: var(--color-charcoal);
@@ -428,6 +428,18 @@ const lcpImage = products[0]?.images?.edges[0]?.node?.url
       justify-content: space-between;
       padding-top: var(--space-xl);
       padding-bottom: var(--space-md);
+    }
+
+    .shop-hero__title {
+      font-size: clamp(2.2rem, 5vw, 3.5rem);
+    }
+
+    .shop-hero__sub {
+      font-size: 0.88rem;
+    }
+
+    .shop-hero__ribbon {
+      padding: 0.5rem var(--space-md);
     }
 
     .shop-hero__ribbon p {
@@ -1328,6 +1340,17 @@ const lcpImage = products[0]?.images?.edges[0]?.node?.url
 
 <script>
   import { wishlist } from '@/lib/cart-store.js';
+
+  // ─── Hide nav category bar on mobile (shop has its own filter pills) ──
+  const mainNav = document.getElementById('main-nav');
+  if (mainNav) {
+    mainNav.classList.add('nav--shop-active');
+  }
+
+  // Clean up nav--shop-active when navigating away (nav uses transition:persist)
+  document.addEventListener('astro:before-swap', () => {
+    mainNav?.classList.remove('nav--shop-active');
+  });
 
   // ─── DOM refs ──────────────────────────────────
   const grid = document.getElementById('shop-grid');
