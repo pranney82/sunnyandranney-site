@@ -285,7 +285,7 @@ const currentYear = new Date().getFullYear();
         ],
       });
 
-      new google.maps.Marker({
+      new google.maps.marker.AdvancedMarkerElement({
         position: location,
         map: map,
         title: 'Sunny & Ranney — 109A Oak Street, Roswell, GA',
@@ -293,7 +293,7 @@ const currentYear = new Date().getFullYear();
     };
 
     var script = document.createElement('script');
-    script.src = 'https://maps.googleapis.com/maps/api/js?key=' + mapsKey + '&callback=initFooterMap&loading=async';
+    script.src = 'https://maps.googleapis.com/maps/api/js?key=' + mapsKey + '&callback=initFooterMap&loading=async&libraries=marker';
     script.async = true;
     script.defer = true;
     document.head.appendChild(script);

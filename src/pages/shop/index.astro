@@ -65,8 +65,8 @@ try {
   <!-- ═══ TOOLBAR ═══ -->
   <section class="filters-bar">
     <div class="container">
-      <div class="toolbar">
-        <!-- Categories -->
+      <!-- Row 1: Scrollable category pills -->
+      <div class="toolbar__row-categories">
         <div class="toolbar__categories">
           <button class="filter-btn filter-btn--active" data-filter="all">All</button>
           <button class="filter-btn" data-filter="furniture">Furniture</button>
@@ -75,34 +75,54 @@ try {
           <button class="filter-btn" data-filter="gifts">Gifts</button>
           <button class="filter-btn" data-filter="kitchenware">Kitchenware</button>
         </div>
-        <!-- Price Range Filter -->
-        <div class="toolbar__price" id="price-filter">
-          <label class="toolbar__price-label">Price</label>
-          <div class="toolbar__price-inputs">
-            <input type="number" id="price-min" placeholder="Min" min="0" step="1" aria-label="Minimum price" />
-            <span class="toolbar__price-dash">–</span>
-            <input type="number" id="price-max" placeholder="Max" min="0" step="1" aria-label="Maximum price" />
-            <button class="toolbar__price-go" id="price-go" aria-label="Apply price filter">Go</button>
-          </div>
-        </div>
+      </div>
 
-        <!-- Sort + View controls -->
-        <div class="toolbar__controls">
-          <span class="toolbar__count" id="product-count"></span>
-          <select class="toolbar__sort" id="sort-select" aria-label="Sort products">
-            <option value="best-selling">Best Selling</option>
-            <option value="price-asc">Price: Low to High</option>
-            <option value="price-desc">Price: High to Low</option>
-            <option value="title-asc">A to Z</option>
-            <option value="newest">Newest</option>
-          </select>
-          <div class="toolbar__views">
-            <button class="toolbar__view toolbar__view--active" data-view="grid" aria-label="Grid view">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="0" width="7" height="7" rx="1"/><rect x="9" y="0" width="7" height="7" rx="1"/><rect x="0" y="9" width="7" height="7" rx="1"/><rect x="9" y="9" width="7" height="7" rx="1"/></svg>
-            </button>
-            <button class="toolbar__view" data-view="list" aria-label="List view">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="0" width="16" height="3" rx="1"/><rect x="0" y="4.5" width="16" height="3" rx="1"/><rect x="0" y="9" width="16" height="3" rx="1"/><rect x="0" y="13" width="16" height="3" rx="1"/></svg>
-            </button>
+      <!-- Row 2: Count + Filter & Sort button -->
+      <div class="toolbar__row-controls">
+        <span class="toolbar__count" id="product-count"></span>
+        <button class="toolbar__filter-toggle" id="filter-toggle" aria-expanded="false" aria-controls="filter-panel">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <line x1="1" y1="4" x2="15" y2="4"/><line x1="3" y1="8" x2="13" y2="8"/><line x1="5" y1="12" x2="11" y2="12"/>
+          </svg>
+          Filter & Sort
+        </button>
+      </div>
+
+      <!-- Dropdown panel: Price + Sort + View -->
+      <div class="toolbar__panel" id="filter-panel" hidden>
+        <div class="toolbar__panel-inner">
+          <!-- Sort -->
+          <div class="toolbar__panel-group">
+            <label class="toolbar__panel-label" for="sort-select">Sort by</label>
+            <select class="toolbar__sort" id="sort-select" aria-label="Sort products">
+              <option value="best-selling">Best Selling</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+              <option value="title-asc">A to Z</option>
+              <option value="newest">Newest</option>
+            </select>
+          </div>
+          <!-- Price -->
+          <div class="toolbar__panel-group">
+            <label class="toolbar__panel-label">Price range</label>
+            <div class="toolbar__price-inputs">
+              <input type="number" id="price-min" placeholder="Min" min="0" step="1" aria-label="Minimum price" />
+              <span class="toolbar__price-dash">–</span>
+              <input type="number" id="price-max" placeholder="Max" min="0" step="1" aria-label="Maximum price" />
+              <button class="toolbar__price-go" id="price-go" aria-label="Apply price filter">Go</button>
+            </div>
+          </div>
+          <!-- View -->
+          <div class="toolbar__panel-group">
+            <label class="toolbar__panel-label">View</label>
+            <div class="toolbar__views">
+              <button class="toolbar__view toolbar__view--active" data-view="grid" aria-label="Grid view">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="0" width="7" height="7" rx="1"/><rect x="9" y="0" width="7" height="7" rx="1"/><rect x="0" y="9" width="7" height="7" rx="1"/><rect x="9" y="9" width="7" height="7" rx="1"/></svg>
+              </button>
+              <button class="toolbar__view" data-view="list" aria-label="List view">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="0" width="16" height="3" rx="1"/><rect x="0" y="4.5" width="16" height="3" rx="1"/><rect x="0" y="9" width="16" height="3" rx="1"/><rect x="0" y="13" width="16" height="3" rx="1"/></svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -397,17 +417,17 @@ try {
     z-index: 50;
   }
 
-  .toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
+  /* ─── Row 1: Category pills ──────────── */
+  .toolbar__row-categories {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
+  .toolbar__row-categories::-webkit-scrollbar { display: none; }
 
   .toolbar__categories {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 0.35rem;
   }
 
@@ -422,6 +442,8 @@ try {
     border-radius: 100px;
     transition: all 0.2s;
     background: transparent;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .filter-btn:hover { color: var(--color-charcoal); background: var(--color-cream-dark); }
@@ -430,82 +452,101 @@ try {
     color: var(--color-cream);
   }
 
-  /* Desktop: clean, minimal toolbar */
-  @media (min-width: 768px) {
-    .filters-bar {
-      border-bottom: none;
-      padding: 1rem 0 0.5rem;
-      background: transparent;
-      backdrop-filter: none;
-      position: relative;
-      top: 0;
-    }
-
-    .toolbar {
-      flex-wrap: nowrap;
-      gap: 1.5rem;
-    }
-
-    .toolbar__categories {
-      flex-wrap: nowrap;
-      gap: 0.25rem;
-      overflow-x: auto;
-      scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
-    }
-    .toolbar__categories::-webkit-scrollbar { display: none; }
-
-    .filter-btn {
-      padding: 0.5rem 1.25rem;
-      font-size: 0.72rem;
-      white-space: nowrap;
-      border: 1px solid var(--color-cream-dark);
-    }
-    .filter-btn:hover {
-      border-color: var(--color-charcoal);
-      background: transparent;
-      color: var(--color-charcoal);
-    }
-    .filter-btn--active {
-      background: var(--color-charcoal);
-      color: var(--color-cream);
-      border-color: var(--color-charcoal);
-    }
-
-    /* Hide price filter on desktop toolbar — it clutters */
-    .toolbar__price { display: none; }
-
-    /* Hide view toggle on desktop — grid is the right default */
-    .toolbar__views { display: none; }
-
-    .toolbar__sort {
-      border-radius: 100px;
-      padding: 0.5rem 1rem;
-      font-size: 0.72rem;
-      border: 1px solid var(--color-cream-dark);
-    }
-
-    .toolbar__count {
-      font-size: 0.72rem;
-    }
-  }
-
-  /* ─── Price Range Filter ──────────────── */
-  .toolbar__price {
+  /* ─── Row 2: Count + Filter & Sort ───── */
+  .toolbar__row-controls {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: space-between;
+    margin-top: 0.5rem;
   }
 
-  .toolbar__price-label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--color-slate);
+  .toolbar__count {
+    font-size: 0.78rem;
+    color: var(--color-stone);
     white-space: nowrap;
   }
 
+  .toolbar__filter-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 1rem;
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-charcoal);
+    border: 1.5px solid var(--color-cream-dark);
+    border-radius: 100px;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .toolbar__filter-toggle:hover,
+  .toolbar__filter-toggle[aria-expanded="true"] {
+    border-color: var(--color-charcoal);
+    background: var(--color-charcoal);
+    color: var(--color-cream);
+  }
+
+  /* ─── Dropdown Panel ─────────────────── */
+  .toolbar__panel {
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.2s ease;
+    max-height: 0;
+    opacity: 0;
+  }
+  .toolbar__panel[hidden] {
+    display: block;
+    max-height: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .toolbar__panel.is-open {
+    max-height: 300px;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .toolbar__panel-inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    padding: 1rem 0 0.25rem;
+    border-top: 1px solid var(--color-cream-dark);
+    margin-top: 0.75rem;
+  }
+
+  .toolbar__panel-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .toolbar__panel-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-stone);
+  }
+
+  /* ─── Sort select ────────────────────── */
+  .toolbar__sort {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--color-cream-dark);
+    border-radius: 6px;
+    background: var(--color-warm-white);
+    color: var(--color-charcoal);
+    cursor: pointer;
+    outline: none;
+  }
+  .toolbar__sort:focus { border-color: var(--color-gold); }
+
+  /* ─── Price Range Filter ──────────────── */
   .toolbar__price-inputs {
     display: flex;
     align-items: center;
@@ -552,38 +593,7 @@ try {
 
   .toolbar__price-go:hover { background: var(--color-gold); color: var(--color-charcoal); }
 
-  @media (max-width: 767px) {
-    .toolbar__price {
-      width: 100%;
-      justify-content: space-between;
-    }
-  }
-
-  .toolbar__controls {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .toolbar__count {
-    font-size: 0.78rem;
-    color: var(--color-stone);
-    white-space: nowrap;
-  }
-
-  .toolbar__sort {
-    font-family: var(--font-body);
-    font-size: 0.78rem;
-    padding: 0.4rem 0.75rem;
-    border: 1px solid var(--color-cream-dark);
-    border-radius: 6px;
-    background: var(--color-warm-white);
-    color: var(--color-charcoal);
-    cursor: pointer;
-    outline: none;
-  }
-  .toolbar__sort:focus { border-color: var(--color-gold); }
-
+  /* ─── View Toggle ────────────────────── */
   .toolbar__views {
     display: flex;
     gap: 0.25rem;
@@ -597,6 +607,54 @@ try {
   }
   .toolbar__view:hover { color: var(--color-charcoal); }
   .toolbar__view--active { color: var(--color-charcoal); background: var(--color-cream-dark); }
+
+  /* ─── Desktop refinements ────────────── */
+  @media (min-width: 768px) {
+    .filters-bar {
+      border-bottom: none;
+      padding: 1rem 0 0.5rem;
+      background: transparent;
+      backdrop-filter: none;
+      position: relative;
+      top: 0;
+    }
+
+    .toolbar__categories {
+      gap: 0.25rem;
+    }
+
+    .filter-btn {
+      padding: 0.5rem 1.25rem;
+      font-size: 0.72rem;
+      border: 1px solid var(--color-cream-dark);
+    }
+    .filter-btn:hover {
+      border-color: var(--color-charcoal);
+      background: transparent;
+      color: var(--color-charcoal);
+    }
+    .filter-btn--active {
+      background: var(--color-charcoal);
+      color: var(--color-cream);
+      border-color: var(--color-charcoal);
+    }
+
+    .toolbar__count {
+      font-size: 0.72rem;
+    }
+
+    .toolbar__sort {
+      border-radius: 100px;
+      padding: 0.5rem 1rem;
+      font-size: 0.72rem;
+      border: 1px solid var(--color-cream-dark);
+    }
+
+    .toolbar__panel-inner {
+      flex-wrap: nowrap;
+      gap: 2rem;
+    }
+  }
 
   /* ─── Search Banner ────────────────────── */
   .search-banner {
@@ -1256,6 +1314,21 @@ try {
   const searchBanner = document.getElementById('search-banner');
   const searchBannerText = document.getElementById('search-banner-text');
   const searchClear = document.getElementById('search-clear');
+
+  // ─── Filter & Sort panel toggle ───────────────
+  const filterToggle = document.getElementById('filter-toggle');
+  const filterPanel = document.getElementById('filter-panel');
+
+  filterToggle?.addEventListener('click', () => {
+    const isOpen = filterPanel?.classList.contains('is-open');
+    if (isOpen) {
+      filterPanel?.classList.remove('is-open');
+      filterToggle.setAttribute('aria-expanded', 'false');
+    } else {
+      filterPanel?.classList.add('is-open');
+      filterToggle.setAttribute('aria-expanded', 'true');
+    }
+  });
 
   let activeFilter = 'all';
   let activeSearch = '';
