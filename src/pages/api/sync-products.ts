@@ -139,7 +139,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
       // 3. Upsert vectors into Vectorize with product metadata
       const vectors = batch.map((node: any, j: number) => ({
-        id: node.handle, // Use handle as stable unique ID
+        id: node.handle.slice(0, 64), // Vectorize max ID is 64 bytes
         values: embeddingResult.data[j],
         metadata: {
           title: node.title,
