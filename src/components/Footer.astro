@@ -80,28 +80,15 @@ const currentYear = new Date().getFullYear();
     </div>
   </div>
 
-  <div class="footer__map-strip">
-    <a
-      href="https://www.google.com/maps/place/Sunny+%26+Ranney/@34.02335,-84.36175,16z"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="footer__map-link"
-      aria-label="Open in Google Maps"
-    >
-      <img
-        src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/footer-map/w=1280,h=340,fit=scale-down,q=80"
-        srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/footer-map/w=640,h=170,fit=scale-down,q=75 640w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/footer-map/w=1280,h=340,fit=scale-down,q=80 1280w"
-        sizes="100vw"
-        alt="Map showing Sunny & Ranney at 109A Oak Street, Roswell, GA"
-        class="footer__map"
-        width="1280"
-        height="340"
-        loading="lazy"
-        decoding="async"
-        fetchpriority="low"
-      />
-      <span class="footer__map-cta">Open in Google Maps</span>
-    </a>
+  <div class="footer__map-strip container">
+    <iframe
+      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3308.5!2d-84.36175!3d34.02335!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4m5!3e0!4m0!4m2!1d-84.36175!2d34.02335!5e0!3m2!1sen!2sus!4v1&q=Sunny+%26+Ranney,+109A+Oak+Street,+Roswell,+GA+30075"
+      class="footer__map"
+      title="Sunny & Ranney location — 109A Oak Street, Roswell, GA"
+      loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade"
+      allowfullscreen
+    ></iframe>
   </div>
 
   <div class="footer__bottom container">
@@ -258,56 +245,15 @@ const currentYear = new Date().getFullYear();
   }
 
   .footer__map-strip {
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
-  .footer__map-link {
-    display: block;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .footer__map-link:hover .footer__map,
-  .footer__map-link:focus-visible .footer__map {
-    transform: scale(1.02);
-    filter: brightness(1.15);
-  }
-
-  .footer__map-link:focus-visible {
-    outline: 2px solid var(--color-gold);
-    outline-offset: -2px;
+    padding-top: var(--space-md);
+    padding-bottom: var(--space-md);
   }
 
   .footer__map {
     width: 100%;
-    height: auto;
+    height: 300px;
+    border: 0;
+    border-radius: 8px;
     display: block;
-    object-fit: cover;
-    aspect-ratio: 1280 / 340;
-    transition: transform 0.4s ease, filter 0.4s ease;
-  }
-
-  .footer__map-cta {
-    position: absolute;
-    bottom: var(--space-sm);
-    right: var(--space-md);
-    background: rgba(0, 0, 0, 0.7);
-    color: var(--color-cream);
-    font-size: 0.75rem;
-    font-weight: 500;
-    letter-spacing: 0.05em;
-    padding: 0.4rem 0.8rem;
-    border-radius: 4px;
-    opacity: 0;
-    transform: translateY(4px);
-    transition: opacity 0.3s ease, transform 0.3s ease;
-    pointer-events: none;
-  }
-
-  .footer__map-link:hover .footer__map-cta,
-  .footer__map-link:focus-visible .footer__map-cta {
-    opacity: 1;
-    transform: translateY(0);
   }
 </style>
