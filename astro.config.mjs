@@ -4,7 +4,7 @@ import sitemap from '@astrojs/sitemap';
 
 export default defineConfig({
   site: 'https://sunnyandranney.com',
-  output: 'static',
+  output: 'hybrid',
   adapter: cloudflare({
     imageService: 'compile', // Optimize images at build time (sharp not available at CF runtime)
     platformProxy: { enabled: false },
