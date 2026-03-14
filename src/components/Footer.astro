@@ -89,14 +89,18 @@ const currentYear = new Date().getFullYear();
       aria-label="Open in Google Maps"
     >
       <img
-        src={`https://maps.googleapis.com/maps/api/staticmap?center=34.02335,-84.36175&zoom=16&size=1200x320&scale=2&markers=color:red%7C34.02335,-84.36175&style=element:geometry%7Ccolor:0x212121&style=element:labels.text.stroke%7Ccolor:0x212121&style=element:labels.text.fill%7Ccolor:0x757575&style=feature:administrative.locality%7Celement:labels.text.fill%7Ccolor:0xbdbdbd&style=feature:poi%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:poi.park%7Celement:geometry%7Ccolor:0x181818&style=feature:road%7Celement:geometry.fill%7Ccolor:0x2c2c2c&style=feature:road%7Celement:labels.text.fill%7Ccolor:0x8a8a8a&style=feature:road.arterial%7Celement:geometry%7Ccolor:0x373737&style=feature:road.highway%7Celement:geometry%7Ccolor:0x3c3c3c&style=feature:water%7Celement:geometry%7Ccolor:0x000000&key=${import.meta.env.PUBLIC_GOOGLE_MAPS_KEY}`}
+        src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/footer-map/w=1280,h=340,fit=scale-down,q=80"
+        srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/footer-map/w=640,h=170,fit=scale-down,q=75 640w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/footer-map/w=1280,h=340,fit=scale-down,q=80 1280w"
+        sizes="100vw"
         alt="Map showing Sunny & Ranney at 109A Oak Street, Roswell, GA"
         class="footer__map"
-        width="1200"
-        height="320"
+        width="1280"
+        height="340"
         loading="lazy"
         decoding="async"
+        fetchpriority="low"
       />
+      <span class="footer__map-cta">Open in Google Maps</span>
     </a>
   </div>
 
@@ -260,6 +264,19 @@ const currentYear = new Date().getFullYear();
 
   .footer__map-link {
     display: block;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .footer__map-link:hover .footer__map,
+  .footer__map-link:focus-visible .footer__map {
+    transform: scale(1.02);
+    filter: brightness(1.15);
+  }
+
+  .footer__map-link:focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: -2px;
   }
 
   .footer__map {
@@ -267,6 +284,30 @@ const currentYear = new Date().getFullYear();
     height: auto;
     display: block;
     object-fit: cover;
-    max-height: 320px;
+    aspect-ratio: 1280 / 340;
+    transition: transform 0.4s ease, filter 0.4s ease;
+  }
+
+  .footer__map-cta {
+    position: absolute;
+    bottom: var(--space-sm);
+    right: var(--space-md);
+    background: rgba(0, 0, 0, 0.7);
+    color: var(--color-cream);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+  }
+
+  .footer__map-link:hover .footer__map-cta,
+  .footer__map-link:focus-visible .footer__map-cta {
+    opacity: 1;
+    transform: translateY(0);
   }
 </style>

@@ -230,14 +230,23 @@ const categories = [
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 12px;
-    height: 52px;
+    padding: 0 8px;
+    height: 48px;
     border-bottom: 1px solid var(--color-cream-dark);
   }
 
   .nav__mobile-header .nav__logo-img {
     height: 32px;
     width: auto;
+  }
+
+  /* 44px minimum touch target for mobile cart */
+  .nav__mobile-header .nav__cart {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   @media (min-width: 768px) {
@@ -247,8 +256,20 @@ const categories = [
   /* ─── Mobile Search Bar ──────────────────── */
   .nav__mobile-topbar {
     display: block;
-    padding: 8px 12px;
+    padding: 6px 12px;
     background: var(--color-cream);
+    transition: transform 0.25s ease, opacity 0.25s ease;
+    will-change: transform, opacity;
+  }
+
+  /* Hide search bar on scroll to reclaim viewport space */
+  .nav--scrolled .nav__mobile-topbar {
+    transform: translateY(-100%);
+    opacity: 0;
+    height: 0;
+    padding: 0;
+    overflow: hidden;
+    pointer-events: none;
   }
 
   .nav__mobile-topbar-inner {
@@ -559,8 +580,11 @@ const categories = [
 
   @media (max-width: 767px) {
     .nav__cat-link {
-      padding: 0.5rem 0.85rem;
+      padding: 0.75rem 0.85rem;
       font-size: 0.7rem;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
     }
   }
 
@@ -845,4 +869,19 @@ const categories = [
 
   updateActiveTab();
   document.addEventListener('astro:after-swap', updateActiveTab);
+
+  // ─── Auto-scroll active category into view on mobile ────
+  function scrollActiveTabIntoView() {
+    const activeLink = document.querySelector('.nav__cat-link--active') as HTMLElement;
+    if (!activeLink) return;
+    const container = activeLink.closest('.nav__categories') as HTMLElement;
+    if (!container) return;
+    // Center the active tab in the scrollable area
+    const scrollLeft = activeLink.offsetLeft - (container.clientWidth / 2) + (activeLink.offsetWidth / 2);
+    container.scrollTo({ left: Math.max(0, scrollLeft), behavior: 'smooth' });
+  }
+
+  // Run after initial load and after navigation
+  requestAnimationFrame(scrollActiveTabIntoView);
+  document.addEventListener('astro:after-swap', () => requestAnimationFrame(scrollActiveTabIntoView));
 </script>
