@@ -23,8 +23,6 @@
 # Favicons & manifest — cache for 1 week (rarely change)
 /favicon.ico
   Cache-Control: public, max-age=604800, stale-while-revalidate=86400
-/favicon.svg
-  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
 /apple-touch-icon.png
   Cache-Control: public, max-age=604800, stale-while-revalidate=86400
 /site.webmanifest
@@ -53,4 +51,4 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   X-XSS-Protection: 1; mode=block
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://maps.googleapis.com; style-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://cdn.shopify.com https://imagedelivery.net https://maps.gstatic.com https://maps.googleapis.com data:; connect-src 'self' https://*.myshopify.com https://maps.googleapis.com; frame-src https://www.google.com/maps/; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' https://cdn.shopify.com https://imagedelivery.net data:; connect-src 'self' https://*.myshopify.com; frame-ancestors 'none'

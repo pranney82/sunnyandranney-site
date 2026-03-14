@@ -13,6 +13,7 @@ interface Props {
   description?: string;
   image?: string;
   type?: 'website' | 'article' | 'product';
+  lcpImage?: string;
   product?: {
     name: string;
     price: string;
@@ -33,7 +34,6 @@ const props = Astro.props;
     <meta name="generator" content={Astro.generator} />
     <!-- Favicon: full browser + device coverage -->
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#FAF7F2" />
@@ -50,6 +50,11 @@ const props = Astro.props;
     <!-- Preload critical fonts (eliminates FOIT, avoids render-blocking chain) -->
     <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/TheSeasons-Regular.woff2" as="font" type="font/woff2" crossorigin />
+
+    {/* Preload LCP image when provided by page */}
+    {props.lcpImage && (
+      <link rel="preload" href={props.lcpImage} as="image" fetchpriority="high" />
+    )}
   </head>
   <body>
     <a href="#main-content" class="skip-to-content">Skip to content</a>

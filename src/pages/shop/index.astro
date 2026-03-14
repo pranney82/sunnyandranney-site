@@ -42,11 +42,17 @@ try {
 } catch (e) {
   console.log('Shopify API not configured. Showing placeholder shop.');
 }
+
+// Preload the first product image as LCP candidate
+const lcpImage = products[0]?.images?.edges[0]?.node?.url
+  ? shopifyImageUrl(products[0].images.edges[0].node.url, 600)
+  : undefined;
 ---
 
 <Base
   title={collectionTitle ? `${collectionTitle} — Sunny & Ranney` : "Shop Our Collection"}
   description="Browse curated designer furniture, home decor, lighting, and gifts at Sunny & Ranney. Every purchase supports kids with special needs through Sunshine on a Ranney Day."
+  lcpImage={lcpImage}
 >
   <!-- ═══ SHOP HERO ═══ -->
   <section class="shop-hero">

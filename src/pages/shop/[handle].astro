@@ -44,6 +44,7 @@ if (notFound) {
 const images = product.images.edges.map((e: any) => e.node);
 const variants = product.variants.edges.map((e: any) => e.node);
 const mainImage = images[0];
+const lcpImage = mainImage ? shopifyImageUrl(mainImage.url, 900) : undefined;
 const price = product.priceRange.minVariantPrice;
 const compareAt = product.compareAtPriceRange?.minVariantPrice;
 const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.amount);
@@ -53,6 +54,7 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
   title={product.seo?.title || product.title}
   description={product.seo?.description || product.description?.slice(0, 160)}
   image={mainImage?.url}
+  lcpImage={lcpImage}
   type="product"
   product={{
     name: product.title,

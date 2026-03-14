@@ -653,9 +653,24 @@ const categories = [
   // ─── Shared typeahead engine ────────────────────
   type Product = { title: string; handle: string; price: string; image: string; type: string };
   let productIndex: Product[] | null = null;
+  const SEARCH_CACHE_KEY = 'sr_search_idx';
+  const SEARCH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   async function loadProductIndex(): Promise<Product[]> {
     if (productIndex) return productIndex;
+
+    // Check sessionStorage cache first (survives View Transitions)
+    try {
+      const cached = sessionStorage.getItem(SEARCH_CACHE_KEY);
+      if (cached) {
+        const { data, ts } = JSON.parse(cached);
+        if (Date.now() - ts < SEARCH_CACHE_TTL) {
+          productIndex = data;
+          return productIndex!;
+        }
+      }
+    } catch { /* sessionStorage unavailable */ }
+
     try {
       const domain = (window as any).__SHOPIFY_DOMAIN || 'sunnyandranney.myshopify.com';
       const token = (window as any).__SHOPIFY_TOKEN || '';
@@ -667,7 +682,7 @@ const categories = [
           'X-Shopify-Storefront-Access-Token': token,
         },
         body: JSON.stringify({
-          query: `{ products(first: 100, sortKey: BEST_SELLING) { edges { node { title handle productType priceRange { minVariantPrice { amount } } images(first: 1) { edges { node { url } } } } } } }`
+          query: `{ products(first: 50, sortKey: BEST_SELLING) { edges { node { title handle productType priceRange { minVariantPrice { amount } } images(first: 1) { edges { node { url } } } } } } }`
         }),
       });
       const json = await res.json();
@@ -678,6 +693,12 @@ const categories = [
         image: e.node.images.edges[0]?.node?.url || '',
         type: (e.node.productType || '').toLowerCase(),
       }));
+
+      // Cache in sessionStorage
+      try {
+        sessionStorage.setItem(SEARCH_CACHE_KEY, JSON.stringify({ data: productIndex, ts: Date.now() }));
+      } catch { /* quota exceeded — fine, just skip */ }
+
       return productIndex!;
     } catch {
       return [];
@@ -752,7 +773,7 @@ const categories = [
         const items = await loadProductIndex();
         renderSuggestions(suggestEl, q, items);
         input.setAttribute('aria-expanded', suggestEl.style.display !== 'none' ? 'true' : 'false');
-      }, 200);
+      }, 300);
     });
 
     // Keyboard navigation
@@ -818,7 +839,9 @@ const categories = [
       }, 4000);
     }
   }
-  startBanner();
+  // Defer banner start — not critical for first paint
+  const scheduleIdle = window.requestIdleCallback || ((cb: () => void) => setTimeout(cb, 200));
+  scheduleIdle(startBanner);
 
   // ─── Sync mobile cart badge ────────────────────
   function syncMobileCartBadge() {
@@ -842,7 +865,7 @@ const categories = [
     update();
   }
 
-  syncMobileCartBadge();
+  scheduleIdle(syncMobileCartBadge);
   document.addEventListener('astro:after-swap', syncMobileCartBadge);
 
   // ─── Update active tab on client after persist ────

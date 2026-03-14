@@ -136,8 +136,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const ai = runtime?.env?.AI;
 
     if (!ai) {
+      console.error('AI binding missing. runtime keys:', Object.keys(runtime || {}), 'env keys:', Object.keys(runtime?.env || {}));
       return new Response(
-        JSON.stringify({ error: 'AI binding not available. Make sure AI is enabled in wrangler.toml.' }),
+        JSON.stringify({ error: 'AI binding not available. Make sure AI is enabled in wrangler.toml and Cloudflare dashboard.' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -155,8 +156,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err: any) {
-    console.error('Chat API error:', err);
-    return new Response(JSON.stringify({ error: 'Something went wrong. Please try again.' }), {
+    console.error('Chat API error:', err?.message, err?.stack, JSON.stringify(err));
+    return new Response(JSON.stringify({ error: 'Something went wrong. Please try again.', debug: err?.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

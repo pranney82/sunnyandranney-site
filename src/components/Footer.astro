@@ -81,14 +81,20 @@ const currentYear = new Date().getFullYear();
   </div>
 
   <div class="footer__map-strip container">
-    <iframe
-      src="https://www.google.com/maps/embed/v1/place?key=AIzaSyDHmo_VDM1c6aW8CCMfLvM-EIZTN6IvAU0&q=Sunny+%26+Ranney,+109A+Oak+Street,+Roswell,+GA+30075&zoom=15"
-      class="footer__map"
-      title="Sunny & Ranney location — 109A Oak Street, Roswell, GA"
-      loading="lazy"
-      referrerpolicy="no-referrer-when-downgrade"
-      allowfullscreen
-    ></iframe>
+    <div class="footer__map-facade" id="map-facade">
+      <a
+        href="https://www.google.com/maps/place/Sunny+%26+Ranney/@34.02335,-84.36175,15z"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="footer__map-link"
+      >
+        <div class="footer__map-placeholder">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span class="footer__map-label">109A Oak Street, Roswell, GA 30075</span>
+          <span class="footer__map-action">Tap to open in Google Maps</span>
+        </div>
+      </a>
+    </div>
   </div>
 
   <div class="footer__bottom container">
@@ -247,6 +253,52 @@ const currentYear = new Date().getFullYear();
   .footer__map-strip {
     padding-top: var(--space-md);
     padding-bottom: var(--space-md);
+  }
+
+  .footer__map-facade {
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .footer__map-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .footer__map-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 2.5rem 1.5rem;
+    background: #3a3a3a;
+    border-radius: 8px;
+    text-align: center;
+    transition: background 0.3s;
+  }
+
+  .footer__map-placeholder:hover {
+    background: #444;
+  }
+
+  .footer__map-placeholder svg {
+    color: var(--color-gold);
+  }
+
+  .footer__map-label {
+    font-size: 0.95rem;
+    color: var(--color-cream);
+    font-weight: 500;
+  }
+
+  .footer__map-action {
+    font-size: 0.75rem;
+    color: var(--color-gold);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 
   .footer__map {
