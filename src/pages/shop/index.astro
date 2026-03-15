@@ -1,5 +1,6 @@
 ---
 import Base from '@/layouts/Base.astro';
+import { cfImage, cfSrcset, SIZES } from '@/lib/images';
 
 export const prerender = false;
 
@@ -13,13 +14,9 @@ let hasShopify = false;
 let hasNextPage = false;
 let endCursor = '';
 let collectionTitle = '';
-let shopifyImageUrl: (url: string, w?: number, h?: number) => string = (url) => url;
-let shopifyImageSrcset: (url: string, widths?: number[]) => string = () => '';
 
 try {
   const shopify = await import('@/lib/shopify');
-  shopifyImageUrl = shopify.shopifyImageUrl;
-  shopifyImageSrcset = shopify.shopifyImageSrcset;
 
   if (collectionHandle) {
     const collection = await shopify.getCollectionByHandle(collectionHandle, 100);
@@ -43,10 +40,36 @@ try {
   console.log('Shopify API not configured. Showing placeholder shop.');
 }
 
-// Preload the first product image as LCP candidate
+// Preload the first product image as LCP candidate (CF Images: AVIF/WebP auto)
 const lcpImage = products[0]?.images?.edges[0]?.node?.url
-  ? shopifyImageUrl(products[0].images.edges[0].node.url, 600)
+  ? cfImage(products[0].images.edges[0].node.url, { width: 600 })
   : undefined;
+
+// ItemList structured data for SEO (top 1% shops have this)
+const itemListSchema = hasShopify ? {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: collectionTitle || 'Shop All Products',
+  numberOfItems: products.length,
+  itemListElement: products.slice(0, 50).map((p: any, i: number) => ({
+    '@type': 'ListItem',
+    position: i + 1,
+    item: {
+      '@type': 'Product',
+      name: p.title,
+      url: `https://sunnyandranney.com/shop/${p.handle}`,
+      image: p.images.edges[0]?.node?.url || '',
+      offers: {
+        '@type': 'Offer',
+        price: parseFloat(p.priceRange.minVariantPrice.amount).toFixed(2),
+        priceCurrency: p.priceRange.minVariantPrice.currencyCode,
+        availability: p.availableForSale
+          ? 'https://schema.org/InStock'
+          : 'https://schema.org/OutOfStock',
+      },
+    },
+  })),
+} : null;
 ---
 
 <Base
@@ -54,6 +77,10 @@ const lcpImage = products[0]?.images?.edges[0]?.node?.url
   description="Browse curated designer furniture, home decor, lighting, and gifts at Sunny & Ranney. Every purchase supports kids with special needs through Sunshine on a Ranney Day."
   lcpImage={lcpImage}
 >
+  {/* ItemList structured data for rich results */}
+  {itemListSchema && (
+    <script type="application/ld+json" set:html={JSON.stringify(itemListSchema)} />
+  )}
   <!-- ═══ SHOP HERO ═══ -->
   <section class="shop-hero">
     <div class="container shop-hero__inner">
@@ -196,10 +223,10 @@ const lcpImage = products[0]?.images?.edges[0]?.node?.url
                     {image ? (
                       <>
                         <img
-                          src={shopifyImageUrl(image.url, 600)}
-                          srcset={shopifyImageSrcset(image.url, [300, 600, 900])}
-                          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                          alt=""
+                          src={cfImage(image.url, { width: 600 })}
+                          srcset={cfSrcset(image.url, [300, 600, 900])}
+                          sizes={SIZES.gridCard}
+                          alt={image.altText || product.title}
                           width={image.width}
                           height={image.height}
                           loading={idx < 4 ? 'eager' : 'lazy'}
@@ -209,10 +236,10 @@ const lcpImage = products[0]?.images?.edges[0]?.node?.url
                         />
                         {image2 && (
                           <img
-                            src={shopifyImageUrl(image2.url, 600)}
-                            srcset={shopifyImageSrcset(image2.url, [300, 600, 900])}
-                            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                            alt=""
+                            src={cfImage(image2.url, { width: 600 })}
+                            srcset={cfSrcset(image2.url, [300, 600, 900])}
+                            sizes={SIZES.gridCard}
+                            alt={image2.altText || `${product.title} - alternate view`}
                             width={image2.width}
                             height={image2.height}
                             loading="lazy"
@@ -749,14 +776,79 @@ const lcpImage = products[0]?.images?.edges[0]?.node?.url
     left: 190px;
   }
 
+  /* ─── Card entrance animation ────────── */
+  .product-card {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.45s var(--ease-out),
+                transform 0.45s var(--ease-out),
+                box-shadow var(--duration) var(--ease-out);
+  }
+
+  .product-card.card-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .product-card {
+      opacity: 1;
+      transform: none;
+      transition: box-shadow var(--duration) var(--ease-out);
+    }
+  }
+
+  /* ─── Skeleton loading shimmer ─────── */
+  .skeleton-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    .skeleton-grid { grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+  }
+
+  .skeleton-card {
+    background: var(--color-warm-white);
+    overflow: hidden;
+  }
+
+  .skeleton-card__image {
+    aspect-ratio: 1;
+    background: linear-gradient(90deg, var(--color-cream-dark) 25%, var(--color-warm-white) 50%, var(--color-cream-dark) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  .skeleton-card__info {
+    padding: 1rem;
+  }
+
+  .skeleton-card__line {
+    height: 12px;
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--color-cream-dark) 25%, var(--color-warm-white) 50%, var(--color-cream-dark) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    margin-bottom: 0.5rem;
+  }
+
+  .skeleton-card__line:nth-child(1) { width: 40%; height: 8px; }
+  .skeleton-card__line:nth-child(2) { width: 80%; }
+  .skeleton-card__line:nth-child(3) { width: 35%; }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
   /* ─── Enhanced Product Card ───────────── */
   .product-card {
     position: relative;
     display: flex;
     flex-direction: column;
     background: var(--color-warm-white);
-    transition: transform var(--duration) var(--ease-out),
-                box-shadow var(--duration) var(--ease-out);
     overflow: hidden;
   }
 
@@ -1660,9 +1752,14 @@ const lcpImage = products[0]?.images?.edges[0]?.node?.url
   let qvImages: string[] = [];
   let qvCurrentImage = 0;
 
+  // CF Images for Quick View (AVIF/WebP auto-format)
   function qvOptimize(url: string) {
-    if (!url || !url.includes('cdn.shopify.com')) return url;
-    return url.includes('?') ? `${url}&width=600` : `${url}?width=600`;
+    if (!url) return url;
+    // In production, route through CF Image Resizing
+    if (url.includes('cdn.shopify.com')) {
+      return `${window.location.origin}/cdn-cgi/image/width=600,quality=80,fit=cover,format=auto/${url}`;
+    }
+    return url;
   }
 
   function openQuickView(data: any) {
@@ -1821,6 +1918,42 @@ const lcpImage = products[0]?.images?.edges[0]?.node?.url
     openQuickView(btn.dataset);
   });
 
+  // ─── Staggered card entrance animation ────────
+  function observeCards() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const card = entry.target as HTMLElement;
+          // Stagger based on visible position within viewport batch
+          const rect = card.getBoundingClientRect();
+          const col = Math.floor((rect.left / window.innerWidth) * 4);
+          card.style.transitionDelay = `${col * 60}ms`;
+          card.classList.add('card-visible');
+          observer.unobserve(card);
+        }
+      });
+    }, { threshold: 0.05, rootMargin: '50px' });
+
+    getCards().forEach(card => {
+      if (card.style.display !== 'none') {
+        observer.observe(card);
+      }
+    });
+  }
+
+  // Re-observe after filter/sort/load-more
+  const _origApplyAll = applyAll;
+  function applyAllWithAnimation() {
+    _origApplyAll();
+    requestAnimationFrame(() => observeCards());
+  }
+  // Monkey-patch references
+  loadMoreBtn?.addEventListener('click', () => {
+    requestAnimationFrame(() => observeCards());
+  });
+
   // ─── Initial render ─────────────────────────
   applyAll();
+  observeCards();
 </script>

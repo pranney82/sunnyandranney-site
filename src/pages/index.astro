@@ -913,7 +913,7 @@ const featuredProducts = products.slice(0, 8);
   @media (min-width: 640px) {
     .services__grid {
       grid-template-columns: repeat(3, 1fr);
-      gap: var(--space-2xl);
+      gap: var(--space-lg);
     }
   }
 
@@ -922,11 +922,18 @@ const featuredProducts = products.slice(0, 8);
     display: flex;
     flex-direction: column;
     align-items: center;
+    padding: var(--space-lg) var(--space-md);
+    border-radius: 12px;
+    transition: background 0.3s;
+  }
+
+  .services__item:hover {
+    background: rgba(255,255,255,0.6);
   }
 
   .services__icon-wrap {
-    width: 68px;
-    height: 68px;
+    width: 72px;
+    height: 72px;
     border-radius: 50%;
     background: var(--color-cyan);
     color: white;
@@ -934,12 +941,12 @@ const featuredProducts = products.slice(0, 8);
     align-items: center;
     justify-content: center;
     margin-bottom: var(--space-md);
-    transition: transform 0.4s var(--ease-out), box-shadow 0.4s;
+    transition: transform 0.5s var(--ease-out), box-shadow 0.5s;
   }
 
   .services__item:hover .services__icon-wrap {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 28px rgba(74,163,188,0.25);
+    transform: scale(1.06);
+    box-shadow: 0 12px 32px rgba(74,163,188,0.2);
   }
 
   .services__title {

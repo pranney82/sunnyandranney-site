@@ -3,6 +3,7 @@ export const prerender = false;
 
 import Base from '@/layouts/Base.astro';
 import GoogleReviews from '@/components/GoogleReviews.astro';
+import { cfImage, cfSrcset, SIZES } from '@/lib/images';
 
 const { handle } = Astro.params;
 
@@ -10,13 +11,8 @@ let product: any = null;
 let notFound = false;
 let relatedProducts: any[] = [];
 
-let shopifyImageUrl: (url: string, w?: number, h?: number) => string = (url) => url;
-let shopifyImageSrcset: (url: string, widths?: number[]) => string = () => '';
-
 try {
-  const { getProductByHandle, getProductRecommendations, getProductsByType, shopifyImageUrl: siu, shopifyImageSrcset: sis } = await import('@/lib/shopify');
-  shopifyImageUrl = siu;
-  shopifyImageSrcset = sis;
+  const { getProductByHandle, getProductRecommendations, getProductsByType } = await import('@/lib/shopify');
   product = await getProductByHandle(handle!);
   if (!product) {
     notFound = true;
@@ -44,7 +40,7 @@ if (notFound) {
 const images = product.images.edges.map((e: any) => e.node);
 const variants = product.variants.edges.map((e: any) => e.node);
 const mainImage = images[0];
-const lcpImage = mainImage ? shopifyImageUrl(mainImage.url, 900) : undefined;
+const lcpImage = mainImage ? cfImage(mainImage.url, { width: 900 }) : undefined;
 const price = product.priceRange.minVariantPrice;
 const compareAt = product.compareAtPriceRange?.minVariantPrice;
 const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.amount);
@@ -86,9 +82,9 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
           <div class="pdp-gallery__main" id="gallery-main">
             {mainImage ? (
               <img
-                src={shopifyImageUrl(mainImage.url, 900)}
-                srcset={shopifyImageSrcset(mainImage.url, [450, 900, 1400])}
-                sizes="(max-width: 768px) 100vw, 50vw"
+                src={cfImage(mainImage.url, { width: 900 })}
+                srcset={cfSrcset(mainImage.url, [450, 900, 1400])}
+                sizes={SIZES.pdpMain}
                 alt={mainImage.altText || product.title}
                 width={mainImage.width}
                 height={mainImage.height}
@@ -128,7 +124,7 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
                     data-alt={img.altText || product.title}
                     data-idx={i}
                   >
-                    <img src={shopifyImageUrl(img.url, 150)} alt={img.altText || `${product.title} ${i + 1}`} loading="lazy" />
+                    <img src={cfImage(img.url, { width: 150 })} alt={img.altText || `${product.title} ${i + 1}`} loading="lazy" />
                   </button>
                 ))}
               </div>
@@ -306,7 +302,7 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
         <div class="fbt-row reveal">
           <div class="fbt-item fbt-item--current">
             <div class="fbt-item__image">
-              {mainImage && <img src={shopifyImageUrl(mainImage.url, 300)} alt={product.title} loading="lazy" />}
+              {mainImage && <img src={cfImage(mainImage.url, { width: 300 })} alt={product.title} loading="lazy" />}
             </div>
             <span class="fbt-item__name">{product.title}</span>
             <span class="fbt-item__price">${parseFloat(price.amount).toFixed(2)}</span>
@@ -328,7 +324,7 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
                     data-handle={rp.handle}
                   />
                   <a href={`/shop/${rp.handle}`} class="fbt-item__image">
-                    {rpImage && <img src={shopifyImageUrl(rpImage.url, 300)} alt={rp.title} loading="lazy" />}
+                    {rpImage && <img src={cfImage(rpImage.url, { width: 300 })} alt={rp.title} loading="lazy" />}
                   </a>
                   <a href={`/shop/${rp.handle}`} class="fbt-item__name">{rp.title}</a>
                   <span class="fbt-item__price">${parseFloat(rpPrice.amount).toFixed(2)}</span>
@@ -362,7 +358,7 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
               <a href={`/shop/${rp.handle}`} class="related-card">
                 <div class="related-card__image">
                   {rpImage && (
-                    <img src={shopifyImageUrl(rpImage.url, 400)} alt={rpImage.altText || rp.title} loading="lazy" decoding="async" />
+                    <img src={cfImage(rpImage.url, { width: 400 })} alt={rpImage.altText || rp.title} loading="lazy" decoding="async" />
                   )}
                 </div>
                 <div class="related-card__info">
@@ -1271,6 +1267,12 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
   const stickyAdd = document.getElementById('sticky-add');
   const stickyPrice = document.getElementById('sticky-price');
 
+  // ─── CF Image Resizing for client-side image swaps ──
+  function cfImg(url: string, width = 900) {
+    if (!url || !url.includes('cdn.shopify.com')) return url;
+    return `${window.location.origin}/cdn-cgi/image/width=${width},quality=80,fit=cover,format=auto/${url}`;
+  }
+
   // ─── Image data ─────────────────────────────
   const imageUrls = Array.from(thumbs).map(t => (t as HTMLElement).dataset.url || '');
   if (mainImg && !imageUrls.length) imageUrls.push(mainImg.src);
@@ -1291,12 +1293,51 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
       if (mainImg) {
         mainImg.style.opacity = '0';
         setTimeout(() => {
-          mainImg.src = imageUrls[i];
+          mainImg.src = cfImg(imageUrls[i]);
           mainImg.style.opacity = '1';
         }, 150);
       }
     });
   });
+
+  // ─── Mobile swipe on gallery ───────────────
+  if (galleryMain && imageUrls.length > 1) {
+    let swipeStartX = 0;
+    let swipeStartY = 0;
+    let swiping = false;
+
+    galleryMain.addEventListener('touchstart', (e: TouchEvent) => {
+      swipeStartX = e.touches[0].clientX;
+      swipeStartY = e.touches[0].clientY;
+      swiping = true;
+    }, { passive: true });
+
+    galleryMain.addEventListener('touchend', (e: TouchEvent) => {
+      if (!swiping) return;
+      swiping = false;
+      const dx = e.changedTouches[0].clientX - swipeStartX;
+      const dy = e.changedTouches[0].clientY - swipeStartY;
+      // Only trigger on horizontal swipe > 50px with horizontal > vertical
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        const newIdx = dx < 0
+          ? Math.min(currentImageIdx + 1, imageUrls.length - 1)
+          : Math.max(currentImageIdx - 1, 0);
+        if (newIdx !== currentImageIdx) {
+          currentImageIdx = newIdx;
+          syncDots(currentImageIdx);
+          thumbs.forEach(t => t.classList.remove('pdp-thumb--active'));
+          thumbs[currentImageIdx]?.classList.add('pdp-thumb--active');
+          if (mainImg) {
+            mainImg.style.opacity = '0';
+            setTimeout(() => {
+              mainImg.src = cfImg(imageUrls[currentImageIdx]);
+              mainImg.style.opacity = '1';
+            }, 150);
+          }
+        }
+      }
+    }, { passive: true });
+  }
 
   // ─── Thumbnail gallery ──────────────────────
   thumbs.forEach((thumb, i) => {
@@ -1308,7 +1349,7 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
       if (mainImg) {
         mainImg.style.opacity = '0';
         setTimeout(() => {
-          mainImg.src = (thumb as HTMLElement).dataset.url || '';
+          mainImg.src = cfImg((thumb as HTMLElement).dataset.url || '');
           mainImg.alt = (thumb as HTMLElement).dataset.alt || '';
           mainImg.style.opacity = '1';
         }, 150);
@@ -1362,7 +1403,7 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
       if (variantImage && mainImg) {
         mainImg.style.opacity = '0';
         setTimeout(() => {
-          mainImg.src = variantImage;
+          mainImg.src = cfImg(variantImage);
           mainImg.style.opacity = '1';
         }, 150);
         // Update thumb active state
@@ -1495,10 +1536,9 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
 
   let lightboxPrevFocus: HTMLElement | null = null;
 
-  // Optimize image URL for lightbox (1400px max vs full-size)
+  // Optimize image URL for lightbox via CF Images (AVIF/WebP, 1400px)
   function optimizedUrl(url: string, width = 1400) {
-    if (!url || !url.includes('cdn.shopify.com')) return url;
-    return url.includes('?') ? `${url}&width=${width}` : `${url}?width=${width}`;
+    return cfImg(url, width);
   }
 
   function openLightbox(idx: number) {
@@ -1580,7 +1620,7 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
       if (mainImg) {
         mainImg.style.opacity = '0';
         setTimeout(() => {
-          mainImg.src = imageUrls[currentImageIdx];
+          mainImg.src = cfImg(imageUrls[currentImageIdx]);
           mainImg.style.opacity = '1';
         }, 150);
       }

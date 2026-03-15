@@ -4,7 +4,7 @@ import sitemap from '@astrojs/sitemap';
 
 export default defineConfig({
   site: 'https://sunnyandranney.com',
-  output: 'hybrid',
+  output: 'static',
   adapter: cloudflare(),
   integrations: [
     sitemap(),
