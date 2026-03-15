@@ -15,22 +15,18 @@ const FEATURED_HANDLES = [
   'bedroom-furniture',
   'coffee-tables',
   'consoles-sideboards-sofa-tables',
-  'desks',
   'dining-tables',
-  'dining-chairs',
-  'ottoman-benches',
   'sofas',
   'sectionals',
-  'gift-cards',
 ];
 
 try {
-  const result = await getProducts(24);
+  const result = await getProducts(8);
   products = result.products;
   hasShopify = products.length > 0;
 
   // Fetch collections and filter/sort to match Shopify homepage order
-  const allCollections = await getCollections(20);
+  const allCollections = await getCollections(10);
   const handleOrder = new Map(FEATURED_HANDLES.map((h, i) => [h, i]));
   collections = allCollections
     .filter((c: any) => handleOrder.has(c.handle))
@@ -82,7 +78,7 @@ const featuredProducts = products.slice(0, 8);
           <img
             src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=480,h=600,fit=cover,q=80,format=auto"
             srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=320,h=400,fit=cover,q=75,format=auto 320w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=480,h=600,fit=cover,q=80,format=auto 480w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=640,h=800,fit=cover,q=80,format=auto 640w"
-            sizes="(max-width: 767px) 260px, (max-width: 1023px) 340px, 420px"
+            sizes="(max-width: 767px) 240px, (max-width: 1023px) 340px, 380px"
             alt="Sunshine on a Ranney Day room makeover"
             width="480"
             height="600"
@@ -169,14 +165,14 @@ const featuredProducts = products.slice(0, 8);
               <div class="product-card" data-type={product.productType.toLowerCase()}>
                 {isOnSale && <span class="product-card__badge">Sale</span>}
                 {!isOnSale && !product.availableForSale && <span class="product-card__badge product-card__badge--sold">Sold Out</span>}
-                <a href={`/shop/${product.handle}`} data-astro-prefetch class="product-card__image">
+                <a href={`/shop/${product.handle}`} data-astro-prefetch class="product-card__image" aria-hidden="true" tabindex="-1">
                   {image ? (
                     <>
                       <img
                         src={shopifyImageUrl(image.url, 600)}
                         srcset={shopifyImageSrcset(image.url, [300, 600, 900])}
                         sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                        alt={image.altText || product.title}
+                        alt=""
                         width={image.width}
                         height={image.height}
                         loading={idx < 4 ? 'eager' : 'lazy'}
@@ -189,7 +185,7 @@ const featuredProducts = products.slice(0, 8);
                           src={shopifyImageUrl(image2.url, 600)}
                           srcset={shopifyImageSrcset(image2.url, [300, 600, 900])}
                           sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                          alt={image2.altText || product.title}
+                          alt=""
                           width={image2.width}
                           height={image2.height}
                           loading="lazy"
@@ -231,6 +227,47 @@ const featuredProducts = products.slice(0, 8);
       </div>
     </section>
   )}
+
+  <!-- ═══ DESIGN SERVICES ═══ -->
+  <section class="services section">
+    <div class="container">
+      <div class="services__header reveal">
+        <h2 class="section-title">More Than a Furniture Store</h2>
+      </div>
+      <div class="services__grid reveal delay-1">
+        <div class="services__item">
+          <div class="services__icon-wrap">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/>
+            </svg>
+          </div>
+          <h3 class="services__title">Design Assistance</h3>
+          <p class="services__desc">Need help styling your space? Our in-house design team works with you to create rooms you'll love.</p>
+        </div>
+        <div class="services__item">
+          <div class="services__icon-wrap">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+            </svg>
+          </div>
+          <h3 class="services__title">Custom Sourcing</h3>
+          <p class="services__desc">Don't see what you're looking for? We can source furniture and decor beyond what's in our shop.</p>
+        </div>
+        <div class="services__item">
+          <div class="services__icon-wrap">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v1.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V11a2 2 0 0 0-4 0z"/><path d="M5 18v2"/><path d="M19 18v2"/>
+            </svg>
+          </div>
+          <h3 class="services__title">Custom Upholstery</h3>
+          <p class="services__desc">Choose your own fabrics and finishes. We offer customizable upholstery on select pieces.</p>
+        </div>
+      </div>
+      <div class="services__cta reveal delay-2">
+        <a href="mailto:info@sunnyandranney.com" class="btn btn--outline">Get in Touch</a>
+      </div>
+    </div>
+  </section>
 
   <!-- ═══ MISSION ═══ -->
   <section class="mission" id="mission">
@@ -280,7 +317,7 @@ const featuredProducts = products.slice(0, 8);
             const price = product.priceRange.minVariantPrice;
             const compareAt = product.compareAtPriceRange?.minVariantPrice;
             return (
-              <a href={`/shop/${product.handle}`} data-astro-prefetch class="home-scroll__card">
+              <a href={`/shop/${product.handle}`} data-astro-prefetch class="home-scroll__card" aria-label={product.title}>
                 <div class="home-scroll__image">
                   <span class="product-card__badge">Sale</span>
                   {image && (
@@ -288,7 +325,7 @@ const featuredProducts = products.slice(0, 8);
                       src={shopifyImageUrl(image.url, 400)}
                       srcset={shopifyImageSrcset(image.url, [220, 400])}
                       sizes="220px"
-                      alt={image.altText || product.title}
+                      alt=""
                       width={image.width}
                       height={image.height}
                       loading="lazy"
@@ -314,15 +351,46 @@ const featuredProducts = products.slice(0, 8);
   <!-- ═══ VISIT STRIP ═══ -->
   <section class="visit-strip section">
     <div class="container visit-strip__inner">
-      <div class="visit-strip__info">
-        <h3>Visit Our Roswell Showroom</h3>
-        <p>109A Oak Street, Roswell, GA 30075</p>
-        <p>Tue–Thu 10am–5pm &middot; Fri–Sat 10am–6pm</p>
-        <p><a href="tel:6788885140">678.888.5140</a> &middot; <a href="mailto:info@sunnyandranney.com">info@sunnyandranney.com</a></p>
+      <div class="visit-strip__gallery">
+        <div class="visit-strip__photo visit-strip__photo--exterior">
+          <img
+            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-storefront/w=600,q=80,format=auto"
+            alt="Sunny & Ranney storefront in Roswell, Georgia"
+            width="600"
+            height="450"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+        <div class="visit-strip__photo visit-strip__photo--interior">
+          <img
+            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=600,q=80,format=auto"
+            alt="Inside the Sunny & Ranney showroom"
+            width="600"
+            height="450"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
       </div>
-      <a href="https://maps.google.com/?q=109A+Oak+Street+Roswell+GA+30075" target="_blank" rel="noopener noreferrer" class="btn btn--outline">
-        Get Directions
-      </a>
+      <div class="visit-strip__details">
+        <div class="visit-strip__info">
+          <h3>Visit Our Roswell Showroom</h3>
+          <p>109A Oak Street, Roswell, GA 30075</p>
+          <p>Tue–Thu 10am–5pm &middot; Fri–Sat 10am–6pm</p>
+          <p><a href="tel:6788885140">678.888.5140</a> &middot; <a href="mailto:info@sunnyandranney.com">info@sunnyandranney.com</a></p>
+          <a href="https://maps.google.com/?q=109A+Oak+Street+Roswell+GA+30075" target="_blank" rel="noopener noreferrer" class="btn btn--outline">
+            Get Directions
+          </a>
+        </div>
+        <div class="visit-strip__map" id="map-container"
+          data-src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3306.959536766344!2d-84.36101608805403!3d34.019249573057564!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x88f50d1cd2f8a7a7%3A0xfbc05f757f3bd1c2!2sSunny%20and%20Ranney!5e0!3m2!1sen!2sus!4v1773585890662!5m2!1sen!2sus">
+          <div class="visit-strip__map-placeholder">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>Loading map…</span>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -485,16 +553,16 @@ const featuredProducts = products.slice(0, 8);
   /* Gold ribbon with inline stats */
   .hero__ribbon {
     background: var(--color-gold);
-    padding: 0.6rem 0;
+    padding: 1.1rem 0;
   }
 
   .hero__ribbon-inner {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.4rem;
+    gap: 0.6rem;
     flex-wrap: wrap;
-    font-size: 0.72rem;
+    font-size: 0.88rem;
     font-weight: 600;
     letter-spacing: 0.03em;
     color: var(--color-charcoal);
@@ -502,17 +570,17 @@ const featuredProducts = products.slice(0, 8);
 
   .hero__ribbon-stat {
     font-family: var(--font-display);
-    font-size: 0.85rem;
+    font-size: 1.25rem;
     font-weight: 700;
   }
 
   .hero__ribbon-sep {
-    width: 4px;
-    height: 4px;
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
     background: var(--color-charcoal);
-    opacity: 0.3;
-    margin: 0 0.3rem;
+    opacity: 0.35;
+    margin: 0 0.5rem;
   }
 
   /* Mobile: tighter hero so products appear faster */
@@ -569,11 +637,11 @@ const featuredProducts = products.slice(0, 8);
     }
 
     .hero__ribbon-inner {
-      font-size: 0.78rem;
+      font-size: 0.95rem;
     }
 
     .hero__ribbon-stat {
-      font-size: 0.92rem;
+      font-size: 1.4rem;
     }
   }
 
@@ -826,6 +894,76 @@ const featuredProducts = products.slice(0, 8);
   .home-scroll__price { font-weight: 600; font-size: 0.9rem; color: var(--color-charcoal); }
   .home-scroll__compare { font-size: 0.8rem; color: var(--color-stone); text-decoration: line-through; }
 
+  /* ─── Design Services ─────────────────── */
+  .services {
+    background: var(--color-cream);
+  }
+
+  .services__header {
+    text-align: center;
+  }
+
+  .services__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+    margin-top: var(--space-xl);
+  }
+
+  @media (min-width: 640px) {
+    .services__grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-2xl);
+    }
+  }
+
+  .services__item {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .services__icon-wrap {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: var(--color-cyan);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--space-md);
+    transition: transform 0.4s var(--ease-out), box-shadow 0.4s;
+  }
+
+  .services__item:hover .services__icon-wrap {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px rgba(74,163,188,0.25);
+  }
+
+  .services__title {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--color-charcoal);
+    letter-spacing: -0.01em;
+  }
+
+  .services__desc {
+    font-size: 0.88rem;
+    color: var(--color-stone);
+    line-height: 1.65;
+    max-width: 30ch;
+    margin: 0 auto;
+  }
+
+  .services__cta {
+    text-align: center;
+    margin-top: var(--space-xl);
+  }
+
   /* ─── Mission Section ──────────────────── */
   .mission {
     background: var(--color-charcoal);
@@ -883,7 +1021,7 @@ const featuredProducts = products.slice(0, 8);
     font-weight: 600;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--color-cyan);
+    color: var(--color-cyan-light);
     margin: 0 0 var(--space-sm);
   }
 
@@ -924,10 +1062,66 @@ const featuredProducts = products.slice(0, 8);
   }
 
   .visit-strip__inner {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
+
+  @media (min-width: 768px) {
+    .visit-strip__inner {
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+    }
+  }
+
+  .visit-strip__gallery {
+    position: relative;
+    /* reserve space for the overlapping interior shot */
+    padding-bottom: 2rem;
+    padding-right: 2rem;
+  }
+
+  .visit-strip__photo img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    display: block;
+    object-fit: cover;
+  }
+
+  .visit-strip__photo--exterior {
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .visit-strip__photo--interior {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 45%;
+    z-index: 2;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 3px solid var(--color-gold);
+  }
+
+  @media (max-width: 767px) {
+    .visit-strip__gallery {
+      padding-bottom: 1.5rem;
+      padding-right: 1.5rem;
+    }
+    .visit-strip__photo--interior {
+      width: 50%;
+    }
+  }
+
+  .visit-strip__details {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
     gap: var(--space-md);
   }
 
@@ -946,6 +1140,11 @@ const featuredProducts = products.slice(0, 8);
 
   .visit-strip__info a { color: var(--color-charcoal); font-weight: 600; }
 
+  .visit-strip__info .btn--outline {
+    margin-top: var(--space-sm);
+    display: inline-block;
+  }
+
   .visit-strip .btn--outline {
     border-color: var(--color-charcoal);
     color: var(--color-charcoal);
@@ -955,6 +1154,30 @@ const featuredProducts = products.slice(0, 8);
   .visit-strip .btn--outline:hover {
     background: var(--color-charcoal);
     color: var(--color-gold);
+  }
+
+  .visit-strip__map {
+    width: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .visit-strip__map iframe {
+    display: block;
+    width: 100%;
+  }
+
+  .visit-strip__map-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 250px;
+    background: #e8d9a0;
+    border-radius: 8px;
+    color: var(--color-charcoal);
+    font-size: 0.85rem;
   }
 
   /* ─── Product card add to cart (homepage) ── */
@@ -971,7 +1194,7 @@ const featuredProducts = products.slice(0, 8);
     text-transform: uppercase;
     border: none;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: background-color 0.3s, color 0.3s;
   }
 
   .product-card__add-btn:hover {
@@ -1175,4 +1398,32 @@ const featuredProducts = products.slice(0, 8);
       (btn as HTMLButtonElement).disabled = false;
     }, 1500);
   });
+
+  // ─── Lazy-load Google Maps iframe on scroll ───
+  const mapContainer = document.getElementById('map-container');
+  if (mapContainer) {
+    const mapSrc = mapContainer.dataset.src;
+    const loadMap = () => {
+      if (!mapSrc || mapContainer.querySelector('iframe')) return;
+      const iframe = document.createElement('iframe');
+      iframe.src = mapSrc;
+      iframe.width = '100%';
+      iframe.height = '250';
+      iframe.style.cssText = 'border:0;border-radius:8px;display:block;';
+      iframe.allowFullscreen = true;
+      iframe.referrerPolicy = 'no-referrer-when-downgrade';
+      iframe.title = 'Sunny & Ranney showroom location';
+      mapContainer.replaceChildren(iframe);
+    };
+    const idle = (cb: () => void) => 'requestIdleCallback' in window
+      ? requestIdleCallback(cb)
+      : setTimeout(cb, 1);
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        observer.disconnect();
+        idle(loadMap);
+      }
+    }, { rootMargin: '200px' });
+    observer.observe(mapContainer);
+  }
 </script>

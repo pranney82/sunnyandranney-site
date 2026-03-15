@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 
 export const prerender = false;
 
@@ -33,11 +34,9 @@ function buildEmbeddingText(node: any): string {
   ].filter(Boolean).join('. ');
 }
 
-export const POST: APIRoute = async ({ request, locals }) => {
-  const runtime = (locals as any).runtime;
-  const ai = runtime?.env?.AI;
-  const vectorize = runtime?.env?.VECTORIZE;
-  const env = runtime?.env;
+export const POST: APIRoute = async ({ request }) => {
+  const ai = env.AI;
+  const vectorize = env.VECTORIZE;
 
   if (!ai || !vectorize) {
     return new Response(JSON.stringify({ error: 'AI or Vectorize binding not available.' }), {
@@ -47,7 +46,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   // Auth: accept either Shopify HMAC signature or manual x-sync-secret header
-  const syncSecret = env.SYNC_SECRET || '';
+  const syncSecret = (env as any).SYNC_SECRET || '';
   if (syncSecret) {
     const shopifyHmac = request.headers.get('x-shopify-hmac-sha256');
     const manualSecret = request.headers.get('x-sync-secret');
@@ -161,7 +160,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     );
   } catch (err: any) {
     console.error('Product sync error:', err?.message);
-    return new Response(JSON.stringify({ error: 'Sync failed.', debug: err?.message }), {
+    return new Response(JSON.stringify({ error: 'Sync failed.' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

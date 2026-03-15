@@ -12,7 +12,7 @@
 </button>
 
 <!-- Chat panel -->
-<div id="staci-panel" aria-hidden="true">
+<div id="staci-panel" aria-hidden="true" inert>
   <div class="staci-header">
     <div class="staci-header__info">
       <div class="staci-header__avatar-wrap">
@@ -490,7 +490,6 @@
   const MAX_STORED_MESSAGES = 50;
 
   let conversationHistory: { role: string; content: string }[] = [];
-  let staciInitialized = false;
 
   // ─── Helpers ─────────────────────────────────────────────
 
@@ -657,6 +656,7 @@
     if (!panel) return;
 
     panel.setAttribute('aria-hidden', 'false');
+    panel.removeAttribute('inert');
     if (iconChat) iconChat.style.display = 'none';
     if (iconClose) iconClose.style.display = 'block';
     if (label) label.style.display = 'none';
@@ -671,6 +671,7 @@
     if (!panel) return;
 
     panel.setAttribute('aria-hidden', 'true');
+    panel.setAttribute('inert', '');
     if (iconChat) iconChat.style.display = 'block';
     if (iconClose) iconClose.style.display = 'none';
     if (label) label.style.display = '';
@@ -694,7 +695,7 @@
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: conversationHistory }),
+        body: JSON.stringify({ messages: conversationHistory.slice(-20) }),
       });
 
       removeTyping();
@@ -757,29 +758,21 @@
     if (msg) sendMessage(msg);
   });
 
-  // Form submit
-  function initStaciForm() {
-    if (staciInitialized) return;
-    const form = document.getElementById('staci-form');
+  // Form submit (delegated so it survives view transitions)
+  document.addEventListener('submit', (e) => {
+    const form = (e.target as Element).closest('#staci-form');
     if (!form) return;
-    staciInitialized = true;
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const input = document.getElementById('staci-input') as HTMLInputElement | null;
-      if (!input) return;
-      const text = input.value.trim();
-      if (!text) return;
-      input.value = '';
-      sendMessage(text);
-    });
-  }
+    e.preventDefault();
+    const input = document.getElementById('staci-input') as HTMLInputElement | null;
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    sendMessage(text);
+  });
 
   // ─── Init ─────────────────────────────────────────────────
-
-  initStaciForm();
+  // Component uses transition:persist so DOM + script state survive navigation.
+  // Only restore once on initial load — no astro:page-load needed.
   restoreSession();
-  document.addEventListener('astro:page-load', () => {
-    initStaciForm();
-    restoreSession();
-  });
 </script>

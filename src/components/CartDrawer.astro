@@ -6,7 +6,7 @@
 <div class="cart-overlay" id="cart-overlay" aria-hidden="true"></div>
 
 <!-- Cart Drawer -->
-<aside class="cart-drawer" id="cart-drawer" aria-hidden="true" aria-label="Shopping cart">
+<aside class="cart-drawer" id="cart-drawer" aria-hidden="true" inert aria-label="Shopping cart">
   <div class="cart-drawer__header">
     <h3>Your Cart <span class="cart-drawer__count" id="cart-drawer-count"></span></h3>
     <button class="cart-drawer__close" id="cart-close" aria-label="Close cart">
@@ -410,6 +410,7 @@
   function openCart() {
     previousFocus = document.activeElement;
     drawer?.setAttribute('aria-hidden', 'false');
+    drawer?.removeAttribute('inert');
     overlay?.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
     // Focus the close button
@@ -418,6 +419,7 @@
 
   function closeCart() {
     drawer?.setAttribute('aria-hidden', 'true');
+    drawer?.setAttribute('inert', '');
     overlay?.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
     // Restore focus

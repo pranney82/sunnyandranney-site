@@ -1,6 +1,12 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 
 export const prerender = false;
+
+// ─── Constants ──────────────────────────────────────────────
+const MAX_HISTORY = 20; // Only send last N messages to LLM to control token usage
+const MAX_INPUT_LENGTH = 500; // Max characters per user message
+const JSON_HEADERS = { 'Content-Type': 'application/json' } as const;
 
 // ─── Types ───────────────────────────────────────────────────
 interface Product {
@@ -10,6 +16,11 @@ interface Product {
   availableForSale: boolean;
   price: string;
   compareAtPrice: string;
+}
+
+interface ChatMessage {
+  role: string;
+  content: string;
 }
 
 // ─── System prompt (static — no catalog stuffed in) ──────────
@@ -51,10 +62,9 @@ function formatProductForLLM(meta: Product): string {
   ].filter(Boolean).join(' | ');
 }
 
-/** Build the user's latest query for embedding — uses last user message + recent context */
-function getSearchQuery(messages: { role: string; content: string }[]): string {
+/** Build the user's latest query for embedding — uses last 2 user messages for context */
+function getSearchQuery(messages: ChatMessage[]): string {
   const userMessages = messages.filter(m => m.role === 'user');
-  // Use last 2 user messages for better context
   return userMessages.slice(-2).map(m => m.content).join(' ');
 }
 
@@ -66,7 +76,6 @@ async function searchProducts(
   query: string,
   topK = 15,
 ): Promise<string> {
-  // Generate embedding for the user's query
   const embeddingResult = await ai.run('@cf/baai/bge-base-en-v1.5', {
     text: [query],
   });
@@ -74,7 +83,6 @@ async function searchProducts(
   const queryVector = embeddingResult.data?.[0];
   if (!queryVector) return 'No products found.';
 
-  // Search Vectorize for the most relevant products
   const results = await vectorize.query(queryVector, {
     topK,
     returnMetadata: 'all',
@@ -82,7 +90,6 @@ async function searchProducts(
 
   if (!results.matches?.length) return 'No matching products found.';
 
-  // Format matched products for the LLM
   const products = results.matches
     .filter((m: any) => m.metadata)
     .map((m: any) => formatProductForLLM(m.metadata as Product));
@@ -91,60 +98,69 @@ async function searchProducts(
 }
 
 // ─── API handler ─────────────────────────────────────────────
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request }) => {
   try {
-    const { messages } = await request.json();
+    const body = await request.json() as { messages?: ChatMessage[] };
+    const { messages } = body;
 
-    if (!messages || !Array.isArray(messages)) {
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: 'Messages array required' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: JSON_HEADERS,
       });
     }
 
-    const runtime = (locals as any).runtime;
-    const ai = runtime?.env?.AI;
-    const vectorize = runtime?.env?.VECTORIZE;
+    // Validate the latest user message length
+    const lastUserMsg = [...messages].reverse().find((m: ChatMessage) => m.role === 'user');
+    if (lastUserMsg && lastUserMsg.content.length > MAX_INPUT_LENGTH) {
+      return new Response(JSON.stringify({ error: 'Message too long. Please keep it under 500 characters.' }), {
+        status: 400,
+        headers: JSON_HEADERS,
+      });
+    }
+
+    const ai = env.AI;
+    const vectorize = env.VECTORIZE;
 
     if (!ai) {
       return new Response(
-        JSON.stringify({ error: 'AI binding not available.' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'AI service unavailable.' }),
+        { status: 503, headers: JSON_HEADERS }
       );
     }
+
+    // Trim conversation history to last N messages to control token usage
+    const trimmedMessages: ChatMessage[] = messages.slice(-MAX_HISTORY);
 
     // RAG: search for relevant products based on user's query
     let productContext = '';
     if (vectorize) {
-      const query = getSearchQuery(messages);
+      const query = getSearchQuery(trimmedMessages);
       productContext = await searchProducts(ai, vectorize, query);
     }
 
     // Build messages with product context injected
-    const systemMessage = { role: 'system', content: SYSTEM_PROMPT };
-    const contextMessage = productContext
-      ? { role: 'system', content: `## Relevant Products From Our Shop\n${productContext}` }
-      : null;
-
     const llmMessages = [
-      systemMessage,
-      ...(contextMessage ? [contextMessage] : []),
-      ...messages,
+      { role: 'system', content: SYSTEM_PROMPT },
+      ...(productContext
+        ? [{ role: 'system', content: `## Relevant Products From Our Shop\n${productContext}` }]
+        : []),
+      ...trimmedMessages,
     ];
 
     const response = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
       messages: llmMessages,
       max_tokens: 400,
-    });
+    }) as { response?: string };
 
     return new Response(JSON.stringify({ reply: response.response }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: JSON_HEADERS,
     });
   } catch (err: any) {
     console.error('Chat API error:', err?.message);
     return new Response(JSON.stringify({ error: 'Something went wrong. Please try again.' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: JSON_HEADERS,
     });
   }
 };
