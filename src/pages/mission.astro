@@ -13,38 +13,53 @@ try {
 } catch (e) {
   console.log('SOARD stats fetch failed, using fallback values.');
 }
+
+const kids = [
+  { name: 'Adrian', slug: 'adrian', blurb: 'Adrian dreamed of a space-themed bedroom where he could imagine exploring the stars. His new room gave him a launchpad for his biggest adventures.' },
+  { name: 'Mathew', slug: 'mathew', blurb: 'Our very first makeover — 11-year-old Mathew wanted a military-themed bunker bedroom, and bringing it to life changed everything for us and for him.' },
+  { name: 'Tripp', slug: 'tripp', blurb: 'Tripp\'s whole-home makeover drew 1.6 million viewers on WSB-TV and showed the world what a little sunshine can do.' },
+  { name: 'Ellie', slug: 'ellie', blurb: 'Ellie needed a wheelchair-accessible bathroom that was as beautiful as it was functional. Now she has both — and the independence she deserves.' },
+  { name: 'Jackson', slug: 'jackson', blurb: 'Jackson\'s in-home therapy space was designed around his daily needs, giving him a safe and joyful place to grow stronger every day.' },
+  { name: 'Sophia', slug: 'sophia', blurb: 'Sophia\'s dream bedroom is filled with the colors and characters she loves — a space that finally feels like her own.' },
+];
 ---
 
 <Base title="Our Mission — Sunny & Ranney" description="100% of Sunny & Ranney profits fund Sunshine on a Ranney Day — life-changing home makeovers for children with special needs in the greater Atlanta area.">
 
   <!-- ═══ HERO ═══ -->
   <section class="mission-hero">
+    <div class="mission-hero__bg" aria-hidden="true"></div>
     <div class="container mission-hero__inner">
-      <h1 class="mission-hero__title animate-fade-up">
+      <span class="label animate-fade-up">Our Mission</span>
+      <h1 class="mission-hero__title animate-fade-up delay-1">
         Shop with a <span class="mission-hero__accent">Purpose</span>
       </h1>
-      <p class="mission-hero__sub animate-fade-up delay-1">
+      <p class="mission-hero__sub animate-fade-up delay-2">
         100% of profits fund life-changing home makeovers for children with special needs.
       </p>
+      <hr class="divider animate-fade-up delay-3" />
+      <a href="#mission-story" class="mission-hero__scroll animate-fade-up delay-4" aria-label="Scroll to learn more">
+        <svg class="mission-hero__scroll-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+      </a>
     </div>
   </section>
 
   <!-- ═══ IMPACT STATS ═══ -->
-  <section class="mission-stats">
+  <section class="mission-stats" aria-label="Impact statistics">
     <div class="container mission-stats__inner">
-      <div class="mission-stats__stat reveal">
+      <div class="mission-stats__stat reveal" role="group" aria-label="Room makeovers completed">
         <span class="mission-stats__number">{stats.roomMakeovers.toLocaleString()}+</span>
         <span class="mission-stats__label">Room Makeovers</span>
       </div>
-      <div class="mission-stats__stat reveal delay-1">
+      <div class="mission-stats__stat reveal delay-1" role="group" aria-label="Children served">
         <span class="mission-stats__number">{stats.childrenServed.toLocaleString()}+</span>
         <span class="mission-stats__label">Children Served</span>
       </div>
-      <div class="mission-stats__stat reveal delay-2">
+      <div class="mission-stats__stat reveal delay-2" role="group" aria-label="Lives impacted">
         <span class="mission-stats__number">{stats.livesImpacted.toLocaleString()}+</span>
         <span class="mission-stats__label">Lives Impacted</span>
       </div>
-      <div class="mission-stats__stat reveal delay-3">
+      <div class="mission-stats__stat reveal delay-3" role="group" aria-label="Years of giving">
         <span class="mission-stats__number">{stats.yearsGiving}</span>
         <span class="mission-stats__label">Years Giving</span>
       </div>
@@ -52,15 +67,18 @@ try {
   </section>
 
   <!-- ═══ THE STORY ═══ -->
-  <section class="mission-story section">
+  <section class="mission-story section" id="mission-story">
     <div class="container mission-story__grid">
       <div class="mission-story__image reveal">
         <img
-          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/founders-reunion-2026/w=600,q=80"
+          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/founders-reunion-2026/w=600,h=600,fit=cover,q=80,format=auto"
+          srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/founders-reunion-2026/w=320,h=320,fit=cover,q=75,format=auto 320w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/founders-reunion-2026/w=480,h=480,fit=cover,q=80,format=auto 480w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/founders-reunion-2026/w=600,h=600,fit=cover,q=80,format=auto 600w"
+          sizes="(max-width: 767px) 90vw, 420px"
           alt="Peter and Holly Ranney, founders of Sunshine on a Ranney Day"
           width="600"
           height="600"
           loading="lazy"
+          decoding="async"
         />
       </div>
       <div class="mission-story__content reveal delay-1">
@@ -97,80 +115,156 @@ try {
       </div>
       <div class="mission-mascot__image reveal delay-1">
         <img
-          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=600,q=80"
+          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=600,h=600,fit=cover,q=80,format=auto"
+          srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=320,h=320,fit=cover,q=75,format=auto 320w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=480,h=480,fit=cover,q=80,format=auto 480w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=600,h=600,fit=cover,q=80,format=auto 600w"
+          sizes="(max-width: 767px) 90vw, 420px"
           alt="Gracie the Pig — the real pot-bellied pig that inspired SOARD's mascot"
           width="600"
           height="600"
           loading="lazy"
+          decoding="async"
         />
       </div>
     </div>
   </section>
 
-  <!-- ═══ MILESTONES ═══ -->
-  <section class="mission-timeline section">
+  <!-- ═══ KIDS STORIES — Editorial Magazine ═══ -->
+  <section class="ed section">
     <div class="container">
-      <div class="mission-timeline__header reveal">
-        <h2>Our Journey</h2>
+
+      <!-- ── Section Opener ── -->
+      <div class="ed__opener reveal">
+        <div class="ed__opener-rule" aria-hidden="true"></div>
+        <span class="ed__eyebrow">Their Stories</span>
+        <h2 class="ed__headline">The Kids Who<br/><em>Inspire</em> Us</h2>
+        <p class="ed__deck">Every room starts with a dream. These are the children who remind us why we do what we do.</p>
       </div>
-      <div class="mission-timeline__grid">
-        <div class="mission-timeline__item reveal">
-          <span class="mission-timeline__year">2012</span>
-          <h3>It All Began</h3>
-          <p>Peter and Holly Ranney complete their first room makeover for 11-year-old Mathew — and a mission is born.</p>
+
+      <!-- ── Cover Story: Kid 0 — cinematic hero with floating glass caption ── -->
+      <div class="ed__cover reveal">
+        <div class="ed__cover-frame">
+          <img
+            src={`https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/${kids[0].slug}/hero/w=1200,h=700,fit=cover,q=80,format=auto`}
+            srcset={`https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/${kids[0].slug}/hero/w=600,h=350,fit=cover,q=75,format=auto 600w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/${kids[0].slug}/hero/w=900,h=525,fit=cover,q=80,format=auto 900w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/${kids[0].slug}/hero/w=1200,h=700,fit=cover,q=80,format=auto 1200w`}
+            sizes="(max-width: 767px) 92vw, (max-width: 1024px) 88vw, 1040px"
+            alt={`${kids[0].name} in their transformed room`}
+            width="1200" height="700" loading="lazy" decoding="async"
+          />
+          <span class="ed__num" aria-hidden="true">01</span>
         </div>
-        <div class="mission-timeline__item reveal delay-1">
-          <span class="mission-timeline__year">2013</span>
-          <h3>National Attention</h3>
-          <p>A whole-home makeover for Tripp Halstead draws 1.6 million viewers on WSB-TV's livestream, putting SOARD on the map.</p>
-        </div>
-        <div class="mission-timeline__item reveal delay-2">
-          <span class="mission-timeline__year">2016</span>
-          <h3>The Today Show</h3>
-          <p>Featured on NBC's Today Show for creating parent sleep rooms at Children's Healthcare of Atlanta.</p>
-        </div>
-        <div class="mission-timeline__item reveal delay-3">
-          <span class="mission-timeline__year">2018</span>
-          <h3>Community Heroes</h3>
-          <p>Holly and Peter are honored as Atlanta Braves Community Heroes for their impact on children's lives.</p>
-        </div>
-        <div class="mission-timeline__item reveal delay-4">
-          <span class="mission-timeline__year">2020</span>
-          <h3>Sunny & Ranney Opens</h3>
-          <p>The nonprofit furnishings store opens in Roswell, GA — 100% of profits fund room makeovers.</p>
-        </div>
-        <div class="mission-timeline__item reveal delay-5">
-          <span class="mission-timeline__year">2024</span>
-          <h3>100+ Rooms</h3>
-          <p>Surpassed the 100-room milestone, with 269+ total makeovers completed and counting.</p>
+        <div class="ed__cover-glass">
+          <span class="ed__tag">Cover Story</span>
+          <h3 class="ed__cover-name">{kids[0].name}</h3>
+          <div class="ed__cover-rule" aria-hidden="true"></div>
+          <p>{kids[0].blurb}</p>
         </div>
       </div>
+
+      <!-- ── Editorial Spread: Kids 1 & 2 — asymmetric with text columns ── -->
+      <div class="ed__spread reveal">
+        <div class="ed__spread-left">
+          <div class="ed__spread-img">
+            <img
+              src={`https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/${kids[1].slug}/hero/w=600,h=800,fit=cover,q=80,format=auto`}
+              srcset={`https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/${kids[1].slug}/hero/w=400,h=533,fit=cover,q=75,format=auto 400w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/${kids[1].slug}/hero/w=600,h=800,fit=cover,q=80,format=auto 600w`}
+              sizes="(max-width: 767px) 92vw, 55vw"
+              alt={`${kids[1].name} in their transformed room`}
+              width="600" height="800" loading="lazy" decoding="async"
+            />
+            <span class="ed__num" aria-hidden="true">02</span>
+          </div>
+        </div>
+        <div class="ed__spread-right">
+          <div class="ed__spread-text">
+            <span class="ed__tag">{kids[1].name}'s Story</span>
+            <h3>{kids[1].name}</h3>
+            <p>{kids[1].blurb}</p>
+          </div>
+          <div class="ed__spread-img ed__spread-img--inset">
+            <img
+              src={`https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/${kids[2].slug}/hero/w=500,h=500,fit=cover,q=80,format=auto`}
+              srcset={`https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/${kids[2].slug}/hero/w=340,h=340,fit=cover,q=75,format=auto 340w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/${kids[2].slug}/hero/w=500,h=500,fit=cover,q=80,format=auto 500w`}
+              sizes="(max-width: 767px) 92vw, 38vw"
+              alt={`${kids[2].name} in their transformed room`}
+              width="500" height="500" loading="lazy" decoding="async"
+            />
+            <span class="ed__num ed__num--dark" aria-hidden="true">03</span>
+          </div>
+          <div class="ed__spread-text ed__spread-text--bottom">
+            <h3>{kids[2].name}</h3>
+            <p>{kids[2].blurb}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Pull Quote ── -->
+      <div class="ed__quote reveal">
+        <div class="ed__quote-inner">
+          <svg class="ed__quote-mark" width="64" height="52" viewBox="0 0 64 52" fill="none" aria-hidden="true"><path d="M0 33c0-5.7 1.3-10.7 4-15C7 13.7 10.4 10 14.7 7.1 19 4.2 23.7 2.2 29 1.2L30.5 8c-5 1.3-9.3 3.6-12.5 6.9-3.3 3.4-5 7-5 11 0 1 .2 2 .6 2.8 1-.7 2.3-1 4-1 2.7 0 5 1 7 3 2 2 3 4.5 3 7.6 0 3.2-1.2 5.8-3.4 8-2.2 2-4.8 3-8 3-3.7 0-6.8-1.5-9.3-4.4C4 42 2.6 38 2.6 33H0zm32 0c0-5.7 1.3-10.7 4-15C39 13.7 42.4 10 46.7 7.1 51 4.2 55.7 2.2 61 1.2L62.5 8c-5 1.3-9.3 3.6-12.5 6.9-3.3 3.4-5 7-5 11 0 1 .2 2 .6 2.8 1-.7 2.3-1 4-1 2.7 0 5 1 7 3 2 2 3 4.5 3 7.6 0 3.2-1.2 5.8-3.4 8-2.2 2-4.8 3-8 3-3.7 0-6.8-1.5-9.3-4.4C34.6 42 34.6 38 34.6 33H32z" fill="currentColor"/></svg>
+          <blockquote>
+            A room is more than four walls.<br/>
+            It's where a child starts to believe<br/>
+            <em>anything is possible.</em>
+          </blockquote>
+          <div class="ed__quote-attr">
+            <span class="ed__quote-rule" aria-hidden="true"></span>
+            <span>Peter & Holly Ranney</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Gallery Row: Kids 3, 4, 5 — staggered masonry with hover reveals ── -->
+      <div class="ed__gallery reveal">
+        {kids.slice(3).map((kid, i) => (
+          <article class={`ed__card ed__card--${i}`}>
+            <div class="ed__card-img">
+              <img
+                src={`https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/${kid.slug}/hero/w=500,h=650,fit=cover,q=80,format=auto`}
+                srcset={`https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/${kid.slug}/hero/w=340,h=442,fit=cover,q=75,format=auto 340w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/${kid.slug}/hero/w=500,h=650,fit=cover,q=80,format=auto 500w`}
+                sizes="(max-width: 567px) 85vw, (max-width: 1024px) 30vw, 310px"
+                alt={`${kid.name} in their transformed room`}
+                width="500" height="650" loading="lazy" decoding="async"
+              />
+              <span class="ed__num ed__num--card" aria-hidden="true">{String(i + 4).padStart(2, '0')}</span>
+              <div class="ed__card-reveal">
+                <p>{kid.blurb}</p>
+              </div>
+            </div>
+            <h3 class="ed__card-name">{kid.name}</h3>
+          </article>
+        ))}
+      </div>
+
     </div>
   </section>
 
-  <!-- ═══ HOW IT WORKS ═══ -->
-  <section class="mission-how section">
-    <div class="container">
-      <div class="mission-how__header reveal">
-        <h2>How Your Purchase Helps</h2>
-        <p>Every dollar you spend at Sunny & Ranney directly funds a child's room transformation.</p>
+  <!-- ═══ EVERY PURCHASE ═══ -->
+  <section class="mission-impact">
+    <div class="container mission-impact__inner">
+      <div class="mission-impact__media reveal">
+        <div class="mission-impact__img-wrap">
+          <img
+            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero/w=600,h=400,fit=cover,q=80,format=auto"
+            srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero/w=600,h=400,fit=cover,q=80,format=auto 600w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero/w=900,h=600,fit=cover,q=80,format=auto 900w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero/w=1200,h=800,fit=cover,q=80,format=auto 1200w"
+            sizes="(max-width: 767px) 90vw, (max-width: 1024px) 45vw, 540px"
+            alt="Adrian in his newly transformed room"
+            width="600"
+            height="400"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
       </div>
-      <div class="mission-how__steps">
-        <div class="mission-how__step reveal">
-          <div class="mission-how__step-num">1</div>
-          <h3>You Shop</h3>
-          <p>Browse our curated collection of designer furniture, home decor, lighting, and gifts.</p>
-        </div>
-        <div class="mission-how__step reveal delay-1">
-          <div class="mission-how__step-num">2</div>
-          <h3>We Donate</h3>
-          <p>100% of store profits go directly to Sunshine on a Ranney Day. No middleman, no overhead.</p>
-        </div>
-        <div class="mission-how__step reveal delay-2">
-          <div class="mission-how__step-num">3</div>
-          <h3>Lives Change</h3>
-          <p>A child gets a custom makeover — a wheelchair-accessible bathroom, dream bedroom, or therapy space designed just for them.</p>
-        </div>
+      <div class="mission-impact__content reveal delay-1">
+        <span class="label mission-impact__kicker">The Impact</span>
+        <h2 class="mission-impact__title">Every Purchase Changes a Child's World</h2>
+        <p class="mission-impact__body">
+          When you shop at Sunny and Ranney, you're not just buying furniture.
+          Through <strong>Sunshine on a Ranney Day</strong>, 100% of store profits
+          fund bedroom and living space makeovers for children with special needs.
+          {stats.roomMakeovers}+ rooms transformed. {stats.yearsGiving} years and counting.
+        </p>
+        <a href="/shop" class="btn mission-impact__cta" data-astro-prefetch>Shop & Give Back</a>
       </div>
     </div>
   </section>
@@ -178,50 +272,79 @@ try {
   <!-- ═══ QUOTE / HIGHLIGHT ═══ -->
   <section class="mission-highlight">
     <div class="container mission-highlight__inner">
+      <div class="mission-highlight__decoration" aria-hidden="true">
+        <svg width="48" height="40" viewBox="0 0 48 40" fill="currentColor" opacity="0.15"><path d="M0 24.7c0-4.3 1-8 3-11.2 2-3.3 4.8-6 8.3-8.2 3.6-2.3 7.5-3.8 11.7-4.5L24.3 6c-3.8 1-7 2.7-9.4 5.2-2.5 2.5-3.7 5.2-3.7 8.2 0 .8.1 1.5.4 2.1.7-.5 1.7-.7 3-.7 2 0 3.8.7 5.2 2.2 1.4 1.5 2.2 3.4 2.2 5.7 0 2.4-.8 4.4-2.5 6-1.6 1.5-3.6 2.3-6 2.3-2.8 0-5.1-1.1-7-3.3C4.6 31.5 3.6 28.5 3.6 24.7H0zm24 0c0-4.3 1-8 3-11.2 2-3.3 4.8-6 8.3-8.2 3.6-2.3 7.5-3.8 11.7-4.5L48.3 6c-3.8 1-7 2.7-9.4 5.2-2.5 2.5-3.7 5.2-3.7 8.2 0 .8.1 1.5.4 2.1.7-.5 1.7-.7 3-.7 2 0 3.8.7 5.2 2.2 1.4 1.5 2.2 3.4 2.2 5.7 0 2.4-.8 4.4-2.5 6-1.6 1.5-3.6 2.3-6 2.3-2.8 0-5.1-1.1-7-3.3-1.9-2.2-2.9-5.2-2.9-9H24z"/></svg>
+      </div>
       <blockquote class="mission-highlight__quote reveal">
         <p>"Every child deserves a space that reflects their personality, brings them joy, and supports their unique needs."</p>
-        <footer class="mission-highlight__attribution">— Peter & Holly Ranney</footer>
+        <footer class="mission-highlight__attribution">
+          <span class="mission-highlight__name">Peter & Holly Ranney</span>
+          <span class="mission-highlight__title">Founders, Sunshine on a Ranney Day</span>
+        </footer>
       </blockquote>
     </div>
   </section>
 
-  <!-- ═══ CTA ═══ -->
-  <section class="mission-cta">
-    <div class="container mission-cta__inner">
-      <h2 class="reveal">Shop With Purpose</h2>
-      <p class="reveal delay-1">
-        Beautiful furniture for your home. Brighter futures for kids who need it most.
-      </p>
-      <div class="mission-cta__actions reveal delay-2">
-        <a href="/shop" class="btn btn--gold">Shop Now</a>
-        <a href="https://www.sunshineonarranneyday.org" target="_blank" rel="noopener noreferrer" class="btn btn--outline">Learn More About SOARD</a>
-      </div>
-    </div>
-  </section>
 
 </Base>
+
+<!-- ═══ NONPROFIT STRUCTURED DATA ═══ -->
+<script type="application/ld+json" set:html={JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Sunshine on a Ranney Day",
+  "alternateName": "SOARD",
+  "url": "https://www.sunshineonarranneyday.org",
+  "nonprofitStatus": "Nonprofit501c3",
+  "description": "501(c)(3) nonprofit creating wheelchair-accessible bathrooms, dream bedrooms, and in-home therapy spaces for children with special needs in the greater Atlanta area.",
+  "founder": [
+    { "@type": "Person", "name": "Peter Ranney" },
+    { "@type": "Person", "name": "Holly Ranney" }
+  ],
+  "foundingDate": "2012",
+  "areaServed": {
+    "@type": "State",
+    "name": "Georgia"
+  },
+  "funder": {
+    "@type": "FurnitureStore",
+    "name": "Sunny & Ranney",
+    "url": "https://www.sunnyandranney.com"
+  }
+})} />
 
 <style>
   /* ─── Hero ──────────────────────────────── */
   .mission-hero {
-    background:
-      radial-gradient(ellipse at 30% 50%, rgba(75, 149, 180, 0.08) 0%, transparent 50%),
-      radial-gradient(ellipse at 70% 20%, rgba(255, 212, 0, 0.05) 0%, transparent 40%),
-      var(--color-cream);
-    padding: var(--space-xl) 0 var(--space-lg);
+    position: relative;
+    padding: var(--space-3xl) 0 var(--space-2xl);
     text-align: center;
+    overflow: hidden;
+  }
+
+  .mission-hero__bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 80%, rgba(75, 149, 180, 0.10) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(255, 212, 0, 0.07) 0%, transparent 45%),
+      radial-gradient(ellipse at 50% 0%, rgba(75, 149, 180, 0.05) 0%, transparent 60%),
+      var(--color-cream);
+    z-index: 0;
   }
 
   .mission-hero__inner {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
   }
 
   .mission-hero__title {
-    font-size: clamp(2rem, 4vw, 3rem);
-    margin: 0 0 var(--space-xs);
-    line-height: 1.1;
+    font-size: clamp(2.4rem, 5vw, 3.8rem);
+    margin: var(--space-sm) 0 var(--space-xs);
+    line-height: 1.05;
   }
 
   .mission-hero__accent {
@@ -231,17 +354,55 @@ try {
   }
 
   .mission-hero__sub {
-    font-size: clamp(0.95rem, 1.2vw, 1.1rem);
+    font-size: clamp(1rem, 1.3vw, 1.15rem);
     max-width: 48ch;
     text-align: center;
-    margin: 0;
+    margin: 0 0 var(--space-md);
     color: var(--color-slate);
+  }
+
+  .mission-hero__scroll {
+    display: inline-block;
+    margin-top: var(--space-lg);
+    color: var(--color-stone);
+    transition: color 0.3s;
+  }
+
+  .mission-hero__scroll:hover {
+    color: var(--color-gold);
+  }
+
+  .mission-hero__scroll-icon {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .mission-hero__scroll:hover .mission-hero__scroll-icon {
+    animation: none;
+    transform: translateY(4px);
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(6px); }
   }
 
   /* ─── Impact Stats ──────────────────────── */
   .mission-stats {
     background: linear-gradient(160deg, var(--color-cyan) 0%, #3a7d9a 100%);
     padding: var(--space-xl) 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mission-stats::before {
+    content: '';
+    position: absolute;
+    top: -40%;
+    left: -15%;
+    width: 50%;
+    height: 180%;
+    background: radial-gradient(circle, rgba(255, 212, 0, 0.06) 0%, transparent 60%);
+    pointer-events: none;
   }
 
   .mission-stats__inner {
@@ -249,10 +410,13 @@ try {
     justify-content: center;
     gap: var(--space-2xl);
     flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
   }
 
   .mission-stats__stat {
     text-align: center;
+    min-width: 120px;
   }
 
   .mission-stats__number {
@@ -262,6 +426,7 @@ try {
     font-weight: 600;
     color: white;
     line-height: 1;
+    min-width: 3ch;
   }
 
   .mission-stats__label {
@@ -313,11 +478,6 @@ try {
     transform: scale(1.03);
   }
 
-  .mission-story__inner {
-    max-width: 720px;
-    margin: 0 auto;
-  }
-
   .mission-story__content .label {
     color: var(--color-gold);
   }
@@ -340,7 +500,7 @@ try {
 
   /* ─── Mascot ──────────────────────────── */
   .mission-mascot {
-    background: var(--color-warm-white);
+    background: var(--color-cream);
   }
 
   .mission-mascot__grid {
@@ -397,161 +557,465 @@ try {
     transform: scale(1.03);
   }
 
-  /* ─── Timeline ──────────────────────────── */
-  .mission-timeline {
-    background: var(--color-cream);
-  }
-
-  .mission-timeline__header {
-    text-align: center;
-    margin-bottom: var(--space-xl);
-  }
-
-  .mission-timeline__grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-md);
-    max-width: 900px;
-    margin: 0 auto;
-  }
-
-  @media (min-width: 600px) {
-    .mission-timeline__grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  @media (min-width: 900px) {
-    .mission-timeline__grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
-
-  .mission-timeline__item {
-    padding: var(--space-lg);
+  /* ═══════════════════════════════════════════
+     EDITORIAL MAGAZINE LAYOUT
+     ═══════════════════════════════════════════ */
+  .ed {
     background: var(--color-warm-white);
-    border: 1px solid var(--color-cream-dark);
-    border-radius: 12px;
-    transition: transform var(--duration) var(--ease-out), box-shadow var(--duration);
+    --ed-radius: 6px;
+    --ed-grain: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
   }
 
-  .mission-timeline__item:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 16px 48px rgba(44, 44, 44, 0.08);
+  /* ── Section Opener ── */
+  .ed__opener {
+    text-align: center;
+    max-width: 620px;
+    margin: 0 auto var(--space-3xl);
   }
 
-  .mission-timeline__year {
-    display: inline-block;
-    font-family: var(--font-display);
-    font-size: 0.75rem;
+  .ed__opener-rule {
+    width: 40px;
+    height: 2px;
+    background: var(--color-gold);
+    margin: 0 auto var(--space-lg);
+  }
+
+  .ed__eyebrow {
+    display: block;
+    font-size: 0.65rem;
     font-weight: 600;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--color-stone);
+    margin-bottom: var(--space-md);
+  }
+
+  .ed__headline {
+    font-size: clamp(2.6rem, 5.5vw, 4.2rem);
+    line-height: 1;
+    margin-bottom: var(--space-lg);
+    letter-spacing: -0.02em;
+  }
+
+  .ed__headline em {
+    font-style: italic;
+    font-weight: 300;
     color: var(--color-gold);
-    background: rgba(255, 212, 0, 0.1);
-    padding: 0.2rem 0.6rem;
-    border-radius: 3px;
+  }
+
+  .ed__deck {
+    font-size: clamp(0.95rem, 1.2vw, 1.1rem);
+    color: var(--color-stone);
+    line-height: 1.7;
+  }
+
+  /* ── Shared: editorial number watermark ── */
+  .ed__num {
+    position: absolute;
+    font-family: var(--font-display);
+    font-size: clamp(5rem, 10vw, 9rem);
+    font-weight: 700;
+    line-height: 1;
+    color: white;
+    opacity: 0.12;
+    pointer-events: none;
+    z-index: 2;
+    top: var(--space-md);
+    left: var(--space-lg);
+    user-select: none;
+  }
+
+  .ed__num--dark {
+    color: var(--color-charcoal);
+    opacity: 0.06;
+  }
+
+  .ed__num--card {
+    font-size: clamp(3.5rem, 7vw, 5rem);
+    color: white;
+    opacity: 0.15;
+    bottom: var(--space-md);
+    right: var(--space-md);
+    top: auto;
+    left: auto;
+  }
+
+  /* ── Shared: editorial tag ── */
+  .ed__tag {
+    display: inline-block;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    border: 1px solid rgba(255, 212, 0, 0.35);
+    padding: 0.3rem 0.85rem;
     margin-bottom: var(--space-sm);
   }
 
-  .mission-timeline__item h3 {
-    font-size: 1.1rem;
-    margin-bottom: 0.4rem;
+  /* ── Shared: film grain overlay on images ── */
+  .ed__cover-frame,
+  .ed__spread-img,
+  .ed__card-img {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--ed-radius);
   }
 
-  .mission-timeline__item p {
-    font-size: 0.88rem;
-    color: var(--color-stone);
-    line-height: 1.6;
+  .ed__cover-frame::after,
+  .ed__spread-img::after,
+  .ed__card-img::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--ed-grain);
+    background-size: 128px;
+    pointer-events: none;
+    z-index: 3;
+    mix-blend-mode: overlay;
   }
 
-  /* ─── How It Works ──────────────────────── */
-  .mission-how {
-    background: var(--color-warm-white);
+  /* ── Cover Story ── */
+  .ed__cover {
+    position: relative;
+    max-width: 1040px;
+    margin: 0 auto clamp(3rem, 6vw, 5rem);
   }
 
-  .mission-how__header {
-    text-align: center;
-    margin-bottom: var(--space-xl);
+  .ed__cover-frame img {
+    width: 100%;
+    height: auto;
+    display: block;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    transition: transform 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
-  .mission-how__header h2 {
-    margin-bottom: 0.5rem;
+  .ed__cover:hover .ed__cover-frame img {
+    transform: scale(1.04);
   }
 
-  .mission-how__header p {
-    margin: 0 auto;
+  .ed__cover-glass {
+    position: absolute;
+    bottom: clamp(1rem, 3vw, 2.5rem);
+    left: clamp(1rem, 3vw, 2.5rem);
+    max-width: 420px;
+    padding: clamp(1.2rem, 2.5vw, 2rem);
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(20px) saturate(1.6);
+    -webkit-backdrop-filter: blur(20px) saturate(1.6);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: var(--ed-radius);
+    z-index: 4;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.15);
   }
 
-  .mission-how__steps {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-lg);
-    max-width: 900px;
-    margin: 0 auto;
+  .ed__cover-name {
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    line-height: 1.05;
+    margin-bottom: var(--space-sm);
+    letter-spacing: -0.01em;
   }
 
-  @media (min-width: 768px) {
-    .mission-how__steps {
-      grid-template-columns: repeat(3, 1fr);
+  .ed__cover-rule {
+    width: 30px;
+    height: 2px;
+    background: var(--color-gold);
+    margin-bottom: var(--space-sm);
+  }
+
+  .ed__cover-glass p {
+    font-size: 0.85rem;
+    color: var(--color-slate);
+    line-height: 1.65;
+  }
+
+  @media (max-width: 567px) {
+    .ed__cover-glass {
+      position: relative;
+      bottom: auto;
+      left: auto;
+      max-width: none;
+      margin-top: calc(-2rem);
+      margin-left: var(--space-md);
+      margin-right: var(--space-md);
     }
   }
 
-  .mission-how__step {
-    text-align: center;
-    padding: var(--space-lg);
-    background: var(--color-cream);
-    border: 1px solid var(--color-cream-dark);
-    border-radius: 12px;
-    transition: transform var(--duration) var(--ease-out), box-shadow var(--duration);
+  /* ── Editorial Spread (Kids 1 & 2) ── */
+  .ed__spread {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: var(--space-xl);
+    max-width: 1040px;
+    margin: 0 auto clamp(3rem, 6vw, 5rem);
+    align-items: start;
   }
 
-  .mission-how__step:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 20px 60px rgba(44, 44, 44, 0.08);
+  @media (max-width: 767px) {
+    .ed__spread {
+      grid-template-columns: 1fr;
+      gap: var(--space-lg);
+    }
   }
 
-  .mission-how__step-num {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
+  .ed__spread-img img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+    transition: transform 0.9s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .ed__spread-left .ed__spread-img img {
+    aspect-ratio: 3 / 4;
+  }
+
+  .ed__spread-left .ed__spread-img:hover img {
+    transform: scale(1.03);
+  }
+
+  .ed__spread-img--inset img {
+    aspect-ratio: 1 / 1;
+  }
+
+  .ed__spread-img--inset:hover img {
+    transform: scale(1.03);
+  }
+
+  .ed__spread-right {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+  }
+
+  @media (min-width: 768px) {
+    .ed__spread-right {
+      padding-top: clamp(2rem, 5vw, 5rem);
+    }
+  }
+
+  .ed__spread-text {
+    padding: 0 var(--space-xs);
+  }
+
+  .ed__spread-text h3 {
+    font-size: clamp(1.4rem, 2.5vw, 1.9rem);
+    line-height: 1.1;
+    margin-bottom: var(--space-sm);
+    letter-spacing: -0.01em;
+  }
+
+  .ed__spread-text p {
+    font-size: 0.9rem;
+    color: var(--color-slate);
+    line-height: 1.75;
+  }
+
+  .ed__spread-text--bottom {
+    position: relative;
+    padding-top: var(--space-md);
+  }
+
+  .ed__spread-text--bottom::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: var(--space-xs);
+    width: 30px;
+    height: 1px;
     background: var(--color-gold);
-    color: var(--color-charcoal);
+  }
+
+  /* ── Pull Quote ── */
+  .ed__quote {
+    padding: clamp(3rem, 7vw, 6rem) 0;
+    position: relative;
+  }
+
+  .ed__quote::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 30% 50%, rgba(75, 149, 180, 0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 50%, rgba(255, 212, 0, 0.03) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .ed__quote-inner {
+    max-width: 740px;
+    margin: 0 auto;
+    text-align: center;
+    position: relative;
+  }
+
+  .ed__quote-mark {
+    color: var(--color-gold);
+    opacity: 0.12;
+    margin-bottom: var(--space-lg);
+  }
+
+  .ed__quote blockquote {
     font-family: var(--font-display);
-    font-size: 1.3rem;
-    font-weight: 600;
+    font-size: clamp(1.5rem, 3vw, 2.3rem);
+    font-weight: 400;
+    font-style: italic;
+    color: var(--color-charcoal);
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+  }
+
+  .ed__quote blockquote em {
+    color: var(--color-cyan);
+    font-style: italic;
+  }
+
+  .ed__quote-attr {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto var(--space-md);
-  }
-
-  .mission-how__step h3 {
-    font-size: 1.2rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .mission-how__step p {
-    font-size: 0.9rem;
+    gap: var(--space-md);
+    margin-top: var(--space-xl);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
     color: var(--color-stone);
-    max-width: 28ch;
+  }
+
+  .ed__quote-rule {
+    width: 30px;
+    height: 1px;
+    background: var(--color-gold);
+  }
+
+  /* ── Gallery Row (Kids 3, 4, 5) ── */
+  .ed__gallery {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(1rem, 2.5vw, 2rem);
+    max-width: 1040px;
     margin: 0 auto;
+  }
+
+  @media (max-width: 767px) {
+    .ed__gallery {
+      grid-template-columns: 1fr;
+      max-width: 380px;
+      gap: var(--space-xl);
+    }
+  }
+
+  .ed__card {
+    transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .ed__card:hover {
+    transform: translateY(-8px);
+  }
+
+  /* Stagger: offset the middle card */
+  @media (min-width: 768px) {
+    .ed__card--1 {
+      margin-top: clamp(2rem, 4vw, 3.5rem);
+    }
+  }
+
+  .ed__card-img {
+    box-shadow: 0 16px 60px rgba(44, 44, 44, 0.12);
+  }
+
+  .ed__card-img img {
+    width: 100%;
+    height: auto;
+    display: block;
+    aspect-ratio: 10 / 13;
+    object-fit: cover;
+    transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .ed__card:hover .ed__card-img img {
+    transform: scale(1.06);
+  }
+
+  /* Hover reveal overlay */
+  .ed__card-reveal {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: flex-end;
+    padding: var(--space-lg);
+    background: linear-gradient(
+      to top,
+      rgba(20, 20, 20, 0.85) 0%,
+      rgba(20, 20, 20, 0.3) 50%,
+      transparent 100%
+    );
+    opacity: 0;
+    transition: opacity 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    z-index: 4;
+    border-radius: var(--ed-radius);
+  }
+
+  .ed__card:hover .ed__card-reveal {
+    opacity: 1;
+  }
+
+  .ed__card-reveal p {
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.6;
+    transform: translateY(10px);
+    transition: transform 0.5s 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .ed__card:hover .ed__card-reveal p {
+    transform: translateY(0);
+  }
+
+  .ed__card-name {
+    font-size: 1rem;
+    letter-spacing: 0.04em;
+    color: var(--color-charcoal);
+    margin-top: var(--space-md);
+    padding-left: 2px;
   }
 
   /* ─── Quote Highlight ───────────────────── */
   .mission-highlight {
     background: linear-gradient(160deg, var(--color-cyan) 0%, #3a7d9a 100%);
-    padding: var(--space-2xl) 0;
+    padding: var(--space-3xl) 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mission-highlight::before {
+    content: '';
+    position: absolute;
+    top: -30%;
+    right: -10%;
+    width: 40%;
+    height: 160%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.04) 0%, transparent 60%);
+    pointer-events: none;
   }
 
   .mission-highlight__inner {
     max-width: 700px;
     margin: 0 auto;
     text-align: center;
+    position: relative;
+  }
+
+  .mission-highlight__decoration {
+    color: white;
+    margin-bottom: var(--space-md);
   }
 
   .mission-highlight__quote p {
     font-family: var(--font-display);
-    font-size: clamp(1.3rem, 2.5vw, 1.8rem);
+    font-size: clamp(1.4rem, 2.8vw, 2rem);
     font-weight: 400;
     font-style: italic;
     color: white;
@@ -560,66 +1024,121 @@ try {
   }
 
   .mission-highlight__attribution {
-    display: block;
-    margin-top: var(--space-md);
-    font-size: 0.9rem;
-    font-style: normal;
-    color: rgba(255, 255, 255, 0.6);
-    letter-spacing: 0.05em;
-  }
-
-  /* ─── CTA ───────────────────────────────── */
-  .mission-cta {
-    background: var(--color-gold);
-    padding: var(--space-2xl) 0;
-    text-align: center;
-  }
-
-  .mission-cta__inner {
-    max-width: 600px;
-    margin: 0 auto;
-  }
-
-  .mission-cta h2 {
-    color: var(--color-charcoal);
-    font-size: clamp(1.8rem, 3vw, 2.5rem);
-    margin-bottom: var(--space-sm);
-  }
-
-  .mission-cta > .container > p,
-  .mission-cta__inner > p {
-    color: var(--color-charcoal);
-    max-width: 45ch;
-    margin: 0 auto;
-  }
-
-  .mission-cta__actions {
     display: flex;
-    gap: var(--space-sm);
-    justify-content: center;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
     margin-top: var(--space-lg);
+    font-style: normal;
   }
 
-  .mission-cta__actions .btn--gold {
+  .mission-highlight__name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: white;
+    letter-spacing: 0.03em;
+  }
+
+  .mission-highlight__title {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ─── Every Purchase / Impact ────────── */
+  .mission-impact {
     background: var(--color-charcoal);
-    border-color: var(--color-charcoal);
-    color: var(--color-cream);
+    padding: clamp(3rem, 8vh, 5rem) 0;
   }
 
-  .mission-cta__actions .btn--gold:hover {
-    background: white;
-    border-color: white;
-    color: var(--color-charcoal);
+  .mission-impact__inner {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+    align-items: center;
   }
 
-  .mission-cta__actions .btn--outline {
-    border-color: var(--color-charcoal);
-    color: var(--color-charcoal);
+  @media (min-width: 768px) {
+    .mission-impact__inner {
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: var(--space-2xl);
+    }
   }
 
-  .mission-cta__actions .btn--outline:hover {
-    background: var(--color-charcoal);
+  @media (max-width: 767px) {
+    .mission-impact {
+      padding: var(--space-xl) 0;
+    }
+    .mission-impact__inner {
+      gap: var(--space-lg);
+    }
+  }
+
+  .mission-impact__media {
+    order: -1;
+  }
+
+  .mission-impact__img-wrap {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+  }
+
+  .mission-impact__img-wrap img {
+    width: 100%;
+    height: auto;
+    display: block;
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+    transition: transform 0.8s var(--ease-out);
+  }
+
+  .mission-impact__img-wrap:hover img {
+    transform: scale(1.03);
+  }
+
+  .mission-impact__kicker {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-cyan-light);
+    margin: 0 0 var(--space-sm);
+    display: block;
+  }
+
+  .mission-impact__title {
+    color: white;
+    font-size: clamp(1.6rem, 3.5vw, 2.5rem);
+    line-height: 1.1;
+    margin-bottom: var(--space-md);
+  }
+
+  .mission-impact__body {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.95rem;
+    line-height: 1.7;
+    max-width: 52ch;
+    margin: 0 0 var(--space-lg);
+  }
+
+  .mission-impact__body strong {
     color: var(--color-gold);
+    font-weight: 600;
   }
+
+  .mission-impact__cta {
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    background: transparent;
+    display: inline-block;
+  }
+
+  .mission-impact__cta:hover {
+    background: var(--color-gold);
+    border-color: var(--color-gold);
+    color: var(--color-charcoal);
+  }
+
 </style>

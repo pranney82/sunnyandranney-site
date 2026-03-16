@@ -1,7 +1,6 @@
 ---
 import Base from '@/layouts/Base.astro';
 import GoogleReviews from '@/components/GoogleReviews.astro';
-import EmailCapture from '@/components/EmailCapture.astro';
 import { getProducts, getCollections, shopifyImageUrl, shopifyImageSrcset } from '@/lib/shopify';
 
 let products: any[] = [];
@@ -45,7 +44,7 @@ const featuredProducts = products.slice(0, 8);
 
 ---
 
-<Base lcpImage="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=480,h=600,fit=cover,q=80,format=auto">
+<Base lcpImage="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero/w=480,h=600,fit=cover,q=80,format=auto">
   <!-- ═══ HERO ═══ -->
   <section class="hero">
     <div class="container hero__inner">
@@ -76,10 +75,10 @@ const featuredProducts = products.slice(0, 8);
       <div class="hero__media animate-fade-up delay-2">
         <div class="hero__img-wrap">
           <img
-            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=480,h=600,fit=cover,q=80,format=auto"
-            srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=320,h=400,fit=cover,q=75,format=auto 320w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=480,h=600,fit=cover,q=80,format=auto 480w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=640,h=800,fit=cover,q=80,format=auto 640w"
-            sizes="(max-width: 767px) 240px, (max-width: 1023px) 340px, 380px"
-            alt="Sunshine on a Ranney Day room makeover"
+            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero/w=480,h=600,fit=cover,q=80,format=auto"
+            srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero/w=320,h=400,fit=cover,q=75,format=auto 320w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero/w=480,h=600,fit=cover,q=80,format=auto 480w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero/w=640,h=800,fit=cover,q=80,format=auto 640w"
+            sizes="(max-width: 767px) 280px, (max-width: 1023px) 400px, 440px"
+            alt="Adrian's room makeover by Sunshine on a Ranney Day"
             width="480"
             height="600"
             fetchpriority="high"
@@ -89,13 +88,24 @@ const featuredProducts = products.slice(0, 8);
         <div class="hero__accent" aria-hidden="true"></div>
       </div>
     </div>
-    <div class="hero__ribbon">
-      <div class="container hero__ribbon-inner">
-        <span class="hero__ribbon-stat" data-count="269" data-suffix="+">0</span><span> rooms transformed</span>
-        <span class="hero__ribbon-sep" aria-hidden="true"></span>
-        <span class="hero__ribbon-stat" data-count="14" data-suffix="">0</span><span> years of giving</span>
-        <span class="hero__ribbon-sep" aria-hidden="true"></span>
-        <span><strong>100%</strong> of profits donated</span>
+  </section>
+
+  <!-- ═══ IMPACT STATS ═══ -->
+  <section class="impact">
+    <div class="container impact__inner">
+      <div class="impact__stat reveal">
+        <span class="impact__number" data-count="269" data-suffix="+">0</span>
+        <span class="impact__label">Rooms Transformed</span>
+      </div>
+      <div class="impact__divider" aria-hidden="true"></div>
+      <div class="impact__stat reveal delay-1">
+        <span class="impact__number" data-count="14" data-suffix="">0</span>
+        <span class="impact__label">Years of Giving</span>
+      </div>
+      <div class="impact__divider" aria-hidden="true"></div>
+      <div class="impact__stat reveal delay-2">
+        <span class="impact__number">100%</span>
+        <span class="impact__label">Of Profits Donated</span>
       </div>
     </div>
   </section>
@@ -229,42 +239,60 @@ const featuredProducts = products.slice(0, 8);
   )}
 
   <!-- ═══ DESIGN SERVICES ═══ -->
-  <section class="services section">
+  <section class="services">
     <div class="container">
-      <div class="services__header reveal">
-        <h2 class="section-title">More Than a Furniture Store</h2>
+      <div class="services__top reveal">
+        <p class="services__kicker">Beyond the Showroom</p>
+        <h2 class="services__heading">We don't just sell furniture.<br/>We help you build a home.</h2>
       </div>
-      <div class="services__grid reveal delay-1">
-        <div class="services__item">
-          <div class="services__icon-wrap">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/>
-            </svg>
+
+      <div class="services__grid">
+        <div class="services__card services__card--1 reveal">
+          <div class="services__card-inner">
+            <div class="services__card-icon" aria-hidden="true">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/>
+              </svg>
+            </div>
+            <h3 class="services__title">Design<br/>Assistance</h3>
+            <p class="services__desc">Tell us about your space and we'll help you fill it. Our in-house designers work with you from concept to final pillow — no project too big or small.</p>
+            <span class="services__tag">Complimentary</span>
           </div>
-          <h3 class="services__title">Design Assistance</h3>
-          <p class="services__desc">Need help styling your space? Our in-house design team works with you to create rooms you'll love.</p>
         </div>
-        <div class="services__item">
-          <div class="services__icon-wrap">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
-            </svg>
+
+        <div class="services__card services__card--2 reveal delay-1">
+          <div class="services__card-inner">
+            <div class="services__card-icon" aria-hidden="true">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+              </svg>
+            </div>
+            <h3 class="services__title">Custom<br/>Sourcing</h3>
+            <p class="services__desc">Have something specific in mind? We tap into a global network of makers to find exactly what you're looking for — beyond what's on our floor.</p>
+            <span class="services__tag">Worldwide</span>
           </div>
-          <h3 class="services__title">Custom Sourcing</h3>
-          <p class="services__desc">Don't see what you're looking for? We can source furniture and decor beyond what's in our shop.</p>
         </div>
-        <div class="services__item">
-          <div class="services__icon-wrap">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v1.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V11a2 2 0 0 0-4 0z"/><path d="M5 18v2"/><path d="M19 18v2"/>
-            </svg>
+
+        <div class="services__card services__card--3 reveal delay-2">
+          <div class="services__card-inner">
+            <div class="services__card-icon" aria-hidden="true">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v1.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V11a2 2 0 0 0-4 0z"/><path d="M5 18v2"/><path d="M19 18v2"/>
+              </svg>
+            </div>
+            <h3 class="services__title">Custom<br/>Upholstery</h3>
+            <p class="services__desc">Choose your own fabrics, finishes, and silhouettes. We craft one-of-a-kind pieces built around your vision — made just for you.</p>
+            <span class="services__tag">Made to Order</span>
           </div>
-          <h3 class="services__title">Custom Upholstery</h3>
-          <p class="services__desc">Choose your own fabrics and finishes. We offer customizable upholstery on select pieces.</p>
         </div>
       </div>
-      <div class="services__cta reveal delay-2">
-        <a href="mailto:info@sunnyandranney.com" class="btn btn--outline">Get in Touch</a>
+
+      <div class="services__bottom reveal delay-3">
+        <p class="services__bottom-text">Have a project in mind?</p>
+        <a href="mailto:info@sunnyandranney.com" class="services__cta-btn">
+          Let's Talk
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
       </div>
     </div>
   </section>
@@ -275,10 +303,10 @@ const featuredProducts = products.slice(0, 8);
       <div class="mission__media reveal">
         <div class="mission__img-wrap">
           <img
-            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/founders-reunion-2026/w=600,q=80,format=auto"
-            srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/founders-reunion-2026/w=600,q=80,format=auto 600w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/founders-reunion-2026/w=900,q=80,format=auto 900w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/founders-reunion-2026/w=1200,q=80,format=auto 1200w"
+            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero/w=600,h=400,fit=cover,q=80,format=auto"
+            srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero/w=600,h=400,fit=cover,q=80,format=auto 600w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero/w=900,h=600,fit=cover,q=80,format=auto 900w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero/w=1200,h=800,fit=cover,q=80,format=auto 1200w"
             sizes="(max-width: 767px) 90vw, (max-width: 1024px) 45vw, 540px"
-            alt="Sunshine on a Ranney Day founders"
+            alt="Adrian — a Sunshine on a Ranney Day room makeover recipient"
             width="600"
             height="400"
             loading="lazy"
@@ -348,52 +376,6 @@ const featuredProducts = products.slice(0, 8);
     </section>
   )}
 
-  <!-- ═══ VISIT STRIP ═══ -->
-  <section class="visit-strip section">
-    <div class="container visit-strip__inner">
-      <div class="visit-strip__gallery">
-        <div class="visit-strip__photo visit-strip__photo--exterior">
-          <img
-            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-storefront/w=600,q=80,format=auto"
-            alt="Sunny & Ranney storefront in Roswell, Georgia"
-            width="600"
-            height="450"
-            loading="lazy"
-            decoding="async"
-          />
-        </div>
-        <div class="visit-strip__photo visit-strip__photo--interior">
-          <img
-            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=600,q=80,format=auto"
-            alt="Inside the Sunny & Ranney showroom"
-            width="600"
-            height="450"
-            loading="lazy"
-            decoding="async"
-          />
-        </div>
-      </div>
-      <div class="visit-strip__details">
-        <div class="visit-strip__info">
-          <h3>Visit Our Roswell Showroom</h3>
-          <p>109A Oak Street, Roswell, GA 30075</p>
-          <p>Tue–Thu 10am–5pm &middot; Fri–Sat 10am–6pm</p>
-          <p><a href="tel:6788885140">678.888.5140</a> &middot; <a href="mailto:info@sunnyandranney.com">info@sunnyandranney.com</a></p>
-          <a href="https://maps.google.com/?q=109A+Oak+Street+Roswell+GA+30075" target="_blank" rel="noopener noreferrer" class="btn btn--outline">
-            Get Directions
-          </a>
-        </div>
-        <div class="visit-strip__map" id="map-container"
-          data-src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3306.959536766344!2d-84.36101608805403!3d34.019249573057564!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x88f50d1cd2f8a7a7%3A0xfbc05f757f3bd1c2!2sSunny%20and%20Ranney!5e0!3m2!1sen!2sus!4v1773585890662!5m2!1sen!2sus">
-          <div class="visit-strip__map-placeholder">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            <span>Loading map…</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- ═══ RECENTLY VIEWED ═══ -->
   <section class="home-recent section" id="home-recent-section" style="display:none;">
     <div class="container">
@@ -405,8 +387,6 @@ const featuredProducts = products.slice(0, 8);
     </div>
   </section>
 
-  <!-- ═══ EMAIL CAPTURE ═══ -->
-  <EmailCapture />
 </Base>
 
 <style>
@@ -518,8 +498,8 @@ const featuredProducts = products.slice(0, 8);
   .hero__img-wrap {
     position: relative;
     z-index: 1;
-    width: 85%;
-    max-width: 300px;
+    width: 90%;
+    max-width: 320px;
     border-radius: 20px;
     overflow: hidden;
     box-shadow: 0 24px 64px rgba(0,0,0,0.2), 0 8px 20px rgba(0,0,0,0.12);
@@ -550,37 +530,56 @@ const featuredProducts = products.slice(0, 8);
     z-index: 0;
   }
 
-  /* Gold ribbon with inline stats */
-  .hero__ribbon {
-    background: var(--color-gold);
-    padding: 1.1rem 0;
+  /* ─── Impact Stats ───────────────────── */
+  .impact {
+    background: var(--color-charcoal);
+    padding: clamp(2.5rem, 5vh, 4rem) 0;
   }
 
-  .hero__ribbon-inner {
+  .impact__inner {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.6rem;
+    gap: clamp(1.5rem, 4vw, 3rem);
     flex-wrap: wrap;
-    font-size: 0.88rem;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    color: var(--color-charcoal);
   }
 
-  .hero__ribbon-stat {
+  .impact__stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.35rem;
+    flex: 0 0 auto;
+  }
+
+  .impact__number {
     font-family: var(--font-display);
-    font-size: 1.25rem;
+    font-size: clamp(2.4rem, 5vw, 3.6rem);
     font-weight: 700;
+    line-height: 1;
+    color: var(--color-gold);
+    letter-spacing: -0.02em;
   }
 
-  .hero__ribbon-sep {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--color-charcoal);
-    opacity: 0.35;
-    margin: 0 0.5rem;
+  .impact__label {
+    font-size: clamp(0.72rem, 1vw, 0.85rem);
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .impact__divider {
+    width: 1px;
+    height: 3rem;
+    background: rgba(255, 255, 255, 0.15);
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 479px) {
+    .impact__divider { height: 2rem; }
+    .impact__inner { gap: 1.2rem; }
   }
 
   /* Mobile: tighter hero so products appear faster */
@@ -611,14 +610,14 @@ const featuredProducts = products.slice(0, 8);
     }
 
     .hero__img-wrap {
-      max-width: 240px;
+      max-width: 280px;
     }
   }
 
   @media (min-width: 768px) {
     .hero__inner {
-      grid-template-columns: 1.2fr 0.8fr;
-      padding-top: clamp(2.5rem, 6vh, 4.5rem);
+      grid-template-columns: 1.1fr 0.9fr;
+      padding-top: clamp(3rem, 7vh, 5rem);
       gap: var(--space-xl);
     }
 
@@ -633,21 +632,14 @@ const featuredProducts = products.slice(0, 8);
 
     .hero__img-wrap {
       width: 100%;
-      max-width: 340px;
+      max-width: 400px;
     }
 
-    .hero__ribbon-inner {
-      font-size: 0.95rem;
-    }
-
-    .hero__ribbon-stat {
-      font-size: 1.4rem;
-    }
   }
 
   @media (min-width: 1024px) {
     .hero__img-wrap {
-      max-width: 380px;
+      max-width: 440px;
     }
   }
 
@@ -896,18 +888,40 @@ const featuredProducts = products.slice(0, 8);
 
   /* ─── Design Services ─────────────────── */
   .services {
-    background: var(--color-cream);
+    background: var(--color-warm-white);
+    padding: clamp(4rem, 10vh, 7rem) 0;
+    position: relative;
   }
 
-  .services__header {
+  /* ─ Header ─ */
+  .services__top {
     text-align: center;
+    margin-bottom: clamp(3rem, 6vh, 5rem);
   }
 
+  .services__kicker {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-cyan);
+    margin: 0 0 var(--space-md);
+    display: block;
+  }
+
+  .services__heading {
+    font-size: clamp(1.7rem, 3.5vw, 2.6rem);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin: 0;
+    color: var(--color-charcoal);
+  }
+
+  /* ─ Card Grid ─ */
   .services__grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: var(--space-xl);
-    margin-top: var(--space-xl);
+    gap: var(--space-md);
   }
 
   @media (min-width: 640px) {
@@ -917,58 +931,175 @@ const featuredProducts = products.slice(0, 8);
     }
   }
 
-  .services__item {
-    text-align: center;
+  /* ─ Individual Cards ─ */
+  .services__card {
+    position: relative;
+    border-radius: 20px;
+    overflow: hidden;
+    transition: transform 0.6s var(--ease-out);
+  }
+
+  .services__card:hover {
+    transform: translateY(-6px);
+  }
+
+  .services__card-inner {
+    position: relative;
+    padding: clamp(2rem, 4vw, 2.8rem) clamp(1.5rem, 3vw, 2.2rem);
+    height: 100%;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: var(--space-lg) var(--space-md);
-    border-radius: 12px;
-    transition: background 0.3s;
+    border-radius: 20px;
+    transition: box-shadow 0.6s var(--ease-out);
   }
 
-  .services__item:hover {
-    background: rgba(255,255,255,0.6);
+  .services__card:hover .services__card-inner {
+    box-shadow: 0 24px 64px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.04);
   }
 
-  .services__icon-wrap {
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    background: var(--color-cyan);
-    color: white;
+  /* Card color variants — each card has its own warm palette */
+  .services__card--1 .services__card-inner {
+    background: linear-gradient(160deg, #f5f0e8 0%, #ede6da 100%);
+  }
+
+  .services__card--2 .services__card-inner {
+    background: linear-gradient(160deg, #e8eff3 0%, #dde8ee 100%);
+  }
+
+  .services__card--3 .services__card-inner {
+    background: linear-gradient(160deg, #f0ebe4 0%, #e8e0d5 100%);
+  }
+
+  /* Stagger the cards vertically on desktop for rhythm */
+  @media (min-width: 640px) {
+    .services__card--2 {
+      transform: translateY(2rem);
+    }
+
+    .services__card--2:hover {
+      transform: translateY(calc(2rem - 6px));
+    }
+  }
+
+  /* ─ Card Icon ─ */
+  .services__card-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.7);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: var(--space-md);
-    transition: transform 0.5s var(--ease-out), box-shadow 0.5s;
+    margin-bottom: var(--space-lg);
+    color: var(--color-charcoal);
+    transition: transform 0.5s var(--ease-out), background 0.4s;
+    backdrop-filter: blur(8px);
   }
 
-  .services__item:hover .services__icon-wrap {
-    transform: scale(1.06);
-    box-shadow: 0 12px 32px rgba(74,163,188,0.2);
+  .services__card:hover .services__card-icon {
+    transform: scale(1.08) rotate(-3deg);
+    background: rgba(255,255,255,0.9);
   }
 
+  /* ─ Card Typography ─ */
   .services__title {
     font-family: var(--font-display);
-    font-size: 1.1rem;
+    font-size: clamp(1.5rem, 2.5vw, 1.9rem);
     font-weight: 600;
-    margin-bottom: 0.5rem;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
     color: var(--color-charcoal);
-    letter-spacing: -0.01em;
+    margin: 0 0 var(--space-sm);
   }
 
   .services__desc {
     font-size: 0.88rem;
-    color: var(--color-stone);
-    line-height: 1.65;
-    max-width: 30ch;
-    margin: 0 auto;
+    color: var(--color-slate);
+    line-height: 1.7;
+    margin: 0;
+    flex: 1;
   }
 
-  .services__cta {
+  /* ─ Tag pill ─ */
+  .services__tag {
+    display: inline-block;
+    margin-top: var(--space-lg);
+    padding: 0.35rem 0.85rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-radius: 100px;
+    background: rgba(255,255,255,0.6);
+    color: var(--color-slate);
+    align-self: flex-start;
+    backdrop-filter: blur(4px);
+    transition: background 0.3s, color 0.3s;
+  }
+
+  .services__card:hover .services__tag {
+    background: var(--color-charcoal);
+    color: var(--color-cream);
+  }
+
+  /* ─ Bottom CTA ─ */
+  .services__bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-md);
+    margin-top: clamp(3rem, 6vh, 5rem);
     text-align: center;
-    margin-top: var(--space-xl);
+  }
+
+  @media (min-width: 640px) {
+    .services__bottom {
+      margin-top: clamp(5rem, 8vh, 7rem);
+    }
+  }
+
+  .services__bottom-text {
+    font-family: var(--font-display);
+    font-size: clamp(1.2rem, 2vw, 1.5rem);
+    color: var(--color-stone);
+    margin: 0;
+    font-style: italic;
+    letter-spacing: -0.01em;
+  }
+
+  .services__cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 2.2rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-charcoal);
+    background: var(--color-gold);
+    border-radius: 100px;
+    transition: background 0.3s, transform 0.3s, box-shadow 0.4s;
+    box-shadow: 0 4px 16px rgba(255,212,0,0.25);
+  }
+
+  .services__cta-btn svg {
+    transition: transform 0.4s var(--ease-out);
+  }
+
+  .services__cta-btn:hover {
+    background: var(--color-gold-light);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(255,212,0,0.35);
+  }
+
+  .services__cta-btn:hover svg {
+    transform: translateX(4px);
+  }
+
+  .services__cta-btn:focus-visible {
+    outline: 2px solid var(--color-charcoal);
+    outline-offset: 4px;
   }
 
   /* ─── Mission Section ──────────────────── */
@@ -1061,130 +1192,6 @@ const featuredProducts = products.slice(0, 8);
     background: var(--color-gold);
     border-color: var(--color-gold);
     color: var(--color-charcoal);
-  }
-
-  /* ─── Visit Strip ──────────────────────── */
-  .visit-strip {
-    background: var(--color-gold);
-  }
-
-  .visit-strip__inner {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-lg);
-  }
-
-  @media (min-width: 768px) {
-    .visit-strip__inner {
-      grid-template-columns: 1fr 1fr;
-      align-items: start;
-    }
-  }
-
-  .visit-strip__gallery {
-    position: relative;
-    /* reserve space for the overlapping interior shot */
-    padding-bottom: 2rem;
-    padding-right: 2rem;
-  }
-
-  .visit-strip__photo img {
-    width: 100%;
-    height: auto;
-    border-radius: 8px;
-    display: block;
-    object-fit: cover;
-  }
-
-  .visit-strip__photo--exterior {
-    position: relative;
-    z-index: 1;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-    border-radius: 8px;
-    overflow: hidden;
-  }
-
-  .visit-strip__photo--interior {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 45%;
-    z-index: 2;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-    border-radius: 8px;
-    overflow: hidden;
-    border: 3px solid var(--color-gold);
-  }
-
-  @media (max-width: 767px) {
-    .visit-strip__gallery {
-      padding-bottom: 1.5rem;
-      padding-right: 1.5rem;
-    }
-    .visit-strip__photo--interior {
-      width: 50%;
-    }
-  }
-
-  .visit-strip__details {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-md);
-  }
-
-  .visit-strip__info h3 {
-    font-size: 1.3rem;
-    margin-bottom: 0.3rem;
-    color: var(--color-charcoal);
-  }
-
-  .visit-strip__info p {
-    font-size: 0.88rem;
-    color: var(--color-charcoal);
-    margin: 0.15rem 0;
-    max-width: none;
-  }
-
-  .visit-strip__info a { color: var(--color-charcoal); font-weight: 600; }
-
-  .visit-strip__info .btn--outline {
-    margin-top: var(--space-sm);
-    display: inline-block;
-  }
-
-  .visit-strip .btn--outline {
-    border-color: var(--color-charcoal);
-    color: var(--color-charcoal);
-    flex-shrink: 0;
-  }
-
-  .visit-strip .btn--outline:hover {
-    background: var(--color-charcoal);
-    color: var(--color-gold);
-  }
-
-  .visit-strip__map {
-    width: 100%;
-    border-radius: 8px;
-    overflow: hidden;
-  }
-
-  .visit-strip__map iframe {
-    display: block;
-    width: 100%;
-  }
-
-  .visit-strip__map-placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    height: 250px;
-    background: #e8d9a0;
-    border-radius: 8px;
-    color: var(--color-charcoal);
-    font-size: 0.85rem;
   }
 
   /* ─── Product card add to cart (homepage) ── */
@@ -1406,31 +1413,4 @@ const featuredProducts = products.slice(0, 8);
     }, 1500);
   });
 
-  // ─── Lazy-load Google Maps iframe on scroll ───
-  const mapContainer = document.getElementById('map-container');
-  if (mapContainer) {
-    const mapSrc = mapContainer.dataset.src;
-    const loadMap = () => {
-      if (!mapSrc || mapContainer.querySelector('iframe')) return;
-      const iframe = document.createElement('iframe');
-      iframe.src = mapSrc;
-      iframe.width = '100%';
-      iframe.height = '250';
-      iframe.style.cssText = 'border:0;border-radius:8px;display:block;';
-      iframe.allowFullscreen = true;
-      iframe.referrerPolicy = 'no-referrer-when-downgrade';
-      iframe.title = 'Sunny & Ranney showroom location';
-      mapContainer.replaceChildren(iframe);
-    };
-    const idle = (cb: () => void) => 'requestIdleCallback' in window
-      ? requestIdleCallback(cb)
-      : setTimeout(cb, 1);
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
-        observer.disconnect();
-        idle(loadMap);
-      }
-    }, { rootMargin: '200px' });
-    observer.observe(mapContainer);
-  }
 </script>

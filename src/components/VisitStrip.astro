@@ -1,0 +1,287 @@
+---
+/**
+ * Visit our showroom strip — appears on every page above the footer.
+ * Lazy-loads a static Google Maps image (zero JS overhead vs embed iframe).
+ */
+const mapQuery = '109A+Oak+Street+Roswell+GA+30075';
+---
+
+<section class="visit-strip">
+  <div class="container visit-strip__inner">
+
+    <!-- Left: Photos -->
+    <div class="visit-strip__gallery">
+      <div class="visit-strip__photo visit-strip__photo--main">
+        <img
+          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=600,q=80,format=auto"
+          srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=400,q=75,format=auto 400w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=600,q=80,format=auto 600w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=900,q=80,format=auto 900w"
+          sizes="(max-width: 767px) 85vw, 40vw"
+          alt="Inside the Sunny & Ranney showroom"
+          width="600"
+          height="450"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+      <div class="visit-strip__photo visit-strip__photo--inset">
+        <img
+          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/sunny-ranney-storefront/w=400,q=80,format=auto"
+          srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/sunny-ranney-storefront/w=250,q=75,format=auto 250w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/sunny-ranney-storefront/w=400,q=80,format=auto 400w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/sunny-ranney-storefront/w=600,q=80,format=auto 600w"
+          sizes="(max-width: 767px) 40vw, 20vw"
+          alt="Sunny & Ranney storefront in Roswell, Georgia"
+          width="400"
+          height="300"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+    </div>
+
+    <!-- Right: Info -->
+    <div class="visit-strip__content">
+      <span class="visit-strip__kicker">Come See Us</span>
+      <h3 class="visit-strip__title">Visit Our Roswell Showroom</h3>
+
+      <div class="visit-strip__details">
+        <div class="visit-strip__detail">
+          <svg class="visit-strip__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <div>
+            <p>109A Oak Street</p>
+            <p>Roswell, GA 30075</p>
+          </div>
+        </div>
+
+        <div class="visit-strip__detail">
+          <svg class="visit-strip__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <div>
+            <p>Tue &ndash; Thu: 10am &ndash; 5pm</p>
+            <p>Fri &ndash; Sat: 10am &ndash; 6pm</p>
+          </div>
+        </div>
+
+        <div class="visit-strip__detail">
+          <svg class="visit-strip__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          <div>
+            <a href="tel:6788885140">678.888.5140</a>
+            <a href="mailto:info@sunnyandranney.com">info@sunnyandranney.com</a>
+          </div>
+        </div>
+      </div>
+
+      <a href={`https://maps.google.com/?q=${mapQuery}`} target="_blank" rel="noopener noreferrer" class="visit-strip__btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        Get Directions
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .visit-strip {
+    background: var(--color-charcoal);
+    padding: clamp(3rem, 8vh, 5rem) 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Subtle warm glow */
+  .visit-strip::before {
+    content: '';
+    position: absolute;
+    top: -40%;
+    left: -10%;
+    width: 50%;
+    height: 180%;
+    background: radial-gradient(circle, rgba(255, 212, 0, 0.04) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .visit-strip::after {
+    content: '';
+    position: absolute;
+    bottom: -30%;
+    right: -5%;
+    width: 40%;
+    height: 160%;
+    background: radial-gradient(circle, rgba(75, 149, 180, 0.04) 0%, transparent 55%);
+    pointer-events: none;
+  }
+
+  .visit-strip__inner {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+    position: relative;
+    z-index: 1;
+  }
+
+  @media (min-width: 768px) {
+    .visit-strip__inner {
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      gap: var(--space-2xl);
+    }
+  }
+
+  /* ─── Gallery ──────────────────────────── */
+  .visit-strip__gallery {
+    position: relative;
+    padding-bottom: 2.5rem;
+    padding-right: 2.5rem;
+  }
+
+  .visit-strip__photo img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+  }
+
+  .visit-strip__photo--main {
+    position: relative;
+    z-index: 1;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  }
+
+  .visit-strip__photo--main img {
+    transition: transform 0.8s var(--ease-out);
+  }
+
+  .visit-strip__photo--main:hover img {
+    transform: scale(1.03);
+  }
+
+  .visit-strip__photo--inset {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 48%;
+    z-index: 2;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    border: 3px solid var(--color-charcoal);
+  }
+
+  .visit-strip__photo--inset img {
+    transition: transform 0.8s var(--ease-out);
+  }
+
+  .visit-strip__photo--inset:hover img {
+    transform: scale(1.05);
+  }
+
+  @media (max-width: 767px) {
+    .visit-strip__gallery {
+      padding-bottom: 2rem;
+      padding-right: 2rem;
+    }
+    .visit-strip__photo--inset {
+      width: 50%;
+    }
+  }
+
+  /* ─── Content ─────────────────────────── */
+  .visit-strip__content {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .visit-strip__kicker {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    margin-bottom: var(--space-xs);
+  }
+
+  .visit-strip__title {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    color: white;
+    margin: 0 0 var(--space-lg);
+    line-height: 1.15;
+  }
+
+  /* ─── Details with icons ──────────────── */
+  .visit-strip__details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+  }
+
+  .visit-strip__detail {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .visit-strip__icon {
+    color: var(--color-gold);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .visit-strip__detail div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .visit-strip__detail p {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+    line-height: 1.5;
+    max-width: none;
+  }
+
+  .visit-strip__detail a {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    transition: color 0.3s;
+    line-height: 1.5;
+  }
+
+  .visit-strip__detail a:hover {
+    color: var(--color-gold);
+  }
+
+  .visit-strip__detail a:focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* ─── Button ──────────────────────────── */
+  .visit-strip__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-charcoal);
+    background: var(--color-gold);
+    border-radius: 4px;
+    transition: background 0.3s, transform 0.3s;
+    align-self: flex-start;
+  }
+
+  .visit-strip__btn:hover {
+    background: var(--color-gold-light);
+    transform: translateY(-1px);
+  }
+
+  .visit-strip__btn:focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 4px;
+    border-radius: 4px;
+  }
+</style>
