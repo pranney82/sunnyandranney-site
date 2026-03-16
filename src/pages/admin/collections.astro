@@ -46,24 +46,26 @@ const collections = shopifyCollections.map((c, i) => {
     </div>
   ) : (
     <form id="collections-form">
-      <div class="collections-list" id="collections-list">
+      <div class="collections-grid" id="collections-list">
         {collections.map((c) => (
-          <div class="collection-item" data-handle={c.handle} draggable="true">
-            <div class="collection-drag">&#9776;</div>
+          <div class="collection-card" data-handle={c.handle} draggable="true">
+            <div class="collection-card-header">
+              <div class="collection-drag">&#9776;</div>
+              <label class="admin-toggle">
+                <input type="checkbox" name={`enabled-${c.handle}`} checked={c.enabled} />
+                <span class="admin-toggle-slider"></span>
+              </label>
+            </div>
             <div class="collection-thumb">
               {c.imageUrl
-                ? <img src={`${c.imageUrl}&width=80`} alt={c.title} width="60" height="60" />
+                ? <img src={`${c.imageUrl}&width=200`} alt={c.title} width="200" height="140" />
                 : <div class="collection-thumb-ph">{c.title.charAt(0)}</div>
               }
             </div>
             <div class="collection-info">
               <strong>{c.title}</strong>
-              <span>{c.productCount} products{c.description ? ` \u00b7 ${c.description.slice(0, 60)}` : ''}</span>
+              <span>{c.productCount} products</span>
             </div>
-            <label class="admin-toggle">
-              <input type="checkbox" name={`enabled-${c.handle}`} checked={c.enabled} />
-              <span class="admin-toggle-slider"></span>
-            </label>
           </div>
         ))}
       </div>
@@ -77,36 +79,46 @@ const collections = shopifyCollections.map((c, i) => {
 </Admin>
 
 <style>
-  .collections-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+  .collections-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
   }
 
-  .collection-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
+  @media (max-width: 900px) {
+    .collections-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .collection-card {
     background: var(--admin-card);
     border: 1px solid var(--admin-border);
     border-radius: var(--admin-radius);
     cursor: grab;
     transition: box-shadow 0.2s, border-color 0.2s;
+    overflow: hidden;
   }
 
-  .collection-item:active {
+  .collection-card:active {
     cursor: grabbing;
   }
 
-  .collection-item.dragging {
+  .collection-card.dragging {
     opacity: 0.5;
     border-color: var(--admin-accent);
   }
 
-  .collection-item.drag-over {
+  .collection-card.drag-over {
     border-color: var(--admin-accent);
     box-shadow: 0 2px 8px rgba(255, 212, 0, 0.2);
+  }
+
+  .collection-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
   }
 
   .collection-drag {
@@ -117,11 +129,9 @@ const collections = shopifyCollections.map((c, i) => {
   }
 
   .collection-thumb {
-    width: 60px;
-    height: 60px;
-    border-radius: 6px;
+    width: 100%;
+    height: 120px;
     overflow: hidden;
-    flex-shrink: 0;
     background: #f0f0f0;
   }
 
@@ -137,29 +147,28 @@ const collections = shopifyCollections.map((c, i) => {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
+    font-size: 2rem;
     font-weight: 600;
     color: var(--admin-text-light);
   }
 
   .collection-info {
-    flex: 1;
-    min-width: 0;
+    padding: 0.6rem 0.75rem;
   }
 
   .collection-info strong {
     display: block;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 600;
-  }
-
-  .collection-info span {
-    font-size: 0.8rem;
-    color: var(--admin-text-light);
-    display: block;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .collection-info span {
+    font-size: 0.78rem;
+    color: var(--admin-text-light);
+    display: block;
   }
 </style>
 
@@ -169,30 +178,30 @@ const collections = shopifyCollections.map((c, i) => {
 
   // Drag & drop reordering
   list.addEventListener('dragstart', (e) => {
-    dragItem = (e.target as HTMLElement).closest('.collection-item');
+    dragItem = (e.target as HTMLElement).closest('.collection-card');
     dragItem?.classList.add('dragging');
   });
 
   list.addEventListener('dragend', () => {
     dragItem?.classList.remove('dragging');
-    list.querySelectorAll('.collection-item').forEach((el) => el.classList.remove('drag-over'));
+    list.querySelectorAll('.collection-card').forEach((el) => el.classList.remove('drag-over'));
     dragItem = null;
   });
 
   list.addEventListener('dragover', (e) => {
     e.preventDefault();
-    const target = (e.target as HTMLElement).closest('.collection-item');
+    const target = (e.target as HTMLElement).closest('.collection-card');
     if (target && target !== dragItem) {
-      list.querySelectorAll('.collection-item').forEach((el) => el.classList.remove('drag-over'));
+      list.querySelectorAll('.collection-card').forEach((el) => el.classList.remove('drag-over'));
       target.classList.add('drag-over');
     }
   });
 
   list.addEventListener('drop', (e) => {
     e.preventDefault();
-    const target = (e.target as HTMLElement).closest('.collection-item');
+    const target = (e.target as HTMLElement).closest('.collection-card');
     if (target && target !== dragItem && dragItem) {
-      const items = [...list.querySelectorAll('.collection-item')];
+      const items = [...list.querySelectorAll('.collection-card')];
       const dragIdx = items.indexOf(dragItem);
       const targetIdx = items.indexOf(target);
       if (dragIdx < targetIdx) {
@@ -201,7 +210,7 @@ const collections = shopifyCollections.map((c, i) => {
         target.before(dragItem);
       }
     }
-    list.querySelectorAll('.collection-item').forEach((el) => el.classList.remove('drag-over'));
+    list.querySelectorAll('.collection-card').forEach((el) => el.classList.remove('drag-over'));
   });
 
   // Save
@@ -211,7 +220,7 @@ const collections = shopifyCollections.map((c, i) => {
     btn.disabled = true;
     btn.textContent = 'Saving...';
 
-    const items = [...list.querySelectorAll('.collection-item')];
+    const items = [...list.querySelectorAll('.collection-card')];
     const value = items.map((el, i) => ({
       handle: (el as HTMLElement).dataset.handle,
       enabled: (el.querySelector('input[type="checkbox"]') as HTMLInputElement).checked,
