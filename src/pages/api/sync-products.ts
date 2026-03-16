@@ -154,14 +154,31 @@ export const POST: APIRoute = async ({ request }) => {
       indexed += vectors.length;
     }
 
-    // Trigger CF Pages rebuild so static shop pages pick up new products
+    // Trigger CF Pages rebuild with 30-minute debounce
     let rebuilt = false;
     const deployHookUrl = (env as any).CF_DEPLOY_HOOK_URL;
+    const DEBOUNCE_MS = 30 * 60 * 1000; // 30 minutes
+
     if (deployHookUrl) {
       try {
-        const hookRes = await fetch(deployHookUrl, { method: 'POST' });
-        rebuilt = hookRes.ok;
-        if (!hookRes.ok) console.error('Deploy hook failed:', hookRes.status);
+        const lastRow = await env.DB.prepare(
+          "SELECT value FROM settings WHERE key = 'last_rebuild'"
+        ).first<{ value: string }>();
+
+        const lastRebuild = lastRow ? Number(lastRow.value) : 0;
+
+        if (Date.now() - lastRebuild > DEBOUNCE_MS) {
+          const hookRes = await fetch(deployHookUrl, { method: 'POST' });
+          rebuilt = hookRes.ok;
+
+          if (hookRes.ok) {
+            await env.DB.prepare(
+              "INSERT INTO settings (key, value, updated_at) VALUES ('last_rebuild', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at"
+            ).bind(String(Date.now())).run();
+          } else {
+            console.error('Deploy hook failed:', hookRes.status);
+          }
+        }
       } catch (err) {
         console.error('Deploy hook error:', err);
       }
