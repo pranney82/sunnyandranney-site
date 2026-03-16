@@ -28,7 +28,7 @@ const collections = shopifyCollections.map((c, i) => {
     description: c.description,
     productCount: c.products?.edges?.length || 0,
     imageUrl: c.image?.url || '',
-    enabled: saved ? saved.enabled : true,  // default: all enabled
+    enabled: saved ? saved.enabled : false,
     order: saved ? saved.order : i,
   };
 }).sort((a, b) => {

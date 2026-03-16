@@ -1,9 +1,9 @@
 import { defineMiddleware } from 'astro:middleware';
 
 /**
- * Middleware handles:
- * 1. Cloudflare Access JWT validation for admin API routes
- * 2. Edge caching headers for SSR pages
+ * Middleware: Cloudflare Access JWT validation for admin API routes.
+ * Product/shop pages are prerendered static files — CF Pages handles their
+ * caching via public/_headers. No runtime cache headers needed here.
  */
 export const onRequest = defineMiddleware(async (context, next) => {
   const url = new URL(context.request.url);
@@ -23,19 +23,5 @@ export const onRequest = defineMiddleware(async (context, next) => {
     // header (edge-injected) or the CF_Authorization cookie (browser requests).
   }
 
-  const response = await next();
-
-  // ─── SSR product pages: cache at the edge ──────────────────────
-  if (url.pathname.startsWith('/shop/') && url.pathname !== '/shop/') {
-    response.headers.set(
-      'Cache-Control',
-      'public, max-age=60, s-maxage=300, stale-while-revalidate=3600'
-    );
-    response.headers.set(
-      'CDN-Cache-Control',
-      'public, max-age=300, stale-while-revalidate=86400'
-    );
-  }
-
-  return response;
+  return next();
 });

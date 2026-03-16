@@ -44,9 +44,6 @@ try {
         }
       }
     }
-  } else {
-    const result = await shopify.getProducts(100);
-    products = result.products;
   }
 
   hasShopify = products.length > 0;
