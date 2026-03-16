@@ -3,7 +3,23 @@
  * Visit our showroom strip — appears on every page above the footer.
  * Lazy-loads a static Google Maps image (zero JS overhead vs embed iframe).
  */
-const mapQuery = '109A+Oak+Street+Roswell+GA+30075';
+import type { ContactInfo } from '@/lib/settings';
+
+interface Props {
+  contact?: ContactInfo | null;
+  hours?: string | null;
+}
+
+const { contact, hours } = Astro.props;
+
+const address = contact?.address || '109A Oak Street';
+const city = contact?.city || 'Roswell';
+const state = contact?.state || 'GA';
+const zip = contact?.zip || '30075';
+const phone = contact?.phone || '678.888.5140';
+const email = contact?.email || 'info@sunnyandranney.com';
+const phoneDigits = phone.replace(/\D/g, '');
+const mapQuery = `${address}+${city}+${state}+${zip}`.replace(/\s+/g, '+');
 ---
 
 <section class="visit-strip">
@@ -47,24 +63,30 @@ const mapQuery = '109A+Oak+Street+Roswell+GA+30075';
         <div class="visit-strip__detail">
           <svg class="visit-strip__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           <div>
-            <p>109A Oak Street</p>
-            <p>Roswell, GA 30075</p>
+            <p>{address}</p>
+            <p>{city}, {state} {zip}</p>
           </div>
         </div>
 
         <div class="visit-strip__detail">
           <svg class="visit-strip__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           <div>
-            <p>Tue &ndash; Thu: 10am &ndash; 5pm</p>
-            <p>Fri &ndash; Sat: 10am &ndash; 6pm</p>
+            {hours ? (
+              <p>{hours}</p>
+            ) : (
+              <>
+                <p>Tue &ndash; Thu: 10am &ndash; 5pm</p>
+                <p>Fri &ndash; Sat: 10am &ndash; 6pm</p>
+              </>
+            )}
           </div>
         </div>
 
         <div class="visit-strip__detail">
           <svg class="visit-strip__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           <div>
-            <a href="tel:6788885140">678.888.5140</a>
-            <a href="mailto:info@sunnyandranney.com">info@sunnyandranney.com</a>
+            <a href={`tel:${phoneDigits}`}>{phone}</a>
+            <a href={`mailto:${email}`}>{email}</a>
           </div>
         </div>
       </div>

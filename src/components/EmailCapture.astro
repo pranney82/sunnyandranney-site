@@ -185,23 +185,44 @@
     if (!form || form.dataset.bound) return;
     form.dataset.bound = 'true';
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const input = form.querySelector('#email-input') as HTMLInputElement;
       const success = form.querySelector('#email-success') as HTMLElement;
+      const btn = form.querySelector('.email-capture__btn') as HTMLButtonElement;
       const email = input?.value.trim();
       if (!email) return;
 
-      // TODO: Replace with your email service endpoint (Klaviyo, Mailchimp, etc.)
-      const subs = JSON.parse(localStorage.getItem('sr_email_subs') || '[]');
-      if (!subs.includes(email)) subs.push(email);
-      localStorage.setItem('sr_email_subs', JSON.stringify(subs));
+      btn.disabled = true;
+      btn.textContent = 'Subscribing...';
 
-      const inputWrap = form.querySelector('.email-capture__input-wrap') as HTMLElement;
-      const privacy = form.querySelector('.email-capture__privacy') as HTMLElement;
-      if (inputWrap) inputWrap.style.display = 'none';
-      if (privacy) privacy.style.display = 'none';
-      if (success) success.style.display = 'block';
+      try {
+        const res = await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Subscribe failed');
+        }
+
+        const inputWrap = form.querySelector('.email-capture__input-wrap') as HTMLElement;
+        const privacy = form.querySelector('.email-capture__privacy') as HTMLElement;
+        if (inputWrap) inputWrap.style.display = 'none';
+        if (privacy) privacy.style.display = 'none';
+        if (success) success.style.display = 'block';
+      } catch (err: any) {
+        btn.disabled = false;
+        btn.textContent = 'Subscribe';
+        // Show error inline
+        const privacy = form.querySelector('.email-capture__privacy') as HTMLElement;
+        if (privacy) {
+          privacy.textContent = err.message || 'Something went wrong. Please try again.';
+          privacy.style.color = '#ff6b6b';
+        }
+      }
     });
   }
 

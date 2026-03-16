@@ -3,7 +3,7 @@ import { getSetting, getAllSettings, saveSetting } from '@/lib/db';
 
 export const prerender = false;
 
-const VALID_KEYS = ['settings:hours', 'settings:collections', 'settings:specials'];
+const VALID_KEYS = ['settings:hours', 'settings:collections', 'settings:specials', 'settings:contact', 'settings:email-signup'];
 const JSON_HEADERS = { 'Content-Type': 'application/json' } as const;
 
 export const GET: APIRoute = async ({ url }) => {

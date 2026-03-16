@@ -12,7 +12,13 @@
 
 export interface StoreHours {
   days: Array<{ day: string; open: string; close: string; closed: boolean }>;
-  holidays: Array<{ date: string; label: string }>;
+  holidays: Array<{
+    date: string;
+    label: string;
+    closed: boolean;
+    open: string;
+    close: string;
+  }>;
   note: string;
 }
 
@@ -33,6 +39,23 @@ export interface StoreSpecials {
     active: boolean;
     type: 'banner' | 'promo' | 'info';
   }>;
+}
+
+export interface ContactInfo {
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  phone: string;
+  email: string;
+  instagramUrl: string;
+  facebookUrl: string;
+}
+
+export interface EmailSignupConfig {
+  constantContactApiKey: string;
+  constantContactListId: string;
+  constantContactListName: string;
 }
 
 // ─── Build-time readers (for static pages) ──────────────────
@@ -61,6 +84,14 @@ export async function getCollectionsStatic(): Promise<CollectionSetting[] | null
 
 export async function getSpecialsStatic(): Promise<StoreSpecials | null> {
   return loadLocalJson<StoreSpecials>('/src/content/settings/specials.json');
+}
+
+export async function getContactStatic(): Promise<ContactInfo | null> {
+  return loadLocalJson<ContactInfo>('/src/content/settings/contact.json');
+}
+
+export async function getEmailSignupStatic(): Promise<EmailSignupConfig | null> {
+  return loadLocalJson<EmailSignupConfig>('/src/content/settings/email-signup.json');
 }
 
 // ─── Formatting helpers (shared by static pages + chatbot) ──

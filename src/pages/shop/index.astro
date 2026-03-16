@@ -1,6 +1,8 @@
 ---
 import Base from '@/layouts/Base.astro';
 import { cfImage, cfSrcset, SIZES } from '@/lib/images';
+import type { CollectionSetting } from '@/lib/settings';
+import { getCollectionsStatic } from '@/lib/settings';
 
 export const prerender = false;
 
@@ -8,7 +10,7 @@ export const prerender = false;
 const url = new URL(Astro.request.url);
 const collectionHandle = url.searchParams.get('collection') || '';
 
-// Fetch products — from a specific collection or all products
+// Fetch products — from a specific collection or enabled collections
 let products: any[] = [];
 let hasShopify = false;
 let hasNextPage = false;
@@ -19,6 +21,7 @@ try {
   const shopify = await import('@/lib/shopify');
 
   if (collectionHandle) {
+    // Single collection view
     const collection = await shopify.getCollectionByHandle(collectionHandle, 100);
     if (collection) {
       products = collection.products;
@@ -26,13 +29,45 @@ try {
       hasNextPage = collection.pageInfo.hasNextPage;
       endCursor = collection.pageInfo.endCursor;
     }
-  }
+  } else {
+    // Default view: only products from admin-enabled collections
+    // Try D1 first (production), fall back to static JSON (local dev)
+    let collectionSettings: CollectionSetting[] | null = null;
+    try {
+      const { getSetting } = await import('@/lib/db');
+      collectionSettings = await getSetting<CollectionSetting[]>('settings:collections');
+    } catch {
+      collectionSettings = await getCollectionsStatic();
+    }
+    const enabledHandles = collectionSettings
+      ?.filter(c => c.enabled)
+      .sort((a, b) => a.order - b.order)
+      .map(c => c.handle) ?? [];
 
-  if (!products.length && !collectionHandle) {
-    const result = await shopify.getProducts(100);
-    products = result.products;
-    hasNextPage = result.pageInfo.hasNextPage;
-    endCursor = result.pageInfo.endCursor;
+    if (enabledHandles.length > 0) {
+      // Fetch all enabled collections in parallel
+      const results = await Promise.all(
+        enabledHandles.map(handle => shopify.getCollectionByHandle(handle, 100))
+      );
+
+      // Merge & deduplicate, preserving collection order
+      const seen = new Set<string>();
+      for (const collection of results) {
+        if (!collection) continue;
+        for (const product of collection.products) {
+          if (!seen.has(product.id)) {
+            seen.add(product.id);
+            products.push(product);
+          }
+        }
+      }
+    } else {
+      // No collections configured yet — fall back to all products
+      const result = await shopify.getProducts(100);
+      products = result.products;
+      hasNextPage = result.pageInfo.hasNextPage;
+      endCursor = result.pageInfo.endCursor;
+    }
   }
 
   hasShopify = products.length > 0;

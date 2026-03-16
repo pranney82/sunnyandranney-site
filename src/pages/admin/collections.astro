@@ -36,8 +36,14 @@ const collections = shopifyCollections.map((c, i) => {
 
 <Admin title="Collections">
   <div class="admin-header">
-    <h2>Collections</h2>
-    <p>Choose which Shopify collections appear on your shop page</p>
+    <div>
+      <h2>Collections</h2>
+      <p>Choose which Shopify collections appear on your shop page</p>
+    </div>
+    <div class="admin-unsaved-badge" aria-live="polite">
+      <span class="admin-unsaved-dot"></span>
+      Unsaved changes
+    </div>
   </div>
 
   {shopifyCollections.length === 0 ? (
@@ -70,8 +76,11 @@ const collections = shopifyCollections.map((c, i) => {
         ))}
       </div>
 
-      <div style="margin-top: 1rem; display: flex; gap: 0.75rem; align-items: center;">
+      <div class="admin-save-bar" style="margin-top: 1rem;">
         <button type="submit" class="admin-btn admin-btn--primary" id="save-btn">Save Collections</button>
+        <span class="admin-save-hint">
+          <kbd class="admin-kbd">⌘S</kbd> to save
+        </span>
         <span style="font-size: 0.8rem; color: var(--admin-text-light);">Drag to reorder</span>
       </div>
     </form>
@@ -81,11 +90,23 @@ const collections = shopifyCollections.map((c, i) => {
 <style>
   .collections-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 0.75rem;
   }
 
+  @media (max-width: 1200px) {
+    .collections-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
   @media (max-width: 900px) {
+    .collections-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (max-width: 600px) {
     .collections-grid {
       grid-template-columns: repeat(2, 1fr);
     }

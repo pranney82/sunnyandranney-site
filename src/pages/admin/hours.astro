@@ -24,8 +24,14 @@ const data = hours || defaults;
 
 <Admin title="Store Hours">
   <div class="admin-header">
-    <h2>Store Hours</h2>
-    <p>Set your regular hours and holiday closures</p>
+    <div>
+      <h2>Store Hours</h2>
+      <p>Set your regular hours and holiday closures</p>
+    </div>
+    <div class="admin-unsaved-badge" aria-live="polite">
+      <span class="admin-unsaved-dot"></span>
+      Unsaved changes
+    </div>
   </div>
 
   <form id="hours-form">
@@ -76,7 +82,12 @@ const data = hours || defaults;
       <textarea class="admin-input admin-textarea" name="note" placeholder="Optional note about store hours...">{data.note}</textarea>
     </div>
 
-    <button type="submit" class="admin-btn admin-btn--primary" id="save-btn">Save Hours</button>
+    <div class="admin-save-bar">
+      <button type="submit" class="admin-btn admin-btn--primary" id="save-btn">Save Hours</button>
+      <span class="admin-save-hint">
+        <kbd class="admin-kbd">⌘S</kbd> to save
+      </span>
+    </div>
   </form>
 </Admin>
 

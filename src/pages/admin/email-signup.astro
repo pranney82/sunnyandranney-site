@@ -1,0 +1,157 @@
+---
+import Admin from '@/layouts/Admin.astro';
+import { getSetting } from '@/lib/db';
+
+export const prerender = false;
+
+const config: any = await getSetting('settings:email-signup');
+
+const defaults = {
+  constantContactApiKey: '',
+  constantContactListId: '',
+  constantContactListName: '',
+};
+
+const data = config || defaults;
+---
+
+<Admin title="Email Signup">
+  <div class="admin-header">
+    <div>
+      <h2>Email Signup</h2>
+      <p>Connect Constant Contact to your newsletter signup form</p>
+    </div>
+    <div class="admin-unsaved-badge" aria-live="polite">
+      <span class="admin-unsaved-dot"></span>
+      Unsaved changes
+    </div>
+  </div>
+
+  <form id="email-signup-form">
+    <div class="admin-card">
+      <h3>Constant Contact</h3>
+      <p style="font-size: 0.85rem; color: var(--admin-text-light); margin-bottom: 1rem;">
+        Enter your API key to connect your signup form. You can find this in your
+        Constant Contact account under My Applications.
+      </p>
+      <div class="admin-field">
+        <label class="admin-label">API Key</label>
+        <input type="text" class="admin-input" name="constantContactApiKey" value={data.constantContactApiKey} placeholder="Paste your Constant Contact API key" />
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <h3>Email List</h3>
+      <p style="font-size: 0.85rem; color: var(--admin-text-light); margin-bottom: 1rem;">
+        Choose which Constant Contact list new subscribers are added to.
+      </p>
+      <div class="admin-field">
+        <div style="display: flex; gap: 0.75rem; align-items: flex-end;">
+          <div style="flex: 1;">
+            <label class="admin-label">List</label>
+            <select class="admin-input" name="constantContactListId" id="list-select">
+              {data.constantContactListId ? (
+                <option value={data.constantContactListId} selected>{data.constantContactListName || data.constantContactListId}</option>
+              ) : (
+                <option value="">-- Fetch lists first --</option>
+              )}
+            </select>
+          </div>
+          <button type="button" class="admin-btn admin-btn--outline" id="fetch-lists-btn" style="margin-bottom: 1rem;">
+            Fetch Lists
+          </button>
+        </div>
+        <span class="fetch-status" id="fetch-status" style="font-size: 0.8rem; color: var(--admin-text-light); margin-top: 0.25rem; display: block;"></span>
+      </div>
+    </div>
+
+    <div class="admin-save-bar">
+      <button type="submit" class="admin-btn admin-btn--primary" id="save-btn">Save Email Settings</button>
+      <span class="admin-save-hint">
+        <kbd class="admin-kbd">⌘S</kbd> to save
+      </span>
+    </div>
+  </form>
+</Admin>
+
+<script>
+  const form = document.getElementById('email-signup-form') as HTMLFormElement;
+  const fetchBtn = document.getElementById('fetch-lists-btn') as HTMLButtonElement;
+  const listSelect = document.getElementById('list-select') as HTMLSelectElement;
+  const fetchStatus = document.getElementById('fetch-status') as HTMLElement;
+
+  // Fetch lists from Constant Contact
+  fetchBtn.addEventListener('click', async () => {
+    const apiKey = (form.querySelector('[name="constantContactApiKey"]') as HTMLInputElement).value.trim();
+    if (!apiKey) {
+      (window as any).showToast('Enter your API key first', true);
+      return;
+    }
+
+    fetchBtn.disabled = true;
+    fetchBtn.textContent = 'Fetching...';
+    fetchStatus.textContent = '';
+
+    try {
+      const res = await fetch('/api/admin/constant-contact-lists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to fetch lists');
+      }
+
+      const { lists } = await res.json();
+      listSelect.innerHTML = '<option value="">-- Select a list --</option>';
+      for (const list of lists) {
+        const opt = document.createElement('option');
+        opt.value = list.list_id;
+        opt.textContent = `${list.name} (${list.membership_count} contacts)`;
+        opt.dataset.name = list.name;
+        listSelect.appendChild(opt);
+      }
+
+      fetchStatus.textContent = `Found ${lists.length} list(s)`;
+      fetchStatus.style.color = 'var(--admin-success)';
+    } catch (err: any) {
+      fetchStatus.textContent = err.message || 'Failed to fetch lists';
+      fetchStatus.style.color = 'var(--admin-danger)';
+    } finally {
+      fetchBtn.disabled = false;
+      fetchBtn.textContent = 'Fetch Lists';
+    }
+  });
+
+  // Save
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('save-btn') as HTMLButtonElement;
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    const selectedOption = listSelect.options[listSelect.selectedIndex];
+    const value = {
+      constantContactApiKey: (form.querySelector('[name="constantContactApiKey"]') as HTMLInputElement).value,
+      constantContactListId: listSelect.value,
+      constantContactListName: selectedOption?.dataset?.name || selectedOption?.textContent || '',
+    };
+
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'settings:email-signup', value }),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      (window as any).showToast('Email settings saved');
+    } catch {
+      (window as any).showToast('Failed to save', true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Save Email Settings';
+    }
+  });
+</script>

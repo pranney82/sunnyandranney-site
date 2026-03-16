@@ -24,8 +24,14 @@ const data = specials || defaults;
 
 <Admin title="Specials & Announcements">
   <div class="admin-header">
-    <h2>Specials & Announcements</h2>
-    <p>Manage banners, promos, and featured items</p>
+    <div>
+      <h2>Specials & Announcements</h2>
+      <p>Manage banners, promos, and featured items</p>
+    </div>
+    <div class="admin-unsaved-badge" aria-live="polite">
+      <span class="admin-unsaved-dot"></span>
+      Unsaved changes
+    </div>
   </div>
 
   <form id="specials-form">
@@ -74,7 +80,12 @@ const data = specials || defaults;
       <button type="button" class="admin-btn admin-btn--outline" id="add-announcement" style="margin-top: 0.75rem">+ Add Announcement</button>
     </div>
 
-    <button type="submit" class="admin-btn admin-btn--primary" id="save-btn">Save Specials</button>
+    <div class="admin-save-bar">
+      <button type="submit" class="admin-btn admin-btn--primary" id="save-btn">Save Specials</button>
+      <span class="admin-save-hint">
+        <kbd class="admin-kbd">⌘S</kbd> to save
+      </span>
+    </div>
   </form>
 </Admin>
 

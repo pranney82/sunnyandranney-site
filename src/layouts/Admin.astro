@@ -11,6 +11,8 @@ const navItems = [
   { href: '/admin/hours', label: 'Store Hours', icon: 'clock' },
   { href: '/admin/collections', label: 'Collections', icon: 'shopping-bag' },
   { href: '/admin/specials', label: 'Specials', icon: 'star' },
+  { href: '/admin/contact', label: 'Contact Info', icon: 'map-pin' },
+  { href: '/admin/email-signup', label: 'Email Signup', icon: 'mail' },
 ];
 ---
 
@@ -42,13 +44,19 @@ const navItems = [
         --admin-sidebar: #1a1a2e;
         --admin-sidebar-hover: #16213e;
         --admin-accent: #FFD400;
+        --admin-accent-hover: #e6bf00;
         --admin-text: #2C2C2C;
         --admin-text-light: #6c757d;
         --admin-card: #ffffff;
         --admin-border: #e9ecef;
         --admin-success: #28a745;
         --admin-danger: #dc3545;
-        --admin-radius: 8px;
+        --admin-warning: #ffc107;
+        --admin-info: #4B95B4;
+        --admin-radius: 10px;
+        --admin-shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+        --admin-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        --admin-shadow-lg: 0 4px 16px rgba(0,0,0,0.1);
       }
 
       html { font-size: 16px; -webkit-font-smoothing: antialiased; }
@@ -62,12 +70,11 @@ const navItems = [
         min-height: 100vh;
       }
 
-      /* Sidebar */
+      /* ─── Sidebar ───────────────────────────── */
       .admin-sidebar {
-        width: 240px;
+        width: 250px;
         background: var(--admin-sidebar);
         color: white;
-        padding: 1.5rem 0;
         display: flex;
         flex-direction: column;
         position: fixed;
@@ -76,12 +83,12 @@ const navItems = [
         bottom: 0;
         z-index: 100;
         transition: transform 0.3s ease;
+        overflow-y: auto;
       }
 
       .admin-logo {
-        padding: 0 1.25rem 1.5rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        margin-bottom: 0.5rem;
+        padding: 1.5rem 1.25rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       }
 
       .admin-logo h1 {
@@ -91,36 +98,55 @@ const navItems = [
       }
 
       .admin-logo span {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         text-transform: uppercase;
-        letter-spacing: 0.15em;
+        letter-spacing: 0.18em;
         color: var(--admin-accent);
         display: block;
-        margin-top: 0.15rem;
+        margin-top: 0.2rem;
       }
 
-      .admin-nav { flex: 1; padding: 0.5rem 0; }
+      .admin-nav {
+        flex: 1;
+        padding: 0.75rem 0;
+      }
+
+      .admin-nav-section {
+        padding: 0 1.25rem;
+        margin-bottom: 0.35rem;
+        margin-top: 1.25rem;
+        font-size: 0.6rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: rgba(255, 255, 255, 0.3);
+      }
+
+      .admin-nav-section:first-child {
+        margin-top: 0;
+      }
 
       .admin-nav a {
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        padding: 0.7rem 1.25rem;
-        color: rgba(255, 255, 255, 0.65);
+        padding: 0.6rem 1.25rem;
+        color: rgba(255, 255, 255, 0.55);
         text-decoration: none;
-        font-size: 0.88rem;
+        font-size: 0.85rem;
         font-weight: 500;
-        transition: all 0.2s;
+        transition: all 0.15s;
         border-left: 3px solid transparent;
+        position: relative;
       }
 
       .admin-nav a:hover {
-        color: white;
+        color: rgba(255, 255, 255, 0.9);
         background: var(--admin-sidebar-hover);
       }
 
       .admin-nav a.active {
-        color: var(--admin-accent);
+        color: white;
         background: var(--admin-sidebar-hover);
         border-left-color: var(--admin-accent);
       }
@@ -128,21 +154,25 @@ const navItems = [
       .admin-nav-icon {
         width: 18px;
         height: 18px;
-        opacity: 0.7;
+        opacity: 0.5;
+        flex-shrink: 0;
       }
 
       .admin-nav a.active .admin-nav-icon,
       .admin-nav a:hover .admin-nav-icon {
-        opacity: 1;
+        opacity: 0.9;
       }
 
       .admin-sidebar-footer {
         padding: 1rem 1.25rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
       }
 
       .admin-sidebar-footer a {
-        color: rgba(255, 255, 255, 0.5);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: rgba(255, 255, 255, 0.4);
         text-decoration: none;
         font-size: 0.8rem;
         transition: color 0.2s;
@@ -150,31 +180,47 @@ const navItems = [
 
       .admin-sidebar-footer a:hover { color: white; }
 
-      /* Main content */
+      .admin-sidebar-footer svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* ─── Main content ──────────────────────── */
       .admin-main {
         flex: 1;
-        margin-left: 240px;
-        padding: 2rem;
-        max-width: 1040px;
+        margin-left: 250px;
+        padding: 2rem 2.5rem;
+        max-width: 1060px;
+        animation: adminFadeIn 0.3s ease;
+      }
+
+      @keyframes adminFadeIn {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
       }
 
       .admin-header {
         margin-bottom: 2rem;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
       }
 
       .admin-header h2 {
         font-size: 1.5rem;
         font-weight: 600;
         color: var(--admin-text);
+        line-height: 1.3;
       }
 
       .admin-header p {
         color: var(--admin-text-light);
-        font-size: 0.9rem;
-        margin-top: 0.25rem;
+        font-size: 0.88rem;
+        margin-top: 0.2rem;
       }
 
-      /* Mobile toggle */
+      /* ─── Mobile toggle ─────────────────────── */
       .admin-mobile-toggle {
         display: none;
         position: fixed;
@@ -186,11 +232,12 @@ const navItems = [
         background: var(--admin-sidebar);
         color: white;
         border: none;
-        border-radius: 8px;
+        border-radius: 10px;
         cursor: pointer;
         align-items: center;
         justify-content: center;
         font-size: 1.2rem;
+        box-shadow: var(--admin-shadow);
       }
 
       .admin-overlay {
@@ -199,6 +246,7 @@ const navItems = [
         inset: 0;
         background: rgba(0, 0, 0, 0.5);
         z-index: 99;
+        backdrop-filter: blur(2px);
       }
 
       @media (max-width: 768px) {
@@ -220,27 +268,41 @@ const navItems = [
 
         .admin-main {
           margin-left: 0;
-          padding: 1rem;
-          padding-top: 4rem;
+          padding: 1.25rem;
+          padding-top: 4.5rem;
+        }
+
+        .admin-header {
+          flex-direction: column;
         }
       }
 
-      /* Shared admin component styles */
+      /* ─── Cards ─────────────────────────────── */
       .admin-card {
         background: var(--admin-card);
         border: 1px solid var(--admin-border);
         border-radius: var(--admin-radius);
         padding: 1.5rem;
-        margin-bottom: 1.5rem;
+        margin-bottom: 1.25rem;
+        box-shadow: var(--admin-shadow-sm);
+        transition: box-shadow 0.2s;
+      }
+
+      .admin-card:hover {
+        box-shadow: var(--admin-shadow);
       }
 
       .admin-card h3 {
-        font-size: 1rem;
+        font-size: 0.95rem;
         font-weight: 600;
         margin-bottom: 1rem;
         color: var(--admin-text);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
       }
 
+      /* ─── Buttons ───────────────────────────── */
       .admin-btn {
         display: inline-flex;
         align-items: center;
@@ -250,25 +312,35 @@ const navItems = [
         font-size: 0.85rem;
         font-weight: 600;
         border: 2px solid transparent;
-        border-radius: 6px;
+        border-radius: 8px;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all 0.15s;
+        position: relative;
       }
 
       .admin-btn--primary {
         background: var(--admin-accent);
         color: var(--admin-text);
         border-color: var(--admin-accent);
+        box-shadow: 0 1px 3px rgba(255, 212, 0, 0.3);
       }
 
       .admin-btn--primary:hover {
-        background: #e6bf00;
-        border-color: #e6bf00;
+        background: var(--admin-accent-hover);
+        border-color: var(--admin-accent-hover);
+        box-shadow: 0 2px 8px rgba(255, 212, 0, 0.35);
+        transform: translateY(-1px);
+      }
+
+      .admin-btn--primary:active {
+        transform: translateY(0);
       }
 
       .admin-btn--primary:disabled {
         opacity: 0.6;
         cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
       }
 
       .admin-btn--outline {
@@ -278,7 +350,8 @@ const navItems = [
       }
 
       .admin-btn--outline:hover {
-        border-color: var(--admin-text);
+        border-color: var(--admin-text-light);
+        background: rgba(0,0,0,0.02);
       }
 
       .admin-btn--danger {
@@ -292,22 +365,62 @@ const navItems = [
         color: white;
       }
 
+      /* Save bar with keyboard hint */
+      .admin-save-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-top: 0.25rem;
+      }
+
+      .admin-save-hint {
+        font-size: 0.75rem;
+        color: var(--admin-text-light);
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+      }
+
+      .admin-kbd {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.1rem 0.4rem;
+        background: #f0f0f0;
+        border: 1px solid var(--admin-border);
+        border-radius: 4px;
+        font-size: 0.65rem;
+        font-family: inherit;
+        font-weight: 600;
+        color: var(--admin-text-light);
+        line-height: 1.4;
+      }
+
+      /* ─── Inputs ────────────────────────────── */
       .admin-input {
         width: 100%;
-        padding: 0.55rem 0.75rem;
+        padding: 0.6rem 0.85rem;
         font-family: inherit;
-        font-size: 0.9rem;
-        border: 1px solid var(--admin-border);
-        border-radius: 6px;
+        font-size: 0.88rem;
+        border: 1.5px solid var(--admin-border);
+        border-radius: 8px;
         background: white;
         color: var(--admin-text);
-        transition: border-color 0.2s;
+        transition: border-color 0.15s, box-shadow 0.15s;
       }
 
       .admin-input:focus {
         outline: none;
         border-color: var(--admin-accent);
-        box-shadow: 0 0 0 3px rgba(255, 212, 0, 0.15);
+        box-shadow: 0 0 0 3px rgba(255, 212, 0, 0.12);
+      }
+
+      .admin-input:invalid:not(:placeholder-shown) {
+        border-color: var(--admin-danger);
+      }
+
+      .admin-input:invalid:not(:placeholder-shown):focus {
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.12);
       }
 
       .admin-textarea {
@@ -317,18 +430,41 @@ const navItems = [
 
       .admin-label {
         display: block;
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.08em;
         color: var(--admin-text-light);
-        margin-bottom: 0.35rem;
+        margin-bottom: 0.4rem;
       }
 
       .admin-field {
         margin-bottom: 1rem;
       }
 
+      .admin-field-hint {
+        font-size: 0.78rem;
+        color: var(--admin-text-light);
+        margin-top: 0.3rem;
+        display: block;
+      }
+
+      .admin-field-error {
+        font-size: 0.78rem;
+        color: var(--admin-danger);
+        margin-top: 0.3rem;
+        display: none;
+      }
+
+      .admin-field.has-error .admin-input {
+        border-color: var(--admin-danger);
+      }
+
+      .admin-field.has-error .admin-field-error {
+        display: block;
+      }
+
+      /* ─── Toggle ────────────────────────────── */
       .admin-toggle {
         position: relative;
         width: 44px;
@@ -346,7 +482,7 @@ const navItems = [
       .admin-toggle-slider {
         position: absolute;
         inset: 0;
-        background: var(--admin-border);
+        background: #d1d5db;
         border-radius: 24px;
         cursor: pointer;
         transition: background 0.2s;
@@ -362,6 +498,7 @@ const navItems = [
         background: white;
         border-radius: 50%;
         transition: transform 0.2s;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
       }
 
       .admin-toggle input:checked + .admin-toggle-slider {
@@ -372,36 +509,53 @@ const navItems = [
         transform: translateX(20px);
       }
 
+      /* ─── Toast ─────────────────────────────── */
       .admin-toast {
         position: fixed;
         bottom: 2rem;
         right: 2rem;
-        padding: 0.75rem 1.25rem;
+        padding: 0.8rem 1.25rem;
         background: var(--admin-text);
         color: white;
-        border-radius: 8px;
+        border-radius: 10px;
         font-size: 0.85rem;
         font-weight: 500;
         z-index: 200;
         opacity: 0;
-        transform: translateY(10px);
-        transition: all 0.3s;
+        transform: translateY(10px) scale(0.96);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         pointer-events: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        box-shadow: var(--admin-shadow-lg);
+        max-width: 360px;
       }
 
       .admin-toast.show {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
       }
 
       .admin-toast.error {
         background: var(--admin-danger);
       }
 
+      .admin-toast.success {
+        background: #1a7f37;
+      }
+
+      .admin-toast-icon {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+      }
+
+      /* ─── Stats grid ────────────────────────── */
       .admin-stat-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 0.75rem;
         margin-bottom: 1.5rem;
       }
 
@@ -410,10 +564,13 @@ const navItems = [
         border: 1px solid var(--admin-border);
         border-radius: var(--admin-radius);
         padding: 1.25rem;
+        box-shadow: var(--admin-shadow-sm);
+        position: relative;
+        overflow: hidden;
       }
 
       .admin-stat-label {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.1em;
@@ -422,9 +579,83 @@ const navItems = [
       }
 
       .admin-stat-value {
-        font-size: 1.75rem;
+        font-size: 1.4rem;
         font-weight: 600;
         color: var(--admin-text);
+      }
+
+      /* Status dot indicator */
+      .admin-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.8rem;
+        font-weight: 500;
+      }
+
+      .admin-status::before {
+        content: '';
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .admin-status--success::before { background: var(--admin-success); }
+      .admin-status--warning::before { background: var(--admin-warning); }
+      .admin-status--danger::before { background: var(--admin-danger); }
+      .admin-status--neutral::before { background: var(--admin-border); }
+
+      /* ─── Unsaved changes indicator ─────────── */
+      .admin-unsaved-badge {
+        display: none;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.3rem 0.75rem;
+        background: #fff8e1;
+        border: 1px solid #ffe082;
+        border-radius: 20px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #f57f17;
+        white-space: nowrap;
+      }
+
+      .admin-unsaved-badge.visible {
+        display: inline-flex;
+      }
+
+      .admin-unsaved-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #f57f17;
+        animation: adminPulse 2s infinite;
+      }
+
+      @keyframes adminPulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+      }
+
+      /* ─── Empty state ───────────────────────── */
+      .admin-empty {
+        text-align: center;
+        padding: 3rem 1.5rem;
+        color: var(--admin-text-light);
+      }
+
+      .admin-empty svg {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 1rem;
+        opacity: 0.3;
+      }
+
+      .admin-empty p {
+        font-size: 0.9rem;
+        max-width: 30ch;
+        margin: 0 auto;
       }
     </style>
   </head>
@@ -440,10 +671,19 @@ const navItems = [
         <span>Admin Panel</span>
       </div>
       <nav class="admin-nav">
-        {navItems.map((item) => (
-          <a href={item.href} class:list={[{ active: currentPath === item.href || (item.href !== '/admin' && currentPath.startsWith(item.href)) }]}>
+        <div class="admin-nav-section">Overview</div>
+        {navItems.slice(0, 1).map((item) => (
+          <a href={item.href} class:list={[{ active: currentPath === item.href }]}>
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               {item.icon === 'grid' && <><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></>}
+            </svg>
+            {item.label}
+          </a>
+        ))}
+        <div class="admin-nav-section">Store</div>
+        {navItems.slice(1, 4).map((item) => (
+          <a href={item.href} class:list={[{ active: currentPath === item.href || currentPath.startsWith(item.href + '/') }]}>
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               {item.icon === 'clock' && <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>}
               {item.icon === 'shopping-bag' && <><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></>}
               {item.icon === 'star' && <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>}
@@ -451,9 +691,22 @@ const navItems = [
             {item.label}
           </a>
         ))}
+        <div class="admin-nav-section">Settings</div>
+        {navItems.slice(4).map((item) => (
+          <a href={item.href} class:list={[{ active: currentPath === item.href || currentPath.startsWith(item.href + '/') }]}>
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              {item.icon === 'map-pin' && <><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></>}
+              {item.icon === 'mail' && <><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></>}
+            </svg>
+            {item.label}
+          </a>
+        ))}
       </nav>
       <div class="admin-sidebar-footer">
-        <a href="/">&#8592; Back to site</a>
+        <a href="/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          Back to site
+        </a>
       </div>
     </aside>
 
@@ -461,10 +714,14 @@ const navItems = [
       <slot />
     </main>
 
-    <div class="admin-toast" id="admin-toast"></div>
+    <div class="admin-toast" id="admin-toast">
+      <svg class="admin-toast-icon" id="toast-icon-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <svg class="admin-toast-icon" id="toast-icon-error" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      <span id="toast-message"></span>
+    </div>
 
     <script>
-      // Mobile sidebar toggle
+      // ─── Mobile sidebar toggle ──────────────
       const toggle = document.getElementById('mobile-toggle');
       const sidebar = document.getElementById('admin-sidebar');
       const overlay = document.getElementById('admin-overlay');
@@ -479,14 +736,73 @@ const navItems = [
         overlay?.classList.remove('open');
       });
 
-      // Toast helper — available globally
-      window.showToast = function(message, isError = false) {
+      // ─── Toast with icons ───────────────────
+      (window as any).showToast = function(message: string, isError = false) {
         const toast = document.getElementById('admin-toast');
-        if (!toast) return;
-        toast.textContent = message;
-        toast.className = 'admin-toast show' + (isError ? ' error' : '');
-        setTimeout(() => { toast.className = 'admin-toast'; }, 3000);
+        const msgEl = document.getElementById('toast-message');
+        const successIcon = document.getElementById('toast-icon-success');
+        const errorIcon = document.getElementById('toast-icon-error');
+        if (!toast || !msgEl) return;
+
+        msgEl.textContent = message;
+        if (successIcon) successIcon.style.display = isError ? 'none' : 'block';
+        if (errorIcon) errorIcon.style.display = isError ? 'block' : 'none';
+        toast.className = `admin-toast show ${isError ? 'error' : 'success'}`;
+        setTimeout(() => { toast.className = 'admin-toast'; }, 3500);
       };
+
+      // ─── Cmd/Ctrl+S to save ─────────────────
+      document.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+          e.preventDefault();
+          const form = document.querySelector('form');
+          if (form) {
+            const submitBtn = form.querySelector('[type="submit"]') as HTMLButtonElement;
+            if (submitBtn && !submitBtn.disabled) {
+              form.requestSubmit();
+            }
+          }
+        }
+      });
+
+      // ─── Unsaved changes detection ──────────
+      let formDirty = false;
+      const badge = document.querySelector('.admin-unsaved-badge');
+
+      function markDirty() {
+        if (!formDirty) {
+          formDirty = true;
+          badge?.classList.add('visible');
+        }
+      }
+
+      function markClean() {
+        formDirty = false;
+        badge?.classList.remove('visible');
+      }
+
+      // Track input changes
+      document.addEventListener('input', (e) => {
+        if ((e.target as HTMLElement)?.closest('form')) markDirty();
+      });
+      document.addEventListener('change', (e) => {
+        if ((e.target as HTMLElement)?.closest('form')) markDirty();
+      });
+
+      // Mark clean after successful save (called from showToast success path)
+      const origShowToast = (window as any).showToast;
+      (window as any).showToast = function(message: string, isError = false) {
+        if (!isError) markClean();
+        origShowToast(message, isError);
+      };
+
+      // Warn before leaving with unsaved changes
+      window.addEventListener('beforeunload', (e) => {
+        if (formDirty) {
+          e.preventDefault();
+          e.returnValue = '';
+        }
+      });
     </script>
   </body>
 </html>
