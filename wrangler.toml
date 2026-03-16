@@ -12,7 +12,7 @@ index_name = "product-catalog"
 [[d1_databases]]
 binding = "DB"
 database_name = "sunnyandranney-db"
-database_id = "PLACEHOLDER_D1_ID"  # Run: wrangler d1 create sunnyandranney-db
+database_id = "a3fbfba9-569c-4dae-af1a-4a1f290963f7"
 
 [vars]
-GITHUB_REPO = "OWNER/sunnyandranney-site"  # Update with your GitHub owner/repo
+GITHUB_REPO = "pranney82/sunnyandranney-site"
