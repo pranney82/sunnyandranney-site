@@ -1,0 +1,501 @@
+---
+import Base from '@/layouts/Base.astro';
+import { cfImage, cfSrcset } from '@/lib/images';
+import { getCollectionsStatic } from '@/lib/settings';
+import { getCollectionByHandle } from '@/lib/shopify';
+
+// Pull 8 real products from enabled collections
+let featuredProducts: any[] = [];
+try {
+  const saved = await getCollectionsStatic();
+  const enabledHandles = saved
+    ?.filter(c => c.enabled)
+    .sort((a, b) => a.order - b.order)
+    .map(c => c.handle) ?? [];
+
+  for (const handle of enabledHandles) {
+    if (featuredProducts.length >= 8) break;
+    const col = await getCollectionByHandle(handle, 10);
+    if (!col) continue;
+    for (const p of col.products) {
+      if (featuredProducts.length >= 8) break;
+      if (!featuredProducts.some(f => f.id === p.id)) {
+        featuredProducts.push(p);
+      }
+    }
+  }
+} catch {
+  // Products unavailable — page still works
+}
+
+// Hero product is the first (best-selling from first collection)
+const heroProduct = featuredProducts[0];
+const heroImg = heroProduct?.images?.edges?.[0]?.node;
+const gridProducts = featuredProducts.slice(1, 7);
+---
+
+<Base title="Page Not Found — Sunny & Ranney" description="The page you're looking for has moved or no longer exists." lcpImage={heroImg ? cfImage(heroImg.url, { width: 900, height: 600 }) : undefined}>
+
+  <!-- ═══ HERO: TEXT-ONLY EDITORIAL MOMENT ═══ -->
+  <section class="nf-hero">
+    <div class="container nf-hero__inner">
+      <span class="nf-hero__eyebrow animate-fade-up">404</span>
+      <h1 class="nf-hero__title animate-fade-up delay-1">
+        The page you're looking for isn't here.<br />
+        <span class="nf-hero__accent">But something beautiful might be.</span>
+      </h1>
+      <div class="nf-hero__rule animate-fade-up delay-2" aria-hidden="true"></div>
+      <div class="nf-hero__actions animate-fade-up delay-3">
+        <a href="/shop" class="btn btn--primary" data-astro-prefetch>Shop the Collection</a>
+        <a href="/" class="nf-link" data-astro-prefetch>
+          Return Home
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ FEATURED HERO PRODUCT ═══ -->
+  {heroProduct && heroImg && (
+    <section class="nf-feature">
+      <div class="container nf-feature__inner">
+        <a href={`/shop/${heroProduct.handle}`} class="nf-feature__img-link animate-fade-up" data-astro-prefetch>
+          <div class="nf-feature__img">
+            <img
+              src={cfImage(heroImg.url, { width: 900, height: 600 })}
+              srcset={cfSrcset(heroImg.url, [500, 900, 1200])}
+              sizes="(max-width: 768px) 90vw, 60vw"
+              alt={heroImg.altText || heroProduct.title}
+              width="900" height="600"
+              loading="eager" decoding="async"
+            />
+          </div>
+        </a>
+        <div class="nf-feature__meta animate-fade-up delay-1">
+          {heroProduct.productType && (
+            <span class="nf-feature__type">{heroProduct.productType}</span>
+          )}
+          <a href={`/shop/${heroProduct.handle}`} class="nf-feature__title" data-astro-prefetch>{heroProduct.title}</a>
+          <span class="nf-feature__price">
+            From ${parseFloat(heroProduct.priceRange.minVariantPrice.amount).toFixed(0)}
+          </span>
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- ═══ CURATED GRID ═══ -->
+  {gridProducts.length >= 4 && (
+    <section class="nf-grid-section">
+      <div class="container">
+        <div class="nf-grid-header reveal">
+          <span class="nf-kicker">Curated for You</span>
+          <h2 class="nf-grid-title">Pieces Worth Discovering</h2>
+        </div>
+
+        <div class="nf-grid">
+          {gridProducts.map((product: any, idx: number) => {
+            const img = product.images?.edges?.[0]?.node;
+            const price = product.priceRange?.minVariantPrice;
+            const compare = product.compareAtPriceRange?.minVariantPrice;
+            const onSale = compare && parseFloat(compare.amount) > parseFloat(price.amount);
+            return (
+              <a href={`/shop/${product.handle}`} class={`nf-card reveal delay-${Math.min(idx + 1, 4)}`} data-astro-prefetch>
+                <div class="nf-card__img">
+                  {img && (
+                    <img
+                      src={cfImage(img.url, { width: 500, height: 650 })}
+                      srcset={cfSrcset(img.url, [280, 500])}
+                      sizes="(max-width: 639px) 45vw, (max-width: 1023px) 30vw, 22vw"
+                      alt={img.altText || product.title}
+                      width="500" height="650"
+                      loading="lazy" decoding="async"
+                    />
+                  )}
+                </div>
+                <div class="nf-card__meta">
+                  {product.productType && (
+                    <span class="nf-card__type">{product.productType}</span>
+                  )}
+                  <span class="nf-card__name">{product.title}</span>
+                  <span class="nf-card__price">
+                    {onSale && (
+                      <s class="nf-card__compare">${parseFloat(compare.amount).toFixed(0)}</s>
+                    )}
+                    ${parseFloat(price.amount).toFixed(0)}
+                  </span>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+
+        <div class="nf-grid-cta reveal">
+          <a href="/shop" class="nf-browse" data-astro-prefetch>
+            View All
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </a>
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- ═══ HELP STRIP ═══ -->
+  <section class="nf-help reveal">
+    <div class="container nf-help__inner">
+      <p class="nf-help__text">
+        Looking for something specific?
+        <a href="/about" data-astro-prefetch>Visit our Roswell showroom</a>
+        or ask Staci — our AI concierge — in the chat below.
+      </p>
+    </div>
+  </section>
+
+</Base>
+
+<style>
+  /* ═══ HERO: TEXT-ONLY ═══ */
+  .nf-hero {
+    padding: var(--space-2xl) var(--space-md) var(--space-lg);
+    text-align: center;
+  }
+
+  .nf-hero__inner {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .nf-hero__eyebrow {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--color-stone);
+    margin-bottom: var(--space-sm);
+  }
+
+  .nf-hero__title {
+    font-family: var(--font-display);
+    font-size: clamp(1.8rem, 3.8vw, 2.8rem);
+    font-weight: 400;
+    line-height: 1.25;
+    color: var(--color-charcoal);
+    margin-bottom: 0;
+  }
+
+  .nf-hero__accent {
+    font-style: italic;
+    color: var(--color-gold);
+  }
+
+  .nf-hero__rule {
+    width: 48px;
+    height: 2px;
+    background: var(--color-gold);
+    margin: var(--space-md) auto var(--space-lg);
+  }
+
+  .nf-hero__actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-lg);
+    flex-wrap: wrap;
+  }
+
+  .nf-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-charcoal);
+    text-decoration: none;
+    transition: color var(--duration) var(--ease-out);
+  }
+
+  .nf-link svg {
+    transition: transform 0.3s var(--ease-out);
+  }
+
+  .nf-link:hover {
+    color: var(--color-gold);
+  }
+
+  .nf-link:hover svg {
+    transform: translateX(4px);
+  }
+
+  /* ═══ FEATURED HERO PRODUCT ═══ */
+  .nf-feature {
+    padding: 0 var(--space-md) var(--space-lg);
+  }
+
+  .nf-feature__inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .nf-feature__img-link {
+    display: block;
+    text-decoration: none;
+  }
+
+  .nf-feature__img {
+    overflow: hidden;
+    max-width: 860px;
+    margin: 0 auto;
+    aspect-ratio: 3 / 2;
+  }
+
+  .nf-feature__img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.8s var(--ease-out);
+  }
+
+  .nf-feature__img-link:hover .nf-feature__img img {
+    transform: scale(1.03);
+  }
+
+  .nf-feature__meta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    padding-top: var(--space-sm);
+  }
+
+  .nf-feature__type {
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-stone);
+  }
+
+  .nf-feature__title {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    color: var(--color-charcoal);
+    text-decoration: none;
+    transition: color var(--duration) var(--ease-out);
+  }
+
+  .nf-feature__title:hover {
+    color: var(--color-gold);
+  }
+
+  .nf-feature__price {
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--color-charcoal);
+  }
+
+  /* ═══ CURATED GRID ═══ */
+  .nf-grid-section {
+    padding: var(--space-2xl) var(--space-md) var(--space-xl);
+    background: var(--color-warm-white);
+  }
+
+  .nf-grid-header {
+    text-align: center;
+    margin-bottom: var(--space-xl);
+  }
+
+  .nf-kicker {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    margin-bottom: var(--space-xs);
+  }
+
+  .nf-grid-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    font-weight: 400;
+    color: var(--color-charcoal);
+  }
+
+  .nf-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-md);
+    max-width: var(--max-width);
+    margin: 0 auto;
+  }
+
+  .nf-card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .nf-card__img {
+    overflow: hidden;
+    aspect-ratio: 3 / 4;
+    background: var(--color-cream-dark);
+    margin-bottom: 0.6rem;
+  }
+
+  .nf-card__img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.7s var(--ease-out);
+  }
+
+  .nf-card:hover .nf-card__img img {
+    transform: scale(1.04);
+  }
+
+  .nf-card__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .nf-card__type {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--color-stone);
+  }
+
+  .nf-card__name {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    color: var(--color-charcoal);
+    line-height: 1.3;
+    transition: color var(--duration) var(--ease-out);
+  }
+
+  .nf-card:hover .nf-card__name {
+    color: var(--color-gold);
+  }
+
+  .nf-card__price {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--color-charcoal);
+    margin-top: 0.1rem;
+  }
+
+  .nf-card__compare {
+    color: var(--color-stone);
+    font-weight: 400;
+    margin-right: 0.35rem;
+  }
+
+  .nf-grid-cta {
+    text-align: center;
+    margin-top: var(--space-xl);
+  }
+
+  .nf-browse {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--color-charcoal);
+    text-decoration: none;
+    padding-bottom: 3px;
+    border-bottom: 1.5px solid var(--color-charcoal);
+    transition: color var(--duration) var(--ease-out), border-color var(--duration) var(--ease-out);
+  }
+
+  .nf-browse svg {
+    transition: transform 0.3s var(--ease-out);
+  }
+
+  .nf-browse:hover {
+    color: var(--color-gold);
+    border-color: var(--color-gold);
+  }
+
+  .nf-browse:hover svg {
+    transform: translateX(4px);
+  }
+
+  /* ═══ HELP STRIP ═══ */
+  .nf-help {
+    padding: var(--space-xl) var(--space-md) var(--space-2xl);
+    text-align: center;
+  }
+
+  .nf-help__inner {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: var(--space-lg) var(--space-xl);
+    border-top: 1px solid var(--color-cream-dark);
+    border-bottom: 1px solid var(--color-cream-dark);
+  }
+
+  .nf-help__text {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-style: italic;
+    line-height: 1.7;
+    color: var(--color-slate);
+  }
+
+  .nf-help__text a {
+    color: var(--color-charcoal);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+    transition: color var(--duration) var(--ease-out);
+  }
+
+  .nf-help__text a:hover {
+    color: var(--color-gold);
+  }
+
+  /* ═══ RESPONSIVE ═══ */
+  @media (max-width: 768px) {
+    .nf-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .nf-feature__img {
+      aspect-ratio: 4 / 3;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .nf-hero__actions {
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .nf-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-sm);
+    }
+
+    .nf-card__name {
+      font-size: 0.82rem;
+    }
+
+    .nf-help__inner {
+      padding: var(--space-md);
+    }
+  }
+</style>

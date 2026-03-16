@@ -38,7 +38,7 @@
 /shop/index.html
   Cache-Control: public, max-age=300, stale-while-revalidate=3600
 
-# SSR product pages — cache at edge, revalidate often
+# Static product pages — cache at edge, revalidate often
 /shop/*
   Cache-Control: public, max-age=60, stale-while-revalidate=3600
   CDN-Cache-Control: public, max-age=300, stale-while-revalidate=86400

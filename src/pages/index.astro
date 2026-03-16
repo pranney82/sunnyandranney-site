@@ -1,7 +1,7 @@
 ---
 import Base from '@/layouts/Base.astro';
 import GoogleReviews from '@/components/GoogleReviews.astro';
-import { getProducts, getCollections, getProductByHandle } from '@/lib/shopify';
+import { getProducts, getCollectionByHandle, getProductByHandle } from '@/lib/shopify';
 import { cfImage, cfSrcset } from '@/lib/images';
 import { getCollectionsStatic, getTrendingStatic, getHeroStatic, type CollectionSetting } from '@/lib/settings';
 
@@ -49,12 +49,11 @@ try {
     ? saved.filter(c => c.enabled).sort((a, b) => a.order - b.order).map(c => c.handle)
     : DEFAULT_HANDLES;
 
-  // Fetch collections and filter/sort to match admin order
-  const allCollections = await getCollections(50);
-  const handleOrder = new Map(enabledHandles.map((h, i) => [h, i]));
-  collections = allCollections
-    .filter((c: any) => handleOrder.has(c.handle))
-    .sort((a: any, b: any) => (handleOrder.get(a.handle) ?? 99) - (handleOrder.get(b.handle) ?? 99));
+  // Fetch only enabled collections by handle — no wasted API calls
+  const collectionResults = await Promise.all(
+    enabledHandles.map(handle => getCollectionByHandle(handle, 4))
+  );
+  collections = collectionResults.filter(Boolean);
 } catch (e) {
   console.log('Shopify API not configured.');
 }
@@ -205,7 +204,7 @@ const featuredProducts = products.slice(0, 8);
         <div class="collections-grid__items">
           {collections.map((col: any, idx: number) => {
             const colImage = col.image;
-            const previewProduct = col.products?.edges?.[0]?.node;
+            const previewProduct = col.products?.[0];
             const imgUrl = colImage?.url || previewProduct?.images?.edges?.[0]?.node?.url;
             return (
               <a href={`/shop?collection=${col.handle}`} data-astro-prefetch class={`collection-tile reveal${idx > 0 ? ` delay-${Math.min(idx, 3)}` : ''}`}>

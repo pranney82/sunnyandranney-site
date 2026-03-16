@@ -69,6 +69,19 @@ export interface HeroSetting {
   productHandle: string;   // Shopify product handle for the hero card
 }
 
+export interface KidStory {
+  name: string;
+  tag: string;
+  blurb: string;
+  imageUrl: string;        // CF Images base URL (no size params)
+}
+
+export interface KidsSetting {
+  heading: string;
+  subheading: string;
+  kids: KidStory[];
+}
+
 // ─── Build-time readers (for static pages) ──────────────────
 
 /**
@@ -111,6 +124,10 @@ export async function getTrendingStatic(): Promise<TrendingSetting | null> {
 
 export async function getHeroStatic(): Promise<HeroSetting | null> {
   return loadLocalJson<HeroSetting>('/src/content/settings/hero.json');
+}
+
+export async function getKidsStatic(): Promise<KidsSetting | null> {
+  return loadLocalJson<KidsSetting>('/src/content/settings/kids.json');
 }
 
 // ─── Formatting helpers (shared by static pages + chatbot) ──

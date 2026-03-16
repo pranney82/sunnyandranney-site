@@ -4,50 +4,58 @@ export const prerender = true;
 import Base from '@/layouts/Base.astro';
 import GoogleReviews from '@/components/GoogleReviews.astro';
 import { cfImage, cfSrcset, SIZES } from '@/lib/images';
-import { getProducts, getProductRecommendations, getProductsByType } from '@/lib/shopify';
+import { getCollectionByHandle } from '@/lib/shopify';
+import { getCollectionsStatic } from '@/lib/settings';
 
 export async function getStaticPaths() {
-  // Fetch all products with full data — pass as props to eliminate per-page re-fetches
-  const allProducts: any[] = [];
-  let cursor: string | undefined;
-  let hasMore = true;
+  // Only build PDPs for products in admin-enabled collections
+  const collectionSettings = await getCollectionsStatic();
+  const enabledHandles = collectionSettings
+    ?.filter(c => c.enabled)
+    .sort((a, b) => a.order - b.order)
+    .map(c => c.handle) ?? [];
 
-  while (hasMore) {
-    const result = await getProducts(250, cursor);
-    allProducts.push(...result.products);
-    hasMore = result.pageInfo.hasNextPage;
-    cursor = result.pageInfo.endCursor;
+  const allProducts: any[] = [];
+  const seen = new Set<string>();
+
+  for (const handle of enabledHandles) {
+    const collection = await getCollectionByHandle(handle, 100);
+    if (!collection) continue;
+    for (const product of collection.products) {
+      if (!seen.has(product.id)) {
+        seen.add(product.id);
+        allProducts.push(product);
+      }
+    }
+  }
+
+  // Build related products map — other products from the same collections
+  const relatedMap = new Map<string, any[]>();
+  for (const product of allProducts) {
+    const others = allProducts
+      .filter(p => p.handle !== product.handle && p.productType === product.productType)
+      .slice(0, 4);
+    if (others.length < 4) {
+      // Fill with any other products
+      const remaining = allProducts
+        .filter(p => p.handle !== product.handle && !others.some(o => o.handle === p.handle))
+        .slice(0, 4 - others.length);
+      others.push(...remaining);
+    }
+    relatedMap.set(product.handle, others);
   }
 
   return allProducts.map(product => ({
     params: { handle: product.handle },
-    props: { product },
+    props: { product, relatedProducts: relatedMap.get(product.handle) || [] },
   }));
 }
 
 const { handle } = Astro.params;
-const { product } = Astro.props;
-
-let relatedProducts: any[] = [];
+const { product, relatedProducts } = Astro.props;
 
 if (!product) {
   return Astro.redirect('/shop');
-}
-
-try {
-  // Try Shopify recommendations first, fall back to same product type
-  relatedProducts = await getProductRecommendations(product.id, 4);
-  if (relatedProducts.length < 4 && product.productType) {
-    const typeProducts = await getProductsByType(product.productType, 4, handle);
-    const existingHandles = new Set(relatedProducts.map((p: any) => p.handle));
-    for (const p of typeProducts) {
-      if (!existingHandles.has(p.handle) && relatedProducts.length < 4) {
-        relatedProducts.push(p);
-      }
-    }
-  }
-} catch (e) {
-  // recommendations failed — page still renders fine without them
 }
 
 const images = product.images.edges.map((e: any) => e.node);
