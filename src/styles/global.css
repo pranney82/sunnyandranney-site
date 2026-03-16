@@ -340,7 +340,7 @@ p {
 
 .product-card__price--compare {
   text-decoration: line-through;
-  color: var(--color-stone);
+  color: var(--color-slate);
   font-weight: 400;
   margin-left: 0.5rem;
 }

@@ -28,6 +28,10 @@ const DEFAULT_HANDLES = [
 const heroSetting = await getHeroStatic();
 const HERO_DEFAULT_IMAGE = 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/sunny-ranney-storefront';
 const heroImageBase = heroSetting?.imageUrl?.trim().replace(/\/$/, '') || HERO_DEFAULT_IMAGE;
+const HERO_QUALITY = 70;
+const heroSrc = cfImage(heroImageBase, { width: 480, height: 600, quality: HERO_QUALITY });
+const heroSrcset = cfSrcset(heroImageBase, [280, 480, 640], HERO_QUALITY);
+const HERO_SIZES = '(max-width: 767px) 280px, (max-width: 1023px) 400px, 440px';
 
 let heroProduct: any = null;
 
@@ -77,7 +81,7 @@ const featuredProducts = products.slice(0, 8);
 
 ---
 
-<Base lcpImage={`${heroImageBase}/w=480,h=600,fit=cover,q=80,format=auto`}>
+<Base lcpImage={heroSrc} lcpImageSrcset={heroSrcset} lcpImageSizes={HERO_SIZES}>
   <!-- ═══ HERO ═══ -->
   <section class="hero">
     <div class="container hero__inner">
@@ -108,9 +112,9 @@ const featuredProducts = products.slice(0, 8);
       <div class="hero__media animate-fade-up delay-2">
         <div class="hero__img-wrap">
           <img
-            src={`${heroImageBase}/w=480,h=600,fit=cover,q=80,format=auto`}
-            srcset={`${heroImageBase}/w=320,h=400,fit=cover,q=75,format=auto 320w, ${heroImageBase}/w=480,h=600,fit=cover,q=80,format=auto 480w, ${heroImageBase}/w=640,h=800,fit=cover,q=80,format=auto 640w`}
-            sizes="(max-width: 767px) 280px, (max-width: 1023px) 400px, 440px"
+            src={heroSrc}
+            srcset={heroSrcset}
+            sizes={HERO_SIZES}
             alt="The Sunny & Ranney storefront in historic Roswell, Georgia"
             width="480"
             height="600"
@@ -128,7 +132,7 @@ const featuredProducts = products.slice(0, 8);
               {fpImg && (
                 <img
                   src={cfImage(fpImg.url, { width: 200 })}
-                  alt={fp.title}
+                  alt=""
                   width="80"
                   height="80"
                   loading="eager"
@@ -223,7 +227,7 @@ const featuredProducts = products.slice(0, 8);
                       src={cfImage(imgUrl, { width: 500, height: 500 })}
                       srcset={cfSrcset(imgUrl, [250, 500])}
                       sizes="(max-width: 480px) 45vw, (max-width: 768px) 30vw, 200px"
-                      alt={colImage?.altText || col.title}
+                      alt=""
                       width="500"
                       height="500"
                       loading={idx < 4 ? 'eager' : 'lazy'}
@@ -745,7 +749,7 @@ const featuredProducts = products.slice(0, 8);
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--color-cyan);
+    color: #1E6A8A;
   }
 
   .hero__product-name {
@@ -763,7 +767,7 @@ const featuredProducts = products.slice(0, 8);
   .hero__product-price {
     font-size: 0.72rem;
     font-weight: 600;
-    color: var(--color-stone);
+    color: var(--color-slate);
   }
 
   @media (max-width: 767px) {
@@ -952,7 +956,7 @@ const featuredProducts = products.slice(0, 8);
 
   .promise__desc {
     font-size: 0.76rem;
-    color: var(--color-stone);
+    color: var(--color-slate);
     line-height: 1.4;
   }
 
@@ -995,7 +999,7 @@ const featuredProducts = products.slice(0, 8);
   .collections-grid__link {
     font-size: 0.82rem;
     font-weight: 600;
-    color: var(--color-cyan);
+    color: #1E6A8A;
     letter-spacing: 0.03em;
     transition: color 0.2s;
     flex-shrink: 0;
@@ -1256,7 +1260,7 @@ const featuredProducts = products.slice(0, 8);
   .home-products__see-all {
     font-size: 0.82rem;
     font-weight: 600;
-    color: var(--color-cyan);
+    color: #1E6A8A;
     letter-spacing: 0.03em;
     transition: color 0.2s;
     flex-shrink: 0;

@@ -5,6 +5,7 @@
 /*
   Link: </fonts/DMSans-Variable.woff2>; rel=preload; as=font; type=font/woff2; crossorigin
   Link: </fonts/TheSeasons-Regular.woff2>; rel=preload; as=font; type=font/woff2; crossorigin
+  Link: </fonts/TheSeasons-Bold.woff2>; rel=preload; as=font; type=font/woff2; crossorigin
   Link: <https://cdn.shopify.com>; rel=preconnect
 
 # Hashed build assets — cache forever (Astro adds content hash to filenames)

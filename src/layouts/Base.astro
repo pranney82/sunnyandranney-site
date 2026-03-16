@@ -24,6 +24,8 @@ interface Props {
   image?: string;
   type?: 'website' | 'article' | 'product';
   lcpImage?: string;
+  lcpImageSrcset?: string;
+  lcpImageSizes?: string;
   product?: {
     name: string;
     price: string;
@@ -60,10 +62,18 @@ const props = Astro.props;
     <!-- Preload critical fonts (eliminates FOIT, avoids render-blocking chain) -->
     <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/TheSeasons-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/TheSeasons-Bold.woff2" as="font" type="font/woff2" crossorigin />
 
     {/* Preload LCP image when provided by page */}
     {props.lcpImage && (
-      <link rel="preload" href={props.lcpImage} as="image" fetchpriority="high" />
+      <link
+        rel="preload"
+        href={props.lcpImage}
+        as="image"
+        fetchpriority="high"
+        imagesrcset={props.lcpImageSrcset}
+        imagesizes={props.lcpImageSizes}
+      />
     )}
   </head>
   <body>

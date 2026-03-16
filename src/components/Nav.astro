@@ -14,6 +14,7 @@ const navCollections = (collectionSettings ?? [])
   .sort((a, b) => a.order - b.order)
   .map(c => ({
     href: `/shop?collection=${c.handle}`,
+    handle: c.handle,
     label: c.navLabel || c.handle.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
   }));
 
@@ -127,7 +128,7 @@ const allSlides = [...adminSlides, ...defaultSlides];
           aria-autocomplete="list"
         />
         <button class="nav__search-submit" id="nav-search-submit" aria-label="Search">
-          Search
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </button>
         <div class="search-suggest" id="search-suggest" role="listbox" aria-label="Search suggestions" style="display:none;"></div>
       </div>
@@ -151,16 +152,28 @@ const allSlides = [...adminSlides, ...defaultSlides];
   <!-- Category bar -->
   <nav class="nav__categories" aria-label="Product categories">
     <div class="container nav__categories-inner">
+      <span class="nav__cat-indicator" id="cat-indicator" aria-hidden="true"></span>
       <a href="/shop" data-astro-prefetch class:list={['nav__cat-link', { 'nav__cat-link--active': currentPath === '/shop' || currentPath === '/shop/' }]}>
         All Products
       </a>
-      <a href="/shop?sort=newest" data-astro-prefetch class="nav__cat-link">New Arrivals</a>
+      <a href="/shop?sort=newest" data-astro-prefetch class="nav__cat-link" data-flyout="__new_arrivals__">New Arrivals</a>
       {navCollections.map((cat) => (
-        <a href={cat.href} data-astro-prefetch class="nav__cat-link">{cat.label}</a>
+        <a href={cat.href} data-astro-prefetch class="nav__cat-link" data-flyout={cat.handle}>{cat.label}</a>
       ))}
       <a href="/shop?sale=true" data-astro-prefetch class="nav__cat-link nav__cat-link--sale">Sale</a>
     </div>
   </nav>
+
+  <!-- Category hover flyout -->
+  <div class="nav__flyout" id="nav-flyout" aria-hidden="true">
+    <div class="container nav__flyout-inner">
+      <div class="nav__flyout-products" id="flyout-products"></div>
+      <a class="nav__flyout-cta" id="flyout-cta" href="#">
+        <span id="flyout-cta-label">View all</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </div>
 </header>
 
 <style>
@@ -468,21 +481,22 @@ const allSlides = [...adminSlides, ...defaultSlides];
   .nav__search-bar input::placeholder { color: var(--color-stone); }
 
   .nav__search-submit {
-    padding: 0.55rem 1.25rem;
-    background: var(--color-gold);
-    color: var(--color-charcoal);
-    font-family: var(--font-body);
-    font-size: 0.78rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: var(--color-stone);
     border: none;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: color 0.2s;
     flex-shrink: 0;
+    border-radius: 0 100px 100px 0;
+    margin: 1px;
   }
 
-  .nav__search-submit:hover { background: var(--color-gold-light); }
+  .nav__search-submit:hover { color: var(--color-charcoal); }
 
   /* ─── Search Suggestions ────────────────── */
   .search-suggest {
@@ -565,56 +579,33 @@ const allSlides = [...adminSlides, ...defaultSlides];
     color: var(--color-charcoal);
   }
 
-  /* ─── Our Mission link ──── */
-  .nav__mission-link {
-    display: none;
-  }
 
-  .nav__mission-link--mobile {
+  /* ─── Our Mission link (both mobile header + desktop nav row) ── */
+  .nav__mission-link {
     display: inline-flex;
     align-items: center;
-    padding: 0.3rem 0.65rem;
     font-size: 0.65rem;
-    font-weight: 600;
-    letter-spacing: 0.07em;
+    font-weight: 500;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--color-slate);
-    border: 1.5px solid var(--color-cyan);
-    border-radius: 100px;
     white-space: nowrap;
-    transition: color 0.2s, border-color 0.2s, background 0.2s;
-    flex-shrink: 0;
+    transition: color 0.2s;
+    text-underline-offset: 3px;
   }
 
-  .nav__mission-link--mobile:hover,
-  .nav__mission-link--mobile.nav__mission-link--active {
-    border-color: var(--color-gold);
-    background: var(--color-gold);
+  .nav__mission-link:hover {
     color: var(--color-charcoal);
+  }
+
+  .nav__mission-link--active {
+    color: var(--color-charcoal);
+    text-decoration: underline;
   }
 
   @media (min-width: 768px) {
     .nav__mission-link {
-      display: inline-flex;
-      align-items: center;
-      padding: 0.4rem 0.9rem;
       font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--color-slate);
-      border: 1.5px solid var(--color-cyan);
-      border-radius: 100px;
-      white-space: nowrap;
-      transition: color 0.2s, border-color 0.2s, background 0.2s;
-      flex-shrink: 0;
-    }
-
-    .nav__mission-link:hover,
-    .nav__mission-link--active {
-      border-color: var(--color-gold);
-      background: var(--color-gold);
-      color: var(--color-charcoal);
     }
   }
 
@@ -679,6 +670,22 @@ const allSlides = [...adminSlides, ...defaultSlides];
     align-items: center;
     gap: 0;
     white-space: nowrap;
+    position: relative;
+  }
+
+  /* ─── Sliding active indicator ──────────────── */
+  .nav__cat-indicator {
+    position: absolute;
+    bottom: 0;
+    height: 2px;
+    background: var(--color-gold);
+    border-radius: 1px;
+    pointer-events: none;
+    opacity: 0;
+    transition: left 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+                width 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.15s ease;
+    will-change: left, width;
   }
 
   @media (max-width: 767px) {
@@ -698,9 +705,8 @@ const allSlides = [...adminSlides, ...defaultSlides];
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--color-slate);
-    transition: color 0.2s, background 0.2s;
+    transition: color 0.2s;
     flex-shrink: 0;
-    border-bottom: 2px solid transparent;
   }
 
   @media (max-width: 767px) {
@@ -715,16 +721,14 @@ const allSlides = [...adminSlides, ...defaultSlides];
 
   .nav__cat-link:hover {
     color: var(--color-charcoal);
-    background: var(--color-cream-dark);
   }
 
   .nav__cat-link--active {
     color: var(--color-charcoal);
-    border-bottom-color: var(--color-gold);
   }
 
   .nav__cat-link--sale {
-    color: var(--color-cyan);
+    color: #1E6A8A;
     font-weight: 600;
   }
 
@@ -733,12 +737,143 @@ const allSlides = [...adminSlides, ...defaultSlides];
     background: rgba(75, 149, 180, 0.08);
   }
 
-  .nav__cat-divider {
+.nav__cat-divider {
     width: 1px;
     height: 16px;
     background: var(--color-cream-dark);
     flex-shrink: 0;
     margin: 0 0.25rem;
+  }
+
+  /* ─── Category Flyout ───────────────────── */
+  .nav__flyout {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--color-cream);
+    border-top: 1px solid var(--color-cream-dark);
+    border-bottom: 1px solid var(--color-cream-dark);
+    box-shadow: 0 12px 40px rgba(44, 44, 44, 0.1);
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: max-height 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.2s ease;
+    z-index: 10;
+  }
+
+  .nav__flyout.is-open {
+    max-height: 220px;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .nav__flyout-inner {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.25rem 0;
+  }
+
+  .nav__flyout-products {
+    display: flex;
+    gap: 1rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .nav__flyout-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    text-decoration: none;
+    color: var(--color-charcoal);
+    flex: 0 0 calc(25% - 0.75rem);
+    min-width: 0;
+    transition: opacity 0.15s;
+  }
+
+  .nav__flyout-card:hover { opacity: 0.75; }
+
+  .nav__flyout-img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 4px;
+    background: var(--color-cream-dark);
+    display: block;
+  }
+
+  .nav__flyout-title {
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+  }
+
+  .nav__flyout-price {
+    font-size: 0.7rem;
+    color: var(--color-slate);
+  }
+
+  .nav__flyout-skeleton {
+    flex: 0 0 calc(25% - 0.75rem);
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .nav__flyout-skeleton-img {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--color-cream-dark) 25%, #e8e4df 50%, var(--color-cream-dark) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.2s infinite;
+  }
+
+  .nav__flyout-skeleton-line {
+    height: 10px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--color-cream-dark) 25%, #e8e4df 50%, var(--color-cream-dark) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.2s infinite;
+  }
+
+  .nav__flyout-skeleton-line--short { width: 50%; }
+
+  @keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .nav__flyout-cta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-left: 1px solid var(--color-cream-dark);
+    color: var(--color-charcoal);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: color 0.15s;
+    white-space: nowrap;
+  }
+
+  .nav__flyout-cta:hover { color: var(--color-gold); }
+
+  @media (max-width: 767px) {
+    .nav__flyout { display: none; }
   }
 </style>
 
@@ -1109,7 +1244,42 @@ const allSlides = [...adminSlides, ...defaultSlides];
   }
 
   updateActiveTab();
-  document.addEventListener('astro:after-swap', updateActiveTab);
+  document.addEventListener('astro:after-swap', () => { updateActiveTab(); setupCatIndicator(); });
+
+  // ─── Sliding category indicator ────────────────────────
+  function setupCatIndicator() {
+    const indicator = document.getElementById('cat-indicator');
+    const catLinks = document.querySelectorAll<HTMLElement>('.nav__cat-link');
+    if (!indicator || !catLinks.length) return;
+
+    function moveToLink(link: HTMLElement) {
+      const container = indicator!.closest('.nav__categories-inner') as HTMLElement;
+      if (!container) return;
+      const containerRect = container.getBoundingClientRect();
+      const linkRect = link.getBoundingClientRect();
+      indicator!.style.left = `${linkRect.left - containerRect.left}px`;
+      indicator!.style.width = `${linkRect.width}px`;
+      indicator!.style.opacity = '1';
+    }
+
+    function moveToActive() {
+      const active = document.querySelector<HTMLElement>('.nav__cat-link--active');
+      if (active) {
+        moveToLink(active);
+      } else {
+        indicator!.style.opacity = '0';
+      }
+    }
+
+    catLinks.forEach((link) => {
+      link.addEventListener('mouseenter', () => moveToLink(link));
+      link.addEventListener('mouseleave', () => moveToActive());
+    });
+
+    moveToActive();
+  }
+
+  setupCatIndicator();
 
   // ─── Auto-scroll active category into view on mobile ────
   function scrollActiveTabIntoView() {
@@ -1125,4 +1295,142 @@ const allSlides = [...adminSlides, ...defaultSlides];
   // Run after initial load and after navigation
   requestAnimationFrame(scrollActiveTabIntoView);
   document.addEventListener('astro:after-swap', () => requestAnimationFrame(scrollActiveTabIntoView));
+
+  // ─── Category flyout ────────────────────────────────────
+  type FlyoutProduct = { title: string; handle: string; price: string; image: string };
+  const flyoutCache = new Map<string, FlyoutProduct[]>();
+  let flyoutTimer: ReturnType<typeof setTimeout> | undefined;
+  let closeTimer: ReturnType<typeof setTimeout> | undefined;
+  let currentFlyoutHandle = '';
+
+  const flyout = document.getElementById('nav-flyout');
+  const flyoutProducts = document.getElementById('flyout-products');
+  const flyoutCta = document.getElementById('flyout-cta') as HTMLAnchorElement | null;
+  const flyoutCtaLabel = document.getElementById('flyout-cta-label');
+
+  async function fetchFlyoutProducts(handle: string): Promise<FlyoutProduct[]> {
+    if (flyoutCache.has(handle)) return flyoutCache.get(handle)!;
+
+    const domain = (window as any).__SHOPIFY_DOMAIN || 'sunnyandranney.myshopify.com';
+    const token = (window as any).__SHOPIFY_TOKEN || '';
+    if (!token) return [];
+
+    const productFragment = `title handle priceRange { minVariantPrice { amount } } images(first: 1) { edges { node { url } } }`;
+    const query = handle === '__new_arrivals__'
+      ? `{ products(first: 4, sortKey: CREATED_AT, reverse: true) { edges { node { ${productFragment} } } } }`
+      : `{ collection(handle: ${JSON.stringify(handle)}) { products(first: 4, sortKey: BEST_SELLING) { edges { node { ${productFragment} } } } } }`;
+
+    try {
+      const res = await fetch(`https://${domain}/api/2025-01/graphql.json`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': token },
+        body: JSON.stringify({ query }),
+      });
+      const json = await res.json();
+      const edges = handle === '__new_arrivals__'
+        ? (json.data?.products?.edges ?? [])
+        : (json.data?.collection?.products?.edges ?? []);
+
+      const products: FlyoutProduct[] = edges.map((e: any) => ({
+        title: e.node.title,
+        handle: e.node.handle,
+        price: e.node.priceRange.minVariantPrice.amount,
+        image: e.node.images.edges[0]?.node?.url || '',
+      }));
+      flyoutCache.set(handle, products);
+      return products;
+    } catch {
+      return [];
+    }
+  }
+
+  function renderSkeletons() {
+    if (!flyoutProducts) return;
+    flyoutProducts.innerHTML = Array.from({ length: 4 }, () => `
+      <div class="nav__flyout-skeleton">
+        <div class="nav__flyout-skeleton-img"></div>
+        <div class="nav__flyout-skeleton-line"></div>
+        <div class="nav__flyout-skeleton-line nav__flyout-skeleton-line--short"></div>
+      </div>
+    `).join('');
+  }
+
+  function renderFlyoutProducts(products: FlyoutProduct[]) {
+    if (!flyoutProducts) return;
+    if (products.length === 0) {
+      flyoutProducts.innerHTML = '';
+      return;
+    }
+    flyoutProducts.innerHTML = products.map(p => {
+      const imgSrc = p.image ? (p.image.includes('cdn.shopify.com') ? `${p.image}?width=240` : p.image) : '';
+      return `
+        <a href="/shop/${p.handle}" class="nav__flyout-card">
+          ${imgSrc ? `<img src="${imgSrc}" alt="${p.title.replace(/"/g, '&quot;')}" class="nav__flyout-img" loading="lazy" width="240" height="240">` : '<div class="nav__flyout-img"></div>'}
+          <span class="nav__flyout-title">${p.title}</span>
+          <span class="nav__flyout-price">$${parseFloat(p.price).toFixed(2)}</span>
+        </a>
+      `;
+    }).join('');
+  }
+
+  function openFlyout(link: HTMLElement) {
+    const handle = link.dataset.flyout;
+    if (!handle || !flyout) return;
+
+    clearTimeout(closeTimer);
+
+    if (currentFlyoutHandle === handle && flyout.classList.contains('is-open')) return;
+    currentFlyoutHandle = handle;
+
+    // Set CTA
+    if (flyoutCta) flyoutCta.href = link.getAttribute('href') || '#';
+    if (flyoutCtaLabel) flyoutCtaLabel.textContent = handle === '__new_arrivals__' ? 'New Arrivals' : (link.textContent?.trim() || 'View all');
+
+    // Show skeleton immediately, then fill with real data
+    if (!flyoutCache.has(handle)) renderSkeletons();
+    flyout.classList.add('is-open');
+    flyout.setAttribute('aria-hidden', 'false');
+
+    fetchFlyoutProducts(handle).then(products => {
+      if (currentFlyoutHandle === handle) renderFlyoutProducts(products);
+    });
+  }
+
+  function closeFlyout(delay = 120) {
+    clearTimeout(closeTimer);
+    closeTimer = setTimeout(() => {
+      if (!flyout) return;
+      flyout.classList.remove('is-open');
+      flyout.setAttribute('aria-hidden', 'true');
+      currentFlyoutHandle = '';
+    }, delay);
+  }
+
+  // Wire up flyout links
+  function setupFlyout() {
+    const flyoutLinks = document.querySelectorAll<HTMLElement>('[data-flyout]');
+    flyoutLinks.forEach(link => {
+      link.addEventListener('mouseenter', () => {
+        clearTimeout(flyoutTimer);
+        flyoutTimer = setTimeout(() => openFlyout(link), 140);
+      });
+      link.addEventListener('mouseleave', () => {
+        clearTimeout(flyoutTimer);
+        closeFlyout();
+      });
+    });
+
+    // Keep flyout open when mouse moves into it
+    flyout?.addEventListener('mouseenter', () => clearTimeout(closeTimer));
+    flyout?.addEventListener('mouseleave', () => closeFlyout());
+
+    // Close when mouse leaves the entire nav
+    nav?.addEventListener('mouseleave', () => {
+      clearTimeout(flyoutTimer);
+      closeFlyout(0);
+    });
+  }
+
+  setupFlyout();
+  document.addEventListener('astro:after-swap', setupFlyout);
 </script>

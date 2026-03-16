@@ -64,8 +64,9 @@ export interface TrendingSetting {
 }
 
 export interface HeroSetting {
-  imageUrl: string;        // CF Images base URL (no size params), e.g. https://imagedelivery.net/.../about/sunny-ranney-storefront
-  productHandle: string;   // Shopify product handle for the hero card
+  imageUrl: string;           // Shopify product image URL (or fallback CF Images URL)
+  productHandle: string;      // Shopify product handle for the hero card
+  collectionHandle?: string;  // Collection the product was picked from (admin state)
 }
 
 export interface KidStory {

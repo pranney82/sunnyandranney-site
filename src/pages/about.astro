@@ -109,26 +109,52 @@ const kids = kidsSetting?.kids ?? DEFAULT_KIDS;
 
   <!-- ═══ VIDEO ═══ -->
   <section class="ab-video" id="our-story">
-    <div class="container ab-video__inner">
-      <div class="ab-video__text reveal">
-        <span class="label">Our Story</span>
-        <h2>See why we do<br/><em>what we do</em></h2>
-        <p>In 60 seconds, Peter and Holly share the moment that changed everything — and why every piece of furniture in our showroom carries a deeper purpose.</p>
+    <div class="container">
+      <div class="ab-video__header reveal">
+        <span class="label ab-video__label">Our Story</span>
+        <h2 class="ab-video__title">See why we do<br/><em>what we do</em></h2>
+        <p class="ab-video__sub">In 60 seconds, Peter and Holly share the moment that changed everything — and why every piece of furniture in our showroom carries a deeper purpose.</p>
       </div>
-      <div class="ab-video__player reveal delay-1">
-        <button
-          class="ab-video__poster"
-          aria-label="Play video: Peter and Holly share why they started Sunny & Ranney"
-          data-video-src="https://customer-cuav5h47lgfe96ql.cloudflarestream.com/7d7459064cd569cd7a3d806914f7aec7/iframe?autoplay=true"
-        >
-          <img
-            src="https://customer-cuav5h47lgfe96ql.cloudflarestream.com/7d7459064cd569cd7a3d806914f7aec7/thumbnails/thumbnail.jpg?height=600"
-            alt="" width="338" height="600" loading="lazy" decoding="async"
-          />
-          <span class="ab-video__play" aria-hidden="true">
-            <svg width="56" height="56" viewBox="0 0 56 56" fill="none"><circle cx="28" cy="28" r="28" fill="rgba(0,0,0,0.45)"/><polygon points="22,16 22,40 40,28" fill="white"/></svg>
-          </span>
-        </button>
+      <div class="ab-video__stage reveal delay-1">
+        <div class="ab-video__player">
+          <button
+            class="ab-video__thumb"
+            id="ab-video-open"
+            aria-label="Play video: Peter and Holly share why they started Sunny & Ranney"
+          >
+            <img
+              src="https://customer-cuav5h47lgfe96ql.cloudflarestream.com/7d7459064cd569cd7a3d806914f7aec7/thumbnails/thumbnail.jpg?height=900"
+              alt="Peter and Holly Ranney — founders of Sunny & Ranney"
+              width="338" height="600" loading="lazy" decoding="async"
+              style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"
+            />
+            <div class="ab-video__thumb-overlay" aria-hidden="true"></div>
+            <span class="ab-video__play-btn" aria-hidden="true">
+              <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+                <circle cx="36" cy="36" r="35" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+                <circle cx="36" cy="36" r="26" fill="rgba(255,255,255,0.15)"/>
+                <polygon points="30,24 30,48 50,36" fill="white"/>
+              </svg>
+            </span>
+            <span class="ab-video__watch-label" aria-hidden="true">Watch the story</span>
+          </button>
+          <iframe
+            id="cf-player"
+            src=""
+            allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
+            allowfullscreen
+            title="Peter and Holly share why they started Sunny & Ranney"
+            class="ab-video__iframe"
+            hidden
+          ></iframe>
+        </div>
+        <div class="ab-video__caption" aria-hidden="true">
+          <span>60 seconds</span>
+          <span class="ab-video__caption-dot"></span>
+          <span>Peter &amp; Holly Ranney</span>
+          <span class="ab-video__caption-dot"></span>
+          <span>Founders</span>
+        </div>
       </div>
     </div>
   </section>
@@ -342,23 +368,138 @@ const kids = kidsSetting?.kids ?? DEFAULT_KIDS;
     .ab-how__num { position: absolute; left: -56px; top: -4px; width: 48px; height: 48px; border-radius: 50%; background: var(--color-cream); border: 1.5px solid rgba(255,212,0,0.35); display: flex; align-items: center; justify-content: center; font-size: 0.85rem; opacity: 1; margin-bottom: 0; z-index: 1; }
   }
 
-  /* ─── Video ─── */
-  .ab-video { background: var(--color-warm-white); padding: clamp(4rem, 10vh, 7rem) 0; }
-  .ab-video__inner { display: grid; grid-template-columns: 1.2fr minmax(280px, 400px); gap: clamp(3rem, 6vw, 5rem); align-items: center; }
-  .ab-video__text .label { color: var(--color-gold); }
-  .ab-video__text h2 { font-size: clamp(2rem, 4vw, 3rem); line-height: 1; margin: var(--space-xs) 0 var(--space-md); letter-spacing: -0.02em; }
-  .ab-video__text h2 em { font-style: italic; font-weight: 300; color: var(--color-cyan); }
-  .ab-video__text p { font-size: clamp(0.9rem, 1.1vw, 1rem); color: var(--color-slate); line-height: 1.7; max-width: 48ch; }
-  .ab-video__player { position: relative; aspect-ratio: 9 / 16; border-radius: 12px; overflow: hidden; box-shadow: 0 24px 64px rgba(44,44,44,0.18); }
-  .ab-video__player iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
-  .ab-video__poster { position: absolute; inset: 0; width: 100%; height: 100%; border: none; padding: 0; cursor: pointer; background: var(--color-charcoal); }
-  .ab-video__poster img { width: 100%; height: 100%; object-fit: cover; }
-  .ab-video__play { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); filter: drop-shadow(0 4px 16px rgba(0,0,0,0.35)); }
-  @media (max-width: 767px) {
-    .ab-video__inner { grid-template-columns: 1fr; text-align: center; }
-    .ab-video__text { margin: 0 auto; }
-    .ab-video__text p { margin: 0 auto; }
-    .ab-video__player { max-width: 300px; margin: 0 auto; }
+  /* ─── Video section ─── */
+  .ab-video {
+    background: #161210;
+    padding: clamp(5rem, 12vh, 9rem) 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .ab-video::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 0%, rgba(212,175,55,0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 50% at 50% 100%, rgba(95,158,160,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Header */
+  .ab-video__header { text-align: center; margin-bottom: clamp(2.5rem, 5vh, 4rem); }
+  .ab-video__label { color: var(--color-gold) !important; }
+  .ab-video__title {
+    font-size: clamp(2.4rem, 5vw, 3.8rem);
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: #f5f0ea;
+    margin: var(--space-xs) 0 var(--space-md);
+  }
+  .ab-video__title em { font-style: italic; font-weight: 300; color: var(--color-gold); }
+  .ab-video__sub {
+    font-size: clamp(0.9rem, 1.15vw, 1.05rem);
+    color: rgba(245,240,234,0.55);
+    line-height: 1.7;
+    max-width: 50ch;
+    margin: 0 auto;
+  }
+
+  /* Stage */
+  .ab-video__stage { display: flex; flex-direction: column; align-items: center; }
+
+  /* Portrait 9:16 player container — owns the dimensions */
+  .ab-video__player {
+    position: relative;
+    width: 300px;
+    height: 533px; /* 300 * 16/9 */
+    border-radius: 20px;
+    overflow: hidden;
+    background: #0d0b09;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 40px 80px rgba(0,0,0,0.7);
+    transition: transform 0.5s cubic-bezier(0.22,1,0.36,1), box-shadow 0.5s cubic-bezier(0.22,1,0.36,1);
+  }
+  .ab-video__iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+  .ab-video__iframe[hidden] { display: none; }
+
+  .ab-video__thumb {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+  .ab-video__player:hover {
+    transform: translateY(-6px) scale(1.015);
+    box-shadow: 0 0 0 1px rgba(212,175,55,0.3), 0 56px 100px rgba(0,0,0,0.75), 0 0 60px rgba(212,175,55,0.1);
+  }
+  .ab-video__thumb:hover img { transform: scale(1.04); opacity: 0.85; }
+  .ab-video__thumb img { transition: transform 0.8s cubic-bezier(0.22,1,0.36,1), opacity 0.4s ease; }
+
+  /* Gradient overlay on thumbnail */
+  .ab-video__thumb-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(12,9,6,0.75) 0%, rgba(12,9,6,0.08) 40%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Play button */
+  .ab-video__play-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    filter: drop-shadow(0 6px 24px rgba(0,0,0,0.6));
+    transition: transform 0.4s cubic-bezier(0.22,1,0.36,1);
+  }
+  .ab-video__thumb:hover .ab-video__play-btn { transform: translate(-50%, -50%) scale(1.15); }
+
+  /* "Watch the story" label */
+  .ab-video__watch-label {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.6);
+    white-space: nowrap;
+    transition: color 0.3s;
+  }
+  .ab-video__thumb:hover .ab-video__watch-label { color: rgba(212,175,55,0.95); }
+
+  /* Caption */
+  .ab-video__caption {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(245,240,234,0.3);
+  }
+  .ab-video__caption-dot {
+    width: 2.5px; height: 2.5px; border-radius: 50%;
+    background: rgba(212,175,55,0.4); flex-shrink: 0;
+  }
+
+  @media (max-width: 479px) {
+    .ab-video__player { width: calc(100vw - 4rem); height: calc((100vw - 4rem) * 16 / 9); }
   }
 
   /* ─── Our Story ─── */
@@ -482,25 +623,32 @@ const kids = kidsSetting?.kids ?? DEFAULT_KIDS;
 
 <script>
   function initAbout() {
-    // Click-to-play video
-    document.querySelectorAll('.ab-video__poster[data-video-src]').forEach((poster) => {
-      poster.addEventListener('click', () => {
-        const wrap = poster.closest('.ab-video__player');
-        if (!wrap) return;
-        const iframe = document.createElement('iframe');
-        iframe.src = poster.dataset.videoSrc;
-        iframe.allow = 'accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture';
-        iframe.allowFullscreen = true;
-        iframe.title = 'Peter and Holly share why they started Sunny & Ranney';
-        wrap.appendChild(iframe);
-        poster.remove();
-      });
+    const openBtn = document.getElementById('ab-video-open');
+    const player = document.getElementById('cf-player') as HTMLIFrameElement | null;
+    const VIDEO_SRC = 'https://customer-cuav5h47lgfe96ql.cloudflarestream.com/7d7459064cd569cd7a3d806914f7aec7/iframe?autoplay=true&muted=false';
+
+    openBtn?.addEventListener('click', () => {
+      if (!player || !openBtn) return;
+      player.src = VIDEO_SRC;
+      player.hidden = false;
+      openBtn.hidden = true;
     });
+
+    if (player) {
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          const msg = entry.isIntersecting ? '{"method":"play"}' : '{"method":"pause"}';
+          player.contentWindow?.postMessage(msg, 'https://customer-cuav5h47lgfe96ql.cloudflarestream.com');
+        },
+        { threshold: 0.25 }
+      );
+      observer.observe(player);
+    }
 
     // Smooth scroll for anchor links
     document.querySelectorAll('a[href^="#"]').forEach((link) => {
       link.addEventListener('click', (e) => {
-        const target = document.querySelector(link.getAttribute('href'));
+        const target = document.querySelector((link as HTMLAnchorElement).getAttribute('href')!);
         if (target) {
           e.preventDefault();
           target.scrollIntoView({ behavior: 'smooth', block: 'start' });

@@ -65,13 +65,13 @@ const phoneDigits = phone.replace(/\D/g, '');
         <nav aria-label="Shop links">
           <ul class="footer__nav">
             <li><a href="/shop">All Products</a></li>
-            <li><a href="/collections/new-arrivals">New Arrivals</a></li>
+            <li><a href="/shop?sort=newest">New Arrivals</a></li>
             <li><a href="/shop?category=furniture">Furniture</a></li>
             <li><a href="/shop?category=decor">Home Decor</a></li>
             <li><a href="/shop?category=lighting">Lighting</a></li>
             <li><a href="/shop?category=kitchenware">Kitchenware</a></li>
             <li><a href="/shop?category=gifts">Gifts</a></li>
-            <li><a href="/collections/sale">Sale</a></li>
+            <li><a href="/shop?sale=true">Sale</a></li>
           </ul>
         </nav>
       </details>
@@ -172,7 +172,7 @@ const phoneDigits = phone.replace(/\D/g, '');
   }
 
   .footer__description {
-    color: var(--color-stone);
+    color: #A0A09D;
     font-size: 0.85rem;
     line-height: 1.7;
     margin-bottom: var(--space-md);
@@ -306,7 +306,7 @@ const phoneDigits = phone.replace(/\D/g, '');
   }
 
   .footer__nav a {
-    color: var(--color-stone);
+    color: #A0A09D;
     font-size: 0.85rem;
     transition: color 0.2s;
     display: inline-flex;
@@ -340,7 +340,7 @@ const phoneDigits = phone.replace(/\D/g, '');
 
   /* ─── Address ──────────────────────────── */
   .footer__address {
-    color: var(--color-stone);
+    color: #A0A09D;
     font-size: 0.85rem;
     font-style: normal;
     line-height: 1.6;
@@ -366,7 +366,7 @@ const phoneDigits = phone.replace(/\D/g, '');
   }
 
   .footer__address a {
-    color: var(--color-stone);
+    color: #A0A09D;
     transition: color 0.2s;
   }
 
@@ -391,7 +391,7 @@ const phoneDigits = phone.replace(/\D/g, '');
   }
 
   .footer__bottom p {
-    color: rgba(255, 255, 255, 0.25);
+    color: rgba(255, 255, 255, 0.55);
     font-size: 0.75rem;
   }
 
@@ -407,7 +407,7 @@ const phoneDigits = phone.replace(/\D/g, '');
   }
 
   .footer__legal a {
-    color: rgba(255, 255, 255, 0.25);
+    color: rgba(255, 255, 255, 0.55);
     font-size: 0.75rem;
     transition: color 0.2s;
   }

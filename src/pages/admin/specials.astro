@@ -61,19 +61,32 @@ const data = specials || defaults;
       </p>
       <div id="announcements-container">
         {data.announcements.map((a: any, i: number) => (
-          <div class="announcement-row" data-index={i}>
-            <label class="admin-toggle">
-              <input type="checkbox" checked={a.active} class="ann-active" />
-              <span class="admin-toggle-slider"></span>
-            </label>
-            <select class="admin-input ann-type" style="width: 100px; flex-shrink: 0;">
-              <option value="banner" selected={a.type === 'banner'}>Banner</option>
-              <option value="promo" selected={a.type === 'promo'}>Promo</option>
-              <option value="info" selected={a.type === 'info'}>Info</option>
-            </select>
-            <input type="text" class="admin-input ann-text" value={a.text} placeholder="Announcement text..." style="flex: 2;" />
-            <input type="text" class="admin-input ann-link" value={a.link || ''} placeholder="Link (optional)" style="flex: 1;" />
-            <button type="button" class="admin-btn admin-btn--danger remove-ann">Remove</button>
+          <div class="announcement-card" data-index={i}>
+            <div class="announcement-card-header">
+              <select class="admin-input ann-type">
+                <option value="banner" selected={a.type === 'banner'}>Banner</option>
+                <option value="promo" selected={a.type === 'promo'}>Promo</option>
+                <option value="info" selected={a.type === 'info'}>Info</option>
+              </select>
+              <label class="ann-toggle-wrap">
+                <label class="admin-toggle">
+                  <input type="checkbox" checked={a.active} class="ann-active" />
+                  <span class="admin-toggle-slider"></span>
+                </label>
+                <span class="ann-active-label">{a.active ? 'Active' : 'Inactive'}</span>
+              </label>
+              <button type="button" class="admin-btn admin-btn--danger remove-ann">Remove</button>
+            </div>
+            <div class="announcement-card-body">
+              <div class="admin-field" style="margin-bottom: 0.5rem">
+                <label class="admin-label">Announcement Text</label>
+                <input type="text" class="admin-input ann-text" value={a.text} placeholder="e.g. Free shipping on orders over $50" />
+              </div>
+              <div class="admin-field" style="margin-bottom: 0">
+                <label class="admin-label">Link (optional)</label>
+                <input type="text" class="admin-input ann-link" value={a.link || ''} placeholder="https://..." />
+              </div>
+            </div>
           </div>
         ))}
       </div>
@@ -93,25 +106,55 @@ const data = specials || defaults;
 </Admin>
 
 <style>
-  .announcement-row {
+  .announcement-card {
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-radius);
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+    background: white;
+  }
+
+  .announcement-card-header {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--admin-bg);
+    border-bottom: 1px solid var(--admin-border);
     flex-wrap: wrap;
   }
 
-  @media (max-width: 768px) {
-    .announcement-row {
-      flex-direction: column;
-      align-items: stretch;
-      padding: 0.75rem;
-      background: var(--admin-bg);
-      border-radius: var(--admin-radius);
+  .announcement-card-header .ann-type {
+    width: auto;
+    flex-shrink: 0;
+    font-size: 0.82rem;
+    padding: 0.35rem 0.65rem;
+  }
+
+  .ann-toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+  }
+
+  .ann-active-label {
+    font-size: 0.8rem;
+    color: var(--admin-text-light);
+    font-weight: 500;
+  }
+
+  .announcement-card-body {
+    padding: 0.75rem 1rem;
+  }
+
+  @media (max-width: 600px) {
+    .announcement-card-header {
+      gap: 0.5rem;
     }
 
-    .announcement-row .admin-toggle {
-      align-self: flex-start;
+    .announcement-card-header .admin-btn {
+      margin-left: auto;
     }
   }
 </style>
@@ -120,31 +163,57 @@ const data = specials || defaults;
   const form = document.getElementById('specials-form') as HTMLFormElement;
   const container = document.getElementById('announcements-container')!;
 
+  // Update active label text when toggle changes
+  function initAnnToggles() {
+    document.querySelectorAll('.ann-active').forEach((cb) => {
+      cb.addEventListener('change', (e) => {
+        const input = e.target as HTMLInputElement;
+        const label = input.closest('.ann-toggle-wrap')?.querySelector('.ann-active-label');
+        if (label) label.textContent = input.checked ? 'Active' : 'Inactive';
+      });
+    });
+  }
+  initAnnToggles();
+
   // Add announcement
   document.getElementById('add-announcement')?.addEventListener('click', () => {
-    const row = document.createElement('div');
-    row.className = 'announcement-row';
-    row.innerHTML = `
-      <label class="admin-toggle">
-        <input type="checkbox" checked class="ann-active" />
-        <span class="admin-toggle-slider"></span>
-      </label>
-      <select class="admin-input ann-type" style="width: 100px; flex-shrink: 0;">
-        <option value="banner">Banner</option>
-        <option value="promo">Promo</option>
-        <option value="info">Info</option>
-      </select>
-      <input type="text" class="admin-input ann-text" placeholder="Announcement text..." style="flex: 2;" />
-      <input type="text" class="admin-input ann-link" placeholder="Link (optional)" style="flex: 1;" />
-      <button type="button" class="admin-btn admin-btn--danger remove-ann">Remove</button>
+    const card = document.createElement('div');
+    card.className = 'announcement-card';
+    card.innerHTML = `
+      <div class="announcement-card-header">
+        <select class="admin-input ann-type">
+          <option value="banner">Banner</option>
+          <option value="promo">Promo</option>
+          <option value="info">Info</option>
+        </select>
+        <label class="ann-toggle-wrap">
+          <label class="admin-toggle">
+            <input type="checkbox" checked class="ann-active" />
+            <span class="admin-toggle-slider"></span>
+          </label>
+          <span class="ann-active-label">Active</span>
+        </label>
+        <button type="button" class="admin-btn admin-btn--danger remove-ann">Remove</button>
+      </div>
+      <div class="announcement-card-body">
+        <div class="admin-field" style="margin-bottom: 0.5rem">
+          <label class="admin-label">Announcement Text</label>
+          <input type="text" class="admin-input ann-text" placeholder="e.g. Free shipping on orders over $50" />
+        </div>
+        <div class="admin-field" style="margin-bottom: 0">
+          <label class="admin-label">Link (optional)</label>
+          <input type="text" class="admin-input ann-link" placeholder="https://..." />
+        </div>
+      </div>
     `;
-    container.appendChild(row);
+    container.appendChild(card);
+    initAnnToggles();
   });
 
   // Remove announcement
   document.addEventListener('click', (e) => {
     const btn = (e.target as HTMLElement).closest('.remove-ann');
-    if (btn) btn.closest('.announcement-row')?.remove();
+    if (btn) btn.closest('.announcement-card')?.remove();
   });
 
   // Save
@@ -153,12 +222,12 @@ const data = specials || defaults;
     const btn = document.getElementById('save-btn') as HTMLButtonElement;
     (window as any).setButtonLoading(btn, true);
 
-    const announcements = [...container.querySelectorAll('.announcement-row')].map((row, i) => ({
+    const announcements = [...container.querySelectorAll('.announcement-card')].map((card, i) => ({
       id: `ann-${i}`,
-      text: (row.querySelector('.ann-text') as HTMLInputElement).value,
-      link: (row.querySelector('.ann-link') as HTMLInputElement).value,
-      active: (row.querySelector('.ann-active') as HTMLInputElement).checked,
-      type: (row.querySelector('.ann-type') as HTMLSelectElement).value,
+      text: (card.querySelector('.ann-text') as HTMLInputElement).value,
+      link: (card.querySelector('.ann-link') as HTMLInputElement).value,
+      active: (card.querySelector('.ann-active') as HTMLInputElement).checked,
+      type: (card.querySelector('.ann-type') as HTMLSelectElement).value,
     }));
 
     const value = {

@@ -4,8 +4,8 @@ export const prerender = true;
 import Base from '@/layouts/Base.astro';
 import GoogleReviews from '@/components/GoogleReviews.astro';
 import { cfImage, cfSrcset, SIZES } from '@/lib/images';
-import { getCollectionByHandle } from '@/lib/shopify';
-import { getCollectionsStatic } from '@/lib/settings';
+import { getCollectionByHandle, getProductByHandle, getProducts } from '@/lib/shopify';
+import { getCollectionsStatic, getTrendingStatic, getHeroStatic } from '@/lib/settings';
 
 export async function getStaticPaths() {
   // Only build PDPs for products in admin-enabled collections
@@ -28,6 +28,34 @@ export async function getStaticPaths() {
       }
     }
   }
+
+  // Also include any trending/hero products — they may be from non-enabled collections
+  // and would 404 without pages built for them.
+  try {
+    const [trendingSetting, heroSetting] = await Promise.all([
+      getTrendingStatic(),
+      getHeroStatic(),
+    ]);
+
+    const seenHandles = new Set(allProducts.map((p: any) => p.handle));
+    const extraHandles = [
+      ...(trendingSetting?.handles ?? []),
+      heroSetting?.productHandle,
+    ].filter((h): h is string => Boolean(h) && !seenHandles.has(h));
+
+    if (!trendingSetting) {
+      // Homepage falls back to getProducts(8) — ensure those pages are built
+      const { products: fallback } = await getProducts(8);
+      for (const p of fallback) {
+        if (!seen.has(p.id)) { seen.add(p.id); allProducts.push(p); }
+      }
+    } else if (extraHandles.length > 0) {
+      const extras = (await Promise.all(extraHandles.map(h => getProductByHandle(h)))).filter(Boolean) as any[];
+      for (const p of extras) {
+        if (!seen.has(p.id)) { seen.add(p.id); allProducts.push(p); }
+      }
+    }
+  } catch { /* Shopify not configured — skip */ }
 
   // Build related products map — other products from the same collections
   const relatedMap = new Map<string, any[]>();
@@ -81,7 +109,7 @@ const productSchema = {
   aggregateRating: {
     '@type': 'AggregateRating',
     ratingValue: '4.9',
-    reviewCount: '100',
+    reviewCount: '117',
     bestRating: '5',
     worstRating: '1',
   },

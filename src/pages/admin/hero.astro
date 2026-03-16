@@ -1,34 +1,52 @@
 ---
 import Admin from '@/layouts/Admin.astro';
 import { getSetting } from '@/lib/db';
-import { getProducts } from '@/lib/shopify';
+import { getCollectionByHandle } from '@/lib/shopify';
+import { getCollectionsStatic } from '@/lib/settings';
 import type { HeroSetting } from '@/lib/settings';
 
 export const prerender = false;
 
-// Load all products for the picker
-let allProducts: any[] = [];
+// Load enabled collection handles from admin settings
+const collectionSettings = await getCollectionsStatic();
+const enabledHandles = collectionSettings
+  ?.filter(c => c.enabled)
+  .sort((a, b) => a.order - b.order)
+  .map(c => c.handle) ?? [];
+
+// Fetch products for each enabled collection
+type CollectionData = { handle: string; title: string; products: any[] };
+let collectionData: CollectionData[] = [];
 try {
-  const result = await getProducts(100);
-  allProducts = result.products;
+  const results = await Promise.all(
+    enabledHandles.map(h => getCollectionByHandle(h, 100))
+  );
+  collectionData = results
+    .filter(Boolean)
+    .map(c => ({ handle: c!.handle, title: c!.title, products: c!.products }));
 } catch (e) {
-  console.error('Failed to fetch products:', e);
+  console.error('Failed to fetch collections:', e);
 }
 
 // Load current hero setting
 const saved = await getSetting<HeroSetting>('settings:hero');
-const savedImageUrl: string = saved?.imageUrl ?? 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/sunny-ranney-storefront';
-const savedProductHandle: string = saved?.productHandle ?? '';
+const savedImageUrl = saved?.imageUrl ?? '';
+const savedProductHandle = saved?.productHandle ?? '';
+const savedCollectionHandle = saved?.collectionHandle ?? '';
 
-// Look up the saved product for preview
-const savedProduct = allProducts.find(p => p.handle === savedProductHandle) ?? null;
+// Determine which collection tab to show initially
+const initialCollection =
+  collectionData.find(c => c.handle === savedCollectionHandle)?.handle ??
+  collectionData.find(c => c.products.some((p: any) => p.handle === savedProductHandle))?.handle ??
+  collectionData[0]?.handle ??
+  '';
 ---
 
 <Admin title="Hero Section">
   <div class="admin-header">
     <div>
       <h2>Hero Section</h2>
-      <p>Set the hero image and featured product card shown on the home page</p>
+      <p>Pick a product from a collection — its image becomes the hero background and it appears as the featured card.</p>
     </div>
     <div class="admin-unsaved-badge" aria-live="polite">
       <span class="admin-unsaved-dot"></span>
@@ -36,77 +54,97 @@ const savedProduct = allProducts.find(p => p.handle === savedProductHandle) ?? n
     </div>
   </div>
 
-  {allProducts.length === 0 ? (
+  {collectionData.length === 0 ? (
     <div class="admin-card">
-      <p style="color: var(--admin-text-light);">Could not load products from Shopify. Check your Storefront API token.</p>
+      <p style="color: var(--admin-text-light);">
+        No enabled collections found. Go to <a href="/admin/collections">Collections</a> to enable some first.
+      </p>
     </div>
   ) : (
     <form id="hero-form">
+      <!-- Hidden fields updated by JS when a product is selected -->
+      <input type="hidden" id="hero-image-url" name="imageUrl" value={savedImageUrl} />
+      <input type="hidden" id="hero-collection-handle" name="collectionHandle" value={initialCollection} />
 
-      <!-- ─── Image URL ─────────────────────────────── -->
-      <div class="admin-card hero-image-section">
-        <label class="field-label" for="hero-image-url">Hero Image (Cloudflare Images base URL)</label>
-        <p class="field-hint">Paste the base URL without size params — e.g. <code>https://imagedelivery.net/…/about/sunny-ranney-storefront</code></p>
-        <input
-          id="hero-image-url"
-          name="imageUrl"
-          type="url"
-          class="admin-input"
-          value={savedImageUrl}
-          placeholder="https://imagedelivery.net/…/your-image-id"
-        />
-        <div class="hero-preview" id="hero-img-preview">
-          <img
-            id="preview-img"
-            src={`${savedImageUrl}/w=200,h=250,fit=cover,q=75,format=auto`}
-            alt="Hero preview"
-            width="200"
-            height="250"
+      <!-- ─── Collection Tabs ─────────────────────────────── -->
+      <div class="admin-card collection-tab-card">
+        <div class="collection-tab-top">
+          <div class="field-label">Collection</div>
+          <input
+            type="search"
+            id="product-search"
+            class="product-search"
+            placeholder="Search products…"
+            autocomplete="off"
           />
-          <span class="preview-label">Preview</span>
+        </div>
+        <div class="collection-tabs" role="tablist">
+          {collectionData.map(c => (
+            <button
+              type="button"
+              role="tab"
+              class:list={['collection-tab', { active: c.handle === initialCollection }]}
+              data-collection={c.handle}
+              aria-selected={c.handle === initialCollection ? 'true' : 'false'}
+            >
+              {c.title}
+            </button>
+          ))}
         </div>
       </div>
 
-      <!-- ─── Product Picker ───────────────────────── -->
-      <div class="admin-card">
-        <div class="field-label">Featured Product Card</div>
-        <p class="field-hint">Pick one product to show as the floating card over the hero image</p>
+      <!-- ─── Product Grid per Collection ─────────────────── -->
+      {collectionData.map(c => (
+        <div
+          class:list={['collection-products', { 'collection-products--hidden': c.handle !== initialCollection }]}
+          data-collection={c.handle}
+          role="tabpanel"
+        >
+          <div class="admin-card">
+            <div class="field-label">{c.title}</div>
+            <p class="field-hint">Select a product — its image becomes the hero background and it appears as the featured product card.</p>
 
-        <div class="hero-product-grid" id="hero-product-grid">
-          {allProducts.map((p) => {
-            const img = p.images.edges[0]?.node;
-            const price = p.priceRange.minVariantPrice;
-            const isSelected = p.handle === savedProductHandle;
-            return (
-              <label
-                class:list={['product-pick', { selected: isSelected }]}
-                data-handle={p.handle}
-              >
-                <input
-                  type="radio"
-                  name="productHandle"
-                  value={p.handle}
-                  checked={isSelected}
-                  class="product-pick-radio"
-                />
-                {isSelected && (
-                  <span class="product-pick-badge">✓</span>
-                )}
-                <div class="product-pick-img">
-                  {img
-                    ? <img src={`${img.url}&width=200`} alt={p.title} width="200" height="160" />
-                    : <div class="product-pick-ph">{p.title.charAt(0)}</div>
-                  }
-                </div>
-                <div class="product-pick-info">
-                  <strong>{p.title}</strong>
-                  <span>${parseFloat(price.amount).toFixed(2)}</span>
-                </div>
-              </label>
-            );
-          })}
+            {c.products.length === 0 ? (
+              <p style="color: var(--admin-text-light); font-size: 0.85rem; margin-top: 0.5rem;">No products in this collection.</p>
+            ) : (
+              <div class="hero-product-grid">
+                {c.products.map((p: any) => {
+                  const img = p.images.edges[0]?.node;
+                  const price = p.priceRange.minVariantPrice;
+                  const isSelected = p.handle === savedProductHandle;
+                  return (
+                    <label
+                      class:list={['product-pick', { selected: isSelected }]}
+                      data-handle={p.handle}
+                      data-image-url={img?.url ?? ''}
+                      data-collection={c.handle}
+                    >
+                      <input
+                        type="radio"
+                        name="productHandle"
+                        value={p.handle}
+                        checked={isSelected}
+                        class="product-pick-radio"
+                      />
+                      {isSelected && <span class="product-pick-badge">✓</span>}
+                      <div class="product-pick-img">
+                        {img
+                          ? <img src={`${img.url}&width=200`} alt={p.title} width="200" height="160" />
+                          : <div class="product-pick-ph">{p.title.charAt(0)}</div>
+                        }
+                      </div>
+                      <div class="product-pick-info">
+                        <strong>{p.title}</strong>
+                        <span>${parseFloat(price.amount).toFixed(2)}</span>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      ))}
 
       <div class="admin-save-bar">
         <button type="submit" class="admin-btn admin-btn--primary" id="save-btn">
@@ -122,10 +160,67 @@ const savedProduct = allProducts.find(p => p.handle === savedProductHandle) ?? n
 </Admin>
 
 <style>
-  .hero-image-section {
+  .collection-tab-card {
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
+    gap: 0.75rem;
+  }
+
+  .collection-tab-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .product-search {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-radius);
+    font-size: 0.85rem;
+    color: var(--admin-text);
+    background: var(--admin-bg);
+    width: 220px;
+    transition: border-color 0.15s;
+  }
+
+  .product-search:focus {
+    outline: none;
+    border-color: var(--admin-accent);
+  }
+
+  .collection-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .collection-tab {
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--admin-border);
+    border-radius: 2rem;
+    background: var(--admin-bg);
+    color: var(--admin-text);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+
+  .collection-tab:hover {
+    border-color: #bbb;
+  }
+
+  .collection-tab.active {
+    background: var(--admin-accent, #f59e0b);
+    border-color: var(--admin-accent, #f59e0b);
+    color: #000;
+    font-weight: 600;
+  }
+
+  .collection-products--hidden {
+    display: none;
   }
 
   .field-label {
@@ -141,52 +236,7 @@ const savedProduct = allProducts.find(p => p.handle === savedProductHandle) ?? n
     line-height: 1.5;
   }
 
-  .field-hint code {
-    background: rgba(0,0,0,0.06);
-    padding: 0.1em 0.35em;
-    border-radius: 3px;
-    font-size: 0.78rem;
-  }
-
-  .admin-input {
-    width: 100%;
-    padding: 0.55rem 0.75rem;
-    border: 1px solid var(--admin-border);
-    border-radius: var(--admin-radius);
-    font-size: 0.88rem;
-    color: var(--admin-text);
-    background: var(--admin-bg);
-    box-sizing: border-box;
-    transition: border-color 0.15s;
-  }
-
-  .admin-input:focus {
-    outline: none;
-    border-color: var(--admin-accent);
-  }
-
-  .hero-preview {
-    display: flex;
-    align-items: flex-end;
-    gap: 0.5rem;
-    margin-top: 0.25rem;
-  }
-
-  .hero-preview img {
-    width: 100px;
-    height: 125px;
-    object-fit: cover;
-    border-radius: var(--admin-radius);
-    border: 1px solid var(--admin-border);
-  }
-
-  .preview-label {
-    font-size: 0.72rem;
-    color: var(--admin-text-light);
-    padding-bottom: 0.2rem;
-  }
-
-  /* ─── Product grid (same as trending) ─── */
+  /* ─── Product grid ─── */
   .hero-product-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -300,60 +350,85 @@ const savedProduct = allProducts.find(p => p.handle === savedProductHandle) ?? n
 </style>
 
 <script>
-  const grid = document.getElementById('hero-product-grid')!;
+  const form = document.getElementById('hero-form')!;
   const imageInput = document.getElementById('hero-image-url') as HTMLInputElement;
-  const previewImg = document.getElementById('preview-img') as HTMLImageElement;
+  const collectionInput = document.getElementById('hero-collection-handle') as HTMLInputElement;
 
-  // Live image preview
-  let previewTimer: ReturnType<typeof setTimeout>;
-  imageInput?.addEventListener('input', () => {
-    clearTimeout(previewTimer);
-    previewTimer = setTimeout(() => {
-      const base = imageInput.value.trim().replace(/\/$/, '');
-      if (base) {
-        previewImg.src = `${base}/w=200,h=250,fit=cover,q=75,format=auto`;
-      }
-    }, 600);
-  });
-
-  // Single-select product picker
-  grid.addEventListener('click', (e) => {
-    const card = (e.target as HTMLElement).closest<HTMLElement>('.product-pick');
-    if (!card) return;
-
-    // Deselect all
-    grid.querySelectorAll<HTMLElement>('.product-pick').forEach(c => {
-      c.classList.remove('selected');
-      c.querySelector<HTMLInputElement>('input[type="radio"]')!.checked = false;
-      c.querySelector('.product-pick-badge')?.remove();
+  // ─── Product search ─────────────────────────────────────────
+  document.getElementById('product-search')?.addEventListener('input', (e) => {
+    const q = (e.target as HTMLInputElement).value.trim().toLowerCase();
+    document.querySelectorAll<HTMLElement>('.product-pick').forEach(card => {
+      const title = card.querySelector<HTMLElement>('.product-pick-info strong')?.textContent?.toLowerCase() ?? '';
+      card.style.display = !q || title.includes(q) ? '' : 'none';
     });
-
-    // Select clicked
-    card.classList.add('selected');
-    card.querySelector<HTMLInputElement>('input[type="radio"]')!.checked = true;
-    let badge = card.querySelector<HTMLElement>('.product-pick-badge');
-    if (!badge) {
-      badge = document.createElement('span');
-      badge.className = 'product-pick-badge';
-      badge.textContent = '✓';
-      card.insertBefore(badge, card.firstChild);
-    }
   });
 
-  document.getElementById('hero-form')?.addEventListener('submit', async (e) => {
+  // ─── Collection tab switching ───────────────────────────────
+  document.querySelectorAll<HTMLElement>('.collection-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const handle = tab.dataset.collection!;
+
+      document.querySelectorAll<HTMLElement>('.collection-tab').forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      tab.classList.add('active');
+      tab.setAttribute('aria-selected', 'true');
+
+      document.querySelectorAll<HTMLElement>('.collection-products').forEach(g => {
+        g.classList.toggle('collection-products--hidden', g.dataset.collection !== handle);
+      });
+
+      collectionInput.value = handle;
+    });
+  });
+
+  // ─── Product selection ──────────────────────────────────────
+  document.querySelectorAll<HTMLElement>('.hero-product-grid').forEach(grid => {
+    grid.addEventListener('click', (e) => {
+      const card = (e.target as HTMLElement).closest<HTMLElement>('.product-pick');
+      if (!card) return;
+
+      // Deselect all products across all grids
+      document.querySelectorAll<HTMLElement>('.product-pick').forEach(c => {
+        c.classList.remove('selected');
+        c.querySelector<HTMLInputElement>('input[type="radio"]')!.checked = false;
+        c.querySelector('.product-pick-badge')?.remove();
+      });
+
+      // Select clicked
+      card.classList.add('selected');
+      card.querySelector<HTMLInputElement>('input[type="radio"]')!.checked = true;
+      let badge = card.querySelector<HTMLElement>('.product-pick-badge');
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'product-pick-badge';
+        badge.textContent = '✓';
+        card.insertBefore(badge, card.firstChild);
+      }
+
+      // Update hidden fields
+      imageInput.value = card.dataset.imageUrl ?? '';
+      collectionInput.value = card.dataset.collection ?? '';
+    });
+  });
+
+  // ─── Save ───────────────────────────────────────────────────
+  form?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('save-btn') as HTMLButtonElement;
     (window as any).setButtonLoading(btn, true);
 
-    const imageUrl = imageInput.value.trim().replace(/\/$/, '');
-    const selectedCard = grid.querySelector<HTMLElement>('.product-pick.selected');
-    const productHandle = selectedCard?.dataset.handle ?? '';
+    const selectedCard = document.querySelector<HTMLElement>('.product-pick.selected');
+    const productHandle = selectedCard?.querySelector<HTMLInputElement>('input[type="radio"]')?.value ?? '';
+    const imageUrl = imageInput.value;
+    const collectionHandle = collectionInput.value;
 
     try {
       const res = await fetch('/api/admin/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'settings:hero', value: { imageUrl, productHandle } }),
+        body: JSON.stringify({ key: 'settings:hero', value: { imageUrl, productHandle, collectionHandle } }),
       });
       if (!res.ok) throw new Error('Save failed');
       const data = await res.json();
@@ -373,7 +448,7 @@ const savedProduct = allProducts.find(p => p.handle === savedProductHandle) ?? n
   document.addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 's') {
       e.preventDefault();
-      document.getElementById('hero-form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      form?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     }
   });
 </script>

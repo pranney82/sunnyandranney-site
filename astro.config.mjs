@@ -10,9 +10,12 @@ export default defineConfig({
     sitemap(),
   ],
 
-  // Prefetch links when they enter the viewport — pages are ready before the click
+  // Strip whitespace from HTML output
+  compressHTML: true,
+
+  // Prefetch ALL internal links when they enter the viewport — pages load before the click
   prefetch: {
-    prefetchAll: false,
+    prefetchAll: true,
     defaultStrategy: 'viewport',
   },
 

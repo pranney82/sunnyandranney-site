@@ -7,9 +7,10 @@ export const prerender = false;
 // ─── Constants ──────────────────────────────────────────────
 const MAX_HISTORY = 20;
 const MAX_INPUT_LENGTH = 500;
+const MAX_TOKENS = 1024;
 const JSON_HEADERS = { 'Content-Type': 'application/json' } as const;
-const RATE_LIMIT_WINDOW = 60; // seconds
-const RATE_LIMIT_MAX = 20; // max messages per window
+const RATE_LIMIT_WINDOW = 60;
+const RATE_LIMIT_MAX = 20;
 
 // ─── Types ───────────────────────────────────────────────────
 interface Product {
@@ -26,12 +27,16 @@ interface ChatMessage {
   content: string;
 }
 
+interface PageContext {
+  url: string;
+  title: string;
+}
+
 // Module-level cache — avoids 2 D1 reads on every chat message.
-// Workers share module state within an isolate; TTL keeps it fresh within ~1 min of admin changes.
 let _promptCache: { prompt: string; ts: number } | null = null;
 const PROMPT_CACHE_TTL_MS = 60_000;
 
-// ─── System prompt (base — hours/specials injected dynamically from D1) ──
+// ─── System prompt ────────────────────────────────────────────
 const BASE_SYSTEM_PROMPT = `You are Staci, the AI shopping assistant for **Sunny & Ranney** — a home goods store in Roswell, GA where 100% of profits go to **Sunshine on a Ranney Day**, a charity that provides home makeovers for children with special needs.
 
 ## Store Details
@@ -56,7 +61,6 @@ Sunny & Ranney exists to fund Sunshine on a Ranney Day (SOARD). Every single dol
 - Occasionally mention the mission — customers love knowing their purchase matters.
 - If a customer seems to be browsing, proactively suggest 2-3 relevant items from the provided products.`;
 
-// Default hours if not configured in admin
 const DEFAULT_HOURS = '**Hours:** Tuesday–Saturday, 10am–6pm. Closed Sunday & Monday.';
 
 interface StoreHours {
@@ -89,9 +93,7 @@ function formatHoursForPrompt(hours: StoreHours): string {
     result += `\n**Holiday Hours:**\n${holidayLines.join('\n')}`;
   }
 
-  if (hours.note) {
-    result += `\n**Note:** ${hours.note}`;
-  }
+  if (hours.note) result += `\n**Note:** ${hours.note}`;
 
   return result;
 }
@@ -111,31 +113,39 @@ function formatSpecialsForPrompt(specials: StoreSpecials): string {
   return parts.join('\n');
 }
 
-async function buildSystemPrompt(): Promise<string> {
+async function buildSystemPrompt(pageContext?: PageContext): Promise<string> {
+  let basePrompt: string;
+
   if (_promptCache && Date.now() - _promptCache.ts < PROMPT_CACHE_TTL_MS) {
-    return _promptCache.prompt;
+    basePrompt = _promptCache.prompt;
+  } else {
+    let hoursSection = DEFAULT_HOURS;
+    let specialsSection = '';
+
+    try {
+      const [hours, specials] = await Promise.all([
+        getSetting<StoreHours>('settings:hours'),
+        getSetting<StoreSpecials>('settings:specials'),
+      ]);
+      if (hours) hoursSection = formatHoursForPrompt(hours);
+      if (specials) specialsSection = formatSpecialsForPrompt(specials);
+    } catch {
+      // Fall back to defaults
+    }
+
+    let prompt = BASE_SYSTEM_PROMPT + `\n\n${hoursSection}`;
+    if (specialsSection) prompt += `\n\n${specialsSection}`;
+
+    _promptCache = { prompt, ts: Date.now() };
+    basePrompt = prompt;
   }
 
-  let hoursSection = DEFAULT_HOURS;
-  let specialsSection = '';
-
-  try {
-    const [hours, specials] = await Promise.all([
-      getSetting<StoreHours>('settings:hours'),
-      getSetting<StoreSpecials>('settings:specials'),
-    ]);
-
-    if (hours) hoursSection = formatHoursForPrompt(hours);
-    if (specials) specialsSection = formatSpecialsForPrompt(specials);
-  } catch {
-    // Fall back to defaults
+  if (pageContext?.url) {
+    const titleNote = pageContext.title ? ` — "${pageContext.title}"` : '';
+    basePrompt += `\n\n## Customer's Current Page\nThe customer is currently browsing: ${pageContext.url}${titleNote}\nUse this context to give more relevant suggestions.`;
   }
 
-  let prompt = BASE_SYSTEM_PROMPT + `\n\n${hoursSection}`;
-  if (specialsSection) prompt += `\n\n${specialsSection}`;
-
-  _promptCache = { prompt, ts: Date.now() };
-  return prompt;
+  return basePrompt;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -153,45 +163,30 @@ function formatProductForLLM(meta: Product): string {
   ].filter(Boolean).join(' | ');
 }
 
-/** Build the user's latest query for embedding — uses last 2 user messages for context */
 function getSearchQuery(messages: ChatMessage[]): string {
   const userMessages = messages.filter(m => m.role === 'user');
   return userMessages.slice(-2).map(m => m.content).join(' ');
 }
 
-// ─── RAG: embed query → search Vectorize → retrieve relevant products ───
+// ─── RAG ─────────────────────────────────────────────────────
 
-async function searchProducts(
-  ai: any,
-  vectorize: any,
-  query: string,
-  topK = 15,
-): Promise<string> {
-  const embeddingResult = await ai.run('@cf/baai/bge-base-en-v1.5', {
-    text: [query],
-  });
-
+async function searchProducts(ai: any, vectorize: any, query: string, topK = 15): Promise<string> {
+  const embeddingResult = await ai.run('@cf/baai/bge-base-en-v1.5', { text: [query] });
   const queryVector = embeddingResult.data?.[0];
   if (!queryVector) return 'No products found.';
 
-  const results = await vectorize.query(queryVector, {
-    topK,
-    returnMetadata: 'all',
-  });
-
+  const results = await vectorize.query(queryVector, { topK, returnMetadata: 'all' });
   if (!results.matches?.length) return 'No matching products found.';
 
-  const products = results.matches
+  return results.matches
     .filter((m: any) => m.metadata)
-    .map((m: any) => formatProductForLLM(m.metadata as Product));
-
-  return products.join('\n');
+    .map((m: any) => formatProductForLLM(m.metadata as Product))
+    .join('\n');
 }
 
-// ─── API handler (streaming via SSE) ─────────────────────────
+// ─── API handler ──────────────────────────────────────────────
 export const POST: APIRoute = async ({ request }) => {
   try {
-    // Rate limit by IP
     const ip = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || 'unknown';
     const allowed = await checkRateLimit(`chat:${ip}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW);
     if (!allowed) {
@@ -201,8 +196,8 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    const body = await request.json() as { messages?: ChatMessage[]; stream?: boolean };
-    const { messages, stream = false } = body;
+    const body = await request.json() as { messages?: ChatMessage[]; stream?: boolean; pageContext?: PageContext };
+    const { messages, stream = false, pageContext } = body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: 'Messages array required' }), {
@@ -211,7 +206,6 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    // Validate the latest user message length
     const lastUserMsg = [...messages].reverse().find((m: ChatMessage) => m.role === 'user');
     if (lastUserMsg && lastUserMsg.content.length > MAX_INPUT_LENGTH) {
       return new Response(JSON.stringify({ error: 'Message too long. Please keep it under 500 characters.' }), {
@@ -224,43 +218,32 @@ export const POST: APIRoute = async ({ request }) => {
     const vectorize = env.VECTORIZE;
 
     if (!ai) {
-      return new Response(
-        JSON.stringify({ error: 'AI service unavailable.' }),
-        { status: 503, headers: JSON_HEADERS }
-      );
+      return new Response(JSON.stringify({ error: 'AI service unavailable.' }), { status: 503, headers: JSON_HEADERS });
     }
 
-    // Trim conversation history to last N messages to control token usage
     const trimmedMessages: ChatMessage[] = messages.slice(-MAX_HISTORY);
 
-    // RAG: search for relevant products based on user's query
     let productContext = '';
     if (vectorize) {
       const query = getSearchQuery(trimmedMessages);
       productContext = await searchProducts(ai, vectorize, query);
     }
 
-    // Build system prompt with dynamic hours/specials from D1
-    const systemPrompt = await buildSystemPrompt();
+    const systemPrompt = await buildSystemPrompt(pageContext);
+    const fullSystem = systemPrompt + (productContext ? `\n\n## Relevant Products From Our Shop\n${productContext}` : '');
 
-    // Build messages with product context injected
     const llmMessages = [
-      { role: 'system', content: systemPrompt },
-      ...(productContext
-        ? [{ role: 'system', content: `## Relevant Products From Our Shop\n${productContext}` }]
-        : []),
+      { role: 'system', content: fullSystem },
       ...trimmedMessages,
     ];
 
-    // ─── Streaming path ───────────────────────────────────────
     if (stream) {
       const eventStream = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
         messages: llmMessages,
-        max_tokens: 400,
+        max_tokens: MAX_TOKENS,
         stream: true,
       });
 
-      // Workers AI returns an SSE ReadableStream — pipe it through
       return new Response(eventStream as ReadableStream, {
         headers: {
           'Content-Type': 'text/event-stream',
@@ -270,15 +253,13 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    // ─── Non-streaming fallback ────────────────────────────────
     const response = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
       messages: llmMessages,
-      max_tokens: 400,
+      max_tokens: MAX_TOKENS,
     }) as { response?: string };
 
-    return new Response(JSON.stringify({ reply: response.response }), {
-      headers: JSON_HEADERS,
-    });
+    return new Response(JSON.stringify({ reply: response.response }), { headers: JSON_HEADERS });
+
   } catch (err: any) {
     console.error('Chat API error:', err?.message);
     return new Response(JSON.stringify({ error: 'Something went wrong. Please try again.' }), {

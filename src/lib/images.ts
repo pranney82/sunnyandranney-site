@@ -19,7 +19,7 @@ interface ImageOptions {
 export function cfImage(url: string, opts: ImageOptions = {}): string {
   if (!url) return url;
 
-  const { width, height } = opts;
+  const { width, height, quality = 80 } = opts;
 
   if (url.includes('cdn.shopify.com')) {
     const params = new URLSearchParams();
@@ -30,6 +30,14 @@ export function cfImage(url: string, opts: ImageOptions = {}): string {
     return `${url}${sep}${params.toString()}`;
   }
 
+  if (url.includes('imagedelivery.net')) {
+    const parts: string[] = [];
+    if (width) parts.push(`w=${width}`);
+    if (height) parts.push(`h=${height}`);
+    parts.push('fit=cover', `q=${quality}`, 'format=auto');
+    return `${url.replace(/\/$/, '')}/${parts.join(',')}`;
+  }
+
   return url;
 }
 
@@ -37,9 +45,9 @@ export function cfImage(url: string, opts: ImageOptions = {}): string {
  * Generate a responsive srcset using CF Image Resizing.
  * Each width gets its own optimized variant with AVIF/WebP auto-negotiation.
  */
-export function cfSrcset(url: string, widths: number[] = [300, 600, 900, 1200]): string {
+export function cfSrcset(url: string, widths: number[] = [300, 600, 900, 1200], quality?: number): string {
   if (!url) return '';
-  return widths.map(w => `${cfImage(url, { width: w })} ${w}w`).join(', ');
+  return widths.map(w => `${cfImage(url, { width: w, quality })} ${w}w`).join(', ');
 }
 
 /**

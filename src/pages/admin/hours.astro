@@ -39,14 +39,14 @@ const data = hours || defaults;
       <h3>Regular Hours</h3>
       <div class="hours-grid">
         {data.days.map((d: any, i: number) => (
-          <div class="hours-row">
+          <div class:list={['hours-row', { 'is-closed': d.closed }]}>
             <span class="hours-day">{d.day}</span>
             <label class="admin-toggle">
               <input type="checkbox" name={`closed-${i}`} checked={!d.closed} />
               <span class="admin-toggle-slider"></span>
             </label>
-            <span class="hours-status">{d.closed ? 'Closed' : 'Open'}</span>
-            <div class="hours-times" data-index={i}>
+            <span class:list={['hours-status', d.closed ? 'closed' : 'open']}>{d.closed ? 'Closed' : 'Open'}</span>
+            <div class:list={['hours-times', { disabled: d.closed }]} data-index={i}>
               <input type="time" class="admin-input hours-time" name={`open-${i}`} value={d.open} disabled={d.closed} />
               <span class="hours-sep">to</span>
               <input type="time" class="admin-input hours-time" name={`close-${i}`} value={d.close} disabled={d.closed} />
@@ -82,9 +82,9 @@ const data = hours || defaults;
               </label>
               <span class="holiday-closed-label">{h.closed ? 'Closed all day' : 'Modified hours'}</span>
               <div class="holiday-times" style={h.closed ? 'opacity:0.3;pointer-events:none;' : ''}>
-                <input type="time" class="admin-input holiday-open" value={h.open || '10:00'} style="width:130px" />
+                <input type="time" class="admin-input hours-time holiday-open" value={h.open || '10:00'} />
                 <span class="hours-sep">to</span>
-                <input type="time" class="admin-input holiday-close" value={h.close || '14:00'} style="width:130px" />
+                <input type="time" class="admin-input hours-time holiday-close" value={h.close || '14:00'} />
               </div>
             </div>
           </div>
@@ -124,12 +124,17 @@ const data = hours || defaults;
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid var(--admin-border);
+    padding: 0.6rem 0.75rem;
+    border-radius: 8px;
+    transition: background 0.15s;
   }
 
-  .hours-row:last-child {
-    border-bottom: none;
+  .hours-row.is-closed {
+    background: rgba(0,0,0,0.025);
+  }
+
+  .hours-row.is-closed .hours-day {
+    color: var(--admin-text-light);
   }
 
   .hours-day {
@@ -137,20 +142,26 @@ const data = hours || defaults;
     font-weight: 600;
     font-size: 0.9rem;
     flex-shrink: 0;
+    transition: color 0.15s;
   }
 
   .hours-status {
     font-size: 0.8rem;
-    color: var(--admin-text-light);
-    width: 45px;
+    font-weight: 600;
+    width: 48px;
     flex-shrink: 0;
+    transition: color 0.15s;
   }
+
+  .hours-status.open { color: var(--admin-success); }
+  .hours-status.closed { color: var(--admin-text-light); }
 
   .hours-times {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     flex: 1;
+    transition: opacity 0.2s;
   }
 
   .hours-time {
@@ -160,10 +171,11 @@ const data = hours || defaults;
   .hours-sep {
     font-size: 0.85rem;
     color: var(--admin-text-light);
+    flex-shrink: 0;
   }
 
-  .hours-times.disabled .admin-input {
-    opacity: 0.4;
+  .hours-times.disabled {
+    opacity: 0.25;
     pointer-events: none;
   }
 
@@ -202,18 +214,30 @@ const data = hours || defaults;
     transition: opacity 0.2s;
   }
 
+  .holiday-times .hours-time {
+    max-width: none;
+    flex: 1;
+  }
+
   @media (max-width: 768px) {
     .hours-row {
       flex-wrap: wrap;
+      padding: 0.6rem 0.5rem;
     }
 
     .hours-day {
-      width: 80px;
+      width: auto;
+      flex: 1;
     }
 
     .hours-times {
       width: 100%;
       margin-top: 0.25rem;
+    }
+
+    .hours-times .hours-time {
+      flex: 1;
+      max-width: none;
     }
 
     .holiday-row-top {
@@ -223,6 +247,14 @@ const data = hours || defaults;
     .holiday-row-bottom {
       flex-wrap: wrap;
     }
+
+    .holiday-times {
+      width: 100%;
+    }
+
+    .holiday-times .hours-time {
+      flex: 1;
+    }
   }
 </style>
 
@@ -231,10 +263,10 @@ const data = hours || defaults;
   const form = document.getElementById('hours-form') as HTMLFormElement;
 
   // Toggle open/closed state
-  form.querySelectorAll('.admin-toggle input').forEach((toggle) => {
+  form.querySelectorAll('.hours-row .admin-toggle input').forEach((toggle) => {
     toggle.addEventListener('change', (e) => {
       const input = e.target as HTMLInputElement;
-      const row = input.closest('.hours-row');
+      const row = input.closest('.hours-row') as HTMLElement;
       if (!row) return;
       const timesDiv = row.querySelector('.hours-times') as HTMLElement;
       const status = row.querySelector('.hours-status') as HTMLElement;
@@ -244,16 +276,10 @@ const data = hours || defaults;
         (i as HTMLInputElement).disabled = !isOpen;
       });
       timesDiv.classList.toggle('disabled', !isOpen);
+      row.classList.toggle('is-closed', !isOpen);
       status.textContent = isOpen ? 'Open' : 'Closed';
+      status.className = `hours-status ${isOpen ? 'open' : 'closed'}`;
     });
-
-    // Set initial state
-    const input = toggle as HTMLInputElement;
-    if (!input.checked) {
-      const row = input.closest('.hours-row');
-      const timesDiv = row?.querySelector('.hours-times') as HTMLElement;
-      timesDiv?.classList.add('disabled');
-    }
   });
 
   // Holiday closed toggle
@@ -305,9 +331,9 @@ const data = hours || defaults;
         </label>
         <span class="holiday-closed-label">Modified hours</span>
         <div class="holiday-times">
-          <input type="time" class="admin-input holiday-open" value="10:00" style="width:130px" />
+          <input type="time" class="admin-input hours-time holiday-open" value="10:00" />
           <span class="hours-sep">to</span>
-          <input type="time" class="admin-input holiday-close" value="14:00" style="width:130px" />
+          <input type="time" class="admin-input hours-time holiday-close" value="14:00" />
         </div>
       </div>
     `;

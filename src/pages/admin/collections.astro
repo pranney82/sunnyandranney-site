@@ -114,13 +114,18 @@ const collections = shopifyCollections.map((c, i) => {
         <span class="admin-save-hint">
           <kbd class="admin-kbd">⌘S</kbd> to save
         </span>
-        <span style="font-size: 0.8rem; color: var(--admin-text-light);">Drag to reorder</span>
+        <span class="reorder-hint">Drag to reorder</span>
       </div>
     </form>
   )}
 </Admin>
 
 <style>
+  .reorder-hint {
+    font-size: 0.8rem;
+    color: var(--admin-text-light);
+  }
+
   .collections-toolbar {
     display: flex;
     align-items: center;
@@ -167,6 +172,18 @@ const collections = shopifyCollections.map((c, i) => {
   @media (max-width: 600px) {
     .collections-grid {
       grid-template-columns: repeat(2, 1fr);
+    }
+
+    .collection-drag {
+      display: none;
+    }
+
+    .collection-card {
+      cursor: default;
+    }
+
+    .reorder-hint {
+      display: none;
     }
   }
 
