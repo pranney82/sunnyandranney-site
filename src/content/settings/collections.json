@@ -71,22 +71,22 @@
   },
   {
     "handle": "outdoor-furniture",
-    "enabled": true,
+    "enabled": false,
     "order": 14
   },
   {
     "handle": "decor",
-    "enabled": true,
+    "enabled": false,
     "order": 15
   },
   {
     "handle": "faux-plants-florals",
-    "enabled": true,
+    "enabled": false,
     "order": 16
   },
   {
     "handle": "all-products-by-price",
-    "enabled": true,
+    "enabled": false,
     "order": 17
   },
   {
@@ -141,17 +141,17 @@
   },
   {
     "handle": "gift-cards",
-    "enabled": true,
+    "enabled": false,
     "order": 28
   },
   {
     "handle": "spiritual",
-    "enabled": true,
+    "enabled": false,
     "order": 29
   },
   {
     "handle": "jewelry",
-    "enabled": true,
+    "enabled": false,
     "order": 30
   }
 ]
