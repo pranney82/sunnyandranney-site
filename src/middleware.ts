@@ -11,15 +11,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // ─── Admin API auth: validate Cloudflare Access JWT ────────────
   if (url.pathname.startsWith('/api/admin/')) {
     const jwt = context.request.headers.get('cf-access-jwt-assertion');
-    if (!jwt) {
+    const cfAuthCookie = context.request.headers.get('cookie')?.match(/CF_Authorization=([^\s;]+)/)?.[1];
+    if (!jwt && !cfAuthCookie) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
       });
     }
     // Cloudflare Access validates the JWT at the edge before the request
-    // reaches the worker. If cf-access-jwt-assertion is present, the
-    // request has already passed Access policy validation.
+    // reaches the worker. The JWT may arrive via the cf-access-jwt-assertion
+    // header (edge-injected) or the CF_Authorization cookie (browser requests).
   }
 
   const response = await next();
