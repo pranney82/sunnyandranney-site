@@ -1,144 +1,84 @@
 ---
 import Base from '@/layouts/Base.astro';
 
-// ── Live SOARD stats (falls back gracefully) ──
-const fallbackStats = { roomMakeovers: 269, childrenServed: 203, livesImpacted: 17000, yearsGiving: 14 };
-let stats = fallbackStats;
-try {
-  const statsUrl = import.meta.env.SOARD_STATS_URL;
-  if (statsUrl) {
-    const res = await fetch(statsUrl);
-    if (res.ok) stats = { ...fallbackStats, ...await res.json() };
-  }
-} catch (e) {
-  console.log('SOARD stats fetch failed, using fallback values.');
-}
-
-const pressLogos = [
-  { name: 'WSB-TV', placeholder: true },
-  { name: 'Atlanta Journal-Constitution', placeholder: true },
-  { name: 'Roswell Patch', placeholder: true },
-  { name: 'Good Day Atlanta', placeholder: true },
+const stats = [
+  { value: '269+', label: 'Room Makeovers' },
+  { value: '203+', label: 'Children Served' },
+  { value: '17,000+', label: 'Lives Impacted' },
+  { value: '100%', label: 'Of Profits Donated' },
 ];
 
 const kids = [
-  { name: 'Adrian', slug: 'adrian', blurb: 'Adrian dreamed of a space-themed bedroom where he could imagine exploring the stars. His new room gave him a launchpad for his biggest adventures.' },
-  { name: 'Mathew', slug: 'mathew', blurb: 'Our very first makeover — 11-year-old Mathew wanted a military-themed bunker bedroom, and bringing it to life changed everything for us and for him.' },
-  { name: 'Tripp', slug: 'tripp', blurb: 'Tripp\'s whole-home makeover drew 1.6 million viewers on WSB-TV and showed the world what a little sunshine can do.' },
-];
-
-const beforeAfter = [
-  { kid: 'Mathew', slug: 'mathew', label: 'Room #1 — Where It All Began' },
-  { kid: 'Ellie', slug: 'ellie', label: 'Wheelchair-Accessible Bathroom' },
-  { kid: 'Tripp', slug: 'tripp', label: '1.6 Million Watched on WSB-TV' },
+  { name: 'Mathew', slug: 'mathew', tag: 'Where It All Began', blurb: 'Our very first makeover — 11-year-old Mathew wanted a military-themed bunker bedroom, and bringing it to life changed everything for us and for him.' },
+  { name: 'Adrian', slug: 'adrian', tag: 'Room #247', blurb: 'Adrian dreamed of a space-themed bedroom where he could imagine exploring the stars. His new room gave him a launchpad for his biggest adventures.' },
+  { name: 'Tripp', slug: 'tripp', tag: '1.6 Million Watched', blurb: 'Tripp\'s whole-home makeover drew 1.6 million viewers on WSB-TV and showed the world what a little sunshine can do.' },
 ];
 ---
 
 <Base title="About Us — Sunny & Ranney" description="Meet the team behind Sunny & Ranney — a furniture store where 100% of profits fund life-changing room makeovers for children with special needs." lcpImage="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=700,q=80,format=auto">
 
-  <!-- ═══ 1. HERO ═══ -->
-  <section class="about-hero">
-    <div class="container about-hero__inner">
-      <div class="about-hero__text">
+  <!-- ═══ HERO ═══ -->
+  <section class="ab-hero">
+    <div class="container ab-hero__inner">
+      <div class="ab-hero__text">
         <span class="label animate-fade-up">About Us</span>
-        <h1 class="about-hero__title animate-fade-up delay-1">
-          Come In.<br/>
-          <span class="about-hero__accent">Stay Awhile.</span>
+        <h1 class="ab-hero__title animate-fade-up delay-1">
+          Come In.<br/><span class="accent">Stay Awhile.</span>
         </h1>
-        <p class="about-hero__sub animate-fade-up delay-2">
+        <p class="ab-hero__sub animate-fade-up delay-2">
           We're a small team in Roswell, GA with one big belief: beautiful furniture should do more than fill a room — it should change a life.
         </p>
-        <div class="about-hero__actions animate-fade-up delay-3">
+        <div class="ab-hero__actions animate-fade-up delay-3">
           <a href="/shop" class="btn btn--gold" data-astro-prefetch>Shop & Give Back</a>
-          <a href="#our-story" class="about-hero__scroll-link">
+          <a href="#our-story" class="text-link">
             Our Story
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
           </a>
         </div>
       </div>
-      <div class="about-hero__media animate-fade-up delay-2">
-        <div class="about-hero__img-wrap">
-          <img
-            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=700,q=80,format=auto"
-            srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=400,q=75,format=auto 400w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=700,q=80,format=auto 700w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=1000,q=80,format=auto 1000w"
-            sizes="(max-width: 767px) 90vw, 50vw"
-            alt="Inside the Sunny & Ranney showroom in Roswell, Georgia"
-            width="700"
-            height="875"
-            loading="eager"
-            fetchpriority="high"
-            decoding="async"
-          />
+      <div class="ab-hero__media animate-fade-up delay-2">
+        <img
+          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=700,q=80,format=auto"
+          srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=400,q=75,format=auto 400w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=700,q=80,format=auto 700w"
+          sizes="(max-width: 767px) 90vw, 50vw"
+          alt="Inside the Sunny & Ranney showroom in Roswell, Georgia"
+          width="700" height="875"
+          loading="eager" fetchpriority="high" decoding="async"
+        />
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ STATS ═══ -->
+  <section class="ab-stats" aria-label="Impact statistics">
+    <div class="container ab-stats__inner">
+      {stats.map((s) => (
+        <div class="ab-stats__item" role="group">
+          <span class="ab-stats__number">{s.value}</span>
+          <span class="ab-stats__label">{s.label}</span>
         </div>
-      </div>
+      ))}
     </div>
   </section>
 
-  <!-- ═══ 2. PRESS BAR ═══ -->
-  <section class="press" aria-label="Featured in">
-    <div class="container press__inner">
-      <span class="press__label">As Seen In</span>
-      <div class="press__logos">
-        {pressLogos.map((logo) => (
-          <div class="press__logo" aria-label={logo.name}>
-            <!-- PLACEHOLDER: Replace with actual logo images -->
-            <span class="press__logo-text">{logo.name}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══ 3. IMPACT STATS ═══ -->
-  <section class="about-stats" aria-label="Impact statistics">
-    <div class="container about-stats__inner">
-      <div class="about-stats__stat" role="group" aria-label="Room makeovers completed">
-        <span class="about-stats__number" data-count={stats.roomMakeovers}>0</span>
-        <span class="about-stats__plus" aria-hidden="true">+</span>
-        <span class="about-stats__label">Room Makeovers</span>
-      </div>
-      <div class="about-stats__stat" role="group" aria-label="Children served">
-        <span class="about-stats__number" data-count={stats.childrenServed}>0</span>
-        <span class="about-stats__plus" aria-hidden="true">+</span>
-        <span class="about-stats__label">Children Served</span>
-      </div>
-      <div class="about-stats__stat" role="group" aria-label="Lives impacted">
-        <span class="about-stats__number" data-count={stats.livesImpacted}>0</span>
-        <span class="about-stats__plus" aria-hidden="true">+</span>
-        <span class="about-stats__label">Lives Impacted</span>
-      </div>
-      <div class="about-stats__stat" role="group" aria-label="Of profits donated">
-        <span class="about-stats__number">100</span>
-        <span class="about-stats__plus" aria-hidden="true">%</span>
-        <span class="about-stats__label">Of Profits Donated</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══ 4. HOW IT WORKS ═══ -->
-  <section class="how-it-works">
-    <div class="container how-it-works__inner">
-      <span class="label how-it-works__eyebrow">How It Works</span>
-      <h2 class="how-it-works__title">From Your Home to Theirs</h2>
-      <div class="how-it-works__steps">
-        <div class="how-it-works__step reveal">
-          <span class="how-it-works__num" aria-hidden="true">01</span>
+  <!-- ═══ HOW IT WORKS ═══ -->
+  <section class="ab-how">
+    <div class="container">
+      <span class="label ab-how__eyebrow">How It Works</span>
+      <h2>From Your Home to Theirs</h2>
+      <div class="ab-how__steps">
+        <div class="ab-how__step reveal">
+          <span class="ab-how__num" aria-hidden="true">01</span>
           <h3>You Shop</h3>
           <p>You find a piece you love at Sunny & Ranney — furniture, decor, or a gift.</p>
         </div>
-        <div class="how-it-works__connector" aria-hidden="true">
-          <svg width="48" height="24" viewBox="0 0 48 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h44m-8-8 8 8-8 8"/></svg>
-        </div>
-        <div class="how-it-works__step reveal delay-1">
-          <span class="how-it-works__num" aria-hidden="true">02</span>
+        <div class="ab-how__step reveal delay-1">
+          <span class="ab-how__num" aria-hidden="true">02</span>
           <h3>100% of Profit</h3>
           <p>Every dollar of profit goes directly to Sunshine on a Ranney Day. Not a percentage — all of it.</p>
         </div>
-        <div class="how-it-works__connector" aria-hidden="true">
-          <svg width="48" height="24" viewBox="0 0 48 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h44m-8-8 8 8-8 8"/></svg>
-        </div>
-        <div class="how-it-works__step reveal delay-2">
-          <span class="how-it-works__num" aria-hidden="true">03</span>
+        <div class="ab-how__step reveal delay-2">
+          <span class="ab-how__num" aria-hidden="true">03</span>
           <h3>A Child Gets a Room</h3>
           <p>Volunteers build wheelchair-accessible bathrooms, dream bedrooms, and therapy spaces — free to families.</p>
         </div>
@@ -146,316 +86,166 @@ const beforeAfter = [
     </div>
   </section>
 
-  <!-- ═══ 5. FOUNDER VIDEO ═══ -->
-  <section class="video-section" id="our-story">
-    <div class="container video__split">
-      <div class="video__header reveal">
-        <div class="video__rule" aria-hidden="true"></div>
-        <span class="video__eyebrow">Our Story</span>
+  <!-- ═══ VIDEO ═══ -->
+  <section class="ab-video" id="our-story">
+    <div class="container ab-video__inner">
+      <div class="ab-video__text reveal">
+        <span class="label">Our Story</span>
         <h2>See why we do<br/><em>what we do</em></h2>
-        <p class="video__deck">In 60 seconds, Peter and Holly share the moment that changed everything — and why every piece of furniture in our showroom carries a deeper purpose.</p>
+        <p>In 60 seconds, Peter and Holly share the moment that changed everything — and why every piece of furniture in our showroom carries a deeper purpose.</p>
       </div>
-      <div class="video__stream-wrap reveal delay-1">
-        <iframe
-          src="https://customer-cuav5h47lgfe96ql.cloudflarestream.com/7d7459064cd569cd7a3d806914f7aec7/iframe"
-          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
-          allowfullscreen
-          title="Peter and Holly share why they started Sunny & Ranney"
-        ></iframe>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══ 6. FOUNDERS + ORIGIN STORY ═══ -->
-  <section class="founders" id="founders">
-    <div class="container">
-
-      <!-- Holly -->
-      <div class="founder reveal">
-        <div class="founder__image">
+      <div class="ab-video__player reveal delay-1">
+        <button
+          class="ab-video__poster"
+          aria-label="Play video: Peter and Holly share why they started Sunny & Ranney"
+          data-video-src="https://customer-cuav5h47lgfe96ql.cloudflarestream.com/7d7459064cd569cd7a3d806914f7aec7/iframe?autoplay=true"
+        >
           <img
-            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/team/holly-ranney/w=600,h=750,fit=cover,gravity=face,q=80,format=auto"
-            srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/team/holly-ranney/w=400,h=500,fit=cover,gravity=face,q=75,format=auto 400w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/team/holly-ranney/w=600,h=750,fit=cover,gravity=face,q=80,format=auto 600w"
-            sizes="(max-width: 767px) 85vw, 440px"
-            alt="Holly Ranney, Co-Founder of Sunny & Ranney"
-            width="600"
-            height="750"
-            loading="lazy"
-            decoding="async"
+            src="https://customer-cuav5h47lgfe96ql.cloudflarestream.com/7d7459064cd569cd7a3d806914f7aec7/thumbnails/thumbnail.jpg?height=600"
+            alt="" width="338" height="600" loading="lazy" decoding="async"
           />
-        </div>
-        <div class="founder__content">
-          <span class="label">Co-Founder</span>
-          <h2 class="founder__name">Holly Ranney</h2>
-          <blockquote class="founder__quote">
-            "It was never just about furniture — it's about creating spaces that make life feel a little more beautiful."
-          </blockquote>
-          <p class="founder__bio">
-            The heart and soul behind Sunny & Ranney's curation. With an eye for design and a passion for giving back, Holly transforms every corner of the shop into an inspiring space that tells a story.
-          </p>
-          <p class="founder__bio">
-            Her talent for finding one-of-a-kind pieces and styling them into rooms people fall in love with is what sets Sunny & Ranney apart.
-          </p>
-          <a href="/shop" class="founder__link" data-astro-prefetch>
-            See Holly's picks
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-          </a>
-        </div>
-      </div>
-
-      <!-- Peter + Origin Story -->
-      <div class="founder founder--reversed reveal">
-        <div class="founder__image">
-          <img
-            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/team/peter-ranney/w=600,h=750,fit=cover,gravity=face,q=80,format=auto"
-            srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/team/peter-ranney/w=400,h=500,fit=cover,gravity=face,q=75,format=auto 400w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/team/peter-ranney/w=600,h=750,fit=cover,gravity=face,q=80,format=auto 600w"
-            sizes="(max-width: 767px) 85vw, 440px"
-            alt="Peter Ranney, Co-Founder of Sunny & Ranney"
-            width="600"
-            height="750"
-            loading="lazy"
-            decoding="async"
-          />
-        </div>
-        <div class="founder__content">
-          <span class="label">Co-Founder</span>
-          <h2 class="founder__name">Peter Ranney</h2>
-          <blockquote class="founder__quote">
-            "It started with one room for an 11-year-old boy named Mathew. That room changed everything."
-          </blockquote>
-          <p class="founder__bio">
-            In 2012, Peter and Holly were inspired by a church sermon to do something simple but powerful — give a child with special needs a bedroom they could truly call their own. That first project for 11-year-old Mathew, who dreamed of a military-themed bunker bedroom, changed everything.
-          </p>
-          <p class="founder__bio">
-            What started as one room has grown into <strong>Sunshine on a Ranney Day</strong>, a 501(c)(3) nonprofit creating wheelchair-accessible bathrooms, dream bedrooms, and in-home therapy spaces — completely free to families. In 2020, they opened <strong>Sunny & Ranney</strong> with one goal: fund the mission. Every dollar of profit goes directly to SOARD — not a percentage, <strong>all of it</strong>.
-          </p>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ═══ 7. KIDS STORIES — editorial sticky-scroll ═══ -->
-  <section class="ed" aria-labelledby="ed-heading">
-    <div class="container">
-
-      <div class="ed__opener">
-        <div class="ed__opener-rule" aria-hidden="true"></div>
-        <span class="ed__eyebrow">Their Stories</span>
-        <h2 class="ed__headline" id="ed-heading">The Kids Who<br/><em>Inspire</em> Us</h2>
-        <p class="ed__deck">Every room starts with a dream. These are the children who remind us why we do what we do.</p>
-      </div>
-
-      <div class="ed__sticky-wrap">
-        <div class="ed__sticky-img">
-          <div class="ed__cover-frame">
-            {kids.map((kid, i) => (
-              <img
-                class={`ed__cover-photo ed__kb ed__kb--${i} ${i === 0 ? 'is-active' : ''}`}
-                data-index={i}
-                src={`https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/${kid.slug}/hero/w=1200,h=800,fit=cover,q=80,format=auto`}
-                srcset={`https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/${kid.slug}/hero/w=600,h=400,fit=cover,q=75,format=auto 600w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/${kid.slug}/hero/w=900,h=600,fit=cover,q=80,format=auto 900w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/${kid.slug}/hero/w=1200,h=800,fit=cover,q=80,format=auto 1200w`}
-                sizes="(max-width: 767px) 92vw, 58vw"
-                alt={`${kid.name} in their transformed room`}
-                width="1200" height="800"
-                loading="lazy"
-                decoding="async"
-              />
-            ))}
-            <span class="ed__num ed__num-dynamic" aria-hidden="true">01</span>
-          </div>
-          <div class="ed__dots" aria-hidden="true">
-            {kids.map((_, i) => (
-              <span class={`ed__dot ${i === 0 ? 'is-active' : ''}`} data-dot={i}></span>
-            ))}
-          </div>
-        </div>
-        <div class="ed__sticky-stories">
-          <div class="ed__story is-active" data-story="0">
-            <span class="ed__tag">Room #{stats.roomMakeovers - 22}</span>
-            <h3 class="ed__story-name">{kids[0].name}</h3>
-            <div class="ed__story-rule" aria-hidden="true"></div>
-            <p>{kids[0].blurb}</p>
-          </div>
-          <div class="ed__story" data-story="1">
-            <span class="ed__tag">Where It All Began</span>
-            <h3 class="ed__story-name">{kids[1].name}</h3>
-            <div class="ed__story-rule" aria-hidden="true"></div>
-            <p>{kids[1].blurb}</p>
-          </div>
-          <div class="ed__story" data-story="2">
-            <span class="ed__tag">1.6 Million Watched</span>
-            <h3 class="ed__story-name">{kids[2].name}</h3>
-            <div class="ed__story-rule" aria-hidden="true"></div>
-            <p>{kids[2].blurb}</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Pull Quote -->
-      <div class="ed__quote">
-        <div class="ed__quote-inner">
-          <svg class="ed__quote-mark" width="64" height="52" viewBox="0 0 64 52" fill="none" aria-hidden="true"><path d="M0 33c0-5.7 1.3-10.7 4-15C7 13.7 10.4 10 14.7 7.1 19 4.2 23.7 2.2 29 1.2L30.5 8c-5 1.3-9.3 3.6-12.5 6.9-3.3 3.4-5 7-5 11 0 1 .2 2 .6 2.8 1-.7 2.3-1 4-1 2.7 0 5 1 7 3 2 2 3 4.5 3 7.6 0 3.2-1.2 5.8-3.4 8-2.2 2-4.8 3-8 3-3.7 0-6.8-1.5-9.3-4.4C4 42 2.6 38 2.6 33H0zm32 0c0-5.7 1.3-10.7 4-15C39 13.7 42.4 10 46.7 7.1 51 4.2 55.7 2.2 61 1.2L62.5 8c-5 1.3-9.3 3.6-12.5 6.9-3.3 3.4-5 7-5 11 0 1 .2 2 .6 2.8 1-.7 2.3-1 4-1 2.7 0 5 1 7 3 2 2 3 4.5 3 7.6 0 3.2-1.2 5.8-3.4 8-2.2 2-4.8 3-8 3-3.7 0-6.8-1.5-9.3-4.4C34.6 42 34.6 38 34.6 33H32z" fill="currentColor"/></svg>
-          <blockquote>
-            A room is more than four walls.<br/>
-            It's where a child starts to believe<br/>
-            <em>anything is possible.</em>
-          </blockquote>
-          <div class="ed__quote-attr">
-            <span class="ed__quote-rule" aria-hidden="true"></span>
-            <span>Peter & Holly Ranney</span>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ═══ 8. BEFORE / AFTER REVEALS ═══ -->
-  <section class="reveals-section">
-    <div class="container">
-      <div class="reveals__header reveal">
-        <div class="reveals__rule" aria-hidden="true"></div>
-        <span class="reveals__eyebrow">Room Reveals</span>
-        <h2>See the <em>transformation</em></h2>
-        <p class="reveals__deck">Swipe to see what your support makes possible. Real rooms. Real kids. Real impact.</p>
-      </div>
-      <div class="reveals__grid">
-        {beforeAfter.map((room, idx) => (
-          <article class={`ba-card reveal delay-${idx + 1}`}>
-            <div class="ba-card__slider" data-ba-slider>
-              <div class="ba-card__before">
-                <!-- PLACEHOLDER: Replace with actual before image -->
-                <img
-                  src={`https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/${room.slug}/before/w=600,h=400,fit=cover,q=80,format=auto`}
-                  alt={`${room.kid}'s room before makeover`}
-                  width="600" height="400" loading="lazy" decoding="async"
-                />
-                <span class="ba-card__badge ba-card__badge--before">Before</span>
-              </div>
-              <div class="ba-card__after">
-                <img
-                  src={`https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/${room.slug}/hero/w=600,h=400,fit=cover,q=80,format=auto`}
-                  alt={`${room.kid}'s room after makeover`}
-                  width="600" height="400" loading="lazy" decoding="async"
-                />
-                <span class="ba-card__badge ba-card__badge--after">After</span>
-              </div>
-              <div class="ba-card__handle" aria-hidden="true">
-                <div class="ba-card__handle-line"></div>
-                <div class="ba-card__handle-grip">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-                </div>
-                <div class="ba-card__handle-line"></div>
-              </div>
-            </div>
-            <div class="ba-card__info">
-              <h3 class="ba-card__name">{room.kid}</h3>
-              <span class="ba-card__label">{room.label}</span>
-            </div>
-          </article>
-        ))}
+          <span class="ab-video__play" aria-hidden="true">
+            <svg width="56" height="56" viewBox="0 0 56 56" fill="none"><circle cx="28" cy="28" r="28" fill="rgba(0,0,0,0.45)"/><polygon points="22,16 22,40 40,28" fill="white"/></svg>
+          </span>
+        </button>
       </div>
     </div>
   </section>
 
-  <!-- ═══ 9. THE CREW ═══ -->
-  <section class="crew">
-    <div class="container">
-      <div class="crew__header reveal">
-        <div class="crew__rule" aria-hidden="true"></div>
-        <span class="crew__eyebrow">The Crew</span>
-        <h2>The faces you'll see<br/>when you <em>walk in</em></h2>
-      </div>
-      <div class="crew__grid">
-        {[
-          { name: 'Staci', role: 'Store Manager', desc: 'Keeps the showroom running like clockwork and ensures every visitor feels at home from the moment they walk in.', image: 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/team-staci' },
-          { name: 'BJ', role: 'Team Member', desc: 'A valued member of the Sunny & Ranney family, helping create beautiful spaces and brighter futures every day.', image: 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/team-bj' },
-          { name: 'Staci', role: 'AI Shopping Assistant', desc: 'Our tireless digital team member — always ready to help you find the perfect piece, 24/7.', highlight: true, initials: 'ST' },
-        ].map((member, idx) => (
-          <article class={`crew__card reveal delay-${idx + 1}`}>
-            <div class={`crew__photo${member.highlight ? ' crew__photo--ai' : ''}`}>
-              {member.image ? (
-                <img
-                  src={`${member.image}/w=200,h=250,fit=cover,gravity=face,q=80,format=auto`}
-                  srcset={`${member.image}/w=160,h=200,fit=cover,gravity=face,q=75,format=auto 160w, ${member.image}/w=320,h=400,fit=cover,gravity=face,q=80,format=auto 320w`}
-                  sizes="160px"
-                  alt={member.name}
-                  width="160"
-                  height="200"
-                  loading="lazy"
-                  decoding="async"
-                />
-              ) : (
-                <div class="crew__initials">
-                  <span>{member.initials}</span>
-                </div>
-              )}
-            </div>
-            <h3 class="crew__name">{member.name}</h3>
-            <span class="crew__role">{member.role}</span>
-            <p class="crew__desc">{member.desc}</p>
-          </article>
-        ))}
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══ 10. MASCOT ═══ -->
-  <section class="mascot">
-    <div class="container mascot__inner">
-      <div class="mascot__image reveal">
+  <!-- ═══ FOUNDERS ═══ -->
+  <section class="ab-story">
+    <div class="container ab-story__inner">
+      <div class="ab-story__image reveal">
         <img
-          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=400,h=400,fit=cover,q=80,format=auto"
-          srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=240,h=240,fit=cover,q=75,format=auto 240w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=400,h=400,fit=cover,q=80,format=auto 400w"
-          sizes="(max-width: 767px) 160px, 200px"
-          alt="Gracie the Pig — the real pot-bellied pig that inspired SOARD's mascot"
-          width="400"
-          height="400"
-          loading="lazy"
-          decoding="async"
+          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/founders-reunion-2026/w=600,h=750,fit=cover,q=80,format=auto"
+          srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/founders-reunion-2026/w=400,h=500,fit=cover,q=75,format=auto 400w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/founders-reunion-2026/w=600,h=750,fit=cover,q=80,format=auto 600w"
+          sizes="(max-width: 767px) 85vw, 440px"
+          alt="Peter and Holly Ranney with family"
+          width="600" height="750" loading="lazy" decoding="async"
         />
       </div>
-      <div class="mascot__content reveal delay-1">
-        <span class="label">Our Mascot</span>
-        <h3>Why the Pig?</h3>
+      <div class="ab-story__content reveal delay-1">
+        <span class="label">The Founders</span>
+        <h2>It started with<br/><em>one room.</em></h2>
+        <blockquote>
+          "It started with one room for an 11-year-old boy named Mathew. That room changed everything."
+        </blockquote>
         <p>
-          It started as a wedding gift — Peter surprised Holly with a baby pot-bellied pig named Gracie. She's been our golden, cape-wearing, high-flying mascot ever since — leading her team of Sunshiners to build rooms that bring comfort, independence, and joy.
+          In 2012, Peter and Holly were inspired by a church sermon to do something simple but powerful — give a child with special needs a bedroom they could truly call their own. That first project for 11-year-old Mathew, who dreamed of a military-themed bunker bedroom, changed everything.
+        </p>
+        <p>
+          What started as one room has grown into <strong>Sunshine on a Ranney Day</strong>, a 501(c)(3) nonprofit creating wheelchair-accessible bathrooms, dream bedrooms, and in-home therapy spaces — completely free to families. In 2020, they opened <strong>Sunny & Ranney</strong> with one goal: fund the mission. Every dollar of profit goes directly to SOARD — not a percentage, <strong>all of it</strong>.
         </p>
       </div>
     </div>
   </section>
 
-  <!-- ═══ 11. CLOSING CTA ═══ -->
-  <section class="about-cta">
-    <div class="container about-cta__inner">
-      <div class="about-cta__content reveal">
-        <h2>Find Something Beautiful.<br/><em>Do Something Meaningful.</em></h2>
-        <p>Every purchase at Sunny & Ranney funds bedroom makeovers for children with special needs. You're not just shopping — you're building a room that changes a child's life.</p>
-        <div class="about-cta__actions">
-          <a href="/shop" class="btn btn--gold" data-astro-prefetch>Shop Now</a>
-        </div>
-        <div class="about-cta__trust">
-          <span>100% of profits donated</span>
-          <span class="about-cta__dot" aria-hidden="true"></span>
-          <span>{stats.roomMakeovers}+ rooms built</span>
-          <span class="about-cta__dot" aria-hidden="true"></span>
-          <span>4.9 stars on Google</span>
-        </div>
+  <!-- ═══ THE KIDS ═══ -->
+  <section class="ab-kids">
+    <div class="container">
+      <div class="ab-kids__header">
+        <span class="label">Their Stories</span>
+        <h2>The Kids Who <em>Inspire</em> Us</h2>
+        <p>Every room starts with a dream. These are the children who remind us why we do what we do.</p>
+      </div>
+      <div class="ab-kids__grid">
+        {kids.map((kid, i) => (
+          <article class={`ab-kids__card reveal delay-${i + 1}`}>
+            <div class="ab-kids__img">
+              <img
+                src={`https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/${kid.slug}/hero/w=600,h=400,fit=cover,q=80,format=auto`}
+                srcset={`https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/${kid.slug}/hero/w=400,h=267,fit=cover,q=75,format=auto 400w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/${kid.slug}/hero/w=600,h=400,fit=cover,q=80,format=auto 600w`}
+                sizes="(max-width: 767px) 90vw, 320px"
+                alt={`${kid.name} in their transformed room`}
+                width="600" height="400" loading="lazy" decoding="async"
+              />
+            </div>
+            <span class="ab-kids__tag">{kid.tag}</span>
+            <h3>{kid.name}</h3>
+            <p>{kid.blurb}</p>
+          </article>
+        ))}
+      </div>
+
+      <blockquote class="ab-pullquote reveal">
+        A room is more than four walls. It's where a child starts to believe <em>anything is possible.</em>
+        <cite>— Peter & Holly Ranney</cite>
+      </blockquote>
+    </div>
+  </section>
+
+  <!-- ═══ CREW ═══ -->
+  <section class="ab-crew">
+    <div class="container">
+      <div class="ab-crew__header">
+        <span class="label">The Crew</span>
+        <h2>The faces you'll see<br/>when you <em>walk in</em></h2>
+      </div>
+      <div class="ab-crew__grid">
+        {[
+          { name: 'Staci', role: 'Store Manager', desc: 'Keeps the showroom running like clockwork and ensures every visitor feels at home from the moment they walk in.', image: 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/team-staci' },
+          { name: 'BJ', role: 'Team Member', desc: 'A valued member of the Sunny & Ranney family, helping create beautiful spaces and brighter futures every day.', image: 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/team-bj' },
+          { name: 'Staci', role: 'AI Shopping Assistant', desc: 'Our tireless digital team member — always ready to help you find the perfect piece, 24/7.', initials: 'ST' },
+        ].map((member, idx) => (
+          <article class={`ab-crew__card reveal delay-${idx + 1}`}>
+            <div class={`ab-crew__photo${member.initials ? ' ab-crew__photo--ai' : ''}`}>
+              {member.image ? (
+                <img
+                  src={`${member.image}/w=200,h=250,fit=cover,gravity=face,q=80,format=auto`}
+                  srcset={`${member.image}/w=160,h=200,fit=cover,gravity=face,q=75,format=auto 160w, ${member.image}/w=320,h=400,fit=cover,gravity=face,q=80,format=auto 320w`}
+                  sizes="160px" alt={member.name} width="160" height="200" loading="lazy" decoding="async"
+                />
+              ) : (
+                <div class="ab-crew__initials"><span>{member.initials}</span></div>
+              )}
+            </div>
+            <h3>{member.name}</h3>
+            <span class="ab-crew__role">{member.role}</span>
+            <p>{member.desc}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ MASCOT ═══ -->
+  <section class="ab-mascot">
+    <div class="container ab-mascot__inner">
+      <div class="ab-mascot__image reveal">
+        <img
+          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=400,h=400,fit=cover,q=80,format=auto"
+          srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=240,h=240,fit=cover,q=75,format=auto 240w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/gracie/w=400,h=400,fit=cover,q=80,format=auto 400w"
+          sizes="(max-width: 767px) 160px, 200px"
+          alt="Gracie the Pig — the real pot-bellied pig that inspired SOARD's mascot"
+          width="400" height="400" loading="lazy" decoding="async"
+        />
+      </div>
+      <div class="ab-mascot__content reveal delay-1">
+        <span class="label">Our Mascot</span>
+        <h3>Why the Pig?</h3>
+        <p>It started as a wedding gift — Peter surprised Holly with a baby pot-bellied pig named Gracie. She's been our golden, cape-wearing, high-flying mascot ever since — leading her team of Sunshiners to build rooms that bring comfort, independence, and joy.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ CTA ═══ -->
+  <section class="ab-cta">
+    <div class="container ab-cta__inner reveal">
+      <h2>Find Something Beautiful.<br/><em>Do Something Meaningful.</em></h2>
+      <p>Every purchase at Sunny & Ranney funds bedroom makeovers for children with special needs. You're not just shopping — you're building a room that changes a child's life.</p>
+      <a href="/shop" class="btn btn--gold" data-astro-prefetch>Shop Now</a>
+      <div class="ab-cta__trust">
+        <span>100% of profits donated</span>
+        <span class="dot" aria-hidden="true"></span>
+        <span>269+ rooms built</span>
+        <span class="dot" aria-hidden="true"></span>
+        <span>4.9 stars on Google</span>
       </div>
     </div>
   </section>
 
 </Base>
 
-<!-- ═══ VIDEO MODAL ═══ -->
-<div class="video-modal" id="video-modal" aria-hidden="true" role="dialog" aria-label="Video player">
-  <button class="video-modal__close" aria-label="Close video">&times;</button>
-  <div class="video-modal__content" id="video-modal-content"></div>
-</div>
-
-<!-- ═══ STRUCTURED DATA ═══ -->
 <script type="application/ld+json" set:html={JSON.stringify({
   "@context": "https://schema.org",
   "@type": "Organization",
@@ -479,1635 +269,162 @@ const beforeAfter = [
 })} />
 
 <style>
-  /* ═══════════════════════════════════════════
-     ABOUT PAGE — COMBINED
-     ═══════════════════════════════════════════ */
-
-  /* ─── 1. Hero ──────────────────────────── */
-  .about-hero {
-    background: var(--color-cream);
-    padding: clamp(2rem, 5vh, 4rem) 0 0;
-    overflow: hidden;
-  }
-
-  .about-hero__inner {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-xl);
-    align-items: center;
-  }
-
-  @media (min-width: 768px) {
-    .about-hero__inner {
-      grid-template-columns: 1fr 1.1fr;
-      gap: var(--space-2xl);
-    }
-  }
-
-  .about-hero__text {
-    padding: var(--space-lg) 0;
-  }
-
-  .about-hero__title {
-    font-size: clamp(2.8rem, 6vw, 4.5rem);
-    margin: var(--space-sm) 0 var(--space-md);
-    line-height: 0.95;
-    letter-spacing: -0.03em;
-  }
-
-  .about-hero__accent {
-    color: var(--color-gold);
-    font-style: italic;
-    font-weight: 300;
-  }
-
-  .about-hero__sub {
-    font-size: clamp(0.95rem, 1.2vw, 1.1rem);
-    max-width: 38ch;
-    color: var(--color-slate);
-    line-height: 1.7;
-  }
-
-  .about-hero__actions {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    margin-top: var(--space-lg);
-    flex-wrap: wrap;
-  }
-
-  .about-hero__scroll-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: var(--color-charcoal);
-    letter-spacing: 0.03em;
-    transition: color 0.3s;
-  }
-
-  .about-hero__scroll-link:hover {
-    color: var(--color-cyan);
-  }
-
-  .about-hero__scroll-link svg {
-    transition: transform 0.3s var(--ease-out);
-  }
-
-  .about-hero__scroll-link:hover svg {
-    transform: translateY(3px);
-  }
-
-  .about-hero__media {
-    position: relative;
-  }
-
-  .about-hero__img-wrap {
-    border-radius: 4px;
-    overflow: hidden;
-  }
-
-  .about-hero__img-wrap img {
-    width: 100%;
-    height: auto;
-    display: block;
-    aspect-ratio: 4 / 5;
-    object-fit: cover;
-    transition: transform 1.2s var(--ease-out);
-  }
-
-  .about-hero__img-wrap:hover img {
-    transform: scale(1.02);
-  }
-
+  /* ─── Hero ─── */
+  .ab-hero { background: var(--color-cream); padding: clamp(2rem, 5vh, 4rem) 0 0; }
+  .ab-hero__inner { display: grid; gap: var(--space-xl); align-items: center; }
+  @media (min-width: 768px) { .ab-hero__inner { grid-template-columns: 1fr 1.1fr; gap: var(--space-2xl); } }
+  .ab-hero__text { padding: var(--space-lg) 0; }
+  .ab-hero__text .label { color: var(--color-cyan); }
+  .ab-hero__title { font-size: clamp(2.8rem, 6vw, 4.5rem); margin: var(--space-sm) 0 var(--space-md); line-height: 0.95; letter-spacing: -0.03em; }
+  .accent { color: var(--color-gold); font-style: italic; font-weight: 300; }
+  .ab-hero__sub { font-size: clamp(0.95rem, 1.2vw, 1.1rem); max-width: 38ch; color: var(--color-slate); line-height: 1.7; }
+  .ab-hero__actions { display: flex; align-items: center; gap: 1.5rem; margin-top: var(--space-lg); flex-wrap: wrap; }
+  .text-link { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; font-weight: 600; color: var(--color-charcoal); letter-spacing: 0.03em; transition: color 0.3s; }
+  .text-link:hover { color: var(--color-cyan); }
+  .ab-hero__media { border-radius: 4px; overflow: hidden; }
+  .ab-hero__media img { width: 100%; height: auto; display: block; aspect-ratio: 4 / 5; object-fit: cover; }
   @media (max-width: 767px) {
-    .about-hero__text {
-      padding-bottom: 0;
-      text-align: center;
-    }
-    .about-hero__sub {
-      margin: 0 auto;
-    }
-    .about-hero__actions {
-      justify-content: center;
-    }
-    .about-hero__img-wrap {
-      position: relative;
-      max-width: 380px;
-      margin: 0 auto;
-    }
-    .about-hero__img-wrap::before {
-      content: '';
-      position: absolute;
-      top: -8px;
-      right: -8px;
-      bottom: 8px;
-      left: 8px;
-      border: 1.5px solid var(--color-gold);
-      border-radius: 4px;
-      opacity: 0.25;
-      z-index: -1;
-    }
-    .about-hero__img-wrap img {
-      aspect-ratio: 3 / 4;
-    }
+    .ab-hero__text { padding-bottom: 0; text-align: center; }
+    .ab-hero__sub { margin: 0 auto; }
+    .ab-hero__actions { justify-content: center; }
+    .ab-hero__media { max-width: 380px; margin: 0 auto; }
+    .ab-hero__media img { aspect-ratio: 3 / 4; }
   }
 
-  /* ─── 2. Press Bar ─────────────────────── */
-  .press {
-    background: var(--color-warm-white);
-    padding: clamp(1.5rem, 3vh, 2.5rem) 0;
-    border-bottom: 1px solid var(--color-cream-dark);
-  }
+  /* ─── Stats ─── */
+  .ab-stats { background: linear-gradient(160deg, var(--color-cyan) 0%, #3a7d9a 100%); padding: var(--space-lg) 0; }
+  .ab-stats__inner { display: flex; justify-content: center; gap: var(--space-xl); flex-wrap: wrap; }
+  .ab-stats__item { text-align: center; min-width: 110px; }
+  .ab-stats__number { font-family: var(--font-display); font-size: clamp(2.2rem, 4.5vw, 3rem); font-weight: 600; color: white; line-height: 1; }
+  .ab-stats__label { display: block; font-size: 0.7rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.6); margin-top: 0.4rem; }
 
-  .press__inner {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: clamp(1.5rem, 3vw, 3rem);
-    flex-wrap: wrap;
-  }
-
-  .press__label {
-    font-size: 0.6rem;
-    font-weight: 600;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: var(--color-stone);
-    flex-shrink: 0;
-  }
-
-  .press__logos {
-    display: flex;
-    align-items: center;
-    gap: clamp(1.5rem, 4vw, 3rem);
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .press__logo {
-    opacity: 0.7;
-    transition: opacity 0.3s, border-color 0.3s;
-    flex-shrink: 0;
-    border: 1px solid var(--color-cream-dark);
-    padding: 0.4rem 1.1rem;
-    border-radius: 2px;
-  }
-
-  .press__logo:hover {
-    opacity: 1;
-    border-color: var(--color-gold);
-  }
-
-  .press__logo img {
-    height: 24px;
-    width: auto;
-    display: block;
-    filter: grayscale(1);
-  }
-
-  .press__logo-text {
-    font-family: var(--font-display);
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: var(--color-charcoal);
-    letter-spacing: 0.08em;
-    white-space: nowrap;
-  }
-
-  @media (max-width: 567px) {
-    .press__inner {
-      flex-direction: column;
-      gap: var(--space-sm);
-    }
-    .press__logos {
-      display: grid;
-      grid-template-columns: repeat(2, auto);
-      gap: 0.6rem;
-      justify-content: center;
-    }
-  }
-
-  /* ─── 3. Impact Stats ──────────────────── */
-  .about-stats {
-    background: linear-gradient(160deg, var(--color-cyan) 0%, #3a7d9a 100%);
-    padding: var(--space-lg) 0;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .about-stats::before {
-    content: '';
-    position: absolute;
-    top: -40%;
-    left: -15%;
-    width: 50%;
-    height: 180%;
-    background: radial-gradient(circle, rgba(255, 212, 0, 0.06) 0%, transparent 60%);
-    pointer-events: none;
-  }
-
-  .about-stats__inner {
-    display: flex;
-    justify-content: center;
-    gap: var(--space-xl);
-    flex-wrap: wrap;
-    position: relative;
-    z-index: 1;
-  }
-
-  .about-stats__stat {
-    text-align: center;
-    min-width: 110px;
-  }
-
-  .about-stats__number {
-    display: inline;
-    font-family: var(--font-display);
-    font-size: clamp(2.2rem, 4.5vw, 3rem);
-    font-weight: 600;
-    color: white;
-    line-height: 1;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .about-stats__plus {
-    font-family: var(--font-display);
-    font-size: clamp(2.2rem, 4.5vw, 3rem);
-    font-weight: 600;
-    color: white;
-    line-height: 1;
-  }
-
-  .about-stats__label {
-    display: block;
-    font-size: 0.7rem;
-    font-weight: 500;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.6);
-    margin-top: 0.4rem;
-  }
-
-  /* ─── 4. How It Works ──────────────────── */
-  .how-it-works {
-    background: var(--color-cream);
-    padding: clamp(3rem, 8vh, 5rem) 0;
-    text-align: center;
-  }
-
-  .how-it-works__eyebrow {
-    color: var(--color-gold);
-  }
-
-  .how-it-works__title {
-    font-size: clamp(1.8rem, 3vw, 2.5rem);
-    margin: var(--space-sm) 0 clamp(2.5rem, 6vh, 4rem);
-  }
-
-  .how-it-works__steps {
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    gap: 0;
-    max-width: 900px;
-    margin: 0 auto;
-  }
-
-  .how-it-works__step {
-    flex: 1;
-    max-width: 260px;
-    padding: 0 var(--space-md);
-  }
-
-  .how-it-works__num {
-    display: block;
-    font-family: var(--font-display);
-    font-size: clamp(2.5rem, 5vw, 3.5rem);
-    font-weight: 700;
-    color: var(--color-cyan);
-    opacity: 0.15;
-    line-height: 1;
-    margin-bottom: var(--space-sm);
-  }
-
-  .how-it-works__step h3 {
-    font-size: 1.1rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .how-it-works__step p {
-    font-size: 0.88rem;
-    color: var(--color-slate);
-    line-height: 1.7;
-  }
-
-  .how-it-works__connector {
-    display: flex;
-    align-items: center;
-    padding-top: clamp(1.5rem, 3vw, 2.5rem);
-    color: var(--color-gold);
-    opacity: 0.4;
-    flex-shrink: 0;
-  }
-
+  /* ─── How It Works ─── */
+  .ab-how { background: var(--color-cream); padding: clamp(3rem, 8vh, 5rem) 0; text-align: center; }
+  .ab-how__eyebrow { color: var(--color-gold); }
+  .ab-how h2 { font-size: clamp(1.8rem, 3vw, 2.5rem); margin: var(--space-sm) 0 clamp(2.5rem, 6vh, 4rem); }
+  .ab-how__steps { display: flex; align-items: flex-start; justify-content: center; max-width: 900px; margin: 0 auto; }
+  .ab-how__step { flex: 1; max-width: 260px; padding: 0 var(--space-md); }
+  .ab-how__num { display: block; font-family: var(--font-display); font-size: clamp(2.5rem, 5vw, 3.5rem); font-weight: 700; color: var(--color-cyan); opacity: 0.15; line-height: 1; margin-bottom: var(--space-sm); }
+  .ab-how__step h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+  .ab-how__step p { font-size: 0.88rem; color: var(--color-slate); line-height: 1.7; }
   @media (max-width: 767px) {
-    .how-it-works {
-      text-align: left;
-    }
-    .how-it-works__steps {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 0;
-      max-width: 400px;
-      position: relative;
-      padding-left: 56px;
-    }
-    .how-it-works__steps::before {
-      content: '';
-      position: absolute;
-      left: 23px;
-      top: 8px;
-      bottom: 8px;
-      width: 1.5px;
-      background: var(--color-gold);
-      opacity: 0.25;
-    }
-    .how-it-works__connector {
-      display: none;
-    }
-    .how-it-works__step {
-      padding: 0 0 var(--space-xl) 0;
-      max-width: 100%;
-      position: relative;
-    }
-    .how-it-works__step:last-child {
-      padding-bottom: 0;
-    }
-    .how-it-works__num {
-      position: absolute;
-      left: -56px;
-      top: -4px;
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      background: var(--color-cream);
-      border: 1.5px solid rgba(255, 212, 0, 0.35);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.85rem;
-      opacity: 1;
-      color: var(--color-cyan);
-      margin-bottom: 0;
-      z-index: 1;
-    }
+    .ab-how { text-align: left; }
+    .ab-how__steps { flex-direction: column; max-width: 400px; position: relative; padding-left: 56px; }
+    .ab-how__steps::before { content: ''; position: absolute; left: 23px; top: 8px; bottom: 8px; width: 1.5px; background: var(--color-gold); opacity: 0.25; }
+    .ab-how__step { padding: 0 0 var(--space-xl) 0; max-width: 100%; position: relative; }
+    .ab-how__step:last-child { padding-bottom: 0; }
+    .ab-how__num { position: absolute; left: -56px; top: -4px; width: 48px; height: 48px; border-radius: 50%; background: var(--color-cream); border: 1.5px solid rgba(255,212,0,0.35); display: flex; align-items: center; justify-content: center; font-size: 0.85rem; opacity: 1; margin-bottom: 0; z-index: 1; }
   }
 
-  /* ─── 5. Founder Video ─────────────────── */
-  .video-section {
-    background: var(--color-warm-white);
-    padding: clamp(4rem, 10vh, 7rem) 0;
-  }
-
-  .video__split {
-    display: grid;
-    grid-template-columns: 1fr 340px;
-    gap: clamp(3rem, 6vw, 5rem);
-    align-items: center;
-  }
-
-  .video__header {
-    text-align: left;
-    max-width: 520px;
-  }
-
-  .video__rule {
-    width: 36px;
-    height: 1.5px;
-    background: var(--color-gold);
-    margin-bottom: var(--space-lg);
-  }
-
-  .video__eyebrow {
-    display: block;
-    font-size: 0.6rem;
-    font-weight: 600;
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    color: var(--color-stone);
-    margin-bottom: var(--space-lg);
-  }
-
-  .video__header h2 {
-    font-size: clamp(2rem, 4vw, 3rem);
-    line-height: 1;
-    margin-bottom: var(--space-md);
-    letter-spacing: -0.02em;
-  }
-
-  .video__header h2 em {
-    font-style: italic;
-    font-weight: 300;
-    color: var(--color-cyan);
-  }
-
-  .video__deck {
-    font-size: clamp(0.9rem, 1.1vw, 1rem);
-    color: var(--color-slate);
-    line-height: 1.7;
-    max-width: 48ch;
-  }
-
-  .video__stream-wrap {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 9 / 16;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 24px 64px rgba(44, 44, 44, 0.18);
-  }
-
-  .video__stream-wrap iframe {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    border: none;
-  }
-
+  /* ─── Video ─── */
+  .ab-video { background: var(--color-warm-white); padding: clamp(4rem, 10vh, 7rem) 0; }
+  .ab-video__inner { display: grid; grid-template-columns: 1.2fr minmax(280px, 400px); gap: clamp(3rem, 6vw, 5rem); align-items: center; }
+  .ab-video__text .label { color: var(--color-gold); }
+  .ab-video__text h2 { font-size: clamp(2rem, 4vw, 3rem); line-height: 1; margin: var(--space-xs) 0 var(--space-md); letter-spacing: -0.02em; }
+  .ab-video__text h2 em { font-style: italic; font-weight: 300; color: var(--color-cyan); }
+  .ab-video__text p { font-size: clamp(0.9rem, 1.1vw, 1rem); color: var(--color-slate); line-height: 1.7; max-width: 48ch; }
+  .ab-video__player { position: relative; aspect-ratio: 9 / 16; border-radius: 12px; overflow: hidden; box-shadow: 0 24px 64px rgba(44,44,44,0.18); }
+  .ab-video__player iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
+  .ab-video__poster { position: absolute; inset: 0; width: 100%; height: 100%; border: none; padding: 0; cursor: pointer; background: var(--color-charcoal); }
+  .ab-video__poster img { width: 100%; height: 100%; object-fit: cover; }
+  .ab-video__play { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); filter: drop-shadow(0 4px 16px rgba(0,0,0,0.35)); }
   @media (max-width: 767px) {
-    .video__split {
-      grid-template-columns: 1fr;
-      text-align: center;
-    }
-
-    .video__header {
-      text-align: center;
-      margin: 0 auto;
-    }
-
-    .video__rule {
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    .video__deck {
-      margin: 0 auto;
-    }
-
-    .video__stream-wrap {
-      max-width: 300px;
-      margin: 0 auto;
-    }
-  }
-
-  /* ─── Video Modal ─────────────────────── */
-  .video-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    background: rgba(0, 0, 0, 0.92);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.4s, visibility 0.4s;
-  }
-
-  .video-modal.is-open {
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .video-modal__close {
-    position: absolute;
-    top: 1rem;
-    right: 1.5rem;
-    font-size: 2rem;
-    color: white;
-    background: none;
-    border: none;
-    cursor: pointer;
-    z-index: 2;
-    transition: opacity 0.3s;
-  }
-
-  .video-modal__close:hover {
-    opacity: 0.7;
-  }
-
-  .video-modal__content {
-    width: 90vw;
-    max-width: 400px;
-    aspect-ratio: 9 / 16;
-    max-height: 85vh;
-  }
-
-  .video-modal__content iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-    border-radius: 4px;
-  }
-
-  /* ─── 6. Founders ──────────────────────── */
-  .founders {
-    background: var(--color-cream);
-    padding: clamp(4rem, 10vh, 7rem) 0;
-  }
-
-  .founder {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-xl);
-    align-items: center;
-    max-width: 1040px;
-    margin: 0 auto clamp(3rem, 8vh, 5rem);
-  }
-
-  .founder:last-child {
-    margin-bottom: 0;
-  }
-
-  @media (min-width: 768px) {
-    .founder {
-      grid-template-columns: 0.9fr 1.1fr;
-      gap: var(--space-2xl);
-    }
-    .founder--reversed {
-      direction: rtl;
-    }
-    .founder--reversed > * {
-      direction: ltr;
-    }
-  }
-
-  .founder__image {
-    border-radius: 4px;
-    overflow: hidden;
-    box-shadow: 0 20px 60px rgba(44, 44, 44, 0.12);
-  }
-
-  .founder__image img {
-    width: 100%;
-    height: auto;
-    display: block;
-    aspect-ratio: 4 / 5;
-    object-fit: cover;
-    transition: transform 0.8s var(--ease-out);
-  }
-
-  .founder__image:hover img {
-    transform: scale(1.03);
-  }
-
-  .founder__content .label {
-    color: var(--color-gold);
-  }
-
-  .founder__name {
-    font-size: clamp(1.8rem, 3vw, 2.5rem);
-    margin: var(--space-xs) 0 var(--space-md);
-    line-height: 1;
-    letter-spacing: -0.02em;
-  }
-
-  .founder__quote {
-    font-family: var(--font-display);
-    font-style: italic;
-    font-size: clamp(1rem, 1.3vw, 1.15rem);
-    color: var(--color-cyan);
-    line-height: 1.5;
-    margin-bottom: var(--space-md);
-    padding-left: var(--space-md);
-    border-left: 2px solid var(--color-gold);
-  }
-
-  .founder__bio {
-    font-size: 0.95rem;
-    line-height: 1.8;
-    color: var(--color-slate);
-    margin-bottom: var(--space-sm);
-  }
-
-  .founder__bio strong {
-    color: var(--color-charcoal);
-  }
-
-  .founder__link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: var(--color-cyan);
-    margin-top: var(--space-sm);
-    letter-spacing: 0.03em;
-    transition: gap 0.3s var(--ease-out);
-  }
-
-  .founder__link:hover {
-    gap: 0.7rem;
-  }
-
-  @media (max-width: 767px) {
-    .founder__image {
-      max-width: 400px;
-      margin: 0 auto;
-    }
-  }
-
-  /* ─── 7. Kids Stories — Editorial ──────── */
-  .ed {
-    background: var(--color-warm-white);
-    padding: clamp(5rem, 12vh, 8rem) 0;
-    --ed-r: 4px;
-    --ed-ease: cubic-bezier(0.16, 1, 0.3, 1);
-    content-visibility: auto;
-    contain-intrinsic-size: auto 500px;
-  }
-
-  @keyframes ed-reveal {
-    from { opacity: 0; transform: translateY(40px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  @supports (animation-timeline: view()) {
-    .ed__opener,
-    .ed__sticky-wrap,
-    .ed__quote {
-      animation: ed-reveal linear both;
-      animation-timeline: view();
-      animation-range: entry 0% entry 30%;
-    }
-  }
-
-  .ed__opener {
-    text-align: center;
-    max-width: 580px;
-    margin: 0 auto clamp(4rem, 10vh, 7rem);
-  }
-
-  .ed__opener-rule {
-    width: 36px;
-    height: 1.5px;
-    background: var(--color-gold);
-    margin: 0 auto var(--space-lg);
-  }
-
-  .ed__eyebrow {
-    display: block;
-    font-size: 0.6rem;
-    font-weight: 600;
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    color: var(--color-stone);
-    margin-bottom: var(--space-lg);
-  }
-
-  .ed__headline {
-    font-size: clamp(2.8rem, 6vw, 4.8rem);
-    line-height: 0.95;
-    margin-bottom: var(--space-xl);
-    letter-spacing: -0.035em;
-  }
-
-  .ed__headline em {
-    font-style: italic;
-    font-weight: 300;
-    color: var(--color-gold);
-  }
-
-  .ed__deck {
-    font-size: clamp(0.92rem, 1.1vw, 1.05rem);
-    color: var(--color-stone);
-    line-height: 1.8;
-    max-width: 42ch;
-    margin: 0 auto;
-  }
-
-  .ed__num {
-    position: absolute;
-    font-family: var(--font-display);
-    font-size: clamp(6rem, 12vw, 11rem);
-    font-weight: 700;
-    line-height: 1;
-    color: white;
-    opacity: 0.08;
-    pointer-events: none;
-    z-index: 2;
-    top: var(--space-md);
-    left: var(--space-lg);
-    user-select: none;
-  }
-
-  .ed__num-dynamic {
-    transition: opacity 0.4s var(--ed-ease);
-  }
-
-  .ed__tag {
-    display: inline-block;
-    font-size: 0.58rem;
-    font-weight: 600;
-    letter-spacing: 0.24em;
-    text-transform: uppercase;
-    color: var(--color-gold);
-    border: 1px solid rgba(255, 212, 0, 0.3);
-    padding: 0.3rem 0.9rem;
-    margin-bottom: var(--space-sm);
-  }
-
-  .ed__cover-frame {
-    position: relative;
-    overflow: hidden;
-    border-radius: var(--ed-r);
-    aspect-ratio: 3 / 2;
-  }
-
-  .ed__cover-frame img {
-    filter: saturate(0.88) contrast(0.96);
-    transition: transform 1.2s var(--ed-ease), filter 0.6s;
-  }
-
-  .ed__cover-frame:hover img {
-    filter: saturate(1) contrast(1);
-  }
-
-  .ed__cover-frame::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
-    background-size: 128px;
-    pointer-events: none;
-    z-index: 3;
-    mix-blend-mode: overlay;
-  }
-
-  /* Sticky-scroll layout */
-  .ed__sticky-wrap {
-    display: grid;
-    grid-template-columns: 7fr 5fr;
-    gap: var(--space-xl);
-    max-width: 1040px;
-    margin: 0 auto clamp(4rem, 10vh, 7rem);
-    align-items: start;
-  }
-
-  @media (max-width: 767px) {
-    .ed__sticky-wrap {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-lg);
-    }
-  }
-
-  .ed__sticky-img {
-    position: sticky;
-    top: 10vh;
-    align-self: start;
-  }
-
-  @media (max-width: 767px) {
-    .ed__sticky-img {
-      position: relative;
-      top: auto;
-    }
-    .ed__cover-frame {
-      display: flex;
-      aspect-ratio: auto;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-      gap: var(--space-md);
-      scroll-padding: 0 8%;
-    }
-    .ed__cover-frame::-webkit-scrollbar {
-      display: none;
-    }
-    .ed__cover-photo {
-      position: static;
-      width: 85vw;
-      max-width: 400px;
-      min-width: 85vw;
-      height: auto;
-      aspect-ratio: 3 / 2;
-      flex-shrink: 0;
-      opacity: 1;
-      scroll-snap-align: center;
-      border-radius: var(--ed-r);
-    }
-    .ed__num {
-      display: none;
-    }
-    .ed__cover-frame::after {
-      display: none;
-    }
-    /* Scroll dots */
-    .ed__sticky-img::after {
-      content: '';
-      display: flex;
-      justify-content: center;
-      margin-top: var(--space-sm);
-    }
-    .ed__story {
-      opacity: 0.4;
-      padding: var(--space-md) 0;
-      transition: opacity 0.4s var(--ed-ease);
-    }
-    .ed__story.is-active {
-      opacity: 1;
-    }
-    .ed__story-rule {
-      transform: scaleX(1);
-    }
-    .ed__sticky-stories {
-      gap: 0;
-    }
-  }
-
-  /* Mobile scroll indicator dots */
-  .ed__dots {
-    display: none;
-  }
-  @media (max-width: 767px) {
-    .ed__dots {
-      display: flex;
-      justify-content: center;
-      gap: 0.5rem;
-      margin-top: var(--space-sm);
-    }
-    .ed__dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--color-charcoal);
-      opacity: 0.15;
-      transition: opacity 0.3s, transform 0.3s;
-    }
-    .ed__dot.is-active {
-      opacity: 0.6;
-      transform: scale(1.3);
-    }
-  }
-
-  .ed__cover-photo {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    display: block;
-    object-fit: cover;
-    opacity: 0;
-    transition: opacity 0.8s var(--ed-ease);
-  }
-
-  .ed__cover-photo.is-active {
-    opacity: 1;
-    will-change: transform;
-  }
-
-  /* Ken Burns */
-  @keyframes kb-0 {
-    0%   { transform: scale(1)    translate(0, 0); }
-    100% { transform: scale(1.08) translate(-1.5%, -1%); }
-  }
-  @keyframes kb-1 {
-    0%   { transform: scale(1.08) translate(1.5%, -0.5%); }
-    100% { transform: scale(1)    translate(0, 0); }
-  }
-  @keyframes kb-2 {
-    0%   { transform: scale(1)    translate(0.5%, 0.5%); }
-    100% { transform: scale(1.06) translate(-1%, 0.5%); }
-  }
-
-  .ed__kb.is-active { animation-play-state: running; }
-  .ed__kb { animation-play-state: paused; }
-
-  .ed__kb--0 { animation: kb-0 12s ease-in-out infinite alternate; }
-  .ed__kb--1 { animation: kb-1 14s ease-in-out infinite alternate; }
-  .ed__kb--2 { animation: kb-2 10s ease-in-out infinite alternate; }
-
-  @media (prefers-reduced-motion: reduce) {
-    .ed__kb { animation: none !important; }
-  }
-
-  .ed__sticky-stories {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .ed__story {
-    padding: clamp(2.5rem, 6vh, 4rem) 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-    opacity: 0.35;
-    transition: opacity 0.5s var(--ed-ease);
-  }
-
-  .ed__story.is-active {
-    opacity: 1;
-  }
-
-  .ed__story:first-child {
-    padding-top: clamp(1rem, 3vh, 2rem);
-  }
-
-  .ed__story:last-child {
-    border-bottom: none;
-  }
-
-  .ed__story-name {
-    font-size: clamp(1.6rem, 3vw, 2.4rem);
-    line-height: 1;
-    margin-bottom: var(--space-sm);
-    letter-spacing: -0.02em;
-  }
-
-  .ed__story-rule {
-    width: 28px;
-    height: 1.5px;
-    background: var(--color-gold);
-    margin-bottom: var(--space-md);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.6s var(--ed-ease);
-  }
-
-  .ed__story.is-active .ed__story-rule {
-    transform: scaleX(1);
-  }
-
-  .ed__story p {
-    font-size: 0.9rem;
-    color: var(--color-slate);
-    line-height: 1.8;
-    max-width: 38ch;
-  }
-
-  /* Pull Quote */
-  .ed__quote {
-    padding: clamp(5rem, 12vh, 9rem) 0;
-    position: relative;
-  }
-
-  .ed__quote::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(ellipse at 25% 50%, rgba(75, 149, 180, 0.035) 0%, transparent 55%),
-      radial-gradient(ellipse at 75% 50%, rgba(255, 212, 0, 0.025) 0%, transparent 55%);
-    pointer-events: none;
-  }
-
-  .ed__quote-inner {
-    max-width: 700px;
-    margin: 0 auto;
-    text-align: center;
-    position: relative;
-  }
-
-  .ed__quote-mark {
-    color: var(--color-gold);
-    opacity: 0.1;
-    margin-bottom: var(--space-xl);
-  }
-
-  @supports (animation-timeline: view()) {
-    @keyframes ed-parallax {
-      from { transform: translateY(40px) scale(0.9); opacity: 0; }
-      to   { transform: translateY(-30px) scale(1); opacity: 0.1; }
-    }
-    .ed__quote-mark {
-      animation: ed-parallax linear both;
-      animation-timeline: view();
-      animation-range: entry 0% exit 80%;
-    }
-  }
-
-  .ed__quote blockquote {
-    font-family: var(--font-display);
-    font-size: clamp(1.6rem, 3.2vw, 2.5rem);
-    font-weight: 400;
-    font-style: italic;
-    color: var(--color-charcoal);
-    line-height: 1.45;
-    letter-spacing: -0.015em;
-  }
-
-  .ed__quote blockquote em {
-    color: var(--color-cyan);
-    font-style: italic;
-  }
-
-  .ed__quote-attr {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-md);
-    margin-top: var(--space-xl);
-    font-size: 0.68rem;
-    font-weight: 600;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--color-stone);
-  }
-
-  .ed__quote-rule {
-    width: 28px;
-    height: 1px;
-    background: var(--color-gold);
-  }
-
-  /* ─── 8. Before/After Reveals ──────────── */
-  .reveals-section {
-    background: var(--color-cream);
-    padding: clamp(4rem, 10vh, 7rem) 0;
-  }
-
-  .reveals__header {
-    text-align: center;
-    max-width: 560px;
-    margin: 0 auto clamp(2rem, 5vh, 3.5rem);
-  }
-
-  .reveals__rule {
-    width: 36px;
-    height: 1.5px;
-    background: var(--color-gold);
-    margin: 0 auto var(--space-lg);
-  }
-
-  .reveals__eyebrow {
-    display: block;
-    font-size: 0.6rem;
-    font-weight: 600;
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    color: var(--color-stone);
-    margin-bottom: var(--space-lg);
-  }
-
-  .reveals__header h2 {
-    font-size: clamp(2rem, 4vw, 3rem);
-    line-height: 1;
-    letter-spacing: -0.02em;
-  }
-
-  .reveals__header h2 em {
-    font-style: italic;
-    font-weight: 300;
-    color: var(--color-gold);
-  }
-
-  .reveals__deck {
-    font-size: clamp(0.9rem, 1.1vw, 1rem);
-    color: var(--color-slate);
-    line-height: 1.7;
-    margin-top: var(--space-md);
-  }
-
-  .reveals__grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-xl);
-    max-width: 1040px;
-    margin: 0 auto;
-  }
-
-  @media (min-width: 768px) {
-    .reveals__grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
-
-  /* Before/After Card */
-  .ba-card__slider {
-    position: relative;
-    border-radius: 4px;
-    overflow: hidden;
-    aspect-ratio: 3 / 2;
-    cursor: ew-resize;
-    user-select: none;
-    touch-action: none;
-  }
-
-  .ba-card__before,
-  .ba-card__after {
-    position: absolute;
-    inset: 0;
-  }
-
-  .ba-card__before {
-    z-index: 2;
-    clip-path: inset(0 50% 0 0);
-  }
-
-  .ba-card__after {
-    z-index: 1;
-  }
-
-  .ba-card__before img,
-  .ba-card__after img {
-    width: 100%;
-    height: 100%;
-    display: block;
-    object-fit: cover;
-  }
-
-  .ba-card__badge {
-    position: absolute;
-    bottom: 0.75rem;
-    font-size: 0.55rem;
-    font-weight: 700;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    padding: 0.25rem 0.6rem;
-    border-radius: 2px;
-    z-index: 3;
-  }
-
-  .ba-card__badge--before {
-    left: 0.75rem;
-    background: rgba(0, 0, 0, 0.6);
-    color: white;
-  }
-
-  .ba-card__badge--after {
-    right: 0.75rem;
-    background: var(--color-gold);
-    color: var(--color-charcoal);
-  }
-
-  .ba-card__handle {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 4;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    pointer-events: none;
-  }
-
-  .ba-card__handle-line {
-    flex: 1;
-    width: 2px;
-    background: white;
-    box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
-  }
-
-  .ba-card__handle-grip {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: white;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    color: var(--color-charcoal);
-  }
-
-  .ba-card__handle-grip svg {
-    width: 12px;
-    height: 12px;
-  }
-
-  /* Before/After hint animation */
-  @keyframes ba-hint-handle {
-    0%   { left: 50%; }
-    35%  { left: 33%; }
-    65%  { left: 62%; }
-    100% { left: 50%; }
-  }
-  @keyframes ba-hint-clip {
-    0%   { clip-path: inset(0 50% 0 0); }
-    35%  { clip-path: inset(0 67% 0 0); }
-    65%  { clip-path: inset(0 38% 0 0); }
-    100% { clip-path: inset(0 50% 0 0); }
-  }
-  .ba-card__handle.ba-hint {
-    animation: ba-hint-handle 1.4s var(--ease-out) 0.6s both;
-  }
-  .ba-card__before.ba-hint {
-    animation: ba-hint-clip 1.4s var(--ease-out) 0.6s both;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .ba-card__handle.ba-hint,
-    .ba-card__before.ba-hint { animation: none !important; }
-  }
-
-  .ba-card__info {
-    padding: var(--space-md) 0 0;
-  }
-
-  .ba-card__name {
-    font-size: 1rem;
-    letter-spacing: 0.04em;
-    margin-bottom: 0.2rem;
-  }
-
-  .ba-card__label {
-    font-size: 0.75rem;
-    color: var(--color-stone);
-  }
-
-  /* ─── 9. Crew ──────────────────────────── */
-  .crew {
-    background: var(--color-warm-white);
-    padding: clamp(4rem, 10vh, 7rem) 0;
-  }
-
-  .crew__header {
-    text-align: center;
-    max-width: 480px;
-    margin: 0 auto clamp(2rem, 5vh, 3.5rem);
-  }
-
-  .crew__rule {
-    width: 36px;
-    height: 1.5px;
-    background: var(--color-gold);
-    margin: 0 auto var(--space-lg);
-  }
-
-  .crew__eyebrow {
-    display: block;
-    font-size: 0.6rem;
-    font-weight: 600;
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    color: var(--color-stone);
-    margin-bottom: var(--space-lg);
-  }
-
-  .crew__header h2 {
-    font-size: clamp(2rem, 4vw, 3rem);
-    line-height: 1;
-    letter-spacing: -0.02em;
-  }
-
-  .crew__header h2 em {
-    font-style: italic;
-    font-weight: 300;
-    color: var(--color-gold);
-  }
-
-  .crew__grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: var(--space-xl);
-    max-width: 800px;
-    margin: 0 auto;
-  }
-
-  .crew__card {
-    text-align: center;
-  }
-
-  .crew__photo {
-    width: 160px;
-    height: 200px;
-    margin: 0 auto var(--space-md);
-    border-radius: 4px;
-    overflow: hidden;
-    box-shadow: 0 12px 40px rgba(44, 44, 44, 0.1);
-  }
-
-  .crew__photo img {
-    width: 100%;
-    height: 100%;
-    display: block;
-    object-fit: cover;
-    transition: transform 0.6s var(--ease-out);
-  }
-
-  .crew__card:hover .crew__photo img {
-    transform: scale(1.05);
-  }
-
-  .crew__photo--ai {
-    background: linear-gradient(135deg, var(--color-cyan), #3a7d9a);
-  }
-
-  .crew__initials {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .crew__initials span {
-    font-family: var(--font-display);
-    font-size: 2.5rem;
-    font-weight: 600;
-    color: white;
-    opacity: 0.6;
-  }
-
-  .crew__name {
-    font-size: 1.1rem;
-    letter-spacing: 0.04em;
-  }
-
-  .crew__role {
-    display: block;
-    font-size: 0.7rem;
-    font-weight: 500;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--color-stone);
-    margin: 0.3rem 0 0.6rem;
-  }
-
-  .crew__desc {
-    font-size: 0.85rem;
-    color: var(--color-slate);
-    line-height: 1.6;
-    max-width: 30ch;
-    margin: 0 auto;
-  }
-
-  /* ─── 10. Mascot ───────────────────────── */
-  .mascot {
-    background: var(--color-cream);
-    padding: clamp(2.5rem, 6vh, 4rem) 0;
-  }
-
-  .mascot__inner {
-    display: flex;
-    align-items: center;
-    gap: var(--space-xl);
-    max-width: 780px;
-    margin: 0 auto;
-  }
-
-  @media (max-width: 567px) {
-    .mascot__inner {
-      flex-direction: column;
-      text-align: center;
-    }
-  }
-
-  .mascot__image {
-    flex-shrink: 0;
-    width: 160px;
-    height: 160px;
-    border-radius: 50%;
-    overflow: hidden;
-    box-shadow: 0 12px 40px rgba(44, 44, 44, 0.1);
-  }
-
-  @media (min-width: 768px) {
-    .mascot__image {
-      width: 200px;
-      height: 200px;
-    }
-  }
-
-  .mascot__image img {
-    width: 100%;
-    height: 100%;
-    display: block;
-    object-fit: cover;
-  }
-
-  .mascot__content .label {
-    color: var(--color-gold);
-  }
-
-  .mascot__content h3 {
-    font-size: 1.3rem;
-    margin: 0.3rem 0 0.6rem;
-  }
-
-  .mascot__content p {
-    font-size: 0.95rem;
-    line-height: 1.7;
-    color: var(--color-slate);
-    max-width: 50ch;
-  }
-
-  /* ─── 11. Closing CTA ─────────────────── */
-  .about-cta {
-    background: var(--color-warm-white);
-    padding: clamp(4rem, 10vh, 7rem) 0;
-    text-align: center;
-  }
-
-  .about-cta__inner {
-    max-width: 640px;
-    margin: 0 auto;
-  }
-
-  .about-cta__content h2 {
-    font-size: clamp(2rem, 4vw, 3rem);
-    line-height: 1.05;
-    letter-spacing: -0.02em;
-    margin-bottom: var(--space-md);
-  }
-
-  .about-cta__content h2 em {
-    font-style: italic;
-    font-weight: 300;
-    color: var(--color-gold);
-  }
-
-  .about-cta__content p {
-    font-size: clamp(0.9rem, 1.1vw, 1rem);
-    color: var(--color-slate);
-    line-height: 1.7;
-    max-width: 48ch;
-    margin: 0 auto var(--space-lg);
-  }
-
-  .about-cta__actions {
-    margin-bottom: var(--space-lg);
-  }
-
-  .about-cta__trust {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-sm);
-    flex-wrap: wrap;
-    font-size: 0.72rem;
-    font-weight: 500;
-    color: var(--color-stone);
-    letter-spacing: 0.04em;
-  }
-
-  .about-cta__dot {
-    width: 3px;
-    height: 3px;
-    border-radius: 50%;
-    background: var(--color-gold);
-  }
+    .ab-video__inner { grid-template-columns: 1fr; text-align: center; }
+    .ab-video__text { margin: 0 auto; }
+    .ab-video__text p { margin: 0 auto; }
+    .ab-video__player { max-width: 300px; margin: 0 auto; }
+  }
+
+  /* ─── Our Story ─── */
+  .ab-story { background: var(--color-warm-white); padding: clamp(4rem, 10vh, 7rem) 0; }
+  .ab-story__inner { display: grid; gap: var(--space-xl); align-items: center; max-width: 1040px; margin: 0 auto; }
+  @media (min-width: 768px) { .ab-story__inner { grid-template-columns: 0.9fr 1.1fr; gap: var(--space-2xl); } }
+  .ab-story__image { border-radius: 4px; overflow: hidden; box-shadow: 0 20px 60px rgba(44,44,44,0.12); }
+  .ab-story__image img { width: 100%; height: auto; display: block; aspect-ratio: 4 / 5; object-fit: cover; }
+  @media (max-width: 767px) { .ab-story__image { max-width: 400px; margin: 0 auto; } }
+  .ab-story__content .label { color: var(--color-gold); }
+  .ab-story__content h2 { font-size: clamp(1.8rem, 3vw, 2.5rem); margin: var(--space-xs) 0 var(--space-md); line-height: 1; letter-spacing: -0.02em; }
+  .ab-story__content h2 em { font-style: italic; font-weight: 300; color: var(--color-cyan); }
+  .ab-story__content blockquote { font-family: var(--font-display); font-style: italic; font-size: clamp(1rem, 1.3vw, 1.15rem); color: var(--color-cyan); line-height: 1.5; margin-bottom: var(--space-md); padding-left: var(--space-md); border-left: 2px solid var(--color-gold); }
+  .ab-story__content p { font-size: 0.95rem; line-height: 1.8; color: var(--color-slate); margin-bottom: var(--space-sm); }
+  .ab-story__content p strong { color: var(--color-charcoal); }
+
+  /* ─── Kids ─── */
+  .ab-kids { background: var(--color-cream); padding: clamp(4rem, 10vh, 7rem) 0; }
+  .ab-kids__header { text-align: center; max-width: 560px; margin: 0 auto clamp(2rem, 5vh, 3.5rem); }
+  .ab-kids__header .label { color: var(--color-gold); }
+  .ab-kids__header h2 { font-size: clamp(2rem, 4vw, 3rem); line-height: 1; margin: var(--space-xs) 0 var(--space-md); letter-spacing: -0.02em; }
+  .ab-kids__header h2 em { font-style: italic; font-weight: 300; color: var(--color-gold); }
+  .ab-kids__header p { font-size: clamp(0.9rem, 1.1vw, 1rem); color: var(--color-slate); line-height: 1.7; }
+  .ab-kids__grid { display: grid; gap: var(--space-xl); max-width: 1040px; margin: 0 auto; }
+  @media (min-width: 768px) { .ab-kids__grid { grid-template-columns: repeat(3, 1fr); } }
+  .ab-kids__img { border-radius: 4px; overflow: hidden; margin-bottom: var(--space-md); }
+  .ab-kids__img img { width: 100%; height: auto; display: block; aspect-ratio: 3 / 2; object-fit: cover; }
+  .ab-kids__tag { display: inline-block; font-size: 0.58rem; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; color: var(--color-gold); border: 1px solid rgba(255,212,0,0.3); padding: 0.3rem 0.9rem; margin-bottom: var(--space-xs); }
+  .ab-kids__card h3 { font-size: 1.2rem; margin-bottom: 0.4rem; }
+  .ab-kids__card p { font-size: 0.88rem; color: var(--color-slate); line-height: 1.7; max-width: 38ch; }
+
+  /* ─── Pull Quote ─── */
+  .ab-pullquote { max-width: 700px; margin: clamp(4rem, 10vh, 7rem) auto 0; text-align: center; font-family: var(--font-display); font-size: clamp(1.5rem, 3vw, 2.2rem); font-style: italic; color: var(--color-charcoal); line-height: 1.45; letter-spacing: -0.015em; }
+  .ab-pullquote em { color: var(--color-cyan); }
+  .ab-pullquote cite { display: block; font-size: 0.68rem; font-style: normal; font-family: var(--font-body); font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--color-stone); margin-top: var(--space-lg); }
+
+  /* ─── Crew ─── */
+  .ab-crew { background: var(--color-warm-white); padding: clamp(4rem, 10vh, 7rem) 0; }
+  .ab-crew__header { text-align: center; max-width: 480px; margin: 0 auto clamp(2rem, 5vh, 3.5rem); }
+  .ab-crew__header .label { color: var(--color-gold); }
+  .ab-crew__header h2 { font-size: clamp(2rem, 4vw, 3rem); line-height: 1; margin-top: var(--space-xs); letter-spacing: -0.02em; }
+  .ab-crew__header h2 em { font-style: italic; font-weight: 300; color: var(--color-gold); }
+  .ab-crew__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-xl); max-width: 800px; margin: 0 auto; }
+  .ab-crew__card { text-align: center; }
+  .ab-crew__photo { width: 160px; height: 200px; margin: 0 auto var(--space-md); border-radius: 4px; overflow: hidden; box-shadow: 0 12px 40px rgba(44,44,44,0.1); }
+  .ab-crew__photo img { width: 100%; height: 100%; display: block; object-fit: cover; }
+  .ab-crew__photo--ai { background: linear-gradient(135deg, var(--color-cyan), #3a7d9a); }
+  .ab-crew__initials { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+  .ab-crew__initials span { font-family: var(--font-display); font-size: 2.5rem; font-weight: 600; color: white; opacity: 0.6; }
+  .ab-crew__card h3 { font-size: 1.1rem; letter-spacing: 0.04em; }
+  .ab-crew__role { display: block; font-size: 0.7rem; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; color: var(--color-stone); margin: 0.3rem 0 0.6rem; }
+  .ab-crew__card p { font-size: 0.85rem; color: var(--color-slate); line-height: 1.6; max-width: 30ch; margin: 0 auto; }
+
+  /* ─── Mascot ─── */
+  .ab-mascot { background: var(--color-cream); padding: clamp(2.5rem, 6vh, 4rem) 0; }
+  .ab-mascot__inner { display: flex; align-items: center; gap: var(--space-xl); max-width: 780px; margin: 0 auto; }
+  .ab-mascot__image { flex-shrink: 0; width: 160px; height: 160px; border-radius: 50%; overflow: hidden; box-shadow: 0 12px 40px rgba(44,44,44,0.1); }
+  .ab-mascot__image img { width: 100%; height: 100%; display: block; object-fit: cover; }
+  .ab-mascot__content .label { color: var(--color-gold); }
+  .ab-mascot__content h3 { font-size: 1.3rem; margin: 0.3rem 0 0.6rem; }
+  .ab-mascot__content p { font-size: 0.95rem; line-height: 1.7; color: var(--color-slate); max-width: 50ch; }
+  @media (min-width: 768px) { .ab-mascot__image { width: 200px; height: 200px; } }
+  @media (max-width: 567px) { .ab-mascot__inner { flex-direction: column; text-align: center; } }
+
+  /* ─── CTA ─── */
+  .ab-cta { background: var(--color-warm-white); padding: clamp(4rem, 10vh, 7rem) 0; text-align: center; }
+  .ab-cta__inner { max-width: 640px; margin: 0 auto; }
+  .ab-cta h2 { font-size: clamp(2rem, 4vw, 3rem); line-height: 1.05; letter-spacing: -0.02em; margin-bottom: var(--space-md); }
+  .ab-cta h2 em { font-style: italic; font-weight: 300; color: var(--color-gold); }
+  .ab-cta p { font-size: clamp(0.9rem, 1.1vw, 1rem); color: var(--color-slate); line-height: 1.7; max-width: 48ch; margin: 0 auto var(--space-lg); }
+  .ab-cta__trust { display: flex; align-items: center; justify-content: center; gap: var(--space-sm); flex-wrap: wrap; font-size: 0.72rem; font-weight: 500; color: var(--color-stone); letter-spacing: 0.04em; margin-top: var(--space-lg); }
+  .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--color-gold); }
 </style>
 
 <script>
-  function initAboutPage() {
-    // ── Counter animation on stats ──
-    const counters = document.querySelectorAll('.about-stats__number[data-count]');
-    if (counters.length) {
-      const animateCounter = (el) => {
-        const target = parseInt(el.dataset.count, 10);
-        const duration = 1800;
-        const start = performance.now();
-        const tick = (now) => {
-          const progress = Math.min((now - start) / duration, 1);
-          const eased = 1 - Math.pow(1 - progress, 3);
-          el.textContent = Math.round(eased * target).toLocaleString();
-          if (progress < 1) requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
-      };
-
-      const statsObserver = new IntersectionObserver((entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            animateCounter(entry.target);
-            statsObserver.unobserve(entry.target);
-          }
-        }
-      }, { threshold: 0.5 });
-
-      counters.forEach((c) => statsObserver.observe(c));
-    }
-
-    // ── Sticky-scroll: crossfade images + highlight active story ──
-    const isMobile = window.matchMedia('(max-width: 767px)').matches;
-
-    const stories = document.querySelectorAll('.ed__story[data-story]');
-    const photos = document.querySelectorAll('.ed__cover-photo[data-index]');
-    const numEl = document.querySelector('.ed__num-dynamic');
-    const dots = document.querySelectorAll('.ed__dot[data-dot]');
-
-    if (!isMobile) {
-      // Desktop: sticky-scroll crossfade
-      if (stories.length && photos.length) {
-        const activate = (idx) => {
-          photos.forEach((p) => p.classList.toggle('is-active', p.dataset.index === idx));
-          stories.forEach((s) => s.classList.toggle('is-active', s.dataset.story === idx));
-          if (numEl) numEl.textContent = String(Number(idx) + 1).padStart(2, '0');
-        };
-
-        const storyObserver = new IntersectionObserver((entries) => {
-          for (const entry of entries) {
-            if (entry.isIntersecting) activate(entry.target.dataset.story);
-          }
-        }, {
-          rootMargin: '-35% 0px -35% 0px',
-          threshold: 0,
-        });
-
-        stories.forEach((s) => storyObserver.observe(s));
-
-        document.addEventListener('astro:before-swap', () => {
-          storyObserver.disconnect();
-        }, { once: true });
-      }
-    } else {
-      // Mobile: horizontal scroll carousel sync
-      const frame = document.querySelector('.ed__cover-frame');
-      if (frame && photos.length) {
-        let ticking = false;
-        frame.addEventListener('scroll', () => {
-          if (ticking) return;
-          ticking = true;
-          requestAnimationFrame(() => {
-            const scrollLeft = frame.scrollLeft;
-            const childWidth = photos[0].offsetWidth;
-            const gap = parseInt(getComputedStyle(frame).gap) || 0;
-            const idx = Math.round(scrollLeft / (childWidth + gap));
-            const clamped = Math.max(0, Math.min(idx, photos.length - 1));
-            const idxStr = String(clamped);
-            stories.forEach((s) => s.classList.toggle('is-active', s.dataset.story === idxStr));
-            dots.forEach((d) => d.classList.toggle('is-active', d.dataset.dot === idxStr));
-            ticking = false;
-          });
-        }, { passive: true });
-      }
-    }
-
-    // ── Before/After sliders ──
-    document.querySelectorAll('[data-ba-slider]').forEach((slider) => {
-      const beforeEl = slider.querySelector('.ba-card__before');
-      const handle = slider.querySelector('.ba-card__handle');
-      if (!beforeEl || !handle) return;
-
-      const update = (x) => {
-        const rect = slider.getBoundingClientRect();
-        const pct = Math.max(0, Math.min(100, ((x - rect.left) / rect.width) * 100));
-        beforeEl.style.clipPath = `inset(0 ${100 - pct}% 0 0)`;
-        handle.style.left = `${pct}%`;
-      };
-
-      // Swipe hint: animate on first viewport entry
-      let hinted = false;
-      const hintObserver = new IntersectionObserver((entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting && !hinted) {
-            hinted = true;
-            beforeEl.classList.add('ba-hint');
-            handle.classList.add('ba-hint');
-            handle.addEventListener('animationend', () => {
-              beforeEl.classList.remove('ba-hint');
-              handle.classList.remove('ba-hint');
-            }, { once: true });
-            hintObserver.unobserve(slider);
-          }
-        }
-      }, { threshold: 0.4 });
-      hintObserver.observe(slider);
-
-      let active = false;
-
-      slider.addEventListener('pointerdown', (e) => {
-        active = true;
-        hinted = true; // cancel any pending hint
-        beforeEl.classList.remove('ba-hint');
-        handle.classList.remove('ba-hint');
-        slider.setPointerCapture(e.pointerId);
-        update(e.clientX);
+  function initAbout() {
+    // Click-to-play video
+    document.querySelectorAll('.ab-video__poster[data-video-src]').forEach((poster) => {
+      poster.addEventListener('click', () => {
+        const wrap = poster.closest('.ab-video__player');
+        if (!wrap) return;
+        const iframe = document.createElement('iframe');
+        iframe.src = poster.dataset.videoSrc;
+        iframe.allow = 'accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture';
+        iframe.allowFullscreen = true;
+        iframe.title = 'Peter and Holly share why they started Sunny & Ranney';
+        wrap.appendChild(iframe);
+        poster.remove();
       });
-
-      slider.addEventListener('pointermove', (e) => {
-        if (active) update(e.clientX);
-      });
-
-      slider.addEventListener('pointerup', () => { active = false; });
-      slider.addEventListener('pointercancel', () => { active = false; });
     });
 
-    // ── Video modal (kept for future use) ──
-    const modal = document.getElementById('video-modal');
-    if (modal) {
-      const closeVideo = () => {
-        modal.classList.remove('is-open');
-        modal.setAttribute('aria-hidden', 'true');
-        const content = document.getElementById('video-modal-content');
-        if (content) content.innerHTML = '';
-        document.body.style.overflow = '';
-      };
-
-      modal.querySelector('.video-modal__close')?.addEventListener('click', closeVideo);
-      modal.addEventListener('click', (e) => { if (e.target === modal) closeVideo(); });
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && modal.classList.contains('is-open')) closeVideo();
-      });
-    }
-
-    // ── Smooth scroll for anchor links ──
+    // Smooth scroll for anchor links
     document.querySelectorAll('a[href^="#"]').forEach((link) => {
       link.addEventListener('click', (e) => {
         const target = document.querySelector(link.getAttribute('href'));
@@ -2118,8 +435,6 @@ const beforeAfter = [
       });
     });
   }
-
-  // Init on load and on Astro view transition
-  initAboutPage();
-  document.addEventListener('astro:after-swap', initAboutPage);
+  initAbout();
+  document.addEventListener('astro:after-swap', initAbout);
 </script>
