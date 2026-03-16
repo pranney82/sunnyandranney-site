@@ -29,7 +29,7 @@ const adminSlides = announcements.map(a =>
 const allSlides = [...adminSlides, ...defaultSlides];
 ---
 
-<header class="nav" id="main-nav" transition:persist="main-nav" transition:animate="none">
+<header class:list={['nav', { 'nav--shop-active': currentPath.startsWith('/shop') }]} id="main-nav" transition:persist="main-nav" transition:animate="none">
   <!-- Top banner -->
   <div class="nav__banner" role="status" aria-live="polite">
     <div class="container nav__banner-inner">
@@ -681,6 +681,13 @@ const allSlides = [...adminSlides, ...defaultSlides];
     };
     new ResizeObserver(syncHeight).observe(nav);
     syncHeight();
+
+    // Update nav--shop-active before the DOM swap so height is correct
+    // before new content paints — eliminates the layout gap on navigation
+    document.addEventListener('astro:before-swap', (e) => {
+      const going = new URL((e as any).to).pathname;
+      nav.classList.toggle('nav--shop-active', going.startsWith('/shop'));
+    });
   }
 
   // ─── Scroll behavior ────────────────────────────────────────

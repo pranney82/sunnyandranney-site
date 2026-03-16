@@ -1,15 +1,16 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 
 export const prerender = false;
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' } as const;
 
-export const POST: APIRoute = async ({ request }) => {
-  const { apiKey } = await request.json() as { apiKey: string };
+export const GET: APIRoute = async () => {
+  const apiKey = (env as any).CC_API_TOKEN as string | undefined;
 
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'API key is required' }), {
-      status: 400,
+    return new Response(JSON.stringify({ error: 'CC_API_TOKEN is not configured' }), {
+      status: 500,
       headers: JSON_HEADERS,
     });
   }

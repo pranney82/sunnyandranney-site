@@ -5,6 +5,15 @@ import { getProducts, getCollectionByHandle, getProductByHandle } from '@/lib/sh
 import { cfImage, cfSrcset } from '@/lib/images';
 import { getCollectionsStatic, getTrendingStatic, getHeroStatic, type CollectionSetting } from '@/lib/settings';
 
+// Fetch live stats from SOARD at build time
+let soardStats: { roomMakeovers: number; yearsGiving: number } | null = null;
+try {
+  const res = await fetch('https://soard-site.pages.dev/api/stats.json');
+  if (res.ok) soardStats = await res.json();
+} catch { /* use fallbacks */ }
+const statRooms = soardStats?.roomMakeovers ?? 269;
+const statYears = soardStats?.yearsGiving ?? 14;
+
 let products: any[] = [];
 let collections: any[] = [];
 let hasShopify = false;
@@ -142,12 +151,12 @@ const featuredProducts = products.slice(0, 8);
   <section class="impact">
     <div class="container impact__inner">
       <div class="impact__stat reveal">
-        <span class="impact__number" data-count="269" data-suffix="+">0</span>
+        <span class="impact__number" data-count={statRooms} data-suffix="+">0</span>
         <span class="impact__label">Rooms Transformed</span>
       </div>
       <div class="impact__divider" aria-hidden="true"></div>
       <div class="impact__stat reveal delay-1">
-        <span class="impact__number" data-count="14" data-suffix="">0</span>
+        <span class="impact__number" data-count={statYears} data-suffix="">0</span>
         <span class="impact__label">Years of Giving</span>
       </div>
       <div class="impact__divider" aria-hidden="true"></div>
@@ -481,7 +490,7 @@ const featuredProducts = products.slice(0, 8);
           When you shop at Sunny and Ranney, you're not just buying furniture.
           Through <strong>Sunshine on a Ranney Day</strong>, 100% of store profits
           fund bedroom and living space makeovers for children with special needs.
-          269 rooms transformed. 14 years and counting.
+          {statRooms} rooms transformed. {statYears} years and counting.
         </p>
         <div class="mission__actions">
           <a href="/shop" class="btn btn--gold mission__cta" data-astro-prefetch>Shop &amp; Give Back</a>

@@ -71,6 +71,7 @@ const stats = [
     value: hours ? 'Configured' : 'Not Set',
     status: hours ? 'admin-status--success' : 'admin-status--neutral',
     updated: timeAgo(timestamps['settings:hours']),
+    href: '/admin/hours',
   },
   {
     label: 'Collections',
@@ -79,6 +80,7 @@ const stats = [
       ? (activeCollections === totalCollections ? 'admin-status--success' : 'admin-status--warning')
       : 'admin-status--neutral',
     updated: timeAgo(timestamps['settings:collections']),
+    href: '/admin/collections',
   },
   {
     label: 'Specials',
@@ -87,36 +89,42 @@ const stats = [
       ? 'admin-status--success'
       : (totalSpecials > 0 ? 'admin-status--warning' : 'admin-status--neutral'),
     updated: timeAgo(timestamps['settings:specials']),
+    href: '/admin/specials',
   },
   {
     label: 'Contact Info',
     value: contact ? 'Configured' : 'Not Set',
     status: contact ? 'admin-status--success' : 'admin-status--neutral',
     updated: timeAgo(timestamps['settings:contact']),
+    href: '/admin/contact',
   },
   {
     label: 'Email Signup',
     value: emailSignup?.constantContactListId ? 'Connected' : 'Not Set',
     status: emailSignup?.constantContactListId ? 'admin-status--success' : 'admin-status--neutral',
     updated: timeAgo(timestamps['settings:email-signup']),
+    href: '/admin/email-signup',
   },
   {
     label: 'Trending Now',
     value: trending && trending.handles.length > 0 ? `${trending.handles.length} products` : 'Auto',
     status: trending && trending.handles.length > 0 ? 'admin-status--success' : 'admin-status--neutral',
     updated: timeAgo(timestamps['settings:trending']),
+    href: '/admin/trending',
   },
   {
     label: 'Hero Section',
     value: hero?.productHandle ? 'Configured' : 'Default',
     status: hero?.productHandle ? 'admin-status--success' : 'admin-status--neutral',
     updated: timeAgo(timestamps['settings:hero']),
+    href: '/admin/hero',
   },
   {
     label: 'Kids Section',
     value: kids?.kids?.length ? `${kids.kids.length} stories` : 'Default',
     status: kids?.kids?.length ? 'admin-status--success' : 'admin-status--neutral',
     updated: timeAgo(timestamps['settings:kids']),
+    href: '/admin/kids',
   },
 ];
 
@@ -192,13 +200,13 @@ const settingsLinks = [
 
   <div class="admin-stat-grid">
     {stats.map((stat) => (
-      <div class="admin-stat">
+      <a href={stat.href} class="admin-stat">
         <div class="admin-stat-label">{stat.label}</div>
         <div class="admin-stat-value">
           <span class={`admin-status ${stat.status}`}>{stat.value}</span>
         </div>
         <div class="admin-stat-updated">Last updated {stat.updated}</div>
-      </div>
+      </a>
     ))}
   </div>
 
@@ -282,6 +290,18 @@ const settingsLinks = [
 </Admin>
 
 <style>
+  /* ─── Stat card as link ───────────────── */
+  a.admin-stat {
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  a.admin-stat:hover {
+    border-color: var(--admin-accent);
+    box-shadow: 0 2px 12px rgba(255, 212, 0, 0.12);
+  }
+
   /* ─── Stat updated timestamp ──────────── */
   .admin-stat-updated {
     font-size: 0.7rem;
@@ -349,7 +369,7 @@ const settingsLinks = [
   }
 
   .dashboard-link:hover .dashboard-link-icon {
-    background: #fff8e1;
+    background: rgba(255, 212, 0, 0.1);
   }
 
   .dashboard-link-icon svg {

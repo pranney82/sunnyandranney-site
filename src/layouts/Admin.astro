@@ -22,6 +22,8 @@ const navItems = [
   { href: '/admin/collections', label: 'Collections', icon: 'shopping-bag' },
   { href: '/admin/specials', label: 'Specials', icon: 'star' },
   { href: '/admin/trending', label: 'Trending Now', icon: 'trending' },
+  { href: '/admin/hero', label: 'Hero Section', icon: 'image' },
+  { href: '/admin/kids', label: 'Kids Section', icon: 'heart' },
   { href: '/admin/contact', label: 'Contact Info', icon: 'map-pin' },
   { href: '/admin/email-signup', label: 'Email Signup', icon: 'mail' },
 ];
@@ -893,19 +895,21 @@ const navItems = [
           </a>
         ))}
         <div class="admin-nav-section">Store</div>
-        {navItems.slice(1, 5).map((item) => (
+        {navItems.slice(1, 7).map((item) => (
           <a href={item.href} class:list={[{ active: currentPath === item.href || currentPath.startsWith(item.href + '/') }]}>
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               {item.icon === 'clock' && <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>}
               {item.icon === 'shopping-bag' && <><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></>}
               {item.icon === 'star' && <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>}
               {item.icon === 'trending' && <><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></>}
+              {item.icon === 'image' && <><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></>}
+              {item.icon === 'heart' && <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>}
             </svg>
             {item.label}
           </a>
         ))}
         <div class="admin-nav-section">Settings</div>
-        {navItems.slice(4).map((item) => (
+        {navItems.slice(7).map((item) => (
           <a href={item.href} class:list={[{ active: currentPath === item.href || currentPath.startsWith(item.href + '/') }]}>
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               {item.icon === 'map-pin' && <><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></>}
@@ -1017,6 +1021,8 @@ const navItems = [
         { label: 'Collections', href: '/admin/collections', icon: 'bag' },
         { label: 'Specials & Announcements', href: '/admin/specials', icon: 'star' },
         { label: 'Trending Now', href: '/admin/trending', icon: 'trending' },
+        { label: 'Hero Section', href: '/admin/hero', icon: 'image' },
+        { label: 'Kids Section', href: '/admin/kids', icon: 'heart' },
         { label: 'Contact Info', href: '/admin/contact', icon: 'pin' },
         { label: 'Email Signup', href: '/admin/email-signup', icon: 'mail' },
       ];
@@ -1092,9 +1098,9 @@ const navItems = [
 
       // Mark clean after successful save (called from showToast success path)
       const origShowToast = (window as any).showToast;
-      (window as any).showToast = function(message: string, isError = false) {
+      (window as any).showToast = function(message: string, isError = false, undoFn?: () => void) {
         if (!isError) markClean();
-        origShowToast(message, isError);
+        origShowToast(message, isError, undoFn);
       };
 
       // Warn before leaving with unsaved changes

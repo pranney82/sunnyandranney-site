@@ -2,10 +2,23 @@
 import Base from '@/layouts/Base.astro';
 import { getKidsStatic } from '@/lib/settings';
 
+// Fetch live stats from SOARD at build time
+let soardStats: { roomMakeovers: number; childrenServed: number; livesImpacted: number; yearsGiving: number } | null = null;
+try {
+  const res = await fetch('https://soard-site.pages.dev/api/stats.json');
+  if (res.ok) soardStats = await res.json();
+} catch { /* use fallbacks */ }
+
+function fmtStat(n: number | undefined, suffix = '+') {
+  if (!n) return null;
+  if (n >= 1000) return `${(n / 1000).toFixed(0)},000${suffix}`;
+  return `${n}${suffix}`;
+}
+
 const stats = [
-  { value: '269+', label: 'Room Makeovers' },
-  { value: '203+', label: 'Children Served' },
-  { value: '17,000+', label: 'Lives Impacted' },
+  { value: fmtStat(soardStats?.roomMakeovers) ?? '269+', label: 'Room Makeovers' },
+  { value: fmtStat(soardStats?.childrenServed) ?? '203+', label: 'Children Served' },
+  { value: fmtStat(soardStats?.livesImpacted) ?? '17,000+', label: 'Lives Impacted' },
   { value: '100%', label: 'Of Profits Donated' },
 ];
 
@@ -251,7 +264,7 @@ const kids = kidsSetting?.kids ?? DEFAULT_KIDS;
       <div class="ab-cta__trust">
         <span>100% of profits donated</span>
         <span class="dot" aria-hidden="true"></span>
-        <span>269+ rooms built</span>
+        <span>{fmtStat(soardStats?.roomMakeovers) ?? '269+'} rooms built</span>
         <span class="dot" aria-hidden="true"></span>
         <span>4.9 stars on Google</span>
       </div>

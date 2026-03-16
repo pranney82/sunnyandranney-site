@@ -55,7 +55,6 @@ export interface ContactInfo {
 }
 
 export interface EmailSignupConfig {
-  constantContactApiKey: string;
   constantContactListId: string;
   constantContactListName: string;
 }

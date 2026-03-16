@@ -17,9 +17,8 @@ const DEFAULT_KIDS = [
 
 const heading = saved?.heading ?? DEFAULT_HEADING;
 const subheading = saved?.subheading ?? DEFAULT_SUBHEADING;
-const kids = saved?.kids?.length ? saved.kids : DEFAULT_KIDS;
-// Pad to 3 slots
-while (kids.length < 3) kids.push({ name: '', tag: '', blurb: '', imageUrl: '' });
+const baseKids = saved?.kids?.length ? saved.kids : DEFAULT_KIDS;
+const kids = Array.from({ length: 3 }, (_, i) => baseKids[i] ?? { name: '', tag: '', blurb: '', imageUrl: '' });
 
 // Load SOARD kids for the picker
 type SoardKid = { name: string; slug: string; year: number | null; diagnosis: string | null; roomTypes: string[]; imageUrl: string; blurb: string };
@@ -66,23 +65,36 @@ try {
         <h3 class="section-title">Story {i + 1}</h3>
 
         {soardKids.length > 0 && (
-          <div class="field-group soard-picker-group">
-            <label class="field-label" for={`soard-pick-${i}`}>Pick from SOARD</label>
-            <p class="field-hint">Selecting a kid auto-fills their name, image, and blurb — you can still edit below.</p>
-            <select id={`soard-pick-${i}`} class="admin-input soard-picker" data-slot={i}>
-              <option value="">— Choose a kid —</option>
-              {soardKids.map(sk => (
-                <option
-                  value={sk.slug}
-                  data-name={sk.name}
-                  data-image={sk.imageUrl}
-                  data-blurb={sk.blurb}
-                  selected={sk.name === kid.name}
-                >
-                  {sk.name}{sk.year ? ` (${sk.year})` : ''}{sk.diagnosis ? ` — ${sk.diagnosis}` : ''}
-                </option>
-              ))}
-            </select>
+          <div class="soard-picker-group">
+            <div class="field-label">Pick from SOARD</div>
+            <p class="field-hint">Search by name — selecting auto-fills their name, image, and blurb.</p>
+            <div class="soard-combo" data-slot={String(i)}>
+              <div class="soard-combo__wrap">
+                <input
+                  type="text"
+                  class="admin-input soard-combo__input"
+                  placeholder={`Search ${soardKids.length} kids by name…`}
+                  autocomplete="off"
+                  spellcheck={false}
+                />
+                {kid.name && <span class="soard-combo__current">Currently: <strong>{kid.name}</strong></span>}
+              </div>
+              <div class="soard-combo__list" aria-live="polite">
+                {soardKids.map(sk => (
+                  <button
+                    type="button"
+                    class="soard-combo__option"
+                    data-name={sk.name}
+                    data-image={sk.imageUrl}
+                    data-blurb={sk.blurb}
+                    data-search={sk.name.toLowerCase()}
+                  >
+                    <strong>{sk.name}</strong>
+                    <span>{[sk.year, sk.diagnosis].filter(Boolean).join(' · ')}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
@@ -216,7 +228,37 @@ try {
     padding: 0.9rem 1rem;
     margin-bottom: 1.25rem;
   }
-  .soard-picker-group .field-label { color: var(--admin-accent, #4aa8c4); }
+  .soard-picker-group > .field-label { color: #3a8ca8; font-size: 0.88rem; font-weight: 600; margin-bottom: 0.25rem; }
+
+  .soard-combo { position: relative; margin-top: 0.5rem; }
+  .soard-combo__wrap { display: flex; align-items: center; gap: 0.75rem; }
+  .soard-combo__wrap .admin-input { flex: 1; }
+  .soard-combo__current { font-size: 0.78rem; color: var(--admin-text-light); white-space: nowrap; flex-shrink: 0; }
+  .soard-combo__current strong { color: var(--admin-text); }
+
+  .soard-combo__list {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 100;
+    background: var(--admin-card); border: 1px solid var(--admin-border);
+    border-radius: var(--admin-radius); box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    max-height: 220px; overflow-y: auto;
+    display: none;
+  }
+  .soard-combo__list.open { display: block; }
+  .soard-combo__list:empty::after {
+    content: 'No matches'; display: block;
+    padding: 0.6rem 0.9rem; font-size: 0.82rem; color: var(--admin-text-light);
+  }
+  .soard-combo__option {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 0.5rem; width: 100%; text-align: left;
+    padding: 0.5rem 0.9rem; background: none; border: none;
+    cursor: pointer; font-family: inherit; border-bottom: 1px solid var(--admin-border);
+    transition: background 0.1s;
+  }
+  .soard-combo__option:last-child { border-bottom: none; }
+  .soard-combo__option:hover { background: rgba(74, 168, 196, 0.08); }
+  .soard-combo__option strong { font-size: 0.88rem; color: var(--admin-text); }
+  .soard-combo__option span { font-size: 0.76rem; color: var(--admin-text-light); }
 
   /* Kid card layout */
   .kid-card { padding-bottom: 1.5rem; }
@@ -262,36 +304,75 @@ try {
 <script>
   const form = document.getElementById('kids-form') as HTMLFormElement;
 
-  // SOARD picker — auto-fill name, imageUrl, blurb on selection
-  document.querySelectorAll<HTMLSelectElement>('.soard-picker').forEach(select => {
-    select.addEventListener('change', () => {
-      const opt = select.options[select.selectedIndex];
-      if (!opt.value) return;
-      const i = select.dataset.slot!;
-      const name = opt.dataset.name || '';
-      const imageUrl = opt.dataset.image || '';
-      const blurb = opt.dataset.blurb || '';
+  // SOARD searchable combobox
+  document.querySelectorAll<HTMLElement>('.soard-combo').forEach(combo => {
+    const slot = combo.dataset.slot!;
+    const input = combo.querySelector<HTMLInputElement>('.soard-combo__input')!;
+    const list = combo.querySelector<HTMLElement>('.soard-combo__list')!;
+    const options = Array.from(list.querySelectorAll<HTMLElement>('.soard-combo__option'));
+    let closeTimer: ReturnType<typeof setTimeout>;
 
-      (document.getElementById(`kid-name-${i}`) as HTMLInputElement).value = name;
-      (document.getElementById(`kid-blurb-${i}`) as HTMLTextAreaElement).value = blurb;
-      const imageInput = document.getElementById(`kid-image-${i}`) as HTMLInputElement;
-      imageInput.value = imageUrl;
+    function filterOptions(q: string) {
+      const term = q.toLowerCase().trim();
+      let anyVisible = false;
+      options.forEach(opt => {
+        const match = !term || (opt.dataset.search || '').includes(term);
+        opt.style.display = match ? '' : 'none';
+        if (match) anyVisible = true;
+      });
+      return anyVisible;
+    }
 
-      // Update preview
-      if (imageUrl) {
-        const container = document.getElementById(`kid-preview-${i}`)!;
-        let img = container.querySelector<HTMLImageElement>('img');
-        if (!img) {
-          container.innerHTML = '';
-          img = document.createElement('img');
-          img.width = 240; img.height = 180;
-          container.appendChild(img);
+    function openList() {
+      clearTimeout(closeTimer);
+      list.classList.add('open');
+    }
+    function closeList() {
+      closeTimer = setTimeout(() => list.classList.remove('open'), 150);
+    }
+
+    input.addEventListener('focus', () => { filterOptions(input.value); openList(); });
+    input.addEventListener('input', () => { filterOptions(input.value); openList(); });
+    input.addEventListener('blur', closeList);
+
+    list.addEventListener('mousedown', e => {
+      // Prevent blur before click fires
+      e.preventDefault();
+    });
+
+    options.forEach(opt => {
+      opt.addEventListener('click', () => {
+        const name = opt.dataset.name || '';
+        const imageUrl = opt.dataset.image || '';
+        const blurb = opt.dataset.blurb || '';
+
+        (document.getElementById(`kid-name-${slot}`) as HTMLInputElement).value = name;
+        (document.getElementById(`kid-blurb-${slot}`) as HTMLTextAreaElement).value = blurb;
+        const imageInput = document.getElementById(`kid-image-${slot}`) as HTMLInputElement;
+        imageInput.value = imageUrl;
+        input.value = name;
+
+        // Update "Currently:" label
+        const curr = combo.querySelector<HTMLElement>('.soard-combo__current');
+        if (curr) curr.innerHTML = `Currently: <strong>${name}</strong>`;
+
+        // Update image preview
+        if (imageUrl) {
+          const container = document.getElementById(`kid-preview-${slot}`)!;
+          let img = container.querySelector<HTMLImageElement>('img');
+          if (!img) {
+            container.innerHTML = '';
+            img = document.createElement('img');
+            img.width = 240; img.height = 180;
+            container.appendChild(img);
+          }
+          img.src = `${imageUrl}/w=240,h=180,fit=cover,q=75,format=auto`;
+          img.alt = name;
         }
-        img.src = `${imageUrl}/w=240,h=180,fit=cover,q=75,format=auto`;
-        img.alt = name;
-      }
 
-      document.querySelector('.admin-unsaved-badge')?.classList.add('visible');
+        list.classList.remove('open');
+        document.querySelector('.admin-unsaved-badge')?.classList.add('visible');
+      });
     });
   });
 

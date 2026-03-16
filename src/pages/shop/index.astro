@@ -1435,22 +1435,9 @@ const itemListSchema = hasShopify ? {
 
   // Clean up document-level listeners on re-init (View Transitions)
   let _shopKeyHandler: ((e: KeyboardEvent) => void) | null = null;
-  let _shopSwapHandler: (() => void) | null = null;
 
   document.addEventListener('astro:page-load', () => {
-  // ─── Hide nav category bar on mobile (shop has its own filter pills) ──
-  const mainNav = document.getElementById('main-nav');
-  if (!mainNav && !document.getElementById('shop-grid')) return;
-  if (mainNav) {
-    mainNav.classList.add('nav--shop-active');
-  }
-
-  // Clean up nav--shop-active when navigating away (nav uses transition:persist)
-  if (_shopSwapHandler) document.removeEventListener('astro:before-swap', _shopSwapHandler);
-  _shopSwapHandler = () => {
-    mainNav?.classList.remove('nav--shop-active');
-  };
-  document.addEventListener('astro:before-swap', _shopSwapHandler, { once: true });
+  if (!document.getElementById('shop-grid')) return;
 
   // ─── DOM refs ──────────────────────────────────
   const grid = document.getElementById('shop-grid');
