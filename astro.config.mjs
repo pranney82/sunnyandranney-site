@@ -16,9 +16,4 @@ export default defineConfig({
     defaultStrategy: 'viewport',
   },
 
-  vite: {
-    build: {
-      cssMinify: 'lightningcss',
-    },
-  },
 });

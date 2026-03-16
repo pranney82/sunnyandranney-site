@@ -1,9 +1,9 @@
 ---
 import Base from '@/layouts/Base.astro';
 import GoogleReviews from '@/components/GoogleReviews.astro';
-import { getProducts, getCollections } from '@/lib/shopify';
+import { getProducts, getCollections, getProductByHandle } from '@/lib/shopify';
 import { cfImage, cfSrcset } from '@/lib/images';
-import { getCollectionsStatic, type CollectionSetting } from '@/lib/settings';
+import { getCollectionsStatic, getTrendingStatic, getHeroStatic, type CollectionSetting } from '@/lib/settings';
 
 let products: any[] = [];
 let collections: any[] = [];
@@ -15,10 +15,33 @@ const DEFAULT_HANDLES = [
   'consoles-sideboards-sofa-tables', 'dining-tables', 'sofas', 'sectionals',
 ];
 
+// Load hero setting (image URL + featured product handle)
+const heroSetting = await getHeroStatic();
+const HERO_DEFAULT_IMAGE = 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/sunny-ranney-storefront';
+const heroImageBase = heroSetting?.imageUrl?.trim().replace(/\/$/, '') || HERO_DEFAULT_IMAGE;
+
+let heroProduct: any = null;
+
 try {
-  const result = await getProducts(8);
-  products = result.products;
+  // Load trending product handles from admin setting
+  const trendingSetting = await getTrendingStatic();
+  if (trendingSetting && trendingSetting.handles.length > 0) {
+    products = (await Promise.all(
+      trendingSetting.handles.map(h => getProductByHandle(h))
+    )).filter(Boolean);
+  } else {
+    const result = await getProducts(8);
+    products = result.products;
+  }
   hasShopify = products.length > 0;
+
+  // Load hero product — use admin-configured handle or fall back to first product
+  if (heroSetting?.productHandle) {
+    heroProduct = await getProductByHandle(heroSetting.productHandle);
+  }
+  if (!heroProduct && products.length > 0) {
+    heroProduct = products[0];
+  }
 
   // Load admin collection settings (committed JSON) or fall back to defaults
   const saved = await getCollectionsStatic();
@@ -46,7 +69,7 @@ const featuredProducts = products.slice(0, 8);
 
 ---
 
-<Base lcpImage="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/sunny-ranney-storefront/w=480,h=600,fit=cover,q=80,format=auto">
+<Base lcpImage={`${heroImageBase}/w=480,h=600,fit=cover,q=80,format=auto`}>
   <!-- ═══ HERO ═══ -->
   <section class="hero">
     <div class="container hero__inner">
@@ -77,8 +100,8 @@ const featuredProducts = products.slice(0, 8);
       <div class="hero__media animate-fade-up delay-2">
         <div class="hero__img-wrap">
           <img
-            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/sunny-ranney-storefront/w=480,h=600,fit=cover,q=80,format=auto"
-            srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/sunny-ranney-storefront/w=320,h=400,fit=cover,q=75,format=auto 320w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/sunny-ranney-storefront/w=480,h=600,fit=cover,q=80,format=auto 480w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/sunny-ranney-storefront/w=640,h=800,fit=cover,q=80,format=auto 640w"
+            src={`${heroImageBase}/w=480,h=600,fit=cover,q=80,format=auto`}
+            srcset={`${heroImageBase}/w=320,h=400,fit=cover,q=75,format=auto 320w, ${heroImageBase}/w=480,h=600,fit=cover,q=80,format=auto 480w, ${heroImageBase}/w=640,h=800,fit=cover,q=80,format=auto 640w`}
             sizes="(max-width: 767px) 280px, (max-width: 1023px) 400px, 440px"
             alt="The Sunny & Ranney storefront in historic Roswell, Georgia"
             width="480"
@@ -88,8 +111,8 @@ const featuredProducts = products.slice(0, 8);
           />
         </div>
         <div class="hero__accent" aria-hidden="true"></div>
-        {hasShopify && featuredProducts[0] && (() => {
-          const fp = featuredProducts[0];
+        {hasShopify && heroProduct && (() => {
+          const fp = heroProduct;
           const fpImg = fp.images.edges[0]?.node;
           const fpPrice = fp.priceRange.minVariantPrice;
           return (

@@ -26,6 +26,8 @@ export interface CollectionSetting {
   handle: string;
   enabled: boolean;
   order: number;
+  showInNav?: boolean;
+  navLabel?: string;
 }
 
 export interface StoreSpecials {
@@ -56,6 +58,15 @@ export interface EmailSignupConfig {
   constantContactApiKey: string;
   constantContactListId: string;
   constantContactListName: string;
+}
+
+export interface TrendingSetting {
+  handles: string[];
+}
+
+export interface HeroSetting {
+  imageUrl: string;        // CF Images base URL (no size params), e.g. https://imagedelivery.net/.../about/sunny-ranney-storefront
+  productHandle: string;   // Shopify product handle for the hero card
 }
 
 // ─── Build-time readers (for static pages) ──────────────────
@@ -92,6 +103,14 @@ export async function getContactStatic(): Promise<ContactInfo | null> {
 
 export async function getEmailSignupStatic(): Promise<EmailSignupConfig | null> {
   return loadLocalJson<EmailSignupConfig>('/src/content/settings/email-signup.json');
+}
+
+export async function getTrendingStatic(): Promise<TrendingSetting | null> {
+  return loadLocalJson<TrendingSetting>('/src/content/settings/trending.json');
+}
+
+export async function getHeroStatic(): Promise<HeroSetting | null> {
+  return loadLocalJson<HeroSetting>('/src/content/settings/hero.json');
 }
 
 // ─── Formatting helpers (shared by static pages + chatbot) ──

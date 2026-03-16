@@ -326,13 +326,6 @@ const breadcrumbSchema = {
             </div>
           )}
 
-          {/* Urgency signal */}
-          {product.availableForSale && (
-            <div class="pdp-urgency" id="pdp-urgency">
-              <div class="pdp-urgency__dot"></div>
-              <span class="pdp-urgency__text" id="urgency-text"></span>
-            </div>
-          )}
 
           {/* Trust signals */}
           <div class="pdp-trust">
@@ -856,35 +849,6 @@ const breadcrumbSchema = {
 
   .pdp-financing svg { color: var(--color-charcoal); flex-shrink: 0; }
 
-  /* ─── Urgency ──────────────────────────── */
-  .pdp-urgency {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem var(--space-md);
-    background: #fdf2f2;
-    border-left: 3px solid #e74c3c;
-    font-size: 0.82rem;
-    color: var(--color-charcoal);
-    margin-bottom: var(--space-sm);
-  }
-
-  .pdp-urgency__dot {
-    width: 8px;
-    height: 8px;
-    background: #e74c3c;
-    border-radius: 50%;
-    flex-shrink: 0;
-    animation: urgencyPulse 1.5s ease-in-out infinite;
-  }
-
-  @keyframes urgencyPulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-
-  .pdp-urgency__text strong { color: #e74c3c; }
-
   /* ─── Trust signals ────────────────────── */
   .pdp-trust {
     display: flex;
@@ -1317,8 +1281,13 @@ const breadcrumbSchema = {
 <script>
   import { recentlyViewed, wishlist } from '@/lib/cart-store.js';
 
+  // Clean up previous keydown listener on re-init (View Transitions)
+  let _pdpKeyHandler: ((e: KeyboardEvent) => void) | null = null;
+
+  document.addEventListener('astro:page-load', () => {
   // ─── DOM refs ───────────────────────────────
   const thumbs = document.querySelectorAll('.pdp-thumb');
+  if (!thumbs.length && !document.getElementById('main-product-image')) return;
   const mainImg = document.getElementById('main-product-image') as HTMLImageElement;
   const galleryMain = document.getElementById('gallery-main');
   const variantBtns = document.querySelectorAll('.pdp-variant-btn');
@@ -1669,14 +1638,16 @@ const breadcrumbSchema = {
   // Touch swipe on lightbox
   if (lightbox) addSwipe(lightbox, lightboxGoNext, lightboxGoPrev);
 
-  // Keyboard navigation
-  document.addEventListener('keydown', (e) => {
+  // Keyboard navigation (clean up previous handler to avoid duplicates)
+  if (_pdpKeyHandler) document.removeEventListener('keydown', _pdpKeyHandler);
+  _pdpKeyHandler = (e: KeyboardEvent) => {
     if (lightbox?.getAttribute('aria-hidden') === 'false') {
       if (e.key === 'Escape') closeLightbox();
       if (e.key === 'ArrowLeft') lightboxGoPrev();
       if (e.key === 'ArrowRight') lightboxGoNext();
     }
-  });
+  };
+  document.addEventListener('keydown', _pdpKeyHandler);
 
   // ─── Touch swipe on main gallery image ─────
   if (galleryMain && imageUrls.length > 1) {
@@ -1709,25 +1680,6 @@ const breadcrumbSchema = {
     );
     if (addToCartBtn) observer.observe(addToCartBtn);
   }
-
-  // ─── Urgency signals ──────────────────────────
-  const urgencyEl = document.getElementById('pdp-urgency');
-  const urgencyText = document.getElementById('urgency-text');
-  if (urgencyEl && urgencyText) {
-    // Deterministic "people viewing" based on product handle hash
-    const handle = addToCartBtn?.dataset.productHandle || '';
-    let hash = 0;
-    for (let i = 0; i < handle.length; i++) hash = ((hash << 5) - hash + handle.charCodeAt(i)) | 0;
-    const viewers = 3 + Math.abs(hash % 15);
-    const hour = new Date().getHours();
-    // Show different urgency based on time of day
-    if (hour >= 9 && hour <= 21) {
-      urgencyText.innerHTML = `<strong>${viewers} people</strong> are viewing this right now`;
-    } else {
-      urgencyText.innerHTML = `<strong>Selling fast</strong> — popular item this week`;
-    }
-  }
-
 
   // ─── Frequently Bought Together ──────────────
   const fbtAddAll = document.getElementById('fbt-add-all');
@@ -1838,4 +1790,5 @@ const breadcrumbSchema = {
       recentScroll.replaceChildren(frag);
     }
   }
+  }); // end astro:page-load
 </script>

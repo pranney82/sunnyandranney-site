@@ -1,0 +1,379 @@
+---
+import Admin from '@/layouts/Admin.astro';
+import { getSetting } from '@/lib/db';
+import { getProducts } from '@/lib/shopify';
+import type { HeroSetting } from '@/lib/settings';
+
+export const prerender = false;
+
+// Load all products for the picker
+let allProducts: any[] = [];
+try {
+  const result = await getProducts(100);
+  allProducts = result.products;
+} catch (e) {
+  console.error('Failed to fetch products:', e);
+}
+
+// Load current hero setting
+const saved = await getSetting<HeroSetting>('settings:hero');
+const savedImageUrl: string = saved?.imageUrl ?? 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/sunny-ranney-storefront';
+const savedProductHandle: string = saved?.productHandle ?? '';
+
+// Look up the saved product for preview
+const savedProduct = allProducts.find(p => p.handle === savedProductHandle) ?? null;
+---
+
+<Admin title="Hero Section">
+  <div class="admin-header">
+    <div>
+      <h2>Hero Section</h2>
+      <p>Set the hero image and featured product card shown on the home page</p>
+    </div>
+    <div class="admin-unsaved-badge" aria-live="polite">
+      <span class="admin-unsaved-dot"></span>
+      Unsaved changes
+    </div>
+  </div>
+
+  {allProducts.length === 0 ? (
+    <div class="admin-card">
+      <p style="color: var(--admin-text-light);">Could not load products from Shopify. Check your Storefront API token.</p>
+    </div>
+  ) : (
+    <form id="hero-form">
+
+      <!-- ─── Image URL ─────────────────────────────── -->
+      <div class="admin-card hero-image-section">
+        <label class="field-label" for="hero-image-url">Hero Image (Cloudflare Images base URL)</label>
+        <p class="field-hint">Paste the base URL without size params — e.g. <code>https://imagedelivery.net/…/about/sunny-ranney-storefront</code></p>
+        <input
+          id="hero-image-url"
+          name="imageUrl"
+          type="url"
+          class="admin-input"
+          value={savedImageUrl}
+          placeholder="https://imagedelivery.net/…/your-image-id"
+        />
+        <div class="hero-preview" id="hero-img-preview">
+          <img
+            id="preview-img"
+            src={`${savedImageUrl}/w=200,h=250,fit=cover,q=75,format=auto`}
+            alt="Hero preview"
+            width="200"
+            height="250"
+          />
+          <span class="preview-label">Preview</span>
+        </div>
+      </div>
+
+      <!-- ─── Product Picker ───────────────────────── -->
+      <div class="admin-card">
+        <div class="field-label">Featured Product Card</div>
+        <p class="field-hint">Pick one product to show as the floating card over the hero image</p>
+
+        <div class="hero-product-grid" id="hero-product-grid">
+          {allProducts.map((p) => {
+            const img = p.images.edges[0]?.node;
+            const price = p.priceRange.minVariantPrice;
+            const isSelected = p.handle === savedProductHandle;
+            return (
+              <label
+                class:list={['product-pick', { selected: isSelected }]}
+                data-handle={p.handle}
+              >
+                <input
+                  type="radio"
+                  name="productHandle"
+                  value={p.handle}
+                  checked={isSelected}
+                  class="product-pick-radio"
+                />
+                {isSelected && (
+                  <span class="product-pick-badge">✓</span>
+                )}
+                <div class="product-pick-img">
+                  {img
+                    ? <img src={`${img.url}&width=200`} alt={p.title} width="200" height="160" />
+                    : <div class="product-pick-ph">{p.title.charAt(0)}</div>
+                  }
+                </div>
+                <div class="product-pick-info">
+                  <strong>{p.title}</strong>
+                  <span>${parseFloat(price.amount).toFixed(2)}</span>
+                </div>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
+      <div class="admin-save-bar">
+        <button type="submit" class="admin-btn admin-btn--primary" id="save-btn">
+          <span class="btn-spinner"></span>
+          <span class="btn-label">Save Hero Settings</span>
+        </button>
+        <span class="admin-save-hint">
+          <kbd class="admin-kbd">⌘S</kbd> to save
+        </span>
+      </div>
+    </form>
+  )}
+</Admin>
+
+<style>
+  .hero-image-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .field-label {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--admin-text);
+  }
+
+  .field-hint {
+    font-size: 0.8rem;
+    color: var(--admin-text-light);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .field-hint code {
+    background: rgba(0,0,0,0.06);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+    font-size: 0.78rem;
+  }
+
+  .admin-input {
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-radius);
+    font-size: 0.88rem;
+    color: var(--admin-text);
+    background: var(--admin-bg);
+    box-sizing: border-box;
+    transition: border-color 0.15s;
+  }
+
+  .admin-input:focus {
+    outline: none;
+    border-color: var(--admin-accent);
+  }
+
+  .hero-preview {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .hero-preview img {
+    width: 100px;
+    height: 125px;
+    object-fit: cover;
+    border-radius: var(--admin-radius);
+    border: 1px solid var(--admin-border);
+  }
+
+  .preview-label {
+    font-size: 0.72rem;
+    color: var(--admin-text-light);
+    padding-bottom: 0.2rem;
+  }
+
+  /* ─── Product grid (same as trending) ─── */
+  .hero-product-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+  }
+
+  @media (max-width: 1200px) {
+    .hero-product-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+  @media (max-width: 900px) {
+    .hero-product-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .hero-product-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .product-pick {
+    position: relative;
+    background: var(--admin-card);
+    border: 2px solid var(--admin-border);
+    border-radius: var(--admin-radius);
+    cursor: pointer;
+    transition: box-shadow 0.2s, border-color 0.2s;
+    overflow: hidden;
+    display: block;
+    user-select: none;
+  }
+
+  .product-pick:hover {
+    border-color: #ccc;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+
+  .product-pick.selected {
+    border-color: var(--admin-accent, #f59e0b);
+    box-shadow: 0 2px 10px rgba(255, 212, 0, 0.25);
+  }
+
+  .product-pick-radio {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .product-pick-badge {
+    position: absolute;
+    top: 0.4rem;
+    right: 0.4rem;
+    background: var(--admin-accent, #f59e0b);
+    color: #000;
+    font-size: 0.72rem;
+    font-weight: 700;
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+  }
+
+  .product-pick-img {
+    width: 100%;
+    height: 120px;
+    overflow: hidden;
+    background: #f0f0f0;
+  }
+
+  .product-pick-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.2s;
+  }
+
+  .product-pick:hover .product-pick-img img {
+    transform: scale(1.03);
+  }
+
+  .product-pick-ph {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--admin-text-light);
+  }
+
+  .product-pick-info {
+    padding: 0.6rem 0.75rem;
+  }
+
+  .product-pick-info strong {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .product-pick-info span {
+    font-size: 0.78rem;
+    color: var(--admin-text-light);
+    display: block;
+    margin-top: 0.1rem;
+  }
+</style>
+
+<script>
+  const grid = document.getElementById('hero-product-grid')!;
+  const imageInput = document.getElementById('hero-image-url') as HTMLInputElement;
+  const previewImg = document.getElementById('preview-img') as HTMLImageElement;
+
+  // Live image preview
+  let previewTimer: ReturnType<typeof setTimeout>;
+  imageInput?.addEventListener('input', () => {
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(() => {
+      const base = imageInput.value.trim().replace(/\/$/, '');
+      if (base) {
+        previewImg.src = `${base}/w=200,h=250,fit=cover,q=75,format=auto`;
+      }
+    }, 600);
+  });
+
+  // Single-select product picker
+  grid.addEventListener('click', (e) => {
+    const card = (e.target as HTMLElement).closest<HTMLElement>('.product-pick');
+    if (!card) return;
+
+    // Deselect all
+    grid.querySelectorAll<HTMLElement>('.product-pick').forEach(c => {
+      c.classList.remove('selected');
+      c.querySelector<HTMLInputElement>('input[type="radio"]')!.checked = false;
+      c.querySelector('.product-pick-badge')?.remove();
+    });
+
+    // Select clicked
+    card.classList.add('selected');
+    card.querySelector<HTMLInputElement>('input[type="radio"]')!.checked = true;
+    let badge = card.querySelector<HTMLElement>('.product-pick-badge');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'product-pick-badge';
+      badge.textContent = '✓';
+      card.insertBefore(badge, card.firstChild);
+    }
+  });
+
+  document.getElementById('hero-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('save-btn') as HTMLButtonElement;
+    (window as any).setButtonLoading(btn, true);
+
+    const imageUrl = imageInput.value.trim().replace(/\/$/, '');
+    const selectedCard = grid.querySelector<HTMLElement>('.product-pick.selected');
+    const productHandle = selectedCard?.dataset.handle ?? '';
+
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'settings:hero', value: { imageUrl, productHandle } }),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      const data = await res.json();
+      if (data.warning) {
+        (window as any).showToast(`Saved, but site won't update: ${data.warning}`, true);
+      } else {
+        (window as any).showToast('Hero settings saved — site will rebuild shortly');
+      }
+    } catch {
+      (window as any).showToast('Failed to save', true);
+    } finally {
+      (window as any).setButtonLoading(btn, false);
+    }
+  });
+
+  // ⌘S save
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+      e.preventDefault();
+      document.getElementById('hero-form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    }
+  });
+</script>

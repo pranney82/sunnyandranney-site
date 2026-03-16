@@ -17,6 +17,7 @@ const SETTINGS_PATHS: Record<string, string> = {
   'settings:specials': 'src/content/settings/specials.json',
   'settings:contact': 'src/content/settings/contact.json',
   'settings:email-signup': 'src/content/settings/email-signup.json',
+  'settings:trending': 'src/content/settings/trending.json',
 };
 
 // ─── Settings ────────────────────────────────────────────────

@@ -1,4 +1,6 @@
 ---
+import { getCollectionsStatic } from '@/lib/settings';
+
 interface Props {
   announcements?: Array<{ text: string; link?: string; type: string }>;
 }
@@ -6,15 +8,14 @@ interface Props {
 const { announcements = [] } = Astro.props;
 const currentPath = Astro.url.pathname;
 
-const categories = [
-  { href: '/shop?sort=newest', label: 'New Arrivals', highlight: false },
-  { href: '/shop?category=furniture', label: 'Furniture', highlight: false },
-  { href: '/shop?category=decor', label: 'Decor', highlight: false },
-  { href: '/shop?category=lighting', label: 'Lighting', highlight: false },
-  { href: '/shop?category=gifts', label: 'Gifts', highlight: false },
-  { href: '/shop?category=kitchenware', label: 'Kitchenware', highlight: false },
-  { href: '/shop?sale=true', label: 'Sale', highlight: true },
-];
+const collectionSettings = await getCollectionsStatic();
+const navCollections = (collectionSettings ?? [])
+  .filter(c => c.showInNav)
+  .sort((a, b) => a.order - b.order)
+  .map(c => ({
+    href: `/shop?collection=${c.handle}`,
+    label: c.navLabel || c.handle.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+  }));
 
 // Default slides + any admin-configured announcements
 const defaultSlides = [
@@ -143,11 +144,13 @@ const allSlides = [...adminSlides, ...defaultSlides];
       <a href="/shop" data-astro-prefetch class:list={['nav__cat-link', { 'nav__cat-link--active': currentPath === '/shop' || currentPath === '/shop/' }]}>
         All Products
       </a>
-      {categories.map((cat) => (
-        <a href={cat.href} data-astro-prefetch class:list={['nav__cat-link', { 'nav__cat-link--sale': cat.highlight }]}>{cat.label}</a>
+      <a href="/shop?sort=newest" data-astro-prefetch class="nav__cat-link">New Arrivals</a>
+      {navCollections.map((cat) => (
+        <a href={cat.href} data-astro-prefetch class="nav__cat-link">{cat.label}</a>
       ))}
+      <a href="/shop?sale=true" data-astro-prefetch class="nav__cat-link nav__cat-link--sale">Sale</a>
       <span class="nav__cat-divider" role="separator"></span>
-      <a href="/about" data-astro-prefetch class:list={['nav__cat-link', { 'nav__cat-link--active': currentPath === '/about' || currentPath === '/about/' || currentPath === '/about' || currentPath === '/about/' }]}>About Us</a>
+      <a href="/about" data-astro-prefetch class:list={['nav__cat-link', { 'nav__cat-link--active': currentPath === '/about' || currentPath === '/about/' }]}>About Us</a>
     </div>
   </nav>
 </header>

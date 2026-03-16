@@ -21,6 +21,7 @@ const navItems = [
   { href: '/admin/hours', label: 'Store Hours', icon: 'clock' },
   { href: '/admin/collections', label: 'Collections', icon: 'shopping-bag' },
   { href: '/admin/specials', label: 'Specials', icon: 'star' },
+  { href: '/admin/trending', label: 'Trending Now', icon: 'trending' },
   { href: '/admin/contact', label: 'Contact Info', icon: 'map-pin' },
   { href: '/admin/email-signup', label: 'Email Signup', icon: 'mail' },
 ];
@@ -892,12 +893,13 @@ const navItems = [
           </a>
         ))}
         <div class="admin-nav-section">Store</div>
-        {navItems.slice(1, 4).map((item) => (
+        {navItems.slice(1, 5).map((item) => (
           <a href={item.href} class:list={[{ active: currentPath === item.href || currentPath.startsWith(item.href + '/') }]}>
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               {item.icon === 'clock' && <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>}
               {item.icon === 'shopping-bag' && <><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></>}
               {item.icon === 'star' && <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>}
+              {item.icon === 'trending' && <><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></>}
             </svg>
             {item.label}
           </a>
@@ -1014,6 +1016,7 @@ const navItems = [
         { label: 'Store Hours', href: '/admin/hours', icon: 'clock' },
         { label: 'Collections', href: '/admin/collections', icon: 'bag' },
         { label: 'Specials & Announcements', href: '/admin/specials', icon: 'star' },
+        { label: 'Trending Now', href: '/admin/trending', icon: 'trending' },
         { label: 'Contact Info', href: '/admin/contact', icon: 'pin' },
         { label: 'Email Signup', href: '/admin/email-signup', icon: 'mail' },
       ];

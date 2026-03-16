@@ -1433,16 +1433,24 @@ const itemListSchema = hasShopify ? {
 <script>
   import { wishlist } from '@/lib/cart-store.js';
 
+  // Clean up document-level listeners on re-init (View Transitions)
+  let _shopKeyHandler: ((e: KeyboardEvent) => void) | null = null;
+  let _shopSwapHandler: (() => void) | null = null;
+
+  document.addEventListener('astro:page-load', () => {
   // ─── Hide nav category bar on mobile (shop has its own filter pills) ──
   const mainNav = document.getElementById('main-nav');
+  if (!mainNav && !document.getElementById('shop-grid')) return;
   if (mainNav) {
     mainNav.classList.add('nav--shop-active');
   }
 
   // Clean up nav--shop-active when navigating away (nav uses transition:persist)
-  document.addEventListener('astro:before-swap', () => {
+  if (_shopSwapHandler) document.removeEventListener('astro:before-swap', _shopSwapHandler);
+  _shopSwapHandler = () => {
     mainNav?.classList.remove('nav--shop-active');
-  });
+  };
+  document.addEventListener('astro:before-swap', _shopSwapHandler, { once: true });
 
   // ─── DOM refs ──────────────────────────────────
   const grid = document.getElementById('shop-grid');
@@ -1865,9 +1873,11 @@ const itemListSchema = hasShopify ? {
 
   qvOverlay?.addEventListener('click', closeQuickView);
   qvClose?.addEventListener('click', closeQuickView);
-  document.addEventListener('keydown', (e) => {
+  if (_shopKeyHandler) document.removeEventListener('keydown', _shopKeyHandler);
+  _shopKeyHandler = (e: KeyboardEvent) => {
     if (e.key === 'Escape' && qvModal?.getAttribute('aria-hidden') === 'false') closeQuickView();
-  });
+  };
+  document.addEventListener('keydown', _shopKeyHandler);
 
   // Quick view image dots
   qvThumbs?.addEventListener('click', (e) => {
@@ -1988,4 +1998,5 @@ const itemListSchema = hasShopify ? {
   // ─── Initial render ─────────────────────────
   applyAll();
   observeCards();
+  }); // end astro:page-load
 </script>

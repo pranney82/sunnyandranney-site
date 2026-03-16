@@ -2,6 +2,7 @@
 import Admin from '@/layouts/Admin.astro';
 import { getSetting } from '@/lib/db';
 import { env } from 'cloudflare:workers';
+import type { TrendingSetting, HeroSetting } from '@/lib/settings';
 
 export const prerender = false;
 
@@ -11,19 +12,23 @@ const settingKeys = [
   'settings:specials',
   'settings:contact',
   'settings:email-signup',
+  'settings:trending',
+  'settings:hero',
 ] as const;
 
-const [hours, collections, specials, contact, emailSignup] = await Promise.all([
+const [hours, collections, specials, contact, emailSignup, trending, hero] = await Promise.all([
   getSetting('settings:hours'),
   getSetting<Array<{ handle: string; enabled: boolean; order: number }>>('settings:collections'),
   getSetting<{ announcements?: Array<{ active: boolean }> }>('settings:specials'),
   getSetting('settings:contact'),
   getSetting<{ constantContactListId?: string }>('settings:email-signup'),
+  getSetting<TrendingSetting>('settings:trending'),
+  getSetting<HeroSetting>('settings:hero'),
 ]);
 
 // Fetch updated_at timestamps
 const timestampRows = await env.DB
-  .prepare('SELECT key, updated_at FROM settings WHERE key IN (?, ?, ?, ?, ?)')
+  .prepare('SELECT key, updated_at FROM settings WHERE key IN (?, ?, ?, ?, ?, ?, ?)')
   .bind(...settingKeys)
   .all<{ key: string; updated_at: string }>();
 
@@ -99,6 +104,18 @@ const stats = [
       : 'admin-status--neutral',
     updated: timeAgo(timestamps['settings:email-signup']),
   },
+  {
+    label: 'Trending Now',
+    value: trending && trending.handles.length > 0 ? `${trending.handles.length} products` : 'Auto',
+    status: trending && trending.handles.length > 0 ? 'admin-status--success' : 'admin-status--neutral',
+    updated: timeAgo(timestamps['settings:trending']),
+  },
+  {
+    label: 'Hero Section',
+    value: hero?.productHandle ? 'Configured' : 'Default',
+    status: hero?.productHandle ? 'admin-status--success' : 'admin-status--neutral',
+    updated: timeAgo(timestamps['settings:hero']),
+  },
 ];
 
 const today = new Date().toLocaleDateString('en-US', {
@@ -126,6 +143,18 @@ const storeLinks = [
     title: 'Specials & Announcements',
     description: 'Manage promos, banners, and featured items',
     icon: 'star',
+  },
+  {
+    href: '/admin/trending',
+    title: 'Trending Now',
+    description: 'Pick which products appear in the Trending Now section on the home page',
+    icon: 'trending',
+  },
+  {
+    href: '/admin/hero',
+    title: 'Hero Section',
+    description: 'Set the hero image and featured product card on the home page',
+    icon: 'image',
   },
 ];
 
@@ -184,6 +213,16 @@ const settingsLinks = [
             {link.icon === 'star' && (
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            )}
+            {link.icon === 'trending' && (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+              </svg>
+            )}
+            {link.icon === 'image' && (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
               </svg>
             )}
           </div>

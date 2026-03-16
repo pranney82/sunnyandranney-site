@@ -1,0 +1,352 @@
+---
+import Admin from '@/layouts/Admin.astro';
+import { getSetting } from '@/lib/db';
+import { getProducts } from '@/lib/shopify';
+import type { TrendingSetting } from '@/lib/settings';
+
+export const prerender = false;
+
+const MAX_PICKS = 8;
+
+// Load all products for the picker
+let allProducts: any[] = [];
+try {
+  const result = await getProducts(100);
+  allProducts = result.products;
+} catch (e) {
+  console.error('Failed to fetch products:', e);
+}
+
+// Load current trending setting
+const saved = await getSetting<TrendingSetting>('settings:trending');
+const savedHandles: string[] = saved?.handles ?? [];
+---
+
+<Admin title="Trending Now">
+  <div class="admin-header">
+    <div>
+      <h2>Trending Now</h2>
+      <p>Pick up to {MAX_PICKS} products to feature in the "Trending Now" section on the home page</p>
+    </div>
+    <div class="admin-unsaved-badge" aria-live="polite">
+      <span class="admin-unsaved-dot"></span>
+      Unsaved changes
+    </div>
+  </div>
+
+  {allProducts.length === 0 ? (
+    <div class="admin-card">
+      <p style="color: var(--admin-text-light);">Could not load products from Shopify. Check your Storefront API token.</p>
+    </div>
+  ) : (
+    <form id="trending-form">
+      <div class="trending-toolbar">
+        <span class="trending-count" id="trending-count">
+          {savedHandles.length} of {MAX_PICKS} selected
+        </span>
+        <button type="button" class="admin-btn admin-btn--outline" id="clear-btn">Clear All</button>
+      </div>
+
+      <div class="trending-grid" id="trending-grid">
+        {allProducts.map((p) => {
+          const img = p.images.edges[0]?.node;
+          const price = p.priceRange.minVariantPrice;
+          const isSelected = savedHandles.includes(p.handle);
+          const selOrder = savedHandles.indexOf(p.handle);
+          return (
+            <label
+              class:list={['product-pick', { selected: isSelected }]}
+              data-handle={p.handle}
+              data-order={isSelected ? selOrder : 99}
+            >
+              <input
+                type="checkbox"
+                name="handle"
+                value={p.handle}
+                checked={isSelected}
+                class="product-pick-checkbox"
+              />
+              {isSelected && (
+                <span class="product-pick-badge">{selOrder + 1}</span>
+              )}
+              <div class="product-pick-img">
+                {img
+                  ? <img src={`${img.url}&width=200`} alt={p.title} width="200" height="160" />
+                  : <div class="product-pick-ph">{p.title.charAt(0)}</div>
+                }
+              </div>
+              <div class="product-pick-info">
+                <strong>{p.title}</strong>
+                <span>${parseFloat(price.amount).toFixed(2)}</span>
+              </div>
+            </label>
+          );
+        })}
+      </div>
+
+      <div class="admin-save-bar">
+        <button type="submit" class="admin-btn admin-btn--primary" id="save-btn">
+          <span class="btn-spinner"></span>
+          <span class="btn-label">Save Trending Products</span>
+        </button>
+        <span class="admin-save-hint">
+          <kbd class="admin-kbd">⌘S</kbd> to save
+        </span>
+      </div>
+    </form>
+  )}
+</Admin>
+
+<style>
+  .trending-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .trending-count {
+    font-size: 0.82rem;
+    color: var(--admin-text-light);
+    font-weight: 500;
+  }
+
+  .trending-count.at-max {
+    color: var(--admin-accent, #f59e0b);
+    font-weight: 600;
+  }
+
+  .trending-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 1200px) {
+    .trending-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+  @media (max-width: 900px) {
+    .trending-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .trending-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .product-pick {
+    position: relative;
+    background: var(--admin-card);
+    border: 2px solid var(--admin-border);
+    border-radius: var(--admin-radius);
+    cursor: pointer;
+    transition: box-shadow 0.2s, border-color 0.2s;
+    overflow: hidden;
+    display: block;
+    user-select: none;
+  }
+
+  .product-pick:hover {
+    border-color: #ccc;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+
+  .product-pick.selected {
+    border-color: var(--admin-accent, #f59e0b);
+    box-shadow: 0 2px 10px rgba(255, 212, 0, 0.25);
+  }
+
+  .product-pick-checkbox {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .product-pick-badge {
+    position: absolute;
+    top: 0.4rem;
+    right: 0.4rem;
+    background: var(--admin-accent, #f59e0b);
+    color: #000;
+    font-size: 0.72rem;
+    font-weight: 700;
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+  }
+
+  .product-pick-img {
+    width: 100%;
+    height: 120px;
+    overflow: hidden;
+    background: #f0f0f0;
+  }
+
+  .product-pick-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.2s;
+  }
+
+  .product-pick:hover .product-pick-img img {
+    transform: scale(1.03);
+  }
+
+  .product-pick-ph {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--admin-text-light);
+  }
+
+  .product-pick-info {
+    padding: 0.6rem 0.75rem;
+  }
+
+  .product-pick-info strong {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .product-pick-info span {
+    font-size: 0.78rem;
+    color: var(--admin-text-light);
+    display: block;
+    margin-top: 0.1rem;
+  }
+</style>
+
+<script>
+  const MAX_PICKS = 8;
+  const grid = document.getElementById('trending-grid')!;
+
+  function getSelected(): HTMLElement[] {
+    return [...grid.querySelectorAll<HTMLElement>('.product-pick.selected')]
+      .sort((a, b) => parseInt(a.dataset.order || '99') - parseInt(b.dataset.order || '99'));
+  }
+
+  function updateBadges() {
+    const selected = getSelected();
+    // Reset all badges first
+    grid.querySelectorAll<HTMLElement>('.product-pick').forEach(card => {
+      let badge = card.querySelector<HTMLElement>('.product-pick-badge');
+      const cb = card.querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+      if (card.classList.contains('selected')) {
+        const idx = selected.indexOf(card);
+        if (!badge) {
+          badge = document.createElement('span');
+          badge.className = 'product-pick-badge';
+          card.insertBefore(badge, card.firstChild);
+        }
+        badge.textContent = String(idx + 1);
+      } else {
+        badge?.remove();
+      }
+    });
+  }
+
+  function updateCount() {
+    const n = grid.querySelectorAll('.product-pick.selected').length;
+    const el = document.getElementById('trending-count')!;
+    el.textContent = `${n} of ${MAX_PICKS} selected`;
+    el.classList.toggle('at-max', n >= MAX_PICKS);
+  }
+
+  grid.addEventListener('click', (e) => {
+    const card = (e.target as HTMLElement).closest<HTMLElement>('.product-pick');
+    if (!card) return;
+
+    const cb = card.querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+    const isSelected = card.classList.contains('selected');
+    const totalSelected = grid.querySelectorAll('.product-pick.selected').length;
+
+    if (!isSelected && totalSelected >= MAX_PICKS) {
+      // Can't select more — flash the count
+      const el = document.getElementById('trending-count')!;
+      el.style.color = 'var(--admin-error, #dc2626)';
+      setTimeout(() => el.style.color = '', 800);
+      return;
+    }
+
+    card.classList.toggle('selected', !isSelected);
+    cb.checked = !isSelected;
+
+    if (!isSelected) {
+      // New selection gets highest order
+      const currentMax = Math.max(
+        ...([...grid.querySelectorAll<HTMLElement>('.product-pick.selected')]
+          .map(c => parseInt(c.dataset.order || '-1'))),
+        -1
+      );
+      card.dataset.order = String(currentMax + 1);
+    } else {
+      card.dataset.order = '99';
+    }
+
+    updateBadges();
+    updateCount();
+  });
+
+  document.getElementById('clear-btn')?.addEventListener('click', () => {
+    grid.querySelectorAll<HTMLElement>('.product-pick').forEach(card => {
+      card.classList.remove('selected');
+      const cb = card.querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+      cb.checked = false;
+      card.dataset.order = '99';
+    });
+    updateBadges();
+    updateCount();
+  });
+
+  document.getElementById('trending-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('save-btn') as HTMLButtonElement;
+    (window as any).setButtonLoading(btn, true);
+
+    const selected = getSelected();
+    const handles = selected.map(card => card.dataset.handle!);
+
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'settings:trending', value: { handles } }),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      const data = await res.json();
+      if (data.warning) {
+        (window as any).showToast(`Saved, but site won't update: ${data.warning}`, true);
+      } else {
+        (window as any).showToast('Trending products saved — site will rebuild shortly');
+      }
+    } catch {
+      (window as any).showToast('Failed to save', true);
+    } finally {
+      (window as any).setButtonLoading(btn, false);
+    }
+  });
+
+  // ⌘S save
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+      e.preventDefault();
+      document.getElementById('trending-form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    }
+  });
+
+  // Initialize
+  updateCount();
+</script>
