@@ -17,6 +17,10 @@ const navCollections = (collectionSettings ?? [])
     label: c.navLabel || c.handle.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
   }));
 
+const enabledCollectionHandles = (collectionSettings ?? [])
+  .filter(c => c.enabled)
+  .map(c => c.handle);
+
 // Default slides + any admin-configured announcements
 const defaultSlides = [
   { html: '100% of profits support <strong>Sunshine on a Ranney Day</strong> — home makeovers for kids with special needs' },
@@ -671,6 +675,10 @@ const allSlides = [...adminSlides, ...defaultSlides];
   }
 </style>
 
+<script is:inline define:vars={{ enabledCollectionHandles }}>
+  window.__ENABLED_COLLECTIONS = enabledCollectionHandles;
+</script>
+
 <script>
   // ─── Dynamic nav height → CSS variable (drives main margin-top) ─────
   const nav = document.getElementById('main-nav');
@@ -782,18 +790,49 @@ const allSlides = [...adminSlides, ...defaultSlides];
       const domain = (window as any).__SHOPIFY_DOMAIN || 'sunnyandranney.myshopify.com';
       const token = (window as any).__SHOPIFY_TOKEN || '';
       if (!token) return [];
+
+      const enabledHandles: string[] = (window as any).__ENABLED_COLLECTIONS || [];
+
+      // Build GraphQL aliases for each enabled collection so we only get products
+      // that have a pre-built static page.
+      const productFragment = `{ title handle productType priceRange { minVariantPrice { amount } } images(first: 1) { edges { node { url } } } }`;
+      let gqlQuery: string;
+      if (enabledHandles.length > 0) {
+        const aliases = enabledHandles
+          .map((h, i) => `c${i}: collection(handle: ${JSON.stringify(h)}) { products(first: 50, sortKey: BEST_SELLING) { edges { node ${productFragment} } } }`)
+          .join(' ');
+        gqlQuery = `{ ${aliases} }`;
+      } else {
+        gqlQuery = `{ products(first: 50, sortKey: BEST_SELLING) { edges { node ${productFragment} } } }`;
+      }
+
       const res = await fetch(`https://${domain}/api/2025-01/graphql.json`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Shopify-Storefront-Access-Token': token,
         },
-        body: JSON.stringify({
-          query: `{ products(first: 50, sortKey: BEST_SELLING) { edges { node { title handle productType priceRange { minVariantPrice { amount } } images(first: 1) { edges { node { url } } } } } } }`
-        }),
+        body: JSON.stringify({ query: gqlQuery }),
       });
       const json = await res.json();
-      productIndex = (json.data?.products?.edges || []).map((e: any) => ({
+
+      const seen = new Set<string>();
+      const allEdges: any[] = [];
+      if (enabledHandles.length > 0) {
+        for (let i = 0; i < enabledHandles.length; i++) {
+          const edges = json.data?.[`c${i}`]?.products?.edges || [];
+          for (const e of edges) {
+            if (!seen.has(e.node.handle)) {
+              seen.add(e.node.handle);
+              allEdges.push(e);
+            }
+          }
+        }
+      } else {
+        allEdges.push(...(json.data?.products?.edges || []));
+      }
+
+      productIndex = allEdges.map((e: any) => ({
         title: e.node.title,
         handle: e.node.handle,
         price: e.node.priceRange.minVariantPrice.amount,
