@@ -23,7 +23,7 @@ const enabledCollectionHandles = (collectionSettings ?? [])
 
 // Default slides + any admin-configured announcements
 const defaultSlides = [
-  { html: '100% of profits support <strong>Sunshine on a Ranney Day</strong> — home makeovers for kids with special needs' },
+  { html: '100% of profits support <strong>Sunshine on a Ranney Day</strong> — <a href="/about" class="nav__banner-link">Our Story</a>' },
   { html: 'LOCAL PICKUP ONLY — <a href="/shop" class="nav__banner-link">Shop Now</a>' },
   { html: 'Visit our Roswell showroom — Tue–Sat, 10am–6pm' },
 ];
@@ -59,6 +59,9 @@ const allSlides = [...adminSlides, ...defaultSlides];
       />
     </a>
     <div class="nav__mobile-actions">
+      <a href="/about" class:list={['nav__mission-link nav__mission-link--mobile', { 'nav__mission-link--active': currentPath === '/about' || currentPath === '/about/' }]}>
+        Our Mission
+      </a>
       <button class="nav__icon-btn nav__search-toggle" aria-label="Search products" id="mobile-search-toggle">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </button>
@@ -130,6 +133,9 @@ const allSlides = [...adminSlides, ...defaultSlides];
       </div>
 
       <div class="nav__actions">
+        <a href="/about" data-astro-prefetch class:list={['nav__mission-link', { 'nav__mission-link--active': currentPath === '/about' || currentPath === '/about/' }]}>
+          Our Mission
+        </a>
         <button class="nav__icon-btn nav__cart" aria-label="Shopping cart" id="cart-trigger">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
@@ -153,8 +159,6 @@ const allSlides = [...adminSlides, ...defaultSlides];
         <a href={cat.href} data-astro-prefetch class="nav__cat-link">{cat.label}</a>
       ))}
       <a href="/shop?sale=true" data-astro-prefetch class="nav__cat-link nav__cat-link--sale">Sale</a>
-      <span class="nav__cat-divider" role="separator"></span>
-      <a href="/about" data-astro-prefetch class:list={['nav__cat-link', { 'nav__cat-link--active': currentPath === '/about' || currentPath === '/about/' }]}>About Us</a>
     </div>
   </nav>
 </header>
@@ -561,6 +565,59 @@ const allSlides = [...adminSlides, ...defaultSlides];
     color: var(--color-charcoal);
   }
 
+  /* ─── Our Mission link ──── */
+  .nav__mission-link {
+    display: none;
+  }
+
+  .nav__mission-link--mobile {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--color-slate);
+    border: 1.5px solid var(--color-cyan);
+    border-radius: 100px;
+    white-space: nowrap;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .nav__mission-link--mobile:hover,
+  .nav__mission-link--mobile.nav__mission-link--active {
+    border-color: var(--color-gold);
+    background: var(--color-gold);
+    color: var(--color-charcoal);
+  }
+
+  @media (min-width: 768px) {
+    .nav__mission-link {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.4rem 0.9rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-slate);
+      border: 1.5px solid var(--color-cyan);
+      border-radius: 100px;
+      white-space: nowrap;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+      flex-shrink: 0;
+    }
+
+    .nav__mission-link:hover,
+    .nav__mission-link--active {
+      border-color: var(--color-gold);
+      background: var(--color-gold);
+      color: var(--color-charcoal);
+    }
+  }
+
   /* ─── Actions ──────────────────────────── */
   .nav__actions {
     display: flex;
@@ -603,6 +660,16 @@ const allSlides = [...adminSlides, ...defaultSlides];
     overflow-x: auto;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
+    /* Fade right edge to hint scrollable content on mobile */
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 48px), transparent 100%);
+    mask-image: linear-gradient(to right, black calc(100% - 48px), transparent 100%);
+  }
+
+  @media (min-width: 768px) {
+    .nav__categories {
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
   }
 
   .nav__categories::-webkit-scrollbar { display: none; }
@@ -982,7 +1049,7 @@ const allSlides = [...adminSlides, ...defaultSlides];
         slides[currentSlide].classList.remove('nav__banner-slide--active');
         currentSlide = (currentSlide + 1) % slides.length;
         slides[currentSlide].classList.add('nav__banner-slide--active');
-      }, 4000);
+      }, 8000);
     }
   }
   // Defer banner start — not critical for first paint
@@ -1033,6 +1100,11 @@ const allSlides = [...adminSlides, ...defaultSlides];
       }
 
       link.classList.toggle('nav__cat-link--active', isActive);
+      if (isActive) {
+        link.setAttribute('aria-current', 'page');
+      } else {
+        link.removeAttribute('aria-current');
+      }
     });
   }
 
