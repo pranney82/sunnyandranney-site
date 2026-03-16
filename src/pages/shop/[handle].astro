@@ -1312,10 +1312,10 @@ const breadcrumbSchema = {
   const stickyAdd = document.getElementById('sticky-add');
   const stickyPrice = document.getElementById('sticky-price');
 
-  // ─── CF Image Resizing for client-side image swaps ──
   function cfImg(url: string, width = 900) {
     if (!url || !url.includes('cdn.shopify.com')) return url;
-    return `${window.location.origin}/cdn-cgi/image/width=${width},quality=80,fit=cover,format=auto/${url}`;
+    const sep = url.includes('?') ? '&' : '?';
+    return `${url}${sep}width=${width}&crop=center`;
   }
 
   // ─── Image data ─────────────────────────────

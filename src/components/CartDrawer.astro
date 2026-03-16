@@ -469,9 +469,9 @@
     imgLink.addEventListener('click', () => window.closeCart?.());
     if (item.image) {
       const img = document.createElement('img');
-      // CF Images: AVIF/WebP auto-format, 160px for retina thumbnails
       if (item.image.includes('cdn.shopify.com')) {
-        img.src = `${window.location.origin}/cdn-cgi/image/width=160,quality=80,fit=cover,format=auto/${item.image}`;
+        const sep = item.image.includes('?') ? '&' : '?';
+        img.src = `${item.image}${sep}width=160&crop=center`;
       } else {
         img.src = item.image;
       }

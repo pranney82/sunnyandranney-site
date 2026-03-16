@@ -1,11 +1,7 @@
-// Cloudflare Image Resizing utility
-// Routes images through CF's edge for AVIF/WebP auto-format, smart caching, and responsive transforms
-// Uses /cdn-cgi/image/ which works on any Cloudflare-proxied domain
-//
-// Falls back to Shopify CDN resizing when CF Image Resizing is unavailable (local dev)
-
-const SITE_DOMAIN = import.meta.env.SITE || 'https://sunnyandranney.com';
-const USE_CF_IMAGES = import.meta.env.PROD !== false; // Enable in production
+// Shopify image resizing utility
+// CF Image Resizing (/cdn-cgi/image/) is NOT supported on pages.dev domains —
+// it requires a Cloudflare zone with Image Resizing (Business/Enterprise + custom domain).
+// Shopify's own CDN handles resizing via ?width=xxx query params.
 
 interface ImageOptions {
   width?: number;
@@ -17,40 +13,14 @@ interface ImageOptions {
 }
 
 /**
- * Generate a Cloudflare Image Resizing URL.
- * In production, proxies any image URL through CF edge for:
- *   - Automatic AVIF/WebP based on Accept header
- *   - Edge caching (no origin round-trip after first request)
- *   - Consistent sizing and quality
- *
- * In dev, falls back to Shopify CDN params.
+ * Return a resized Shopify CDN URL using Shopify's native query params.
+ * Works everywhere — no Cloudflare zone or plan required.
  */
 export function cfImage(url: string, opts: ImageOptions = {}): string {
   if (!url) return url;
 
-  const {
-    width,
-    height,
-    quality = 80,
-    fit = 'cover',
-    gravity = 'auto',
-    format = 'auto',
-  } = opts;
+  const { width, height } = opts;
 
-  // In production, use CF Image Resizing
-  if (USE_CF_IMAGES && url.includes('cdn.shopify.com')) {
-    const parts: string[] = [];
-    if (width) parts.push(`width=${width}`);
-    if (height) parts.push(`height=${height}`);
-    parts.push(`quality=${quality}`);
-    parts.push(`fit=${fit}`);
-    if (gravity !== 'center') parts.push(`gravity=${gravity}`);
-    parts.push(`format=${format}`);
-
-    return `${SITE_DOMAIN}/cdn-cgi/image/${parts.join(',')}/${url}`;
-  }
-
-  // Dev fallback: use Shopify CDN params
   if (url.includes('cdn.shopify.com')) {
     const params = new URLSearchParams();
     if (width) params.set('width', String(width));

@@ -1792,12 +1792,11 @@ const itemListSchema = hasShopify ? {
   let qvImages: string[] = [];
   let qvCurrentImage = 0;
 
-  // CF Images for Quick View (AVIF/WebP auto-format)
   function qvOptimize(url: string) {
     if (!url) return url;
-    // In production, route through CF Image Resizing
     if (url.includes('cdn.shopify.com')) {
-      return `${window.location.origin}/cdn-cgi/image/width=600,quality=80,fit=cover,format=auto/${url}`;
+      const sep = url.includes('?') ? '&' : '?';
+      return `${url}${sep}width=600&crop=center`;
     }
     return url;
   }
