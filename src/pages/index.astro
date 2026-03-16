@@ -1,7 +1,8 @@
 ---
 import Base from '@/layouts/Base.astro';
 import GoogleReviews from '@/components/GoogleReviews.astro';
-import { getProducts, getCollections, shopifyImageUrl, shopifyImageSrcset } from '@/lib/shopify';
+import { getProducts, getCollections } from '@/lib/shopify';
+import { cfImage, cfSrcset } from '@/lib/images';
 import { getCollectionsStatic, type CollectionSetting } from '@/lib/settings';
 
 let products: any[] = [];
@@ -95,7 +96,7 @@ const featuredProducts = products.slice(0, 8);
             <a href={`/shop/${fp.handle}`} class="hero__product-card" data-astro-prefetch>
               {fpImg && (
                 <img
-                  src={shopifyImageUrl(fpImg.url, 200)}
+                  src={cfImage(fpImg.url, { width: 200 })}
                   alt={fp.title}
                   width="80"
                   height="80"
@@ -136,25 +137,33 @@ const featuredProducts = products.slice(0, 8);
   </section>
 
   <!-- ═══ PROMISE STRIP ═══ -->
-  <section class="promise">
+  <section class="promise" aria-label="Why shop with us">
     <div class="container promise__inner">
       <div class="promise__item">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 3 20 16 16 16"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-        <div>
+        <div class="promise__icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 3 20 16 16 16"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        </div>
+        <div class="promise__text">
           <span class="promise__title">Local Delivery</span>
           <span class="promise__desc">Metro Atlanta white-glove service</span>
         </div>
       </div>
+      <div class="promise__sep" aria-hidden="true"></div>
       <div class="promise__item">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-        <div>
+        <div class="promise__icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        </div>
+        <div class="promise__text">
           <span class="promise__title">Roswell Pickup</span>
           <span class="promise__desc">Ready same or next day</span>
         </div>
       </div>
+      <div class="promise__sep" aria-hidden="true"></div>
       <div class="promise__item">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        <div>
+        <div class="promise__icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div class="promise__text">
           <span class="promise__title">Complimentary Design Help</span>
           <span class="promise__desc">Our team helps you get it right</span>
         </div>
@@ -180,8 +189,8 @@ const featuredProducts = products.slice(0, 8);
                 <div class="collection-tile__image">
                   {imgUrl ? (
                     <img
-                      src={shopifyImageUrl(imgUrl, 500, 500)}
-                      srcset={shopifyImageSrcset(imgUrl, [250, 500])}
+                      src={cfImage(imgUrl, { width: 500, height: 500 })}
+                      srcset={cfSrcset(imgUrl, [250, 500])}
                       sizes="(max-width: 480px) 45vw, (max-width: 768px) 30vw, 200px"
                       alt={colImage?.altText || col.title}
                       width="500"
@@ -292,8 +301,8 @@ const featuredProducts = products.slice(0, 8);
                   {image ? (
                     <>
                       <img
-                        src={shopifyImageUrl(image.url, 900)}
-                        srcset={shopifyImageSrcset(image.url, [450, 900])}
+                        src={cfImage(image.url, { width: 900 })}
+                        srcset={cfSrcset(image.url, [450, 900])}
                         sizes="(max-width: 768px) 90vw, 45vw"
                         alt=""
                         width={image.width}
@@ -305,8 +314,8 @@ const featuredProducts = products.slice(0, 8);
                       />
                       {image2 && (
                         <img
-                          src={shopifyImageUrl(image2.url, 900)}
-                          srcset={shopifyImageSrcset(image2.url, [450, 900])}
+                          src={cfImage(image2.url, { width: 900 })}
+                          srcset={cfSrcset(image2.url, [450, 900])}
                           sizes="(max-width: 768px) 90vw, 45vw"
                           alt=""
                           width={image2.width}
@@ -367,8 +376,8 @@ const featuredProducts = products.slice(0, 8);
                     {image ? (
                       <>
                         <img
-                          src={shopifyImageUrl(image.url, 600)}
-                          srcset={shopifyImageSrcset(image.url, [300, 600])}
+                          src={cfImage(image.url, { width: 600 })}
+                          srcset={cfSrcset(image.url, [300, 600])}
                           sizes="(max-width: 768px) 50vw, 25vw"
                           alt=""
                           width={image.width}
@@ -379,8 +388,8 @@ const featuredProducts = products.slice(0, 8);
                         />
                         {image2 && (
                           <img
-                            src={shopifyImageUrl(image2.url, 600)}
-                            srcset={shopifyImageSrcset(image2.url, [300, 600])}
+                            src={cfImage(image2.url, { width: 600 })}
+                            srcset={cfSrcset(image2.url, [300, 600])}
                             sizes="(max-width: 768px) 50vw, 25vw"
                             alt=""
                             width={image2.width}
@@ -482,8 +491,8 @@ const featuredProducts = products.slice(0, 8);
                   <span class="product-card__badge">Sale</span>
                   {image && (
                     <img
-                      src={shopifyImageUrl(image.url, 400)}
-                      srcset={shopifyImageSrcset(image.url, [220, 400])}
+                      src={cfImage(image.url, { width: 400 })}
+                      srcset={cfSrcset(image.url, [220, 400])}
                       sizes="220px"
                       alt=""
                       width={image.width}
@@ -855,55 +864,84 @@ const featuredProducts = products.slice(0, 8);
   /* ─── Promise Strip ──────────────────── */
   .promise {
     background: var(--color-warm-white);
-    padding: clamp(1.5rem, 3vh, 2.5rem) 0;
+    padding: clamp(2rem, 4vh, 3rem) 0;
+    border-top: 1px solid var(--color-cream-dark);
     border-bottom: 1px solid var(--color-cream-dark);
   }
 
   .promise__inner {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     justify-content: center;
-    gap: clamp(1.5rem, 4vw, 3.5rem);
-    flex-wrap: wrap;
+    gap: 0;
+  }
+
+  .promise__sep {
+    width: 1px;
+    background: var(--color-cream-dark);
+    flex-shrink: 0;
+    margin: 0.25rem 0;
   }
 
   .promise__item {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    flex: 0 0 auto;
+    gap: 1rem;
+    flex: 1;
+    max-width: 300px;
+    padding: 0.5rem clamp(1.25rem, 3vw, 2.5rem);
   }
 
-  .promise__item svg {
-    color: var(--color-cyan);
+  .promise__icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(74, 144, 173, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
+    color: var(--color-cyan);
   }
 
-  .promise__item div {
+  .promise__text {
     display: flex;
     flex-direction: column;
+    gap: 0.2rem;
   }
 
   .promise__title {
     font-family: var(--font-display);
-    font-size: 0.88rem;
+    font-size: 0.9rem;
     font-weight: 600;
     color: var(--color-charcoal);
     line-height: 1.2;
+    letter-spacing: 0.01em;
   }
 
   .promise__desc {
-    font-size: 0.75rem;
+    font-size: 0.76rem;
     color: var(--color-stone);
     line-height: 1.4;
   }
 
-  @media (max-width: 639px) {
+  /* Mobile: vertical stack, icon left-aligned, full-width items */
+  @media (max-width: 679px) {
     .promise__inner {
       flex-direction: column;
-      align-items: flex-start;
-      gap: 1rem;
-      padding-left: 0.5rem;
+      align-items: stretch;
+      gap: 0;
+    }
+
+    .promise__sep {
+      width: auto;
+      height: 1px;
+      margin: 0 1rem;
+    }
+
+    .promise__item {
+      max-width: 100%;
+      padding: 1rem 0.5rem;
     }
   }
 

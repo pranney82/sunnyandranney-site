@@ -58,7 +58,8 @@ const data = config || defaults;
             </select>
           </div>
           <button type="button" class="admin-btn admin-btn--outline" id="fetch-lists-btn" style="margin-bottom: 1rem;">
-            Fetch Lists
+            <span class="btn-spinner"></span>
+            <span class="btn-label">Fetch Lists</span>
           </button>
         </div>
         <span class="fetch-status" id="fetch-status" style="font-size: 0.8rem; color: var(--admin-text-light); margin-top: 0.25rem; display: block;"></span>
@@ -66,7 +67,10 @@ const data = config || defaults;
     </div>
 
     <div class="admin-save-bar">
-      <button type="submit" class="admin-btn admin-btn--primary" id="save-btn">Save Email Settings</button>
+      <button type="submit" class="admin-btn admin-btn--primary" id="save-btn">
+        <span class="btn-spinner"></span>
+        <span class="btn-label">Save Email Settings</span>
+      </button>
       <span class="admin-save-hint">
         <kbd class="admin-kbd">⌘S</kbd> to save
       </span>
@@ -88,8 +92,7 @@ const data = config || defaults;
       return;
     }
 
-    fetchBtn.disabled = true;
-    fetchBtn.textContent = 'Fetching...';
+    (window as any).setButtonLoading(fetchBtn, true);
     fetchStatus.textContent = '';
 
     try {
@@ -120,8 +123,7 @@ const data = config || defaults;
       fetchStatus.textContent = err.message || 'Failed to fetch lists';
       fetchStatus.style.color = 'var(--admin-danger)';
     } finally {
-      fetchBtn.disabled = false;
-      fetchBtn.textContent = 'Fetch Lists';
+      (window as any).setButtonLoading(fetchBtn, false);
     }
   });
 
@@ -129,8 +131,7 @@ const data = config || defaults;
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('save-btn') as HTMLButtonElement;
-    btn.disabled = true;
-    btn.textContent = 'Saving...';
+    (window as any).setButtonLoading(btn, true);
 
     const selectedOption = listSelect.options[listSelect.selectedIndex];
     const value = {
@@ -155,8 +156,7 @@ const data = config || defaults;
     } catch {
       (window as any).showToast('Failed to save', true);
     } finally {
-      btn.disabled = false;
-      btn.textContent = 'Save Email Settings';
+      (window as any).setButtonLoading(btn, false);
     }
   });
 </script>

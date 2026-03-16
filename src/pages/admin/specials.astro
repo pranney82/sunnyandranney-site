@@ -81,7 +81,10 @@ const data = specials || defaults;
     </div>
 
     <div class="admin-save-bar">
-      <button type="submit" class="admin-btn admin-btn--primary" id="save-btn">Save Specials</button>
+      <button type="submit" class="admin-btn admin-btn--primary" id="save-btn">
+        <span class="btn-spinner"></span>
+        <span class="btn-label">Save Specials</span>
+      </button>
       <span class="admin-save-hint">
         <kbd class="admin-kbd">⌘S</kbd> to save
       </span>
@@ -148,8 +151,7 @@ const data = specials || defaults;
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('save-btn') as HTMLButtonElement;
-    btn.disabled = true;
-    btn.textContent = 'Saving...';
+    (window as any).setButtonLoading(btn, true);
 
     const announcements = [...container.querySelectorAll('.announcement-row')].map((row, i) => ({
       id: `ann-${i}`,
@@ -182,8 +184,7 @@ const data = specials || defaults;
     } catch {
       (window as any).showToast('Failed to save', true);
     } finally {
-      btn.disabled = false;
-      btn.textContent = 'Save Specials';
+      (window as any).setButtonLoading(btn, false);
     }
   });
 </script>

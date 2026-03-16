@@ -80,7 +80,10 @@ const data = contact || defaults;
     </div>
 
     <div class="admin-save-bar">
-      <button type="submit" class="admin-btn admin-btn--primary" id="save-btn">Save Contact Info</button>
+      <button type="submit" class="admin-btn admin-btn--primary" id="save-btn">
+        <span class="btn-spinner"></span>
+        <span class="btn-label">Save Contact Info</span>
+      </button>
       <span class="admin-save-hint">
         <kbd class="admin-kbd">⌘S</kbd> to save
       </span>
@@ -107,8 +110,7 @@ const data = contact || defaults;
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('save-btn') as HTMLButtonElement;
-    btn.disabled = true;
-    btn.textContent = 'Saving...';
+    (window as any).setButtonLoading(btn, true);
 
     const value = {
       address: (form.querySelector('[name="address"]') as HTMLInputElement).value,
@@ -137,8 +139,7 @@ const data = contact || defaults;
     } catch {
       (window as any).showToast('Failed to save', true);
     } finally {
-      btn.disabled = false;
-      btn.textContent = 'Save Contact Info';
+      (window as any).setButtonLoading(btn, false);
     }
   });
 </script>

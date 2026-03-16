@@ -102,7 +102,10 @@ const data = hours || defaults;
     </div>
 
     <div class="admin-save-bar">
-      <button type="submit" class="admin-btn admin-btn--primary" id="save-btn">Save Hours</button>
+      <button type="submit" class="admin-btn admin-btn--primary" id="save-btn">
+        <span class="btn-spinner"></span>
+        <span class="btn-label">Save Hours</span>
+      </button>
       <span class="admin-save-hint">
         <kbd class="admin-kbd">⌘S</kbd> to save
       </span>
@@ -323,8 +326,10 @@ const data = hours || defaults;
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('save-btn') as HTMLButtonElement;
-    btn.disabled = true;
-    btn.textContent = 'Saving...';
+    (window as any).setButtonLoading(btn, true);
+
+    // Snapshot for undo
+    const snapshot = new FormData(form);
 
     const days = DAYS.map((day, i) => {
       const isOpen = (form.querySelector(`[name="closed-${i}"]`) as HTMLInputElement).checked;
@@ -368,13 +373,20 @@ const data = hours || defaults;
       if (data.warning) {
         (window as any).showToast(`Saved, but site won't update: ${data.warning}`, true);
       } else {
-        (window as any).showToast('Store hours saved — site will rebuild shortly');
+        (window as any).showToast('Store hours saved — site will rebuild shortly', false, () => {
+          // Restore snapshot values
+          for (const [key, val] of snapshot.entries()) {
+            const el = form.querySelector(`[name="${key}"]`) as HTMLInputElement | null;
+            if (!el) continue;
+            if (el.type === 'checkbox') el.checked = val === 'on';
+            else el.value = val as string;
+          }
+        });
       }
     } catch {
       (window as any).showToast('Failed to save', true);
     } finally {
-      btn.disabled = false;
-      btn.textContent = 'Save Hours';
+      (window as any).setButtonLoading(btn, false);
     }
   });
 </script>

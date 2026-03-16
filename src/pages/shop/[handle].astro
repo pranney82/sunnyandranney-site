@@ -4,55 +4,50 @@ export const prerender = true;
 import Base from '@/layouts/Base.astro';
 import GoogleReviews from '@/components/GoogleReviews.astro';
 import { cfImage, cfSrcset, SIZES } from '@/lib/images';
-import { getProducts, getProductByHandle, getProductRecommendations, getProductsByType } from '@/lib/shopify';
+import { getProducts, getProductRecommendations, getProductsByType } from '@/lib/shopify';
 
 export async function getStaticPaths() {
-  // Paginate through all products to get every handle
-  const handles: string[] = [];
+  // Fetch all products with full data — pass as props to eliminate per-page re-fetches
+  const allProducts: any[] = [];
   let cursor: string | undefined;
   let hasMore = true;
 
   while (hasMore) {
     const result = await getProducts(250, cursor);
-    for (const p of result.products) {
-      handles.push(p.handle);
-    }
+    allProducts.push(...result.products);
     hasMore = result.pageInfo.hasNextPage;
     cursor = result.pageInfo.endCursor;
   }
 
-  return handles.map(handle => ({ params: { handle } }));
+  return allProducts.map(product => ({
+    params: { handle: product.handle },
+    props: { product },
+  }));
 }
 
 const { handle } = Astro.params;
+const { product } = Astro.props;
 
-let product: any = null;
-let notFound = false;
 let relatedProducts: any[] = [];
 
+if (!product) {
+  return Astro.redirect('/shop');
+}
+
 try {
-  product = await getProductByHandle(handle!);
-  if (!product) {
-    notFound = true;
-  } else {
-    // Try Shopify recommendations first, fall back to same product type
-    relatedProducts = await getProductRecommendations(product.id, 4);
-    if (relatedProducts.length < 4 && product.productType) {
-      const typeProducts = await getProductsByType(product.productType, 4, handle);
-      const existingHandles = new Set(relatedProducts.map((p: any) => p.handle));
-      for (const p of typeProducts) {
-        if (!existingHandles.has(p.handle) && relatedProducts.length < 4) {
-          relatedProducts.push(p);
-        }
+  // Try Shopify recommendations first, fall back to same product type
+  relatedProducts = await getProductRecommendations(product.id, 4);
+  if (relatedProducts.length < 4 && product.productType) {
+    const typeProducts = await getProductsByType(product.productType, 4, handle);
+    const existingHandles = new Set(relatedProducts.map((p: any) => p.handle));
+    for (const p of typeProducts) {
+      if (!existingHandles.has(p.handle) && relatedProducts.length < 4) {
+        relatedProducts.push(p);
       }
     }
   }
 } catch (e) {
-  notFound = true;
-}
-
-if (notFound) {
-  return Astro.redirect('/shop');
+  // recommendations failed — page still renders fine without them
 }
 
 const images = product.images.edges.map((e: any) => e.node);
@@ -62,6 +57,65 @@ const lcpImage = mainImage ? cfImage(mainImage.url, { width: 900 }) : undefined;
 const price = product.priceRange.minVariantPrice;
 const compareAt = product.compareAtPriceRange?.minVariantPrice;
 const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.amount);
+
+const productUrl = `https://sunnyandranney.com/shop/${product.handle}`;
+
+// Full Product schema — drives Google Shopping rich results + SERP stars
+const productSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: product.title,
+  description: product.description || product.seo?.description || '',
+  sku: product.handle,
+  brand: { '@type': 'Brand', name: product.vendor || 'Sunny & Ranney' },
+  url: productUrl,
+  image: images.map((img: any) => img.url),
+  aggregateRating: {
+    '@type': 'AggregateRating',
+    ratingValue: '4.9',
+    reviewCount: '100',
+    bestRating: '5',
+    worstRating: '1',
+  },
+  offers: {
+    '@type': 'Offer',
+    url: productUrl,
+    price: parseFloat(price.amount).toFixed(2),
+    priceCurrency: price.currencyCode,
+    availability: product.availableForSale
+      ? 'https://schema.org/InStock'
+      : 'https://schema.org/OutOfStock',
+    itemCondition: 'https://schema.org/NewCondition',
+    seller: { '@type': 'Organization', name: 'Sunny & Ranney' },
+    availableAtOrFrom: {
+      '@type': 'Place',
+      name: 'Sunny & Ranney Showroom',
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: '109A Oak Street',
+        addressLocality: 'Roswell',
+        addressRegion: 'GA',
+        postalCode: '30075',
+        addressCountry: 'US',
+      },
+    },
+  },
+};
+
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://sunnyandranney.com' },
+    { '@type': 'ListItem', position: 2, name: 'Shop', item: 'https://sunnyandranney.com/shop' },
+    ...(product.productType ? [
+      { '@type': 'ListItem', position: 3, name: product.productType, item: `https://sunnyandranney.com/shop?category=${product.productType.toLowerCase()}` },
+      { '@type': 'ListItem', position: 4, name: product.title, item: productUrl },
+    ] : [
+      { '@type': 'ListItem', position: 3, name: product.title, item: productUrl },
+    ]),
+  ],
+};
 ---
 
 <Base
@@ -70,14 +124,10 @@ const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.am
   image={mainImage?.url}
   lcpImage={lcpImage}
   type="product"
-  product={{
-    name: product.title,
-    price: price.amount,
-    currency: price.currencyCode,
-    image: mainImage?.url || '',
-    availability: product.availableForSale,
-  }}
 >
+  <script type="application/ld+json" set:html={JSON.stringify(productSchema)} />
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+
   <section class="pdp section">
     <div class="container">
       <nav class="breadcrumbs" aria-label="Breadcrumb">

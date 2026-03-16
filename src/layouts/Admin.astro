@@ -6,6 +6,16 @@ interface Props {
 const { title = 'Admin' } = Astro.props;
 const currentPath = Astro.url.pathname;
 
+// Build breadcrumb from path
+const pathSegments = currentPath.replace(/\/$/, '').split('/').filter(Boolean);
+const breadcrumbs = pathSegments.length > 1
+  ? pathSegments.map((seg, i) => ({
+      label: seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, ' '),
+      href: '/' + pathSegments.slice(0, i + 1).join('/'),
+      isLast: i === pathSegments.length - 1,
+    }))
+  : [];
+
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: 'grid' },
   { href: '/admin/hours', label: 'Store Hours', icon: 'clock' },
@@ -22,7 +32,7 @@ const navItems = [
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
-    <title>Admin | Sunny & Ranney</title>
+    <title>{title === 'Dashboard' ? 'Admin' : `${title} — Admin`} | Sunny & Ranney</title>
     <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
     <style>
       @font-face {
@@ -70,6 +80,37 @@ const navItems = [
         min-height: 100vh;
       }
 
+      /* ─── Breadcrumbs ──────────────────────── */
+      .admin-breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-bottom: 1rem;
+        font-size: 0.78rem;
+      }
+
+      .admin-breadcrumb a {
+        color: var(--admin-info);
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.15s;
+      }
+
+      .admin-breadcrumb a:hover {
+        color: var(--admin-text);
+      }
+
+      .admin-breadcrumb-sep {
+        color: var(--admin-text-light);
+        opacity: 0.4;
+        font-size: 0.7rem;
+      }
+
+      .admin-breadcrumb-current {
+        color: var(--admin-text-light);
+        font-weight: 500;
+      }
+
       /* ─── Sidebar ───────────────────────────── */
       .admin-sidebar {
         width: 250px;
@@ -104,6 +145,7 @@ const navItems = [
         color: var(--admin-accent);
         display: block;
         margin-top: 0.2rem;
+        font-weight: 600;
       }
 
       .admin-nav {
@@ -183,6 +225,82 @@ const navItems = [
       .admin-sidebar-footer svg {
         width: 14px;
         height: 14px;
+      }
+
+      /* ─── Quick search ──────────────────────── */
+      .admin-search-wrap {
+        padding: 0.75rem 1.25rem;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+      }
+
+      .admin-search-input {
+        width: 100%;
+        padding: 0.45rem 0.75rem 0.45rem 2.1rem;
+        background: rgba(255,255,255,0.07);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 7px;
+        color: rgba(255,255,255,0.85);
+        font-family: inherit;
+        font-size: 0.8rem;
+        outline: none;
+        transition: border-color 0.15s, background 0.15s;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: 0.55rem center;
+      }
+
+      .admin-search-input::placeholder { color: rgba(255,255,255,0.3); }
+
+      .admin-search-input:focus {
+        border-color: var(--admin-accent);
+        background-color: rgba(255,255,255,0.1);
+      }
+
+      .admin-search-results {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        left: 1.25rem;
+        right: 1.25rem;
+        background: #3a3a3a;
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        z-index: 110;
+        display: none;
+      }
+
+      .admin-search-results.open { display: block; }
+
+      .admin-search-result {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.6rem 0.9rem;
+        color: rgba(255,255,255,0.85);
+        text-decoration: none;
+        font-size: 0.82rem;
+        transition: background 0.1s;
+      }
+
+      .admin-search-result:hover,
+      .admin-search-result.focused {
+        background: rgba(255,255,255,0.1);
+        color: white;
+      }
+
+      .admin-search-result svg {
+        width: 14px;
+        height: 14px;
+        opacity: 0.5;
+        flex-shrink: 0;
+      }
+
+      .admin-search-empty {
+        padding: 0.8rem 0.9rem;
+        font-size: 0.8rem;
+        color: rgba(255,255,255,0.35);
+        text-align: center;
       }
 
       /* ─── Main content ──────────────────────── */
@@ -278,6 +396,11 @@ const navItems = [
       }
 
       /* ─── Cards ─────────────────────────────── */
+      @keyframes adminCardIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
       .admin-card {
         background: var(--admin-card);
         border: 1px solid var(--admin-border);
@@ -286,7 +409,13 @@ const navItems = [
         margin-bottom: 1.25rem;
         box-shadow: var(--admin-shadow-sm);
         transition: box-shadow 0.2s;
+        animation: adminCardIn 0.3s ease both;
       }
+
+      .admin-card:nth-child(1) { animation-delay: 0ms; }
+      .admin-card:nth-child(2) { animation-delay: 60ms; }
+      .admin-card:nth-child(3) { animation-delay: 120ms; }
+      .admin-card:nth-child(4) { animation-delay: 180ms; }
 
       .admin-card:hover {
         box-shadow: var(--admin-shadow);
@@ -365,12 +494,52 @@ const navItems = [
         color: white;
       }
 
+      /* ─── Button spinner ────────────────────── */
+      @keyframes adminSpin {
+        to { transform: rotate(360deg); }
+      }
+
+      .admin-btn .btn-spinner {
+        display: none;
+        width: 14px;
+        height: 14px;
+        border: 2px solid rgba(0,0,0,0.2);
+        border-top-color: var(--admin-text);
+        border-radius: 50%;
+        animation: adminSpin 0.6s linear infinite;
+        flex-shrink: 0;
+      }
+
+      .admin-btn--primary .btn-spinner {
+        border-color: rgba(0,0,0,0.2);
+        border-top-color: var(--admin-text);
+      }
+
+      .admin-btn--outline .btn-spinner {
+        border-color: var(--admin-border);
+        border-top-color: var(--admin-text-light);
+      }
+
+      .admin-btn.loading .btn-spinner {
+        display: block;
+      }
+
+      .admin-btn.loading .btn-label {
+        opacity: 0.7;
+      }
+
       /* Save bar with keyboard hint */
       .admin-save-bar {
         display: flex;
         align-items: center;
         gap: 0.75rem;
         margin-top: 0.25rem;
+        position: sticky;
+        bottom: 1.5rem;
+        background: var(--admin-bg);
+        padding: 0.75rem 0;
+        border-top: 1px solid var(--admin-border);
+        z-index: 10;
       }
 
       .admin-save-hint {
@@ -551,6 +720,25 @@ const navItems = [
         flex-shrink: 0;
       }
 
+      .admin-toast-undo {
+        margin-left: 0.5rem;
+        padding: 0.2rem 0.6rem;
+        background: rgba(255,255,255,0.2);
+        border: 1px solid rgba(255,255,255,0.4);
+        color: white;
+        font-family: inherit;
+        font-size: 0.78rem;
+        font-weight: 600;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.15s;
+        flex-shrink: 0;
+      }
+
+      .admin-toast-undo:hover {
+        background: rgba(255,255,255,0.35);
+      }
+
       /* ─── Stats grid ────────────────────────── */
       .admin-stat-grid {
         display: grid;
@@ -567,6 +755,19 @@ const navItems = [
         box-shadow: var(--admin-shadow-sm);
         position: relative;
         overflow: hidden;
+        animation: adminCardIn 0.3s ease both;
+        transition: box-shadow 0.2s, transform 0.2s;
+      }
+
+      .admin-stat:nth-child(1) { animation-delay: 0ms; }
+      .admin-stat:nth-child(2) { animation-delay: 50ms; }
+      .admin-stat:nth-child(3) { animation-delay: 100ms; }
+      .admin-stat:nth-child(4) { animation-delay: 150ms; }
+      .admin-stat:nth-child(5) { animation-delay: 200ms; }
+
+      .admin-stat:hover {
+        box-shadow: var(--admin-shadow);
+        transform: translateY(-1px);
       }
 
       .admin-stat-label {
@@ -670,6 +871,16 @@ const navItems = [
         <h1>Sunny & Ranney</h1>
         <span>Admin Panel</span>
       </div>
+      <div class="admin-search-wrap" style="position:relative;">
+        <input
+          type="search"
+          class="admin-search-input"
+          id="admin-search"
+          placeholder="Quick find… (⌘K)"
+          autocomplete="off"
+        />
+        <div class="admin-search-results" id="admin-search-results"></div>
+      </div>
       <nav class="admin-nav">
         <div class="admin-nav-section">Overview</div>
         {navItems.slice(0, 1).map((item) => (
@@ -711,6 +922,19 @@ const navItems = [
     </aside>
 
     <main class="admin-main">
+      {breadcrumbs.length > 1 && (
+        <nav class="admin-breadcrumb" aria-label="Breadcrumb">
+          {breadcrumbs.map((crumb, i) => (
+            <>
+              {i > 0 && <span class="admin-breadcrumb-sep">›</span>}
+              {crumb.isLast
+                ? <span class="admin-breadcrumb-current">{crumb.label}</span>
+                : <a href={crumb.href}>{crumb.label}</a>
+              }
+            </>
+          ))}
+        </nav>
+      )}
       <slot />
     </main>
 
@@ -718,6 +942,7 @@ const navItems = [
       <svg class="admin-toast-icon" id="toast-icon-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
       <svg class="admin-toast-icon" id="toast-icon-error" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
       <span id="toast-message"></span>
+      <button id="toast-undo-btn" class="admin-toast-undo" style="display:none">Undo</button>
     </div>
 
     <script>
@@ -736,20 +961,93 @@ const navItems = [
         overlay?.classList.remove('open');
       });
 
-      // ─── Toast with icons ───────────────────
-      (window as any).showToast = function(message: string, isError = false) {
+      // ─── Toast with icons + undo ────────────
+      let toastTimer: ReturnType<typeof setTimeout> | null = null;
+
+      (window as any).showToast = function(message: string, isError = false, undoFn?: () => void) {
         const toast = document.getElementById('admin-toast');
         const msgEl = document.getElementById('toast-message');
         const successIcon = document.getElementById('toast-icon-success');
         const errorIcon = document.getElementById('toast-icon-error');
+        const undoBtn = document.getElementById('toast-undo-btn') as HTMLButtonElement | null;
         if (!toast || !msgEl) return;
+
+        if (toastTimer) clearTimeout(toastTimer);
 
         msgEl.textContent = message;
         if (successIcon) successIcon.style.display = isError ? 'none' : 'block';
         if (errorIcon) errorIcon.style.display = isError ? 'block' : 'none';
+
+        if (undoBtn) {
+          if (undoFn && !isError) {
+            undoBtn.style.display = 'block';
+            undoBtn.onclick = () => {
+              undoFn();
+              toast.className = 'admin-toast';
+            };
+          } else {
+            undoBtn.style.display = 'none';
+          }
+        }
+
         toast.className = `admin-toast show ${isError ? 'error' : 'success'}`;
-        setTimeout(() => { toast.className = 'admin-toast'; }, 3500);
+        toastTimer = setTimeout(() => { toast.className = 'admin-toast'; }, 4000);
       };
+
+      // ─── Button spinner helpers ─────────────
+      (window as any).setButtonLoading = function(btn: HTMLButtonElement, loading: boolean) {
+        if (loading) {
+          btn.classList.add('loading');
+          btn.disabled = true;
+        } else {
+          btn.classList.remove('loading');
+          btn.disabled = false;
+        }
+      };
+
+      // ─── Quick find (⌘K) ───────────────────
+      const searchInput = document.getElementById('admin-search') as HTMLInputElement | null;
+      const searchResults = document.getElementById('admin-search-results');
+
+      const searchPages = [
+        { label: 'Dashboard', href: '/admin', icon: 'grid' },
+        { label: 'Store Hours', href: '/admin/hours', icon: 'clock' },
+        { label: 'Collections', href: '/admin/collections', icon: 'bag' },
+        { label: 'Specials & Announcements', href: '/admin/specials', icon: 'star' },
+        { label: 'Contact Info', href: '/admin/contact', icon: 'pin' },
+        { label: 'Email Signup', href: '/admin/email-signup', icon: 'mail' },
+      ];
+
+      function renderResults(query: string) {
+        if (!searchResults) return;
+        const q = query.toLowerCase().trim();
+        if (!q) { searchResults.classList.remove('open'); return; }
+        const matches = searchPages.filter(p => p.label.toLowerCase().includes(q));
+        if (matches.length === 0) {
+          searchResults.innerHTML = '<div class="admin-search-empty">No pages found</div>';
+        } else {
+          searchResults.innerHTML = matches.map(p => `
+            <a href="${p.href}" class="admin-search-result">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              ${p.label}
+            </a>`).join('');
+        }
+        searchResults.classList.add('open');
+      }
+
+      searchInput?.addEventListener('input', (e) => renderResults((e.target as HTMLInputElement).value));
+      searchInput?.addEventListener('blur', () => setTimeout(() => searchResults?.classList.remove('open'), 150));
+
+      // ⌘K to focus search
+      document.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+          e.preventDefault();
+          searchInput?.focus();
+          searchInput?.select();
+        }
+      });
 
       // ─── Cmd/Ctrl+S to save ─────────────────
       document.addEventListener('keydown', (e) => {

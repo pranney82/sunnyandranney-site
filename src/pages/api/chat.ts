@@ -26,6 +26,11 @@ interface ChatMessage {
   content: string;
 }
 
+// Module-level cache — avoids 2 D1 reads on every chat message.
+// Workers share module state within an isolate; TTL keeps it fresh within ~1 min of admin changes.
+let _promptCache: { prompt: string; ts: number } | null = null;
+const PROMPT_CACHE_TTL_MS = 60_000;
+
 // ─── System prompt (base — hours/specials injected dynamically from D1) ──
 const BASE_SYSTEM_PROMPT = `You are Staci, the AI shopping assistant for **Sunny & Ranney** — a home goods store in Roswell, GA where 100% of profits go to **Sunshine on a Ranney Day**, a charity that provides home makeovers for children with special needs.
 
@@ -105,6 +110,10 @@ function formatSpecialsForPrompt(specials: StoreSpecials): string {
 }
 
 async function buildSystemPrompt(): Promise<string> {
+  if (_promptCache && Date.now() - _promptCache.ts < PROMPT_CACHE_TTL_MS) {
+    return _promptCache.prompt;
+  }
+
   let hoursSection = DEFAULT_HOURS;
   let specialsSection = '';
 
@@ -123,6 +132,7 @@ async function buildSystemPrompt(): Promise<string> {
   let prompt = BASE_SYSTEM_PROMPT + `\n\n${hoursSection}`;
   if (specialsSection) prompt += `\n\n${specialsSection}`;
 
+  _promptCache = { prompt, ts: Date.now() };
   return prompt;
 }
 

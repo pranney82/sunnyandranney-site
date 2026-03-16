@@ -56,6 +56,16 @@ const collections = shopifyCollections.map((c, i) => {
     </div>
   ) : (
     <form id="collections-form">
+      <div class="collections-toolbar">
+        <span class="collections-count" id="collections-count">
+          {collections.filter(c => c.enabled).length} of {collections.length} enabled
+        </span>
+        <div class="collections-bulk">
+          <button type="button" class="admin-btn admin-btn--outline" id="enable-all-btn">Enable All</button>
+          <button type="button" class="admin-btn admin-btn--outline" id="disable-all-btn">Disable All</button>
+        </div>
+      </div>
+
       <div class="collections-grid" id="collections-list">
         {collections.map((c) => (
           <div class="collection-card" data-handle={c.handle} draggable="true">
@@ -80,8 +90,11 @@ const collections = shopifyCollections.map((c, i) => {
         ))}
       </div>
 
-      <div class="admin-save-bar" style="margin-top: 1rem;">
-        <button type="submit" class="admin-btn admin-btn--primary" id="save-btn">Save Collections</button>
+      <div class="admin-save-bar">
+        <button type="submit" class="admin-btn admin-btn--primary" id="save-btn">
+          <span class="btn-spinner"></span>
+          <span class="btn-label">Save Collections</span>
+        </button>
         <span class="admin-save-hint">
           <kbd class="admin-kbd">⌘S</kbd> to save
         </span>
@@ -92,6 +105,31 @@ const collections = shopifyCollections.map((c, i) => {
 </Admin>
 
 <style>
+  .collections-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .collections-count {
+    font-size: 0.82rem;
+    color: var(--admin-text-light);
+    font-weight: 500;
+  }
+
+  .collections-bulk {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .collections-bulk .admin-btn {
+    font-size: 0.78rem;
+    padding: 0.4rem 0.85rem;
+  }
+
   .collections-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -201,6 +239,27 @@ const collections = shopifyCollections.map((c, i) => {
   const list = document.getElementById('collections-list')!;
   let dragItem: HTMLElement | null = null;
 
+  // ─── Count badge ────────────────────────
+  function updateCount() {
+    const total = list.querySelectorAll('.collection-card').length;
+    const enabled = list.querySelectorAll('input[type="checkbox"]:checked').length;
+    const el = document.getElementById('collections-count');
+    if (el) el.textContent = `${enabled} of ${total} enabled`;
+  }
+
+  list.addEventListener('change', updateCount);
+
+  // ─── Bulk actions ────────────────────────
+  document.getElementById('enable-all-btn')?.addEventListener('click', () => {
+    list.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach(cb => cb.checked = true);
+    updateCount();
+  });
+
+  document.getElementById('disable-all-btn')?.addEventListener('click', () => {
+    list.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    updateCount();
+  });
+
   // Drag & drop reordering
   list.addEventListener('dragstart', (e) => {
     dragItem = (e.target as HTMLElement).closest('.collection-card');
@@ -242,8 +301,7 @@ const collections = shopifyCollections.map((c, i) => {
   document.getElementById('collections-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('save-btn') as HTMLButtonElement;
-    btn.disabled = true;
-    btn.textContent = 'Saving...';
+    (window as any).setButtonLoading(btn, true);
 
     const items = [...list.querySelectorAll('.collection-card')];
     const value = items.map((el, i) => ({
@@ -251,6 +309,10 @@ const collections = shopifyCollections.map((c, i) => {
       enabled: (el.querySelector('input[type="checkbox"]') as HTMLInputElement).checked,
       order: i,
     }));
+
+    // Snapshot for undo
+    const prevChecked = items.map(el => (el.querySelector('input[type="checkbox"]') as HTMLInputElement).checked);
+    const prevOrder = [...items];
 
     try {
       const res = await fetch('/api/admin/settings', {
@@ -263,13 +325,20 @@ const collections = shopifyCollections.map((c, i) => {
       if (data.warning) {
         (window as any).showToast(`Saved, but site won't update: ${data.warning}`, true);
       } else {
-        (window as any).showToast('Collections saved — site will rebuild shortly');
+        (window as any).showToast('Collections saved — site will rebuild shortly', false, () => {
+          // Undo: restore previous order and checked states
+          list.innerHTML = '';
+          prevOrder.forEach((el, i) => {
+            (el.querySelector('input[type="checkbox"]') as HTMLInputElement).checked = prevChecked[i];
+            list.appendChild(el);
+          });
+          updateCount();
+        });
       }
     } catch {
       (window as any).showToast('Failed to save', true);
     } finally {
-      btn.disabled = false;
-      btn.textContent = 'Save Collections';
+      (window as any).setButtonLoading(btn, false);
     }
   });
 </script>
