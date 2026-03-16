@@ -1,0 +1,157 @@
+[
+  {
+    "handle": "merch",
+    "enabled": false,
+    "order": 0
+  },
+  {
+    "handle": "monetary-donation",
+    "enabled": false,
+    "order": 1
+  },
+  {
+    "handle": "kitchen-accessories",
+    "enabled": false,
+    "order": 2
+  },
+  {
+    "handle": "holiday",
+    "enabled": true,
+    "order": 3
+  },
+  {
+    "handle": "gifts",
+    "enabled": true,
+    "order": 4
+  },
+  {
+    "handle": "kids-baby",
+    "enabled": true,
+    "order": 5
+  },
+  {
+    "handle": "soft-goods",
+    "enabled": true,
+    "order": 6
+  },
+  {
+    "handle": "lighting",
+    "enabled": true,
+    "order": 7
+  },
+  {
+    "handle": "rugs",
+    "enabled": true,
+    "order": 8
+  },
+  {
+    "handle": "wall-decor",
+    "enabled": true,
+    "order": 9
+  },
+  {
+    "handle": "bedroom-furniture",
+    "enabled": true,
+    "order": 10
+  },
+  {
+    "handle": "dining-room-furniture",
+    "enabled": true,
+    "order": 11
+  },
+  {
+    "handle": "occasional-furniture",
+    "enabled": true,
+    "order": 12
+  },
+  {
+    "handle": "living-room-furniture",
+    "enabled": true,
+    "order": 13
+  },
+  {
+    "handle": "outdoor-furniture",
+    "enabled": true,
+    "order": 14
+  },
+  {
+    "handle": "decor",
+    "enabled": true,
+    "order": 15
+  },
+  {
+    "handle": "faux-plants-florals",
+    "enabled": true,
+    "order": 16
+  },
+  {
+    "handle": "all-products-by-price",
+    "enabled": true,
+    "order": 17
+  },
+  {
+    "handle": "accent-chairs",
+    "enabled": true,
+    "order": 18
+  },
+  {
+    "handle": "dining-chairs",
+    "enabled": true,
+    "order": 19
+  },
+  {
+    "handle": "coffee-tables",
+    "enabled": true,
+    "order": 20
+  },
+  {
+    "handle": "consoles-sideboards-sofa-tables",
+    "enabled": true,
+    "order": 21
+  },
+  {
+    "handle": "desks",
+    "enabled": true,
+    "order": 22
+  },
+  {
+    "handle": "dining-tables",
+    "enabled": true,
+    "order": 23
+  },
+  {
+    "handle": "accent-end-tables",
+    "enabled": true,
+    "order": 24
+  },
+  {
+    "handle": "ottoman-benches",
+    "enabled": true,
+    "order": 25
+  },
+  {
+    "handle": "sectionals",
+    "enabled": true,
+    "order": 26
+  },
+  {
+    "handle": "sofas",
+    "enabled": true,
+    "order": 27
+  },
+  {
+    "handle": "gift-cards",
+    "enabled": true,
+    "order": 28
+  },
+  {
+    "handle": "spiritual",
+    "enabled": true,
+    "order": 29
+  },
+  {
+    "handle": "jewelry",
+    "enabled": true,
+    "order": 30
+  }
+]
