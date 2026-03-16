@@ -16,37 +16,37 @@
   },
   {
     "handle": "holiday",
-    "enabled": true,
+    "enabled": false,
     "order": 3
   },
   {
     "handle": "gifts",
-    "enabled": true,
+    "enabled": false,
     "order": 4
   },
   {
     "handle": "kids-baby",
-    "enabled": true,
+    "enabled": false,
     "order": 5
   },
   {
     "handle": "soft-goods",
-    "enabled": true,
+    "enabled": false,
     "order": 6
   },
   {
     "handle": "lighting",
-    "enabled": true,
+    "enabled": false,
     "order": 7
   },
   {
     "handle": "rugs",
-    "enabled": true,
+    "enabled": false,
     "order": 8
   },
   {
     "handle": "wall-decor",
-    "enabled": true,
+    "enabled": false,
     "order": 9
   },
   {
