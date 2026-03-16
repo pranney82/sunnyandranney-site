@@ -48,7 +48,9 @@ try {
 
   hasShopify = products.length > 0;
 } catch (e) {
-  console.log('Shopify API not configured. Showing placeholder shop.');
+  console.error('[shop] Shopify fetch failed:', e instanceof Error ? e.message : e);
+  console.error('[shop] Token present:', !!import.meta.env.PUBLIC_SHOPIFY_STOREFRONT_TOKEN);
+  console.error('[shop] Domain:', import.meta.env.PUBLIC_SHOPIFY_STORE_DOMAIN || '(missing, using default)');
 }
 
 // Preload the first product image as LCP candidate (CF Images: AVIF/WebP auto)
