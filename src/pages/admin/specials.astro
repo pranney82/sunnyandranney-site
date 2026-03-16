@@ -1,0 +1,173 @@
+---
+import Admin from '@/layouts/Admin.astro';
+import { getSetting } from '@/lib/db';
+
+export const prerender = false;
+
+const specials: any = await getSetting('settings:specials');
+
+const defaults = {
+  announcements: [] as Array<{
+    id: string;
+    text: string;
+    link: string;
+    active: boolean;
+    type: 'banner' | 'promo' | 'info';
+  }>,
+  featuredHandle: '',
+  promoCode: '',
+  promoDescription: '',
+};
+
+const data = specials || defaults;
+---
+
+<Admin title="Specials & Announcements">
+  <div class="admin-header">
+    <h2>Specials & Announcements</h2>
+    <p>Manage banners, promos, and featured items</p>
+  </div>
+
+  <form id="specials-form">
+    <div class="admin-card">
+      <h3>Promo Details</h3>
+      <div class="admin-field">
+        <label class="admin-label">Promo Code</label>
+        <input type="text" class="admin-input" name="promoCode" value={data.promoCode} placeholder="e.g. SUMMER20" />
+      </div>
+      <div class="admin-field">
+        <label class="admin-label">Promo Description</label>
+        <input type="text" class="admin-input" name="promoDescription" value={data.promoDescription} placeholder="e.g. 20% off all summer styles" />
+      </div>
+      <div class="admin-field">
+        <label class="admin-label">Featured Product Handle</label>
+        <input type="text" class="admin-input" name="featuredHandle" value={data.featuredHandle} placeholder="e.g. sunny-tee-gold" />
+        <span style="font-size: 0.75rem; color: var(--admin-text-light); margin-top: 0.25rem; display: block;">
+          The Shopify product handle to feature. Leave blank for none.
+        </span>
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <h3>Banner Announcements</h3>
+      <p style="font-size: 0.85rem; color: var(--admin-text-light); margin-bottom: 1rem;">
+        These appear in the rotating banner at the top of the site.
+      </p>
+      <div id="announcements-container">
+        {data.announcements.map((a: any, i: number) => (
+          <div class="announcement-row" data-index={i}>
+            <label class="admin-toggle">
+              <input type="checkbox" checked={a.active} class="ann-active" />
+              <span class="admin-toggle-slider"></span>
+            </label>
+            <select class="admin-input ann-type" style="width: 100px; flex-shrink: 0;">
+              <option value="banner" selected={a.type === 'banner'}>Banner</option>
+              <option value="promo" selected={a.type === 'promo'}>Promo</option>
+              <option value="info" selected={a.type === 'info'}>Info</option>
+            </select>
+            <input type="text" class="admin-input ann-text" value={a.text} placeholder="Announcement text..." style="flex: 2;" />
+            <input type="text" class="admin-input ann-link" value={a.link || ''} placeholder="Link (optional)" style="flex: 1;" />
+            <button type="button" class="admin-btn admin-btn--danger remove-ann">Remove</button>
+          </div>
+        ))}
+      </div>
+      <button type="button" class="admin-btn admin-btn--outline" id="add-announcement" style="margin-top: 0.75rem">+ Add Announcement</button>
+    </div>
+
+    <button type="submit" class="admin-btn admin-btn--primary" id="save-btn">Save Specials</button>
+  </form>
+</Admin>
+
+<style>
+  .announcement-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 768px) {
+    .announcement-row {
+      flex-direction: column;
+      align-items: stretch;
+      padding: 0.75rem;
+      background: var(--admin-bg);
+      border-radius: var(--admin-radius);
+    }
+
+    .announcement-row .admin-toggle {
+      align-self: flex-start;
+    }
+  }
+</style>
+
+<script>
+  const form = document.getElementById('specials-form') as HTMLFormElement;
+  const container = document.getElementById('announcements-container')!;
+
+  // Add announcement
+  document.getElementById('add-announcement')?.addEventListener('click', () => {
+    const row = document.createElement('div');
+    row.className = 'announcement-row';
+    row.innerHTML = `
+      <label class="admin-toggle">
+        <input type="checkbox" checked class="ann-active" />
+        <span class="admin-toggle-slider"></span>
+      </label>
+      <select class="admin-input ann-type" style="width: 100px; flex-shrink: 0;">
+        <option value="banner">Banner</option>
+        <option value="promo">Promo</option>
+        <option value="info">Info</option>
+      </select>
+      <input type="text" class="admin-input ann-text" placeholder="Announcement text..." style="flex: 2;" />
+      <input type="text" class="admin-input ann-link" placeholder="Link (optional)" style="flex: 1;" />
+      <button type="button" class="admin-btn admin-btn--danger remove-ann">Remove</button>
+    `;
+    container.appendChild(row);
+  });
+
+  // Remove announcement
+  document.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('.remove-ann');
+    if (btn) btn.closest('.announcement-row')?.remove();
+  });
+
+  // Save
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('save-btn') as HTMLButtonElement;
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    const announcements = [...container.querySelectorAll('.announcement-row')].map((row, i) => ({
+      id: `ann-${i}`,
+      text: (row.querySelector('.ann-text') as HTMLInputElement).value,
+      link: (row.querySelector('.ann-link') as HTMLInputElement).value,
+      active: (row.querySelector('.ann-active') as HTMLInputElement).checked,
+      type: (row.querySelector('.ann-type') as HTMLSelectElement).value,
+    }));
+
+    const value = {
+      announcements,
+      promoCode: (form.querySelector('[name="promoCode"]') as HTMLInputElement).value,
+      promoDescription: (form.querySelector('[name="promoDescription"]') as HTMLInputElement).value,
+      featuredHandle: (form.querySelector('[name="featuredHandle"]') as HTMLInputElement).value,
+    };
+
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'settings:specials', value }),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      (window as any).showToast('Specials saved');
+    } catch {
+      (window as any).showToast('Failed to save', true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Save Specials';
+    }
+  });
+</script>

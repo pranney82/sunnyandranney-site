@@ -1,0 +1,129 @@
+---
+import Admin from '@/layouts/Admin.astro';
+import { getSetting } from '@/lib/db';
+
+export const prerender = false;
+
+const [hours, collections, specials] = await Promise.all([
+  getSetting('settings:hours'),
+  getSetting<Array<{ handle: string; enabled: boolean; order: number }>>('settings:collections'),
+  getSetting<{ announcements?: Array<{ active: boolean }> }>('settings:specials'),
+]);
+---
+
+<Admin title="Dashboard">
+  <div class="admin-header">
+    <h2>Dashboard</h2>
+    <p>Manage your store settings</p>
+  </div>
+
+  <div class="admin-stat-grid">
+    <div class="admin-stat">
+      <div class="admin-stat-label">Store Hours</div>
+      <div class="admin-stat-value">{hours ? 'Configured' : 'Not Set'}</div>
+    </div>
+    <div class="admin-stat">
+      <div class="admin-stat-label">Collections</div>
+      <div class="admin-stat-value">
+        {collections ? `${(collections as any).filter((c: any) => c.enabled).length} active` : 'All shown'}
+      </div>
+    </div>
+    <div class="admin-stat">
+      <div class="admin-stat-label">Active Specials</div>
+      <div class="admin-stat-value">
+        {specials && (specials as any).announcements?.length
+          ? `${(specials as any).announcements.filter((a: any) => a.active).length} active`
+          : 'None'}
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-links">
+    <a href="/admin/hours" class="dashboard-link">
+      <div class="dashboard-link-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </div>
+      <div>
+        <strong>Store Hours</strong>
+        <span>Set opening/closing times, holidays</span>
+      </div>
+    </a>
+    <a href="/admin/collections" class="dashboard-link">
+      <div class="dashboard-link-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
+        </svg>
+      </div>
+      <div>
+        <strong>Collections</strong>
+        <span>Choose which collections appear on the shop</span>
+      </div>
+    </a>
+    <a href="/admin/specials" class="dashboard-link">
+      <div class="dashboard-link-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+      </div>
+      <div>
+        <strong>Specials & Announcements</strong>
+        <span>Manage promos, banners, and featured items</span>
+      </div>
+    </a>
+  </div>
+</Admin>
+
+<style>
+  .dashboard-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .dashboard-link {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: var(--admin-card);
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-radius);
+    text-decoration: none;
+    color: var(--admin-text);
+    transition: all 0.2s;
+  }
+
+  .dashboard-link:hover {
+    border-color: var(--admin-accent);
+    box-shadow: 0 2px 12px rgba(255, 212, 0, 0.1);
+  }
+
+  .dashboard-link-icon {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0f0f0;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+
+  .dashboard-link-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .dashboard-link strong {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  .dashboard-link span {
+    font-size: 0.82rem;
+    color: var(--admin-text-light);
+  }
+</style>

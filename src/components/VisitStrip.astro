@@ -39,8 +39,9 @@ const mapQuery = '109A+Oak+Street+Roswell+GA+30075';
 
     <!-- Right: Info -->
     <div class="visit-strip__content">
-      <span class="visit-strip__kicker">Come See Us</span>
-      <h3 class="visit-strip__title">Visit Our Roswell Showroom</h3>
+      <span class="visit-strip__kicker">Shop with a Purpose</span>
+      <h3 class="visit-strip__title">Every Purchase Transforms a Child's&nbsp;Bedroom</h3>
+      <p class="visit-strip__tagline">100% of profits fund bedroom makeovers for children with special needs through <a href="/about">Sunshine on a Ranney Day</a>.</p>
 
       <div class="visit-strip__details">
         <div class="visit-strip__detail">
@@ -103,14 +104,14 @@ const mapQuery = '109A+Oak+Street+Roswell+GA+30075';
     right: -5%;
     width: 40%;
     height: 160%;
-    background: radial-gradient(circle, rgba(75, 149, 180, 0.04) 0%, transparent 55%);
+    background: radial-gradient(circle, rgba(75, 149, 180, 0.06) 0%, transparent 55%);
     pointer-events: none;
   }
 
   .visit-strip__inner {
     display: grid;
     grid-template-columns: 1fr;
-    gap: var(--space-xl);
+    gap: var(--space-lg);
     position: relative;
     z-index: 1;
   }
@@ -174,12 +175,39 @@ const mapQuery = '109A+Oak+Street+Roswell+GA+30075';
   }
 
   @media (max-width: 767px) {
+    .visit-strip {
+      padding: clamp(2rem, 5vh, 2.5rem) 0;
+    }
+    .visit-strip__inner {
+      gap: var(--space-md);
+    }
     .visit-strip__gallery {
-      padding-bottom: 2rem;
-      padding-right: 2rem;
+      padding-bottom: 1.25rem;
+      padding-right: 1.25rem;
+    }
+    .visit-strip__photo--main {
+      border-radius: 10px;
     }
     .visit-strip__photo--inset {
-      width: 50%;
+      width: 42%;
+      border-radius: 8px;
+    }
+    .visit-strip__title {
+      font-size: 1.3rem;
+      margin-bottom: var(--space-xs);
+    }
+    .visit-strip__tagline {
+      font-size: 0.82rem;
+      margin-bottom: var(--space-sm);
+      max-width: none;
+    }
+    .visit-strip__details {
+      display: none;
+    }
+    .visit-strip__btn {
+      width: 100%;
+      justify-content: center;
+      padding: 0.85rem 1.5rem;
     }
   }
 
@@ -194,7 +222,7 @@ const mapQuery = '109A+Oak+Street+Roswell+GA+30075';
     font-weight: 600;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--color-gold);
+    color: var(--color-cyan);
     margin-bottom: var(--space-xs);
   }
 
@@ -202,8 +230,26 @@ const mapQuery = '109A+Oak+Street+Roswell+GA+30075';
     font-family: var(--font-display);
     font-size: clamp(1.6rem, 3vw, 2.2rem);
     color: white;
-    margin: 0 0 var(--space-lg);
+    margin: 0 0 var(--space-sm);
     line-height: 1.15;
+  }
+
+  .visit-strip__tagline {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.6;
+    margin: 0 0 var(--space-lg);
+    max-width: 36ch;
+  }
+
+  .visit-strip__tagline a {
+    color: var(--color-gold);
+    font-weight: 600;
+    transition: opacity 0.2s;
+  }
+
+  .visit-strip__tagline a:hover {
+    opacity: 0.8;
   }
 
   /* ─── Details with icons ──────────────── */
@@ -221,7 +267,7 @@ const mapQuery = '109A+Oak+Street+Roswell+GA+30075';
   }
 
   .visit-strip__icon {
-    color: var(--color-gold);
+    color: var(--color-cyan);
     flex-shrink: 0;
     margin-top: 2px;
   }
@@ -248,11 +294,11 @@ const mapQuery = '109A+Oak+Street+Roswell+GA+30075';
   }
 
   .visit-strip__detail a:hover {
-    color: var(--color-gold);
+    color: var(--color-cyan);
   }
 
   .visit-strip__detail a:focus-visible {
-    outline: 2px solid var(--color-gold);
+    outline: 2px solid var(--color-cyan);
     outline-offset: 2px;
     border-radius: 2px;
   }
@@ -267,20 +313,20 @@ const mapQuery = '109A+Oak+Street+Roswell+GA+30075';
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--color-charcoal);
-    background: var(--color-gold);
+    color: white;
+    background: var(--color-cyan);
     border-radius: 4px;
     transition: background 0.3s, transform 0.3s;
     align-self: flex-start;
   }
 
   .visit-strip__btn:hover {
-    background: var(--color-gold-light);
+    background: #5aa5c4;
     transform: translateY(-1px);
   }
 
   .visit-strip__btn:focus-visible {
-    outline: 2px solid var(--color-gold);
+    outline: 2px solid var(--color-cyan);
     outline-offset: 4px;
     border-radius: 4px;
   }

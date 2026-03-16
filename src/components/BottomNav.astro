@@ -21,21 +21,11 @@ const currentPath = Astro.url.pathname;
     <span class="bottom-nav__label">Shop</span>
   </a>
 
-  <a href="/mission" class:list={['bottom-nav__tab', { 'bottom-nav__tab--active': currentPath === '/mission' || currentPath === '/mission/' }]} id="bottom-nav-mission">
+  <a href="/about" class:list={['bottom-nav__tab', { 'bottom-nav__tab--active': currentPath === '/about' || currentPath === '/about/' || currentPath === '/about' || currentPath === '/about/' }]} id="bottom-nav-about">
     <svg class="bottom-nav__icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
       <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
     </svg>
-    <span class="bottom-nav__label">Mission</span>
-  </a>
-
-  <a href="/team" class:list={['bottom-nav__tab', { 'bottom-nav__tab--active': currentPath === '/team' || currentPath === '/team/' }]}>
-    <svg class="bottom-nav__icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-      <circle cx="9" cy="7" r="4"/>
-      <path d="M23 21v-2a4 4 0 00-3-3.87"/>
-      <path d="M16 3.13a4 4 0 010 7.75"/>
-    </svg>
-    <span class="bottom-nav__label">Team</span>
+    <span class="bottom-nav__label">About</span>
   </a>
 
   <button class="bottom-nav__tab" id="bottom-nav-cart" aria-label="Cart">

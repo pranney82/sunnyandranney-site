@@ -10,6 +10,9 @@ declare namespace Cloudflare {
 		PUBLIC_GOOGLE_MAPS_KEY: string;
 		VECTORIZE: VectorizeIndex;
 		AI: Ai;
+		GITHUB_TOKEN: string;
+		GITHUB_REPO: string;
+		DB: D1Database;
 	}
 }
 interface Env extends Cloudflare.Env {}

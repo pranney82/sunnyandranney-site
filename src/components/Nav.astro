@@ -1,4 +1,9 @@
 ---
+interface Props {
+  announcements?: Array<{ text: string; link?: string; type: string }>;
+}
+
+const { announcements = [] } = Astro.props;
 const currentPath = Astro.url.pathname;
 
 const categories = [
@@ -10,6 +15,17 @@ const categories = [
   { href: '/shop?category=kitchenware', label: 'Kitchenware', highlight: false },
   { href: '/shop?sale=true', label: 'Sale', highlight: true },
 ];
+
+// Default slides + any admin-configured announcements
+const defaultSlides = [
+  { html: '100% of profits support <strong>Sunshine on a Ranney Day</strong> — home makeovers for kids with special needs' },
+  { html: 'LOCAL PICKUP ONLY — <a href="/shop" class="nav__banner-link">Shop Now</a>' },
+  { html: 'Visit our Roswell showroom — Tue–Sat, 10am–6pm' },
+];
+const adminSlides = announcements.map(a =>
+  ({ html: a.link ? `${a.text} — <a href="${a.link}" class="nav__banner-link">Learn More</a>` : a.text })
+);
+const allSlides = [...adminSlides, ...defaultSlides];
 ---
 
 <header class="nav" id="main-nav" transition:persist="main-nav" transition:animate="none">
@@ -17,9 +33,9 @@ const categories = [
   <div class="nav__banner" role="status" aria-live="polite">
     <div class="container nav__banner-inner">
       <div class="nav__banner-slider" id="banner-slider">
-        <span class="nav__banner-slide nav__banner-slide--active">100% of profits support <strong>Sunshine on a Ranney Day</strong> — home makeovers for kids with special needs</span>
-        <span class="nav__banner-slide">LOCAL PICKUP ONLY — <a href="/shop" class="nav__banner-link">Shop Now</a></span>
-        <span class="nav__banner-slide">Visit our Roswell showroom — Tue–Sat, 10am–6pm</span>
+        {allSlides.map((slide, i) => (
+          <span class:list={['nav__banner-slide', { 'nav__banner-slide--active': i === 0 }]} set:html={slide.html} />
+        ))}
       </div>
     </div>
   </div>
@@ -130,8 +146,7 @@ const categories = [
         <a href={cat.href} data-astro-prefetch class:list={['nav__cat-link', { 'nav__cat-link--sale': cat.highlight }]}>{cat.label}</a>
       ))}
       <span class="nav__cat-divider" role="separator"></span>
-      <a href="/mission" data-astro-prefetch class:list={['nav__cat-link', { 'nav__cat-link--active': currentPath === '/mission' || currentPath === '/mission/' }]}>Mission</a>
-      <a href="/team" data-astro-prefetch class:list={['nav__cat-link', { 'nav__cat-link--active': currentPath === '/team' || currentPath === '/team/' }]}>Our Team</a>
+      <a href="/about" data-astro-prefetch class:list={['nav__cat-link', { 'nav__cat-link--active': currentPath === '/about' || currentPath === '/about/' || currentPath === '/about' || currentPath === '/about/' }]}>About Us</a>
     </div>
   </nav>
 </header>

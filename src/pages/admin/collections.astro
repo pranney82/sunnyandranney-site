@@ -1,0 +1,236 @@
+---
+import Admin from '@/layouts/Admin.astro';
+import { getSetting } from '@/lib/db';
+import { getCollections } from '@/lib/shopify';
+
+export const prerender = false;
+
+// Fetch all collections from Shopify
+let shopifyCollections: Array<{ id: string; title: string; handle: string; description: string; image: any; products: any }> = [];
+try {
+  shopifyCollections = await getCollections(50);
+} catch (e) {
+  console.error('Failed to fetch Shopify collections:', e);
+}
+
+// Get saved collection settings from D1
+let savedSettings: Array<{ handle: string; enabled: boolean; order: number }> = [];
+const data = await getSetting<typeof savedSettings>('settings:collections');
+if (data) savedSettings = data;
+
+// Merge: Shopify collections with saved enabled/order state
+const collections = shopifyCollections.map((c, i) => {
+  const saved = savedSettings.find((s) => s.handle === c.handle);
+  return {
+    id: c.id,
+    title: c.title,
+    handle: c.handle,
+    description: c.description,
+    productCount: c.products?.edges?.length || 0,
+    imageUrl: c.image?.url || '',
+    enabled: saved ? saved.enabled : true,  // default: all enabled
+    order: saved ? saved.order : i,
+  };
+}).sort((a, b) => a.order - b.order);
+---
+
+<Admin title="Collections">
+  <div class="admin-header">
+    <h2>Collections</h2>
+    <p>Choose which Shopify collections appear on your shop page</p>
+  </div>
+
+  {shopifyCollections.length === 0 ? (
+    <div class="admin-card">
+      <p style="color: var(--admin-text-light);">Could not load collections from Shopify. Check your Storefront API token.</p>
+    </div>
+  ) : (
+    <form id="collections-form">
+      <div class="collections-list" id="collections-list">
+        {collections.map((c) => (
+          <div class="collection-item" data-handle={c.handle} draggable="true">
+            <div class="collection-drag">&#9776;</div>
+            <div class="collection-thumb">
+              {c.imageUrl
+                ? <img src={`${c.imageUrl}&width=80`} alt={c.title} width="60" height="60" />
+                : <div class="collection-thumb-ph">{c.title.charAt(0)}</div>
+              }
+            </div>
+            <div class="collection-info">
+              <strong>{c.title}</strong>
+              <span>{c.productCount} products{c.description ? ` \u00b7 ${c.description.slice(0, 60)}` : ''}</span>
+            </div>
+            <label class="admin-toggle">
+              <input type="checkbox" name={`enabled-${c.handle}`} checked={c.enabled} />
+              <span class="admin-toggle-slider"></span>
+            </label>
+          </div>
+        ))}
+      </div>
+
+      <div style="margin-top: 1rem; display: flex; gap: 0.75rem; align-items: center;">
+        <button type="submit" class="admin-btn admin-btn--primary" id="save-btn">Save Collections</button>
+        <span style="font-size: 0.8rem; color: var(--admin-text-light);">Drag to reorder</span>
+      </div>
+    </form>
+  )}
+</Admin>
+
+<style>
+  .collections-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .collection-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--admin-card);
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-radius);
+    cursor: grab;
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+
+  .collection-item:active {
+    cursor: grabbing;
+  }
+
+  .collection-item.dragging {
+    opacity: 0.5;
+    border-color: var(--admin-accent);
+  }
+
+  .collection-item.drag-over {
+    border-color: var(--admin-accent);
+    box-shadow: 0 2px 8px rgba(255, 212, 0, 0.2);
+  }
+
+  .collection-drag {
+    color: var(--admin-text-light);
+    font-size: 1rem;
+    flex-shrink: 0;
+    cursor: grab;
+  }
+
+  .collection-thumb {
+    width: 60px;
+    height: 60px;
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #f0f0f0;
+  }
+
+  .collection-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .collection-thumb-ph {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--admin-text-light);
+  }
+
+  .collection-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .collection-info strong {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  .collection-info span {
+    font-size: 0.8rem;
+    color: var(--admin-text-light);
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+</style>
+
+<script>
+  const list = document.getElementById('collections-list')!;
+  let dragItem: HTMLElement | null = null;
+
+  // Drag & drop reordering
+  list.addEventListener('dragstart', (e) => {
+    dragItem = (e.target as HTMLElement).closest('.collection-item');
+    dragItem?.classList.add('dragging');
+  });
+
+  list.addEventListener('dragend', () => {
+    dragItem?.classList.remove('dragging');
+    list.querySelectorAll('.collection-item').forEach((el) => el.classList.remove('drag-over'));
+    dragItem = null;
+  });
+
+  list.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    const target = (e.target as HTMLElement).closest('.collection-item');
+    if (target && target !== dragItem) {
+      list.querySelectorAll('.collection-item').forEach((el) => el.classList.remove('drag-over'));
+      target.classList.add('drag-over');
+    }
+  });
+
+  list.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const target = (e.target as HTMLElement).closest('.collection-item');
+    if (target && target !== dragItem && dragItem) {
+      const items = [...list.querySelectorAll('.collection-item')];
+      const dragIdx = items.indexOf(dragItem);
+      const targetIdx = items.indexOf(target);
+      if (dragIdx < targetIdx) {
+        target.after(dragItem);
+      } else {
+        target.before(dragItem);
+      }
+    }
+    list.querySelectorAll('.collection-item').forEach((el) => el.classList.remove('drag-over'));
+  });
+
+  // Save
+  document.getElementById('collections-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('save-btn') as HTMLButtonElement;
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    const items = [...list.querySelectorAll('.collection-item')];
+    const value = items.map((el, i) => ({
+      handle: (el as HTMLElement).dataset.handle,
+      enabled: (el.querySelector('input[type="checkbox"]') as HTMLInputElement).checked,
+      order: i,
+    }));
+
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'settings:collections', value }),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      (window as any).showToast('Collections saved');
+    } catch {
+      (window as any).showToast('Failed to save', true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Save Collections';
+    }
+  });
+</script>

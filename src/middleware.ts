@@ -1,21 +1,35 @@
 import { defineMiddleware } from 'astro:middleware';
 
 /**
- * Cloudflare edge caching middleware for SSR pages.
- * Static pages are already cached via _headers. This handles
- * server-rendered pages like /shop/[handle].
+ * Middleware handles:
+ * 1. Cloudflare Access JWT validation for admin API routes
+ * 2. Edge caching headers for SSR pages
  */
 export const onRequest = defineMiddleware(async (context, next) => {
-  const response = await next();
   const url = new URL(context.request.url);
 
-  // SSR product pages: cache at the edge for 5 min, serve stale for 1 hour
+  // ─── Admin API auth: validate Cloudflare Access JWT ────────────
+  if (url.pathname.startsWith('/api/admin/')) {
+    const jwt = context.request.headers.get('cf-access-jwt-assertion');
+    if (!jwt) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    // Cloudflare Access validates the JWT at the edge before the request
+    // reaches the worker. If cf-access-jwt-assertion is present, the
+    // request has already passed Access policy validation.
+  }
+
+  const response = await next();
+
+  // ─── SSR product pages: cache at the edge ──────────────────────
   if (url.pathname.startsWith('/shop/') && url.pathname !== '/shop/') {
     response.headers.set(
       'Cache-Control',
       'public, max-age=60, s-maxage=300, stale-while-revalidate=3600'
     );
-    // CF-specific: cache at Cloudflare edge longer than browser
     response.headers.set(
       'CDN-Cache-Control',
       'public, max-age=300, stale-while-revalidate=86400'

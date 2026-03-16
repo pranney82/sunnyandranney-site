@@ -2,21 +2,16 @@
 import Base from '@/layouts/Base.astro';
 import GoogleReviews from '@/components/GoogleReviews.astro';
 import { getProducts, getCollections, shopifyImageUrl, shopifyImageSrcset } from '@/lib/shopify';
+import { getCollectionsStatic, type CollectionSetting } from '@/lib/settings';
 
 let products: any[] = [];
 let collections: any[] = [];
 let hasShopify = false;
 
-// The 12 collections featured on the Shopify homepage, in order
-const FEATURED_HANDLES = [
-  'accent-chairs',
-  'accent-end-tables',
-  'bedroom-furniture',
-  'coffee-tables',
-  'consoles-sideboards-sofa-tables',
-  'dining-tables',
-  'sofas',
-  'sectionals',
+// Fallback handles if admin hasn't configured collections yet
+const DEFAULT_HANDLES = [
+  'accent-chairs', 'accent-end-tables', 'bedroom-furniture', 'coffee-tables',
+  'consoles-sideboards-sofa-tables', 'dining-tables', 'sofas', 'sectionals',
 ];
 
 try {
@@ -24,9 +19,15 @@ try {
   products = result.products;
   hasShopify = products.length > 0;
 
-  // Fetch collections and filter/sort to match Shopify homepage order
-  const allCollections = await getCollections(10);
-  const handleOrder = new Map(FEATURED_HANDLES.map((h, i) => [h, i]));
+  // Load admin collection settings (committed JSON) or fall back to defaults
+  const saved = await getCollectionsStatic();
+  const enabledHandles: string[] = saved
+    ? saved.filter(c => c.enabled).sort((a, b) => a.order - b.order).map(c => c.handle)
+    : DEFAULT_HANDLES;
+
+  // Fetch collections and filter/sort to match admin order
+  const allCollections = await getCollections(50);
+  const handleOrder = new Map(enabledHandles.map((h, i) => [h, i]));
   collections = allCollections
     .filter((c: any) => handleOrder.has(c.handle))
     .sort((a: any, b: any) => (handleOrder.get(a.handle) ?? 99) - (handleOrder.get(b.handle) ?? 99));
@@ -44,7 +45,7 @@ const featuredProducts = products.slice(0, 8);
 
 ---
 
-<Base lcpImage="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero/w=480,h=600,fit=cover,q=80,format=auto">
+<Base lcpImage="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/sunny-ranney-storefront/w=480,h=600,fit=cover,q=80,format=auto">
   <!-- ═══ HERO ═══ -->
   <section class="hero">
     <div class="container hero__inner">
@@ -75,10 +76,10 @@ const featuredProducts = products.slice(0, 8);
       <div class="hero__media animate-fade-up delay-2">
         <div class="hero__img-wrap">
           <img
-            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero/w=480,h=600,fit=cover,q=80,format=auto"
-            srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero/w=320,h=400,fit=cover,q=75,format=auto 320w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero/w=480,h=600,fit=cover,q=80,format=auto 480w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero/w=640,h=800,fit=cover,q=80,format=auto 640w"
+            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/sunny-ranney-storefront/w=480,h=600,fit=cover,q=80,format=auto"
+            srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/sunny-ranney-storefront/w=320,h=400,fit=cover,q=75,format=auto 320w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/sunny-ranney-storefront/w=480,h=600,fit=cover,q=80,format=auto 480w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/sunny-ranney-storefront/w=640,h=800,fit=cover,q=80,format=auto 640w"
             sizes="(max-width: 767px) 280px, (max-width: 1023px) 400px, 440px"
-            alt="Adrian's room makeover by Sunshine on a Ranney Day"
+            alt="The Sunny & Ranney storefront in historic Roswell, Georgia"
             width="480"
             height="600"
             fetchpriority="high"
@@ -86,6 +87,30 @@ const featuredProducts = products.slice(0, 8);
           />
         </div>
         <div class="hero__accent" aria-hidden="true"></div>
+        {hasShopify && featuredProducts[0] && (() => {
+          const fp = featuredProducts[0];
+          const fpImg = fp.images.edges[0]?.node;
+          const fpPrice = fp.priceRange.minVariantPrice;
+          return (
+            <a href={`/shop/${fp.handle}`} class="hero__product-card" data-astro-prefetch>
+              {fpImg && (
+                <img
+                  src={shopifyImageUrl(fpImg.url, 200)}
+                  alt={fp.title}
+                  width="80"
+                  height="80"
+                  loading="eager"
+                  decoding="async"
+                />
+              )}
+              <div class="hero__product-info">
+                <span class="hero__product-label">Bestseller</span>
+                <span class="hero__product-name">{fp.title}</span>
+                <span class="hero__product-price">${parseFloat(fpPrice.amount).toFixed(0)}</span>
+              </div>
+            </a>
+          );
+        })()}
       </div>
     </div>
   </section>
@@ -106,6 +131,33 @@ const featuredProducts = products.slice(0, 8);
       <div class="impact__stat reveal delay-2">
         <span class="impact__number">100%</span>
         <span class="impact__label">Of Profits Donated</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ PROMISE STRIP ═══ -->
+  <section class="promise">
+    <div class="container promise__inner">
+      <div class="promise__item">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 3 20 16 16 16"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        <div>
+          <span class="promise__title">Local Delivery</span>
+          <span class="promise__desc">Metro Atlanta white-glove service</span>
+        </div>
+      </div>
+      <div class="promise__item">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        <div>
+          <span class="promise__title">Roswell Pickup</span>
+          <span class="promise__desc">Ready same or next day</span>
+        </div>
+      </div>
+      <div class="promise__item">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <div>
+          <span class="promise__title">Complimentary Design Help</span>
+          <span class="promise__desc">Our team helps you get it right</span>
+        </div>
       </div>
     </div>
   </section>
@@ -154,16 +206,77 @@ const featuredProducts = products.slice(0, 8);
     </section>
   )}
 
+  <!-- ═══ SHOWROOM EXPERIENCE ═══ -->
+  <section class="services">
+    <div class="container services__inner">
+      <div class="services__media reveal">
+        <div class="shop-look__img-wrap">
+          <img
+            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=800,q=80,format=auto"
+            srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=500,q=75,format=auto 500w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=800,q=80,format=auto 800w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=1100,q=80,format=auto 1100w"
+            sizes="(max-width: 767px) 90vw, 45vw"
+            alt="Inside the Sunny & Ranney showroom — curated furniture and decor"
+            width="800"
+            height="1000"
+            loading="lazy"
+            decoding="async"
+          />
+          <a href="/shop?collection=sofas" class="shop-look__tag" style="top: 40%; left: 25%;" data-astro-prefetch>
+            <span class="shop-look__dot"></span>
+            <span class="shop-look__label">Sofas</span>
+          </a>
+          <a href="/shop?collection=accent-chairs" class="shop-look__tag" style="top: 30%; left: 70%;" data-astro-prefetch>
+            <span class="shop-look__dot"></span>
+            <span class="shop-look__label">Accent Chairs</span>
+          </a>
+          <a href="/shop?collection=coffee-tables" class="shop-look__tag" style="top: 65%; left: 50%;" data-astro-prefetch>
+            <span class="shop-look__dot"></span>
+            <span class="shop-look__label">Coffee Tables</span>
+          </a>
+        </div>
+      </div>
+      <div class="services__content reveal delay-1">
+        <p class="services__kicker">The Showroom Experience</p>
+        <h2 class="services__heading">We help you build<br/>the room you've<br/>been imagining.</h2>
+
+        <div class="services__list">
+          <div class="services__offering">
+            <h3 class="services__title">Design Assistance</h3>
+            <p class="services__desc">Tell us about your space. Our in-house designers work with you from layout to finishing touches — complimentary, no project too small.</p>
+          </div>
+          <div class="services__offering">
+            <h3 class="services__title">Custom Sourcing</h3>
+            <p class="services__desc">Looking for something specific? We tap into a global network of makers to find pieces beyond what's on our floor.</p>
+          </div>
+          <div class="services__offering">
+            <h3 class="services__title">Custom Upholstery</h3>
+            <p class="services__desc">Choose your fabrics, finishes, and silhouettes. We'll craft a one-of-a-kind piece made to order, just for you.</p>
+          </div>
+        </div>
+
+        <a href="mailto:info@sunnyandranney.com" class="services__link">
+          Start a project
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
   <!-- ═══ FEATURED / TRENDING ═══ -->
   {hasShopify && featuredProducts.length > 0 && (
     <section class="home-products section">
       <div class="container">
         <div class="home-products__header reveal">
-          <h2 class="section-title">Trending Now</h2>
+          <div>
+            <h2 class="section-title">Trending Now</h2>
+            <p class="home-products__subtitle">Hand-picked from our showroom floor</p>
+          </div>
           <a href="/shop" class="home-products__see-all" data-astro-prefetch>See all &rarr;</a>
         </div>
-        <div class="product-grid reveal" id="home-grid">
-          {featuredProducts.map((product: any, idx: number) => {
+
+        {/* ── Hero row: first 2 products, editorial size ── */}
+        <div class="trending-hero reveal" id="home-grid">
+          {featuredProducts.slice(0, 2).map((product: any, idx: number) => {
             const image = product.images.edges[0]?.node;
             const image2 = product.images.edges[1]?.node;
             const price = product.priceRange.minVariantPrice;
@@ -172,29 +285,29 @@ const featuredProducts = products.slice(0, 8);
             const firstVariant = product.variants.edges[0]?.node;
 
             return (
-              <div class="product-card" data-type={product.productType.toLowerCase()}>
+              <div class="product-card product-card--hero" data-type={product.productType.toLowerCase()}>
                 {isOnSale && <span class="product-card__badge">Sale</span>}
                 {!isOnSale && !product.availableForSale && <span class="product-card__badge product-card__badge--sold">Sold Out</span>}
                 <a href={`/shop/${product.handle}`} data-astro-prefetch class="product-card__image" aria-hidden="true" tabindex="-1">
                   {image ? (
                     <>
                       <img
-                        src={shopifyImageUrl(image.url, 600)}
-                        srcset={shopifyImageSrcset(image.url, [300, 600, 900])}
-                        sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                        src={shopifyImageUrl(image.url, 900)}
+                        srcset={shopifyImageSrcset(image.url, [450, 900])}
+                        sizes="(max-width: 768px) 90vw, 45vw"
                         alt=""
                         width={image.width}
                         height={image.height}
-                        loading={idx < 4 ? 'eager' : 'lazy'}
+                        loading="eager"
                         fetchpriority={idx === 0 ? 'high' : undefined}
                         decoding={idx === 0 ? 'sync' : 'async'}
                         class="product-card__img-primary"
                       />
                       {image2 && (
                         <img
-                          src={shopifyImageUrl(image2.url, 600)}
-                          srcset={shopifyImageSrcset(image2.url, [300, 600, 900])}
-                          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          src={shopifyImageUrl(image2.url, 900)}
+                          srcset={shopifyImageSrcset(image2.url, [450, 900])}
+                          sizes="(max-width: 768px) 90vw, 45vw"
                           alt=""
                           width={image2.width}
                           height={image2.height}
@@ -234,68 +347,84 @@ const featuredProducts = products.slice(0, 8);
             );
           })}
         </div>
+
+        {/* ── Standard row: remaining products ── */}
+        {featuredProducts.length > 2 && (
+          <div class="product-grid reveal delay-1">
+            {featuredProducts.slice(2, 6).map((product: any, idx: number) => {
+              const image = product.images.edges[0]?.node;
+              const image2 = product.images.edges[1]?.node;
+              const price = product.priceRange.minVariantPrice;
+              const compareAt = product.compareAtPriceRange?.minVariantPrice;
+              const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.amount);
+              const firstVariant = product.variants.edges[0]?.node;
+
+              return (
+                <div class="product-card" data-type={product.productType.toLowerCase()}>
+                  {isOnSale && <span class="product-card__badge">Sale</span>}
+                  {!isOnSale && !product.availableForSale && <span class="product-card__badge product-card__badge--sold">Sold Out</span>}
+                  <a href={`/shop/${product.handle}`} data-astro-prefetch class="product-card__image" aria-hidden="true" tabindex="-1">
+                    {image ? (
+                      <>
+                        <img
+                          src={shopifyImageUrl(image.url, 600)}
+                          srcset={shopifyImageSrcset(image.url, [300, 600])}
+                          sizes="(max-width: 768px) 50vw, 25vw"
+                          alt=""
+                          width={image.width}
+                          height={image.height}
+                          loading="lazy"
+                          decoding="async"
+                          class="product-card__img-primary"
+                        />
+                        {image2 && (
+                          <img
+                            src={shopifyImageUrl(image2.url, 600)}
+                            srcset={shopifyImageSrcset(image2.url, [300, 600])}
+                            sizes="(max-width: 768px) 50vw, 25vw"
+                            alt=""
+                            width={image2.width}
+                            height={image2.height}
+                            loading="lazy"
+                            decoding="async"
+                            class="product-card__img-hover"
+                          />
+                        )}
+                      </>
+                    ) : (
+                      <div class="product-card__image-ph">{product.productType || 'Product'}</div>
+                    )}
+                  </a>
+                  <div class="product-card__info">
+                    {product.productType && <span class="product-card__type">{product.productType}</span>}
+                    <a href={`/shop/${product.handle}`} data-astro-prefetch class="product-card__title">{product.title}</a>
+                    <div class="product-card__pricing">
+                      <span class="product-card__price">${parseFloat(price.amount).toFixed(2)}</span>
+                      {isOnSale && (
+                        <span class="product-card__price--compare">${parseFloat(compareAt.amount).toFixed(2)}</span>
+                      )}
+                    </div>
+                    {product.availableForSale && firstVariant && (
+                      <button class="product-card__add-btn"
+                        data-variant-id={firstVariant.id}
+                        data-title={product.title}
+                        data-price={parseFloat(price.amount)}
+                        data-image={image?.url || ''}
+                        data-handle={product.handle}
+                        data-variant-title={firstVariant.title}
+                      >
+                        Add to Cart
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </section>
   )}
-
-  <!-- ═══ DESIGN SERVICES ═══ -->
-  <section class="services">
-    <div class="container">
-      <div class="services__top reveal">
-        <p class="services__kicker">Beyond the Showroom</p>
-        <h2 class="services__heading">We don't just sell furniture.<br/>We help you build a home.</h2>
-      </div>
-
-      <div class="services__grid">
-        <div class="services__card services__card--1 reveal">
-          <div class="services__card-inner">
-            <div class="services__card-icon" aria-hidden="true">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/>
-              </svg>
-            </div>
-            <h3 class="services__title">Design<br/>Assistance</h3>
-            <p class="services__desc">Tell us about your space and we'll help you fill it. Our in-house designers work with you from concept to final pillow — no project too big or small.</p>
-            <span class="services__tag">Complimentary</span>
-          </div>
-        </div>
-
-        <div class="services__card services__card--2 reveal delay-1">
-          <div class="services__card-inner">
-            <div class="services__card-icon" aria-hidden="true">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
-              </svg>
-            </div>
-            <h3 class="services__title">Custom<br/>Sourcing</h3>
-            <p class="services__desc">Have something specific in mind? We tap into a global network of makers to find exactly what you're looking for — beyond what's on our floor.</p>
-            <span class="services__tag">Worldwide</span>
-          </div>
-        </div>
-
-        <div class="services__card services__card--3 reveal delay-2">
-          <div class="services__card-inner">
-            <div class="services__card-icon" aria-hidden="true">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v1.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V11a2 2 0 0 0-4 0z"/><path d="M5 18v2"/><path d="M19 18v2"/>
-              </svg>
-            </div>
-            <h3 class="services__title">Custom<br/>Upholstery</h3>
-            <p class="services__desc">Choose your own fabrics, finishes, and silhouettes. We craft one-of-a-kind pieces built around your vision — made just for you.</p>
-            <span class="services__tag">Made to Order</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="services__bottom reveal delay-3">
-        <p class="services__bottom-text">Have a project in mind?</p>
-        <a href="mailto:info@sunnyandranney.com" class="services__cta-btn">
-          Let's Talk
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </a>
-      </div>
-    </div>
-  </section>
 
   <!-- ═══ MISSION ═══ -->
   <section class="mission" id="mission">
@@ -323,7 +452,10 @@ const featuredProducts = products.slice(0, 8);
           fund bedroom and living space makeovers for children with special needs.
           269 rooms transformed. 14 years and counting.
         </p>
-        <a href="/mission" class="btn btn--outline mission__cta" data-astro-prefetch>Read Our Full Story</a>
+        <div class="mission__actions">
+          <a href="/shop" class="btn btn--gold mission__cta" data-astro-prefetch>Shop &amp; Give Back</a>
+          <a href="/about" class="btn btn--outline mission__cta" data-astro-prefetch>Read Our Full Story</a>
+        </div>
       </div>
     </div>
   </section>
@@ -530,6 +662,83 @@ const featuredProducts = products.slice(0, 8);
     z-index: 0;
   }
 
+  /* Hero floating product card */
+  .hero__product-card {
+    position: absolute;
+    bottom: 2rem;
+    left: -1rem;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    background: white;
+    border-radius: 12px;
+    padding: 0.5rem 0.75rem 0.5rem 0.5rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.08);
+    text-decoration: none;
+    transition: transform 0.3s var(--ease-out), box-shadow 0.3s;
+    max-width: 200px;
+  }
+
+  .hero__product-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  .hero__product-card img {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .hero__product-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+  }
+
+  .hero__product-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-cyan);
+  }
+
+  .hero__product-name {
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-charcoal);
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .hero__product-price {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--color-stone);
+  }
+
+  @media (max-width: 767px) {
+    .hero__product-card {
+      bottom: 1.5rem;
+      left: -0.5rem;
+      max-width: 180px;
+      padding: 0.4rem 0.6rem 0.4rem 0.4rem;
+    }
+    .hero__product-card img {
+      width: 44px;
+      height: 44px;
+    }
+  }
+
   /* ─── Impact Stats ───────────────────── */
   .impact {
     background: var(--color-charcoal);
@@ -640,6 +849,61 @@ const featuredProducts = products.slice(0, 8);
   @media (min-width: 1024px) {
     .hero__img-wrap {
       max-width: 440px;
+    }
+  }
+
+  /* ─── Promise Strip ──────────────────── */
+  .promise {
+    background: var(--color-warm-white);
+    padding: clamp(1.5rem, 3vh, 2.5rem) 0;
+    border-bottom: 1px solid var(--color-cream-dark);
+  }
+
+  .promise__inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(1.5rem, 4vw, 3.5rem);
+    flex-wrap: wrap;
+  }
+
+  .promise__item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 0 0 auto;
+  }
+
+  .promise__item svg {
+    color: var(--color-cyan);
+    flex-shrink: 0;
+  }
+
+  .promise__item div {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .promise__title {
+    font-family: var(--font-display);
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--color-charcoal);
+    line-height: 1.2;
+  }
+
+  .promise__desc {
+    font-size: 0.75rem;
+    color: var(--color-stone);
+    line-height: 1.4;
+  }
+
+  @media (max-width: 639px) {
+    .promise__inner {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+      padding-left: 0.5rem;
     }
   }
 
@@ -758,6 +1022,155 @@ const featuredProducts = products.slice(0, 8);
     font-weight: 300;
   }
 
+  /* ─── Shop the Look (hotspots) ──────────── */
+  .shop-look__img-wrap {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .shop-look__img-wrap img {
+    width: 100%;
+    height: auto;
+    display: block;
+    aspect-ratio: 16/10;
+    object-fit: cover;
+  }
+
+  /* Hotspot tags */
+  .shop-look__tag {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    text-decoration: none;
+    z-index: 1;
+    transform: translate(-50%, -50%);
+  }
+
+  .shop-look__dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid var(--color-gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+    transition: transform 0.3s var(--ease-out), box-shadow 0.3s;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  }
+
+  .shop-look__dot::after {
+    content: '+';
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-charcoal);
+    line-height: 1;
+  }
+
+  .shop-look__label {
+    background: white;
+    color: var(--color-charcoal);
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: opacity 0.25s, transform 0.25s var(--ease-out);
+    pointer-events: none;
+  }
+
+  .shop-look__tag:hover .shop-look__dot {
+    transform: scale(1.15);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  }
+
+  .shop-look__tag:hover .shop-look__label {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  /* Pulse animation on dots */
+  .shop-look__dot::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid var(--color-gold);
+    opacity: 0;
+    animation: shop-look-pulse 2.5s ease-out infinite;
+  }
+
+  @keyframes shop-look-pulse {
+    0% { opacity: 0.6; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.6); }
+  }
+
+  @media (max-width: 639px) {
+    .shop-look__dot {
+      width: 24px;
+      height: 24px;
+    }
+    .shop-look__dot::after {
+      font-size: 0.75rem;
+    }
+    .shop-look__label {
+      font-size: 0.7rem;
+      padding: 0.25rem 0.5rem;
+    }
+  }
+
+  /* ─── Trending Hero Row ──────────────────── */
+  .trending-hero {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    margin-top: var(--space-lg);
+  }
+
+  @media (min-width: 640px) {
+    .trending-hero {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .product-card--hero .product-card__image {
+    aspect-ratio: 3/4;
+  }
+
+  .product-card--hero .product-card__info {
+    padding: 1rem 0.25rem 0.25rem;
+  }
+
+  .product-card--hero .product-card__title {
+    font-size: clamp(1rem, 1.4vw, 1.15rem);
+  }
+
+  .product-card--hero .product-card__price {
+    font-size: 1rem;
+  }
+
+  .product-card--hero .product-card__type {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-cyan);
+    font-weight: 600;
+  }
+
+  /* Standard grid below hero row */
+  .home-products .product-grid {
+    margin-top: 1.25rem;
+  }
+
   /* ─── Home Products Header ─────────────── */
   .home-products { background: var(--color-warm-white); }
 
@@ -778,6 +1191,13 @@ const featuredProducts = products.slice(0, 8);
     letter-spacing: 0.03em;
     transition: color 0.2s;
     flex-shrink: 0;
+  }
+
+  .home-products__subtitle {
+    font-size: 0.85rem;
+    color: var(--color-stone);
+    margin: 0.25rem 0 0;
+    line-height: 1.4;
   }
 
   .home-products__see-all:hover { color: var(--color-charcoal); }
@@ -888,21 +1308,45 @@ const featuredProducts = products.slice(0, 8);
 
   /* ─── Design Services ─────────────────── */
   .services {
-    background: var(--color-warm-white);
+    background: var(--color-cream);
     padding: clamp(4rem, 10vh, 7rem) 0;
-    position: relative;
   }
 
-  /* ─ Header ─ */
-  .services__top {
-    text-align: center;
-    margin-bottom: clamp(3rem, 6vh, 5rem);
+  .services__inner {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+    align-items: center;
+  }
+
+  @media (min-width: 768px) {
+    .services__inner {
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: var(--space-2xl);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .services__inner {
+      gap: var(--space-3xl);
+    }
+  }
+
+  /* ─ Image ─ */
+  .services__media {
+    order: -1;
+  }
+
+  /* ─ Content ─ */
+  .services__content {
+    display: flex;
+    flex-direction: column;
   }
 
   .services__kicker {
     font-size: 0.7rem;
     font-weight: 600;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--color-cyan);
     margin: 0 0 var(--space-md);
@@ -910,194 +1354,74 @@ const featuredProducts = products.slice(0, 8);
   }
 
   .services__heading {
-    font-size: clamp(1.7rem, 3.5vw, 2.6rem);
-    line-height: 1.2;
+    font-size: clamp(1.8rem, 3.2vw, 2.6rem);
+    line-height: 1.15;
     letter-spacing: -0.02em;
-    margin: 0;
+    margin: 0 0 clamp(2rem, 5vh, 3.5rem);
     color: var(--color-charcoal);
   }
 
-  /* ─ Card Grid ─ */
-  .services__grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-md);
-  }
-
-  @media (min-width: 640px) {
-    .services__grid {
-      grid-template-columns: repeat(3, 1fr);
-      gap: var(--space-lg);
-    }
-  }
-
-  /* ─ Individual Cards ─ */
-  .services__card {
-    position: relative;
-    border-radius: 20px;
-    overflow: hidden;
-    transition: transform 0.6s var(--ease-out);
-  }
-
-  .services__card:hover {
-    transform: translateY(-6px);
-  }
-
-  .services__card-inner {
-    position: relative;
-    padding: clamp(2rem, 4vw, 2.8rem) clamp(1.5rem, 3vw, 2.2rem);
-    height: 100%;
+  /* ─ Service offerings ─ */
+  .services__list {
     display: flex;
     flex-direction: column;
-    border-radius: 20px;
-    transition: box-shadow 0.6s var(--ease-out);
+    gap: 0;
   }
 
-  .services__card:hover .services__card-inner {
-    box-shadow: 0 24px 64px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.04);
+  .services__offering {
+    padding: var(--space-lg) 0;
+    border-top: 1px solid var(--color-cream-dark);
   }
 
-  /* Card color variants — each card has its own warm palette */
-  .services__card--1 .services__card-inner {
-    background: linear-gradient(160deg, #f5f0e8 0%, #ede6da 100%);
+  .services__offering:last-child {
+    border-bottom: 1px solid var(--color-cream-dark);
   }
 
-  .services__card--2 .services__card-inner {
-    background: linear-gradient(160deg, #e8eff3 0%, #dde8ee 100%);
-  }
-
-  .services__card--3 .services__card-inner {
-    background: linear-gradient(160deg, #f0ebe4 0%, #e8e0d5 100%);
-  }
-
-  /* Stagger the cards vertically on desktop for rhythm */
-  @media (min-width: 640px) {
-    .services__card--2 {
-      transform: translateY(2rem);
-    }
-
-    .services__card--2:hover {
-      transform: translateY(calc(2rem - 6px));
-    }
-  }
-
-  /* ─ Card Icon ─ */
-  .services__card-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 14px;
-    background: rgba(255,255,255,0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: var(--space-lg);
-    color: var(--color-charcoal);
-    transition: transform 0.5s var(--ease-out), background 0.4s;
-    backdrop-filter: blur(8px);
-  }
-
-  .services__card:hover .services__card-icon {
-    transform: scale(1.08) rotate(-3deg);
-    background: rgba(255,255,255,0.9);
-  }
-
-  /* ─ Card Typography ─ */
   .services__title {
     font-family: var(--font-display);
-    font-size: clamp(1.5rem, 2.5vw, 1.9rem);
+    font-size: clamp(1.15rem, 1.8vw, 1.35rem);
     font-weight: 600;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
+    margin: 0 0 0.5rem;
     color: var(--color-charcoal);
-    margin: 0 0 var(--space-sm);
+    letter-spacing: -0.01em;
+    line-height: 1.25;
   }
 
   .services__desc {
     font-size: 0.88rem;
-    color: var(--color-slate);
-    line-height: 1.7;
-    margin: 0;
-    flex: 1;
-  }
-
-  /* ─ Tag pill ─ */
-  .services__tag {
-    display: inline-block;
-    margin-top: var(--space-lg);
-    padding: 0.35rem 0.85rem;
-    font-size: 0.68rem;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    border-radius: 100px;
-    background: rgba(255,255,255,0.6);
-    color: var(--color-slate);
-    align-self: flex-start;
-    backdrop-filter: blur(4px);
-    transition: background 0.3s, color 0.3s;
-  }
-
-  .services__card:hover .services__tag {
-    background: var(--color-charcoal);
-    color: var(--color-cream);
-  }
-
-  /* ─ Bottom CTA ─ */
-  .services__bottom {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-md);
-    margin-top: clamp(3rem, 6vh, 5rem);
-    text-align: center;
-  }
-
-  @media (min-width: 640px) {
-    .services__bottom {
-      margin-top: clamp(5rem, 8vh, 7rem);
-    }
-  }
-
-  .services__bottom-text {
-    font-family: var(--font-display);
-    font-size: clamp(1.2rem, 2vw, 1.5rem);
     color: var(--color-stone);
+    line-height: 1.7;
+    max-width: 44ch;
     margin: 0;
-    font-style: italic;
-    letter-spacing: -0.01em;
   }
 
-  .services__cta-btn {
+  /* ─ CTA link ─ */
+  .services__link {
     display: inline-flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 1rem 2.2rem;
-    font-size: 0.82rem;
+    gap: 0.5rem;
+    margin-top: var(--space-xl);
+    font-size: 0.8rem;
     font-weight: 600;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--color-charcoal);
-    background: var(--color-gold);
-    border-radius: 100px;
-    transition: background 0.3s, transform 0.3s, box-shadow 0.4s;
-    box-shadow: 0 4px 16px rgba(255,212,0,0.25);
+    transition: color 0.3s;
   }
 
-  .services__cta-btn svg {
+  .services__link svg {
     transition: transform 0.4s var(--ease-out);
   }
 
-  .services__cta-btn:hover {
-    background: var(--color-gold-light);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 28px rgba(255,212,0,0.35);
+  .services__link:hover {
+    color: var(--color-cyan);
   }
 
-  .services__cta-btn:hover svg {
+  .services__link:hover svg {
     transform: translateX(4px);
   }
 
-  .services__cta-btn:focus-visible {
+  .services__link:focus-visible {
     outline: 2px solid var(--color-charcoal);
     outline-offset: 4px;
   }
@@ -1183,9 +1507,20 @@ const featuredProducts = products.slice(0, 8);
     font-weight: 600;
   }
 
+  .mission__actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
   .mission__cta {
     border-color: rgba(255,255,255,0.3);
     color: white;
+  }
+
+  .mission__cta.btn--gold {
+    color: var(--color-charcoal);
   }
 
   .mission__cta:hover {
@@ -1383,10 +1718,10 @@ const featuredProducts = products.slice(0, 8);
     }
   }
 
-  // Add to cart from homepage product cards
-  const homeGrid = document.getElementById('home-grid');
+  // Add to cart from homepage product cards (covers both hero + standard grids)
+  const homeProducts = document.querySelector('.home-products');
 
-  homeGrid?.addEventListener('click', (e) => {
+  homeProducts?.addEventListener('click', (e) => {
     const btn = (e.target as Element)?.closest('.product-card__add-btn');
     if (!btn) return;
     e.preventDefault();

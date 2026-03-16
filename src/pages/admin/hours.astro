@@ -1,0 +1,264 @@
+---
+import Admin from '@/layouts/Admin.astro';
+import { getSetting } from '@/lib/db';
+
+export const prerender = false;
+
+const hours: any = await getSetting('settings:hours');
+
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+const defaults = {
+  days: DAYS.map(day => ({
+    day,
+    open: '10:00',
+    close: '18:00',
+    closed: false,
+  })),
+  holidays: [] as Array<{ date: string; label: string }>,
+  note: '',
+};
+
+const data = hours || defaults;
+---
+
+<Admin title="Store Hours">
+  <div class="admin-header">
+    <h2>Store Hours</h2>
+    <p>Set your regular hours and holiday closures</p>
+  </div>
+
+  <form id="hours-form">
+    <div class="admin-card">
+      <h3>Regular Hours</h3>
+      <div class="hours-grid">
+        {data.days.map((d: any, i: number) => (
+          <div class="hours-row">
+            <span class="hours-day">{d.day}</span>
+            <label class="admin-toggle">
+              <input type="checkbox" name={`closed-${i}`} checked={!d.closed} />
+              <span class="admin-toggle-slider"></span>
+            </label>
+            <span class="hours-status">{d.closed ? 'Closed' : 'Open'}</span>
+            <div class="hours-times" data-index={i}>
+              <input type="time" class="admin-input hours-time" name={`open-${i}`} value={d.open} disabled={d.closed} />
+              <span class="hours-sep">to</span>
+              <input type="time" class="admin-input hours-time" name={`close-${i}`} value={d.close} disabled={d.closed} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <h3>Holiday Closures</h3>
+      <div id="holidays-container">
+        {data.holidays.map((h: any, i: number) => (
+          <div class="holiday-row" data-holiday-index={i}>
+            <div class="admin-field" style="flex:1; margin-bottom:0">
+              <input type="date" class="admin-input" name={`holiday-date-${i}`} value={h.date} />
+            </div>
+            <div class="admin-field" style="flex:2; margin-bottom:0">
+              <input type="text" class="admin-input" name={`holiday-label-${i}`} value={h.label} placeholder="e.g. Christmas Day" />
+            </div>
+            <button type="button" class="admin-btn admin-btn--danger remove-holiday" style="align-self:center">Remove</button>
+          </div>
+        ))}
+      </div>
+      <button type="button" class="admin-btn admin-btn--outline" id="add-holiday" style="margin-top: 0.75rem">+ Add Holiday</button>
+    </div>
+
+    <div class="admin-card">
+      <h3>Additional Note</h3>
+      <p style="font-size: 0.85rem; color: var(--admin-text-light); margin-bottom: 0.75rem;">
+        Shown on the site and available to the chatbot (e.g. "Curbside pickup available")
+      </p>
+      <textarea class="admin-input admin-textarea" name="note" placeholder="Optional note about store hours...">{data.note}</textarea>
+    </div>
+
+    <button type="submit" class="admin-btn admin-btn--primary" id="save-btn">Save Hours</button>
+  </form>
+</Admin>
+
+<style>
+  .hours-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .hours-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--admin-border);
+  }
+
+  .hours-row:last-child {
+    border-bottom: none;
+  }
+
+  .hours-day {
+    width: 100px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .hours-status {
+    font-size: 0.8rem;
+    color: var(--admin-text-light);
+    width: 45px;
+    flex-shrink: 0;
+  }
+
+  .hours-times {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+  }
+
+  .hours-time {
+    max-width: 130px;
+  }
+
+  .hours-sep {
+    font-size: 0.85rem;
+    color: var(--admin-text-light);
+  }
+
+  .hours-times.disabled .admin-input {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  .holiday-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  @media (max-width: 768px) {
+    .hours-row {
+      flex-wrap: wrap;
+    }
+
+    .hours-day {
+      width: 80px;
+    }
+
+    .hours-times {
+      width: 100%;
+      margin-top: 0.25rem;
+    }
+
+    .holiday-row {
+      flex-wrap: wrap;
+    }
+  }
+</style>
+
+<script>
+  const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const form = document.getElementById('hours-form') as HTMLFormElement;
+
+  // Toggle open/closed state
+  form.querySelectorAll('.admin-toggle input').forEach((toggle) => {
+    toggle.addEventListener('change', (e) => {
+      const input = e.target as HTMLInputElement;
+      const row = input.closest('.hours-row');
+      if (!row) return;
+      const timesDiv = row.querySelector('.hours-times') as HTMLElement;
+      const status = row.querySelector('.hours-status') as HTMLElement;
+      const isOpen = input.checked;
+
+      timesDiv.querySelectorAll('input').forEach((i) => {
+        (i as HTMLInputElement).disabled = !isOpen;
+      });
+      timesDiv.classList.toggle('disabled', !isOpen);
+      status.textContent = isOpen ? 'Open' : 'Closed';
+    });
+
+    // Set initial state
+    const input = toggle as HTMLInputElement;
+    if (!input.checked) {
+      const row = input.closest('.hours-row');
+      const timesDiv = row?.querySelector('.hours-times') as HTMLElement;
+      timesDiv?.classList.add('disabled');
+    }
+  });
+
+  // Add holiday
+  let holidayCount = form.querySelectorAll('.holiday-row').length;
+  document.getElementById('add-holiday')?.addEventListener('click', () => {
+    const container = document.getElementById('holidays-container')!;
+    const row = document.createElement('div');
+    row.className = 'holiday-row';
+    row.dataset.holidayIndex = String(holidayCount);
+    row.innerHTML = `
+      <div class="admin-field" style="flex:1; margin-bottom:0">
+        <input type="date" class="admin-input" name="holiday-date-${holidayCount}" />
+      </div>
+      <div class="admin-field" style="flex:2; margin-bottom:0">
+        <input type="text" class="admin-input" name="holiday-label-${holidayCount}" placeholder="e.g. Christmas Day" />
+      </div>
+      <button type="button" class="admin-btn admin-btn--danger remove-holiday" style="align-self:center">Remove</button>
+    `;
+    container.appendChild(row);
+    holidayCount++;
+  });
+
+  // Remove holiday
+  document.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('.remove-holiday');
+    if (btn) btn.closest('.holiday-row')?.remove();
+  });
+
+  // Save
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('save-btn') as HTMLButtonElement;
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    const days = DAYS.map((day, i) => {
+      const isOpen = (form.querySelector(`[name="closed-${i}"]`) as HTMLInputElement).checked;
+      return {
+        day,
+        open: (form.querySelector(`[name="open-${i}"]`) as HTMLInputElement).value,
+        close: (form.querySelector(`[name="close-${i}"]`) as HTMLInputElement).value,
+        closed: !isOpen,
+      };
+    });
+
+    const holidays: Array<{ date: string; label: string }> = [];
+    form.querySelectorAll('.holiday-row').forEach((row) => {
+      const dateInput = row.querySelector('input[type="date"]') as HTMLInputElement;
+      const labelInput = row.querySelector('input[type="text"]') as HTMLInputElement;
+      if (dateInput.value) {
+        holidays.push({ date: dateInput.value, label: labelInput.value });
+      }
+    });
+
+    const note = (form.querySelector('[name="note"]') as HTMLTextAreaElement).value;
+
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'settings:hours', value: { days, holidays, note } }),
+      });
+
+      if (!res.ok) throw new Error('Save failed');
+      (window as any).showToast('Store hours saved');
+    } catch {
+      (window as any).showToast('Failed to save', true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Save Hours';
+    }
+  });
+</script>

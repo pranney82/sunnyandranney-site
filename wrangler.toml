@@ -8,3 +8,11 @@ binding = "AI"
 [[vectorize]]
 binding = "VECTORIZE"
 index_name = "product-catalog"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "sunnyandranney-db"
+database_id = "PLACEHOLDER_D1_ID"  # Run: wrangler d1 create sunnyandranney-db
+
+[vars]
+GITHUB_REPO = "OWNER/sunnyandranney-site"  # Update with your GitHub owner/repo
