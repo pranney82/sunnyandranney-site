@@ -4,70 +4,49 @@ import { cfImage, cfSrcset, SIZES } from '@/lib/images';
 import type { CollectionSetting } from '@/lib/settings';
 import { getCollectionsStatic } from '@/lib/settings';
 
-export const prerender = false;
+// Fully static — rebuilt via deploy hook when products/settings change
+export const prerender = true;
 
-// Read optional collection filter from URL
-const url = new URL(Astro.request.url);
-const collectionHandle = url.searchParams.get('collection') || '';
-
-// Fetch products — from a specific collection or enabled collections
+// Fetch ALL products from enabled collections at build time
 let products: any[] = [];
 let hasShopify = false;
-let hasNextPage = false;
-let endCursor = '';
-let collectionTitle = '';
+
+// Track which collections each product belongs to (handle → collection handles)
+const productCollections: Record<string, string[]> = {};
+// Track collection handle → title for the hero
+const collectionTitles: Record<string, string> = {};
 
 try {
   const shopify = await import('@/lib/shopify');
+  const collectionSettings = await getCollectionsStatic();
+  const enabledHandles = collectionSettings
+    ?.filter(c => c.enabled)
+    .sort((a, b) => a.order - b.order)
+    .map(c => c.handle) ?? [];
 
-  if (collectionHandle) {
-    // Single collection view
-    const collection = await shopify.getCollectionByHandle(collectionHandle, 100);
-    if (collection) {
-      products = collection.products;
-      collectionTitle = collection.title;
-      hasNextPage = collection.pageInfo.hasNextPage;
-      endCursor = collection.pageInfo.endCursor;
-    }
-  } else {
-    // Default view: only products from admin-enabled collections
-    // Try D1 first (production), fall back to static JSON (local dev)
-    let collectionSettings: CollectionSetting[] | null = null;
-    try {
-      const { getSetting } = await import('@/lib/db');
-      collectionSettings = await getSetting<CollectionSetting[]>('settings:collections');
-    } catch {
-      collectionSettings = await getCollectionsStatic();
-    }
-    const enabledHandles = collectionSettings
-      ?.filter(c => c.enabled)
-      .sort((a, b) => a.order - b.order)
-      .map(c => c.handle) ?? [];
+  if (enabledHandles.length > 0) {
+    const results = await Promise.all(
+      enabledHandles.map(handle => shopify.getCollectionByHandle(handle, 100))
+    );
 
-    if (enabledHandles.length > 0) {
-      // Fetch all enabled collections in parallel
-      const results = await Promise.all(
-        enabledHandles.map(handle => shopify.getCollectionByHandle(handle, 100))
-      );
-
-      // Merge & deduplicate, preserving collection order
-      const seen = new Set<string>();
-      for (const collection of results) {
-        if (!collection) continue;
-        for (const product of collection.products) {
-          if (!seen.has(product.id)) {
-            seen.add(product.id);
-            products.push(product);
-          }
+    const seen = new Set<string>();
+    for (const collection of results) {
+      if (!collection) continue;
+      collectionTitles[collection.handle] = collection.title;
+      for (const product of collection.products) {
+        if (!productCollections[product.handle]) {
+          productCollections[product.handle] = [];
+        }
+        productCollections[product.handle].push(collection.handle);
+        if (!seen.has(product.id)) {
+          seen.add(product.id);
+          products.push(product);
         }
       }
-    } else {
-      // No collections configured yet — fall back to all products
-      const result = await shopify.getProducts(100);
-      products = result.products;
-      hasNextPage = result.pageInfo.hasNextPage;
-      endCursor = result.pageInfo.endCursor;
     }
+  } else {
+    const result = await shopify.getProducts(100);
+    products = result.products;
   }
 
   hasShopify = products.length > 0;
@@ -84,7 +63,7 @@ const lcpImage = products[0]?.images?.edges[0]?.node?.url
 const itemListSchema = hasShopify ? {
   '@context': 'https://schema.org',
   '@type': 'ItemList',
-  name: collectionTitle || 'Shop All Products',
+  name: 'Shop All Products',
   numberOfItems: products.length,
   itemListElement: products.slice(0, 50).map((p: any, i: number) => ({
     '@type': 'ListItem',
@@ -108,10 +87,14 @@ const itemListSchema = hasShopify ? {
 ---
 
 <Base
-  title={collectionTitle ? `${collectionTitle} — Sunny & Ranney` : "Shop Our Collection"}
+  title="Shop Our Collection"
   description="Browse curated designer furniture, home decor, lighting, and gifts at Sunny & Ranney. Every purchase supports kids with special needs through Sunshine on a Ranney Day."
   lcpImage={lcpImage}
 >
+  {/* Collection titles map for client-side filtering */}
+  <script is:inline define:vars={{ collectionTitles }}>
+    window.__collectionTitles = collectionTitles;
+  </script>
   {/* ItemList structured data for rich results */}
   {itemListSchema && (
     <script type="application/ld+json" set:html={JSON.stringify(itemListSchema)} />
@@ -120,10 +103,8 @@ const itemListSchema = hasShopify ? {
   <section class="shop-hero">
     <div class="container shop-hero__inner">
       <div class="shop-hero__text">
-        <h1 class="shop-hero__title animate-fade-up">{collectionTitle || 'The Collection'}</h1>
-        {collectionHandle && (
-          <a href="/shop" class="shop-hero__clear animate-fade-up delay-1">← All Products</a>
-        )}
+        <h1 class="shop-hero__title animate-fade-up" id="shop-title">The Collection</h1>
+        <a href="/shop" class="shop-hero__clear animate-fade-up delay-1" id="shop-clear-collection" style="display:none;">← All Products</a>
       </div>
       <p class="shop-hero__sub animate-fade-up delay-1">Every piece transforms a child's room</p>
     </div>
@@ -241,6 +222,7 @@ const itemListSchema = hasShopify ? {
                   data-title={product.title}
                   data-handle={product.handle}
                   data-tags={product.tags?.join(',').toLowerCase() || ''}
+                  data-collections={(productCollections[product.handle] || []).join(',')}
                   data-description={product.description?.toLowerCase().slice(0, 200) || ''}
                   data-idx={idx}
                   style={idx >= 24 ? 'display:none;' : ''}
@@ -1504,10 +1486,26 @@ const itemListSchema = hasShopify ? {
 
   let activeFilter = 'all';
   let activeSearch = '';
+  let activeCollection = '';
   let priceMin = 0;
   let priceMax = Infinity;
   let visiblePage = 0;
   const PAGE_SIZE = 24;
+
+  // ─── Collection filter from URL ─────────────
+  const urlParams = new URLSearchParams(window.location.search);
+  const collectionParam = urlParams.get('collection') || '';
+  const shopTitle = document.getElementById('shop-title');
+  const clearCollectionLink = document.getElementById('shop-clear-collection');
+  const titles = (window as any).__collectionTitles || {};
+
+  if (collectionParam) {
+    activeCollection = collectionParam;
+    if (shopTitle && titles[collectionParam]) {
+      shopTitle.textContent = titles[collectionParam];
+    }
+    if (clearCollectionLink) clearCollectionLink.style.display = '';
+  }
 
   const priceMinInput = document.getElementById('price-min') as HTMLInputElement;
   const priceMaxInput = document.getElementById('price-max') as HTMLInputElement;
@@ -1530,6 +1528,8 @@ const itemListSchema = hasShopify ? {
       const desc = card.dataset.description || '';
 
       const cardPrice = parseFloat(card.dataset.price || '0');
+      const collections = card.dataset.collections || '';
+      const matchesCollection = !activeCollection || collections.split(',').includes(activeCollection);
       const matchesFilter = activeFilter === 'all' || type.includes(activeFilter);
       const matchesSearch = !activeSearch ||
         title.includes(activeSearch) ||
@@ -1538,7 +1538,7 @@ const itemListSchema = hasShopify ? {
         desc.includes(activeSearch);
       const matchesPrice = cardPrice >= priceMin && cardPrice <= priceMax;
 
-      if (matchesFilter && matchesSearch && matchesPrice) {
+      if (matchesCollection && matchesFilter && matchesSearch && matchesPrice) {
         matchingCards.push(card);
         matchCount++;
       } else {

@@ -173,7 +173,12 @@ const data = specials || defaults;
         body: JSON.stringify({ key: 'settings:specials', value }),
       });
       if (!res.ok) throw new Error('Save failed');
-      (window as any).showToast('Specials saved');
+      const data = await res.json();
+      if (data.warning) {
+        (window as any).showToast(`Saved, but site won't update: ${data.warning}`, true);
+      } else {
+        (window as any).showToast('Specials saved — site will rebuild shortly');
+      }
     } catch {
       (window as any).showToast('Failed to save', true);
     } finally {

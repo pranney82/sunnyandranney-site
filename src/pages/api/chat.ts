@@ -54,7 +54,7 @@ const DEFAULT_HOURS = '**Hours:** Tuesday–Saturday, 10am–6pm. Closed Sunday 
 
 interface StoreHours {
   days: Array<{ day: string; open: string; close: string; closed: boolean }>;
-  holidays: Array<{ date: string; label: string }>;
+  holidays: Array<{ date: string; label: string; closed: boolean; open: string; close: string }>;
   note: string;
 }
 
@@ -75,7 +75,11 @@ function formatHoursForPrompt(hours: StoreHours): string {
 
   if (hours.holidays?.length) {
     const upcoming = hours.holidays.slice(0, 5);
-    result += `\n**Holiday Closures:** ${upcoming.map((h) => `${h.label} (${h.date})`).join(', ')}`;
+    const holidayLines = upcoming.map((h) => {
+      if (h.closed) return `- ${h.label} (${h.date}): Closed`;
+      return `- ${h.label} (${h.date}): ${h.open}–${h.close}`;
+    });
+    result += `\n**Holiday Hours:**\n${holidayLines.join('\n')}`;
   }
 
   if (hours.note) {

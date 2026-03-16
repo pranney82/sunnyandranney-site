@@ -1,9 +1,28 @@
 ---
-export const prerender = false;
+export const prerender = true;
 
 import Base from '@/layouts/Base.astro';
 import GoogleReviews from '@/components/GoogleReviews.astro';
 import { cfImage, cfSrcset, SIZES } from '@/lib/images';
+import { getProducts, getProductByHandle, getProductRecommendations, getProductsByType } from '@/lib/shopify';
+
+export async function getStaticPaths() {
+  // Paginate through all products to get every handle
+  const handles: string[] = [];
+  let cursor: string | undefined;
+  let hasMore = true;
+
+  while (hasMore) {
+    const result = await getProducts(250, cursor);
+    for (const p of result.products) {
+      handles.push(p.handle);
+    }
+    hasMore = result.pageInfo.hasNextPage;
+    cursor = result.pageInfo.endCursor;
+  }
+
+  return handles.map(handle => ({ params: { handle } }));
+}
 
 const { handle } = Astro.params;
 
@@ -12,7 +31,6 @@ let notFound = false;
 let relatedProducts: any[] = [];
 
 try {
-  const { getProductByHandle, getProductRecommendations, getProductsByType } = await import('@/lib/shopify');
   product = await getProductByHandle(handle!);
   if (!product) {
     notFound = true;

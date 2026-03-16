@@ -55,7 +55,7 @@ export async function getAllSettings(): Promise<Record<string, unknown>> {
 export async function saveSetting(
   key: string,
   value: unknown,
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; warning?: string }> {
   const json = JSON.stringify(value);
 
   // 1. Write to D1 (fast, immediate)
@@ -69,18 +69,27 @@ export async function saveSetting(
     return { success: false, error: 'Database write failed' };
   }
 
-  // 2. Write to GitHub (source of truth, async)
+  // 2. Write to GitHub (source of truth, triggers rebuild)
   const path = SETTINGS_PATHS[key];
   if (path) {
     try {
       await commitToGitHub(path, value, `Update ${key.replace('settings:', '')} settings`);
     } catch (err) {
-      // D1 succeeded, GitHub failed — log but don't fail the request
       console.error(`GitHub commit failed for ${key}:`, err);
+      return { success: true, warning: `Saved to database but failed to publish: ${err instanceof Error ? err.message : 'Unknown error'}` };
     }
   }
 
   return { success: true };
+}
+
+// ─── Helpers ─────────────────────────────────────────────────
+
+function toBase64(str: string): string {
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
 }
 
 // ─── GitHub write-through ────────────────────────────────────
@@ -109,7 +118,7 @@ async function commitToGitHub(path: string, content: unknown, message: string) {
 
   const body: Record<string, string> = {
     message,
-    content: btoa(JSON.stringify(content, null, 2)),
+    content: toBase64(JSON.stringify(content, null, 2)),
   };
   if (sha) body.sha = sha;
 

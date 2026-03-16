@@ -120,6 +120,44 @@ export function formatHoursShort(hours: StoreHours): string {
   }).join(' · ');
 }
 
+/** Check if today (or a given date) is a holiday, and return its info */
+export function getTodayHoliday(hours: StoreHours, dateStr?: string): StoreHours['holidays'][number] | null {
+  const today = dateStr || new Date().toISOString().split('T')[0];
+  return hours.holidays.find(h => h.date === today) || null;
+}
+
+/** Get upcoming holidays (next 30 days) for display */
+export function getUpcomingHolidays(hours: StoreHours, limit = 3): Array<StoreHours['holidays'][number] & { formatted: string }> {
+  const today = new Date();
+  const cutoff = new Date(today);
+  cutoff.setDate(cutoff.getDate() + 30);
+
+  const todayStr = today.toISOString().split('T')[0];
+  const cutoffStr = cutoff.toISOString().split('T')[0];
+
+  return hours.holidays
+    .filter(h => h.date >= todayStr && h.date <= cutoffStr)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, limit)
+    .map(h => {
+      const d = new Date(h.date + 'T12:00:00');
+      const dayLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      let timeLabel: string;
+      if (h.closed) {
+        timeLabel = 'Closed';
+      } else {
+        timeLabel = `${formatTime(h.open)}–${formatTime(h.close)}`;
+      }
+      return { ...h, formatted: `${h.label} (${dayLabel}): ${timeLabel}` };
+    });
+}
+
+/** Format a single holiday for inline display */
+export function formatHolidayShort(h: StoreHours['holidays'][number]): string {
+  if (h.closed) return `Closed for ${h.label}`;
+  return `${h.label}: ${formatTime(h.open)}–${formatTime(h.close)}`;
+}
+
 function abbrev(day: string): string {
   return day.slice(0, 3);
 }

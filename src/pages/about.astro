@@ -148,37 +148,20 @@ const beforeAfter = [
 
   <!-- ═══ 5. FOUNDER VIDEO ═══ -->
   <section class="video-section" id="our-story">
-    <div class="container">
+    <div class="container video__split">
       <div class="video__header reveal">
         <div class="video__rule" aria-hidden="true"></div>
         <span class="video__eyebrow">Our Story</span>
         <h2>See why we do<br/><em>what we do</em></h2>
         <p class="video__deck">In 60 seconds, Peter and Holly share the moment that changed everything — and why every piece of furniture in our showroom carries a deeper purpose.</p>
       </div>
-      <div class="video__player reveal delay-1">
-        <!-- PLACEHOLDER: Replace data-video-id with your YouTube embed ID -->
-        <div class="video__thumbnail" data-video-id="REPLACE_WITH_VIDEO_ID" role="button" tabindex="0" aria-label="Play founder story video">
-          <img
-            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/founders-reunion-2026/w=1000,h=560,fit=cover,q=80,format=auto"
-            srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/founders-reunion-2026/w=600,h=340,fit=cover,q=75,format=auto 600w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/founders-reunion-2026/w=1000,h=560,fit=cover,q=80,format=auto 1000w"
-            sizes="(max-width: 767px) 90vw, 800px"
-            alt="Peter and Holly Ranney — founders of Sunny & Ranney"
-            width="1000"
-            height="560"
-            loading="lazy"
-            decoding="async"
-          />
-          <div class="video__play-btn" aria-hidden="true">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-              <circle cx="24" cy="24" r="23" stroke="white" stroke-width="2" opacity="0.9"/>
-              <polygon points="20,16 34,24 20,32" fill="white"/>
-            </svg>
-          </div>
-          <div class="video__caption">
-            <span class="video__caption-label">Watch</span>
-            <span class="video__caption-title">The Room That Started It All</span>
-          </div>
-        </div>
+      <div class="video__stream-wrap reveal delay-1">
+        <iframe
+          src="https://customer-cuav5h47lgfe96ql.cloudflarestream.com/7d7459064cd569cd7a3d806914f7aec7/iframe"
+          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+          allowfullscreen
+          title="Peter and Holly share why they started Sunny & Ranney"
+        ></iframe>
       </div>
     </div>
   </section>
@@ -888,17 +871,23 @@ const beforeAfter = [
     padding: clamp(4rem, 10vh, 7rem) 0;
   }
 
+  .video__split {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: clamp(3rem, 6vw, 5rem);
+    align-items: center;
+  }
+
   .video__header {
-    text-align: center;
-    max-width: 560px;
-    margin: 0 auto clamp(2rem, 5vh, 3.5rem);
+    text-align: left;
+    max-width: 520px;
   }
 
   .video__rule {
     width: 36px;
     height: 1.5px;
     background: var(--color-gold);
-    margin: 0 auto var(--space-lg);
+    margin-bottom: var(--space-lg);
   }
 
   .video__eyebrow {
@@ -929,73 +918,49 @@ const beforeAfter = [
     color: var(--color-slate);
     line-height: 1.7;
     max-width: 48ch;
-    margin: 0 auto;
   }
 
-  .video__player {
-    max-width: 860px;
-    margin: 0 auto;
-  }
-
-  .video__thumbnail {
+  .video__stream-wrap {
     position: relative;
-    border-radius: 8px;
-    overflow: hidden;
-    cursor: pointer;
-    box-shadow: 0 20px 60px rgba(44, 44, 44, 0.15);
-  }
-
-  .video__thumbnail img {
     width: 100%;
-    height: auto;
-    display: block;
-    aspect-ratio: 16 / 9;
-    object-fit: cover;
-    transition: transform 0.8s var(--ease-out);
+    aspect-ratio: 9 / 16;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(44, 44, 44, 0.18);
   }
 
-  .video__thumbnail:hover img {
-    transform: scale(1.03);
-  }
-
-  .video__play-btn {
+  .video__stream-wrap iframe {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    transition: transform 0.4s var(--ease-out);
-    filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.3));
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
   }
 
-  .video__thumbnail:hover .video__play-btn {
-    transform: translate(-50%, -50%) scale(1.1);
-  }
+  @media (max-width: 767px) {
+    .video__split {
+      grid-template-columns: 1fr;
+      text-align: center;
+    }
 
-  .video__caption {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: clamp(1rem, 2vw, 1.5rem);
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, transparent 100%);
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-  }
+    .video__header {
+      text-align: center;
+      margin: 0 auto;
+    }
 
-  .video__caption-label {
-    font-size: 0.55rem;
-    font-weight: 700;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--color-gold);
-  }
+    .video__rule {
+      margin-left: auto;
+      margin-right: auto;
+    }
 
-  .video__caption-title {
-    font-family: var(--font-display);
-    font-size: clamp(0.85rem, 1.2vw, 1rem);
-    color: white;
-    font-style: italic;
+    .video__deck {
+      margin: 0 auto;
+    }
+
+    .video__stream-wrap {
+      max-width: 300px;
+      margin: 0 auto;
+    }
   }
 
   /* ─── Video Modal ─────────────────────── */
@@ -1036,8 +1001,9 @@ const beforeAfter = [
 
   .video-modal__content {
     width: 90vw;
-    max-width: 960px;
-    aspect-ratio: 16 / 9;
+    max-width: 400px;
+    aspect-ratio: 9 / 16;
+    max-height: 85vh;
   }
 
   .video-modal__content iframe {
@@ -2123,37 +2089,19 @@ const beforeAfter = [
       slider.addEventListener('pointercancel', () => { active = false; });
     });
 
-    // ── Video modal ──
-    const videoThumbnail = document.querySelector('.video__thumbnail[data-video-id]');
+    // ── Video modal (kept for future use) ──
     const modal = document.getElementById('video-modal');
-    const modalContent = document.getElementById('video-modal-content');
-
-    if (videoThumbnail && modal && modalContent) {
-      const videoId = videoThumbnail.dataset.videoId;
-
-      const openVideo = () => {
-        if (videoId === 'REPLACE_WITH_VIDEO_ID') return;
-        modalContent.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
-        modal.classList.add('is-open');
-        modal.setAttribute('aria-hidden', 'false');
-        document.body.style.overflow = 'hidden';
-      };
-
+    if (modal) {
       const closeVideo = () => {
         modal.classList.remove('is-open');
         modal.setAttribute('aria-hidden', 'true');
-        modalContent.innerHTML = '';
+        const content = document.getElementById('video-modal-content');
+        if (content) content.innerHTML = '';
         document.body.style.overflow = '';
       };
 
-      videoThumbnail.addEventListener('click', openVideo);
-      videoThumbnail.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openVideo(); }
-      });
-
       modal.querySelector('.video-modal__close')?.addEventListener('click', closeVideo);
       modal.addEventListener('click', (e) => { if (e.target === modal) closeVideo(); });
-
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && modal.classList.contains('is-open')) closeVideo();
       });

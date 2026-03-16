@@ -49,7 +49,7 @@ export const PUT: APIRoute = async ({ request }) => {
     });
   }
 
-  return new Response(JSON.stringify({ success: true, key }), {
+  return new Response(JSON.stringify({ success: true, key, warning: result.warning }), {
     headers: JSON_HEADERS,
   });
 };

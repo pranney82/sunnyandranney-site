@@ -31,7 +31,11 @@ const collections = shopifyCollections.map((c, i) => {
     enabled: saved ? saved.enabled : true,  // default: all enabled
     order: saved ? saved.order : i,
   };
-}).sort((a, b) => a.order - b.order);
+}).sort((a, b) => {
+  // Selected (enabled) collections first, then by order
+  if (a.enabled !== b.enabled) return a.enabled ? -1 : 1;
+  return a.order - b.order;
+});
 ---
 
 <Admin title="Collections">
@@ -255,7 +259,12 @@ const collections = shopifyCollections.map((c, i) => {
         body: JSON.stringify({ key: 'settings:collections', value }),
       });
       if (!res.ok) throw new Error('Save failed');
-      (window as any).showToast('Collections saved');
+      const data = await res.json();
+      if (data.warning) {
+        (window as any).showToast(`Saved, but site won't update: ${data.warning}`, true);
+      } else {
+        (window as any).showToast('Collections saved — site will rebuild shortly');
+      }
     } catch {
       (window as any).showToast('Failed to save', true);
     } finally {
