@@ -83,18 +83,20 @@ export interface KidsSetting {
 
 // ─── Build-time readers (for static pages) ──────────────────
 
+// Vite's glob import — statically analyzable so it works in CF Pages production builds.
+// Dynamic import(/* @vite-ignore */) is NOT bundled correctly in production.
+const _settingsFiles = import.meta.glob('/src/content/settings/*.json', {
+  eager: true,
+  import: 'default',
+});
+
 /**
- * Safely import a JSON settings file.
+ * Safely read a settings JSON file bundled at build time.
  * Returns null if the file doesn't exist (first deploy before any admin saves).
  */
-async function loadLocalJson<T>(path: string): Promise<T | null> {
-  try {
-    // Vite glob import at build time — each file needs a static path
-    const module = await import(/* @vite-ignore */ path);
-    return (module.default ?? module) as T;
-  } catch {
-    return null;
-  }
+function loadLocalJson<T>(path: string): T | null {
+  const data = _settingsFiles[path];
+  return data !== undefined ? (data as T) : null;
 }
 
 export async function getHoursStatic(): Promise<StoreHours | null> {
