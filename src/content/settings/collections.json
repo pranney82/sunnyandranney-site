@@ -1,157 +1,116 @@
 [
   {
     "handle": "bedroom-furniture",
-    "enabled": true,
-    "order": 0
+    "enabled": false,
+    "order": 0,
+    "showInNav": false
   },
   {
     "handle": "dining-room-furniture",
-    "enabled": true,
-    "order": 1
+    "enabled": false,
+    "order": 1,
+    "showInNav": false
   },
   {
     "handle": "occasional-furniture",
-    "enabled": true,
-    "order": 2
+    "enabled": false,
+    "order": 2,
+    "showInNav": false
   },
   {
     "handle": "living-room-furniture",
     "enabled": false,
-    "order": 3
+    "order": 3,
+    "showInNav": false
   },
   {
     "handle": "accent-chairs",
     "enabled": false,
-    "order": 4
+    "order": 4,
+    "showInNav": false
   },
   {
     "handle": "dining-chairs",
     "enabled": false,
-    "order": 5
+    "order": 5,
+    "showInNav": false
   },
   {
     "handle": "coffee-tables",
     "enabled": false,
-    "order": 6
+    "order": 6,
+    "showInNav": false
   },
   {
     "handle": "consoles-sideboards-sofa-tables",
     "enabled": false,
-    "order": 7
+    "order": 7,
+    "showInNav": false
   },
   {
     "handle": "desks",
     "enabled": false,
-    "order": 8
+    "order": 8,
+    "showInNav": false
   },
   {
     "handle": "dining-tables",
     "enabled": false,
-    "order": 9
+    "order": 9,
+    "showInNav": false
   },
   {
     "handle": "accent-end-tables",
     "enabled": false,
-    "order": 10
+    "order": 10,
+    "showInNav": false
   },
   {
     "handle": "ottoman-benches",
     "enabled": false,
-    "order": 11
+    "order": 11,
+    "showInNav": false
   },
   {
     "handle": "sectionals",
     "enabled": false,
-    "order": 12
+    "order": 12,
+    "showInNav": false
   },
   {
     "handle": "sofas",
     "enabled": false,
-    "order": 13
+    "order": 13,
+    "showInNav": false
   },
   {
-    "handle": "merch",
-    "enabled": false,
-    "order": 14
+    "handle": "living",
+    "enabled": true,
+    "order": 14,
+    "showInNav": false
   },
   {
-    "handle": "monetary-donation",
-    "enabled": false,
-    "order": 15
-  },
-  {
-    "handle": "kitchen-accessories",
-    "enabled": false,
-    "order": 16
-  },
-  {
-    "handle": "holiday",
-    "enabled": false,
-    "order": 17
-  },
-  {
-    "handle": "gifts",
-    "enabled": false,
-    "order": 18
-  },
-  {
-    "handle": "kids-baby",
-    "enabled": false,
-    "order": 19
-  },
-  {
-    "handle": "soft-goods",
-    "enabled": false,
-    "order": 20
-  },
-  {
-    "handle": "lighting",
-    "enabled": false,
-    "order": 21
-  },
-  {
-    "handle": "rugs",
-    "enabled": false,
-    "order": 22
-  },
-  {
-    "handle": "wall-decor",
-    "enabled": false,
-    "order": 23
-  },
-  {
-    "handle": "outdoor-furniture",
-    "enabled": false,
-    "order": 24
-  },
-  {
-    "handle": "decor",
-    "enabled": false,
-    "order": 25
-  },
-  {
-    "handle": "faux-plants-florals",
-    "enabled": false,
-    "order": 26
-  },
-  {
-    "handle": "all-products-by-price",
-    "enabled": false,
-    "order": 27
+    "handle": "outdoor",
+    "enabled": true,
+    "order": 15,
+    "showInNav": false
   },
   {
     "handle": "gift-cards",
     "enabled": false,
-    "order": 28
+    "order": 16,
+    "showInNav": false
   },
   {
     "handle": "spiritual",
     "enabled": false,
-    "order": 29
+    "order": 17,
+    "showInNav": false
   },
   {
     "handle": "jewelry",
     "enabled": false,
-    "order": 30
+    "order": 18,
+    "showInNav": false
   }
 ]
