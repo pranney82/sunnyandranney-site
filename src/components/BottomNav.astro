@@ -4,35 +4,64 @@ const currentPath = Astro.url.pathname;
 
 <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile navigation">
   <a href="/" class:list={['bottom-nav__tab', { 'bottom-nav__tab--active': currentPath === '/' }]}>
-    <svg class="bottom-nav__icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <span class="bottom-nav__pill"></span>
+    <!-- Outline -->
+    <svg class="bottom-nav__icon bottom-nav__icon--outline" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
       <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
       <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+    <!-- Filled -->
+    <svg class="bottom-nav__icon bottom-nav__icon--filled" width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2L3 9v11a2 2 0 002 2h4v-6h6v6h4a2 2 0 002-2V9L12 2z" fill="currentColor"/>
     </svg>
     <span class="bottom-nav__label">Home</span>
   </a>
 
   <a href="/shop" class:list={['bottom-nav__tab', { 'bottom-nav__tab--active': currentPath.startsWith('/shop') }]}>
-    <svg class="bottom-nav__icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <span class="bottom-nav__pill"></span>
+    <!-- Outline -->
+    <svg class="bottom-nav__icon bottom-nav__icon--outline" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
       <rect x="3" y="3" width="7" height="7"/>
       <rect x="14" y="3" width="7" height="7"/>
       <rect x="3" y="14" width="7" height="7"/>
       <rect x="14" y="14" width="7" height="7"/>
     </svg>
+    <!-- Filled -->
+    <svg class="bottom-nav__icon bottom-nav__icon--filled" width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="3" width="7" height="7" rx="1" fill="currentColor"/>
+      <rect x="14" y="3" width="7" height="7" rx="1" fill="currentColor"/>
+      <rect x="3" y="14" width="7" height="7" rx="1" fill="currentColor"/>
+      <rect x="14" y="14" width="7" height="7" rx="1" fill="currentColor"/>
+    </svg>
     <span class="bottom-nav__label">Shop</span>
   </a>
 
-  <a href="/about" class:list={['bottom-nav__tab', { 'bottom-nav__tab--active': currentPath === '/about' || currentPath === '/about/' || currentPath === '/about' || currentPath === '/about/' }]} id="bottom-nav-about">
-    <svg class="bottom-nav__icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  <a href="/about" class:list={['bottom-nav__tab', { 'bottom-nav__tab--active': currentPath === '/about' || currentPath === '/about/' }]} id="bottom-nav-about">
+    <span class="bottom-nav__pill"></span>
+    <!-- Outline -->
+    <svg class="bottom-nav__icon bottom-nav__icon--outline" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
       <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+    </svg>
+    <!-- Filled -->
+    <svg class="bottom-nav__icon bottom-nav__icon--filled" width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" fill="currentColor"/>
     </svg>
     <span class="bottom-nav__label">About</span>
   </a>
 
   <button class="bottom-nav__tab" id="bottom-nav-cart" aria-label="Cart">
-    <svg class="bottom-nav__icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <span class="bottom-nav__pill"></span>
+    <!-- Outline -->
+    <svg class="bottom-nav__icon bottom-nav__icon--outline" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
       <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
       <line x1="3" y1="6" x2="21" y2="6"/>
       <path d="M16 10a4 4 0 01-8 0"/>
+    </svg>
+    <!-- Filled -->
+    <svg class="bottom-nav__icon bottom-nav__icon--filled" width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" fill="currentColor"/>
+      <line x1="3" y1="6" x2="21" y2="6" stroke="white" stroke-width="1.5"/>
+      <path d="M16 10a4 4 0 01-8 0" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>
     </svg>
     <span class="bottom-nav__label">Cart</span>
     <span class="bottom-nav__badge" id="bottom-nav-cart-count" style="display:none;">0</span>
@@ -40,12 +69,19 @@ const currentPath = Astro.url.pathname;
 </nav>
 
 <style>
+  @keyframes icon-pop {
+    0%   { transform: scale(1); }
+    35%  { transform: scale(1.25); }
+    65%  { transform: scale(0.92); }
+    100% { transform: scale(1); }
+  }
+
   .bottom-nav {
     display: flex;
     position: fixed;
     bottom: 0;
     z-index: 200;
-    height: calc(64px + env(safe-area-inset-bottom, 0px));
+    height: calc(76px + env(safe-area-inset-bottom, 0px));
     padding-bottom: env(safe-area-inset-bottom, 0px);
 
     /* Floating pill shape */
@@ -54,7 +90,7 @@ const currentPath = Astro.url.pathname;
     right: 0;
     border-radius: 20px;
 
-    /* Frosted glass — Wayfair-style */
+    /* Frosted glass */
     background: rgba(255, 255, 255, 0.55);
     -webkit-backdrop-filter: saturate(180%) blur(24px);
     backdrop-filter: saturate(180%) blur(24px);
@@ -71,9 +107,8 @@ const currentPath = Astro.url.pathname;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
+    gap: 4px;
     color: var(--color-stone);
-    transition: color 0.2s;
     position: relative;
     -webkit-tap-highlight-color: transparent;
     background: none;
@@ -82,16 +117,40 @@ const currentPath = Astro.url.pathname;
     font-family: var(--font-body);
     text-decoration: none;
     padding: 0;
+    transition: color 0.2s, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  .bottom-nav__tab:hover,
-  .bottom-nav__tab--active {
+  /* Press feedback */
+  .bottom-nav__tab:active {
+    transform: scale(0.88);
+    transition: color 0.2s, transform 0.08s ease-in;
+  }
+
+  .bottom-nav__tab:hover {
     color: var(--color-charcoal);
   }
 
-  .bottom-nav__tab--active .bottom-nav__icon {
-    stroke: var(--color-gold);
-    stroke-width: 2;
+  /* Active pill background */
+  .bottom-nav__pill {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -56%);
+    width: 54px;
+    height: 38px;
+    border-radius: 12px;
+    background: transparent;
+    transition: background 0.2s ease;
+    pointer-events: none;
+  }
+
+  .bottom-nav__tab--active .bottom-nav__pill {
+    background: rgba(0, 0, 0, 0.07);
+  }
+
+  /* Active state */
+  .bottom-nav__tab--active {
+    color: var(--color-gold);
   }
 
   .bottom-nav__tab--active .bottom-nav__label {
@@ -99,14 +158,26 @@ const currentPath = Astro.url.pathname;
     font-weight: 600;
   }
 
+  /* Icon pop animation */
+  .bottom-nav__tab--popping .bottom-nav__icon {
+    animation: icon-pop 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  /* Outline / filled icon swap */
+  .bottom-nav__icon--outline { display: block; }
+  .bottom-nav__icon--filled  { display: none; }
+
+  .bottom-nav__tab--active .bottom-nav__icon--outline { display: none; }
+  .bottom-nav__tab--active .bottom-nav__icon--filled  { display: block; }
+
   .bottom-nav__icon {
-    width: 22px;
-    height: 22px;
+    width: 26px;
+    height: 26px;
     flex-shrink: 0;
   }
 
   .bottom-nav__label {
-    font-size: 0.62rem;
+    font-size: 0.72rem;
     font-weight: 500;
     letter-spacing: 0.02em;
     line-height: 1;
@@ -145,6 +216,23 @@ const currentPath = Astro.url.pathname;
     window.openCart?.();
   });
 
+  // Icon pop animation on tap
+  function initTabPop() {
+    document.querySelectorAll('#bottom-nav .bottom-nav__tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        tab.classList.remove('bottom-nav__tab--popping');
+        void (tab as HTMLElement).offsetWidth;
+        tab.classList.add('bottom-nav__tab--popping');
+        tab.addEventListener('animationend', () => {
+          tab.classList.remove('bottom-nav__tab--popping');
+        }, { once: true });
+      });
+    });
+  }
+
+  initTabPop();
+  document.addEventListener('astro:after-swap', initTabPop);
+
   // Sync cart count badge with the header badge
   function syncBottomNavCart() {
     const headerCount = document.getElementById('cart-count');
@@ -164,7 +252,6 @@ const currentPath = Astro.url.pathname;
       attributeFilter: ['style'],
     });
 
-    // Initial sync
     const count = headerCount.textContent || '0';
     const visible = headerCount.style.display !== 'none';
     bottomCount.textContent = count;

@@ -353,8 +353,7 @@ const phoneDigits = phone.replace(/\D/g, '');
 
   .footer__hours {
     font-size: 0.78rem;
-    color: var(--color-cyan);
-    opacity: 0.6;
+    color: var(--color-cyan-light);
   }
 
   .footer__holiday-hours {
@@ -368,6 +367,9 @@ const phoneDigits = phone.replace(/\D/g, '');
   .footer__address a {
     color: #A0A09D;
     transition: color 0.2s;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
   }
 
   .footer__address a:hover {
@@ -410,6 +412,10 @@ const phoneDigits = phone.replace(/\D/g, '');
     color: rgba(255, 255, 255, 0.55);
     font-size: 0.75rem;
     transition: color 0.2s;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0;
   }
 
   .footer__legal a:hover {

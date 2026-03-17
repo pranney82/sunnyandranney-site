@@ -53,10 +53,11 @@ try {
   console.error('[shop] Domain:', import.meta.env.PUBLIC_SHOPIFY_STORE_DOMAIN || '(missing, using default)');
 }
 
-// Preload the first product image as LCP candidate (CF Images: AVIF/WebP auto)
-const lcpImage = products[0]?.images?.edges[0]?.node?.url
-  ? cfImage(products[0].images.edges[0].node.url, { width: 600 })
-  : undefined;
+// Preload the first product image as LCP candidate
+const lcpUrl = products[0]?.images?.edges[0]?.node?.url;
+const lcpImage = lcpUrl ? cfImage(lcpUrl, { width: 600 }) : undefined;
+const lcpImageSrcset = lcpUrl ? cfSrcset(lcpUrl, [200, 400, 600]) : undefined;
+const lcpImageSizes = SIZES.gridCard;
 
 // Price formatter — drops .00 on whole numbers ($800 not $800.00)
 function fmt(amount: number): string {
@@ -94,6 +95,8 @@ const itemListSchema = hasShopify ? {
   title="Shop Our Collection"
   description="Browse curated designer furniture, home decor, lighting, and gifts at Sunny & Ranney. Every purchase supports kids with special needs through Sunshine on a Ranney Day."
   lcpImage={lcpImage}
+  lcpImageSrcset={lcpImageSrcset}
+  lcpImageSizes={lcpImageSizes}
 >
   {/* Collection titles map for client-side filtering */}
   <script is:inline define:vars={{ collectionTitles }}>
@@ -117,8 +120,6 @@ const itemListSchema = hasShopify ? {
   <!-- ═══ TOOLBAR ═══ -->
   <section class="filters-bar">
     <div class="container">
-      <!-- Row 1: Scrollable category pills -->
-      <!-- Single row: pills (scrollable) + count + filter toggle -->
       <div class="toolbar__row">
         <div class="toolbar__categories">
           <button class="filter-btn filter-btn--active" data-filter="all">All</button>
@@ -134,12 +135,12 @@ const itemListSchema = hasShopify ? {
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
               <line x1="1" y1="4" x2="15" y2="4"/><line x1="3" y1="8" x2="13" y2="8"/><line x1="5" y1="12" x2="11" y2="12"/>
             </svg>
-            Filter & Sort
+            <span class="filter-toggle__text">Filter & Sort</span>
           </button>
         </div>
       </div>
 
-      <!-- Dropdown panel: Price + Sort + View -->
+      <!-- Panel: top-down dropdown -->
       <div class="toolbar__panel" id="filter-panel" hidden>
         <div class="toolbar__panel-inner">
           <!-- Sort -->
@@ -242,7 +243,7 @@ const itemListSchema = hasShopify ? {
                         <>
                           <img
                             src={cfImage(image.url, { width: 600 })}
-                            srcset={cfSrcset(image.url, [300, 600, 900])}
+                            srcset={cfSrcset(image.url, [200, 400, 600])}
                             sizes={SIZES.gridCard}
                             alt={image.altText || product.title}
                             width={image.width}
@@ -255,7 +256,7 @@ const itemListSchema = hasShopify ? {
                           {image2 && (
                             <img
                               src={cfImage(image2.url, { width: 600 })}
-                              srcset={cfSrcset(image2.url, [300, 600, 900])}
+                              srcset={cfSrcset(image2.url, [200, 400, 600])}
                               sizes={SIZES.gridCard}
                               alt={image2.altText || `${product.title} - alternate view`}
                               width={image2.width}
@@ -438,7 +439,7 @@ const itemListSchema = hasShopify ? {
   }
 
   .shop-hero__sub {
-    color: rgba(255, 255, 255, 0.9);
+    color: #ffffff;
     font-size: 0.88rem;
     margin: 0;
   }
@@ -475,7 +476,7 @@ const itemListSchema = hasShopify ? {
   /* ─── Toolbar ─────────────────────────── */
   .filters-bar {
     border-bottom: 1px solid var(--color-cream-dark);
-    padding: 0.75rem 0;
+    padding: 0.6rem 0;
     position: sticky;
     top: var(--nav-height);
     background: var(--color-cream);
@@ -511,39 +512,41 @@ const itemListSchema = hasShopify ? {
     flex-shrink: 0;
   }
 
+  /* Hide count and text on mobile */
+  .toolbar__count { display: none; }
+  .filter-toggle__text { display: none; }
+
   .filter-btn {
-    padding: 0.4rem 1rem;
-    font-size: 0.78rem;
+    padding: 0.38rem 0.9rem;
+    font-size: 0.75rem;
     font-weight: 500;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
     color: var(--color-slate);
     border: 1.5px solid transparent;
     border-radius: 100px;
-    transition: all 0.2s;
+    transition: background-color 0.18s, color 0.18s, border-color 0.18s;
     background: transparent;
     white-space: nowrap;
     flex-shrink: 0;
+    cursor: pointer;
   }
 
   .filter-btn:hover { color: var(--color-charcoal); background: var(--color-cream-dark); }
   .filter-btn--active {
-    background: var(--color-gold);
-    color: var(--color-charcoal);
-    border-color: var(--color-gold);
-  }
-
-  .toolbar__count {
-    font-size: 0.78rem;
-    color: var(--color-slate);
-    white-space: nowrap;
+    background: var(--color-charcoal);
+    color: var(--color-cream);
+    border-color: var(--color-charcoal);
+    font-weight: 600;
   }
 
   .toolbar__filter-toggle {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.4rem;
-    padding: 0.45rem 1rem;
+    width: 36px;
+    height: 36px;
     font-family: var(--font-body);
     font-size: 0.75rem;
     font-weight: 600;
@@ -554,7 +557,8 @@ const itemListSchema = hasShopify ? {
     border-radius: 100px;
     background: transparent;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background-color 0.18s, color 0.18s, border-color 0.18s;
+    flex-shrink: 0;
   }
   .toolbar__filter-toggle:hover,
   .toolbar__filter-toggle[aria-expanded="true"] {
@@ -563,11 +567,12 @@ const itemListSchema = hasShopify ? {
     color: var(--color-charcoal);
   }
 
-  /* ─── Dropdown Panel ─────────────────── */
+  /* ─── Filter panel (top-down dropdown) ─ */
   .toolbar__panel {
-    overflow: hidden;
-    transition: max-height 0.3s ease, opacity 0.2s ease;
     max-height: 0;
+    overflow: hidden;
+    background: transparent;
+    transition: max-height 0.35s ease, opacity 0.2s ease;
     opacity: 0;
   }
   .toolbar__panel[hidden] {
@@ -577,24 +582,24 @@ const itemListSchema = hasShopify ? {
     pointer-events: none;
   }
   .toolbar__panel.is-open {
-    max-height: 300px;
+    max-height: 600px;
     opacity: 1;
     pointer-events: auto;
   }
 
   .toolbar__panel-inner {
     display: flex;
-    flex-wrap: wrap;
-    gap: 1.25rem;
-    padding: 1rem 0 0.25rem;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1rem 0 0.75rem;
     border-top: 1px solid var(--color-cream-dark);
-    margin-top: 0.75rem;
+    margin-top: 0.5rem;
   }
 
   .toolbar__panel-group {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.6rem;
   }
 
   .toolbar__panel-label {
@@ -608,14 +613,15 @@ const itemListSchema = hasShopify ? {
   /* ─── Sort select ────────────────────── */
   .toolbar__sort {
     font-family: var(--font-body);
-    font-size: 0.78rem;
-    padding: 0.4rem 0.75rem;
-    border: 1px solid var(--color-cream-dark);
-    border-radius: 6px;
+    font-size: 0.9rem;
+    padding: 0.65rem 0.9rem;
+    border: 1.5px solid var(--color-cream-dark);
+    border-radius: 10px;
     background: var(--color-warm-white);
     color: var(--color-charcoal);
     cursor: pointer;
     outline: none;
+    width: 100%;
   }
   .toolbar__sort:focus { border-color: var(--color-gold); }
 
@@ -623,20 +629,21 @@ const itemListSchema = hasShopify ? {
   .toolbar__price-inputs {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.5rem;
   }
 
   .toolbar__price-inputs input {
-    width: 68px;
-    padding: 0.4rem 0.5rem;
-    border: 1px solid var(--color-cream-dark);
-    border-radius: 4px;
+    flex: 1;
+    padding: 0.65rem 0.75rem;
+    border: 1.5px solid var(--color-cream-dark);
+    border-radius: 10px;
     font-family: var(--font-body);
-    font-size: 0.78rem;
+    font-size: 0.9rem;
     background: var(--color-warm-white);
     color: var(--color-charcoal);
     outline: none;
     -moz-appearance: textfield;
+    min-width: 0;
   }
 
   .toolbar__price-inputs input::-webkit-inner-spin-button,
@@ -646,22 +653,24 @@ const itemListSchema = hasShopify ? {
 
   .toolbar__price-dash {
     color: var(--color-stone);
-    font-size: 0.8rem;
+    font-size: 0.9rem;
+    flex-shrink: 0;
   }
 
   .toolbar__price-go {
-    padding: 0.4rem 0.75rem;
+    padding: 0.65rem 1.1rem;
     background: var(--color-charcoal);
     color: var(--color-cream);
     font-family: var(--font-body);
-    font-size: 0.72rem;
+    font-size: 0.78rem;
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     border: none;
-    border-radius: 4px;
+    border-radius: 10px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background 0.18s;
+    flex-shrink: 0;
   }
 
   .toolbar__price-go:hover { background: var(--color-gold); color: var(--color-charcoal); }
@@ -669,27 +678,46 @@ const itemListSchema = hasShopify ? {
   /* ─── View Toggle ────────────────────── */
   .toolbar__views {
     display: flex;
-    gap: 0.25rem;
+    gap: 0.5rem;
   }
 
   .toolbar__view {
-    padding: 0.4rem;
-    color: var(--color-stone);
-    border-radius: 4px;
-    transition: all 0.2s;
+    padding: 0.6rem 1.25rem;
+    color: var(--color-slate);
+    border-radius: 10px;
+    transition: all 0.18s;
+    border: 1.5px solid var(--color-cream-dark);
+    cursor: pointer;
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
   }
-  .toolbar__view:hover { color: var(--color-charcoal); }
-  .toolbar__view--active { color: var(--color-charcoal); background: var(--color-cream-dark); }
+  .toolbar__view:hover { color: var(--color-charcoal); border-color: var(--color-gold); }
+  .toolbar__view--active {
+    color: var(--color-charcoal);
+    background: var(--color-cream-dark);
+    border-color: var(--color-charcoal);
+  }
 
   /* ─── Desktop refinements ────────────── */
   @media (min-width: 768px) {
+    /* Show count + text, hide sheet chrome */
+    .toolbar__count {
+      display: block;
+      font-size: 0.72rem;
+      color: var(--color-slate);
+      white-space: nowrap;
+    }
+    .filter-toggle__text { display: inline; }
+    .toolbar__sheet-header { display: none; }
+
     .filters-bar {
-      border-bottom: none;
-      padding: 1rem 0 0.5rem;
-      background: transparent;
-      backdrop-filter: none;
-      position: relative;
-      top: 0;
+      border-bottom: 1px solid var(--color-cream-dark);
+      padding: 0.75rem 0;
+      background: var(--color-cream);
+      position: sticky;
+      top: var(--nav-height);
     }
 
     .toolbar__categories {
@@ -699,7 +727,7 @@ const itemListSchema = hasShopify ? {
     }
 
     .filter-btn {
-      padding: 0.5rem 1.25rem;
+      padding: 0.45rem 1.1rem;
       font-size: 0.72rem;
       border: 1px solid var(--color-cream-dark);
     }
@@ -714,20 +742,79 @@ const itemListSchema = hasShopify ? {
       border-color: var(--color-charcoal);
     }
 
-    .toolbar__count {
-      font-size: 0.72rem;
+    /* Desktop: pill button with text */
+    .toolbar__filter-toggle {
+      width: auto;
+      height: auto;
+      padding: 0.45rem 1rem;
     }
 
-    .toolbar__sort {
-      border-radius: 100px;
-      padding: 0.5rem 1rem;
-      font-size: 0.72rem;
-      border: 1px solid var(--color-cream-dark);
+    /* Desktop: dropdown panel */
+    .toolbar__panel {
+      position: static;
+      border-radius: 0;
+      padding: 0;
+      box-shadow: none;
+      max-height: 0;
+      overflow: hidden;
+      background: transparent;
+      transition: max-height 0.3s ease, opacity 0.2s ease;
+      opacity: 0;
+    }
+    .toolbar__panel[hidden] {
+      display: block;
+      max-height: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .toolbar__panel.is-open {
+      max-height: 300px;
+      opacity: 1;
+      pointer-events: auto;
     }
 
     .toolbar__panel-inner {
+      flex-direction: row;
       flex-wrap: nowrap;
       gap: 2rem;
+      padding: 1rem 0 0.25rem;
+      border-top: 1px solid var(--color-cream-dark);
+      margin-top: 0.75rem;
+    }
+
+    .toolbar__panel-group { gap: 0.35rem; }
+
+    .toolbar__sort {
+      font-size: 0.78rem;
+      padding: 0.4rem 0.75rem;
+      border-radius: 100px;
+      border-width: 1px;
+      width: auto;
+    }
+
+    .toolbar__price-inputs input {
+      flex: none;
+      width: 72px;
+      padding: 0.4rem 0.5rem;
+      font-size: 0.78rem;
+      border-radius: 6px;
+      border-width: 1px;
+    }
+
+    .toolbar__price-go {
+      padding: 0.4rem 0.75rem;
+      font-size: 0.72rem;
+      border-radius: 6px;
+    }
+
+    .toolbar__views { gap: 0.25rem; }
+
+    .toolbar__view {
+      padding: 0.4rem;
+      font-size: 0.7rem;
+      border-radius: 6px;
+      border-width: 1px;
+      gap: 0;
     }
   }
 
@@ -1107,12 +1194,12 @@ const itemListSchema = hasShopify ? {
   }
 
   .product-card__price--sale {
-    color: #b85c38;
+    color: #8a3a1f;
   }
 
   .product-card__price--compare {
     font-size: 0.82rem;
-    color: var(--color-stone);
+    color: #5e5d5b;
     text-decoration: line-through;
   }
 
@@ -1132,7 +1219,8 @@ const itemListSchema = hasShopify ? {
   }
 
   .product-card__badge--sold {
-    background: var(--color-stone) !important;
+    background: #6b6b68 !important;
+    color: #fff !important;
   }
 
   .product-card__add-btn {
@@ -1435,7 +1523,7 @@ const itemListSchema = hasShopify ? {
       justify-content: center;
       padding: 2.5rem 2rem;
       margin: 0.5rem 0;
-      background: linear-gradient(135deg, var(--color-cyan) 0%, #3a7d9a 100%);
+      background: var(--color-cyan);
       border-radius: 8px;
       text-align: center;
     }
@@ -1552,15 +1640,23 @@ const itemListSchema = hasShopify ? {
   const filterToggle = document.getElementById('filter-toggle');
   const filterPanel = document.getElementById('filter-panel');
 
+  function openFilterPanel() {
+    filterPanel?.classList.add('is-open');
+    filterToggle?.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeFilterPanel() {
+    filterPanel?.classList.remove('is-open');
+    filterToggle?.setAttribute('aria-expanded', 'false');
+  }
+
   filterToggle?.addEventListener('click', () => {
-    const isOpen = filterPanel?.classList.contains('is-open');
-    if (isOpen) {
-      filterPanel?.classList.remove('is-open');
-      filterToggle.setAttribute('aria-expanded', 'false');
-    } else {
-      filterPanel?.classList.add('is-open');
-      filterToggle.setAttribute('aria-expanded', 'true');
-    }
+    filterPanel?.classList.contains('is-open') ? closeFilterPanel() : openFilterPanel();
+  });
+
+  // Close on Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && filterPanel?.classList.contains('is-open')) closeFilterPanel();
   });
 
   let activeFilter = 'all';
@@ -1637,8 +1733,8 @@ const itemListSchema = hasShopify ? {
     const shownCount = Math.min(showCount, matchCount);
 
     // Update count
-    if (countEl) countEl.textContent = `${matchCount} product${matchCount !== 1 ? 's' : ''}`;
-
+    const countText = `${matchCount} product${matchCount !== 1 ? 's' : ''}`;
+    if (countEl) countEl.textContent = countText;
     // Load more visibility
     if (loadMoreWrap) {
       loadMoreWrap.style.display = matchCount > showCount ? '' : 'none';

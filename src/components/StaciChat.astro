@@ -1177,6 +1177,21 @@
     }
   }
 
+  // ─── Shared submit handler (avoids form submit event entirely) ──
+
+  function handleFormSubmit() {
+    if (isSending) return;
+    const textarea = document.getElementById('staci-input') as HTMLTextAreaElement | null;
+    if (!textarea) return;
+    const text = textarea.value.trim();
+    if (!text) return;
+    textarea.value = '';
+    textarea.style.height = 'auto';
+    updateCharCount('');
+    setSendEnabled(textarea);
+    sendMessage(text);
+  }
+
   // ─── Event Listeners (delegation for View Transitions) ────
 
   // Toggle button
@@ -1210,10 +1225,11 @@
     }
 
     // Enter in textarea submits (Shift+Enter = newline)
+    // Calls handleFormSubmit() directly — never dispatches a submit event,
+    // so Astro's ClientRouter cannot intercept it as a page navigation.
     if (e.key === 'Enter' && !e.shiftKey && (e.target as Element).id === 'staci-input') {
       e.preventDefault();
-      const form = document.getElementById('staci-form');
-      if (form) form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      handleFormSubmit();
     }
   });
 
@@ -1239,22 +1255,16 @@
     if (msg) sendMessage(msg);
   });
 
-  // Form submit (delegated so it survives view transitions)
+  // Block native form submission entirely — prevents Astro ClientRouter
+  // from intercepting it as a navigation. Use capture phase so we run
+  // before any other submit listeners (including Astro's).
   document.addEventListener('submit', (e) => {
     const form = (e.target as Element).closest('#staci-form');
     if (!form) return;
     e.preventDefault();
-    if (isSending) return;
-    const textarea = document.getElementById('staci-input') as HTMLTextAreaElement | null;
-    if (!textarea) return;
-    const text = textarea.value.trim();
-    if (!text) return;
-    textarea.value = '';
-    textarea.style.height = 'auto';
-    updateCharCount('');
-    setSendEnabled(textarea);
-    sendMessage(text);
-  });
+    e.stopImmediatePropagation();
+    handleFormSubmit();
+  }, true);
 
   // Character counter
   function updateCharCount(value: string) {
