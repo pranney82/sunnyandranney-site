@@ -150,57 +150,23 @@ const featuredProducts = products.slice(0, 8);
     </div>
   </section>
 
-  <!-- ═══ IMPACT STATS ═══ -->
-  <section class="impact">
-    <div class="container impact__inner">
-      <div class="impact__stat reveal">
-        <span class="impact__number" data-count={statRooms} data-suffix="+">0</span>
-        <span class="impact__label">Rooms Transformed</span>
-      </div>
-      <div class="impact__divider" aria-hidden="true"></div>
-      <div class="impact__stat reveal delay-1">
-        <span class="impact__number" data-count={statYears} data-suffix="">0</span>
-        <span class="impact__label">Years of Giving</span>
-      </div>
-      <div class="impact__divider" aria-hidden="true"></div>
-      <div class="impact__stat reveal delay-2">
-        <span class="impact__number">100%</span>
-        <span class="impact__label">Of Profits Donated</span>
-      </div>
-    </div>
-  </section>
-
   <!-- ═══ PROMISE STRIP ═══ -->
   <section class="promise" aria-label="Why shop with us">
     <div class="container promise__inner">
-      <div class="promise__item">
-        <div class="promise__icon" aria-hidden="true">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 3 20 16 16 16"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-        </div>
-        <div class="promise__text">
-          <span class="promise__title">Local Delivery</span>
-          <span class="promise__desc">Metro Atlanta white-glove service</span>
-        </div>
+      <div class="promise__item reveal">
+        <span class="promise__rule" aria-hidden="true"></span>
+        <span class="promise__title">100% of Profits Donated</span>
+        <span class="promise__desc">Every order transforms a child's room</span>
       </div>
-      <div class="promise__sep" aria-hidden="true"></div>
-      <div class="promise__item">
-        <div class="promise__icon" aria-hidden="true">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-        </div>
-        <div class="promise__text">
-          <span class="promise__title">Roswell Pickup</span>
-          <span class="promise__desc">Ready same or next day</span>
-        </div>
+      <div class="promise__item reveal delay-1">
+        <span class="promise__rule" aria-hidden="true"></span>
+        <span class="promise__title">White-Glove Delivery</span>
+        <span class="promise__desc">Across metro Atlanta, to your door</span>
       </div>
-      <div class="promise__sep" aria-hidden="true"></div>
-      <div class="promise__item">
-        <div class="promise__icon" aria-hidden="true">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        </div>
-        <div class="promise__text">
-          <span class="promise__title">Complimentary Design Help</span>
-          <span class="promise__desc">Our team helps you get it right</span>
-        </div>
+      <div class="promise__item reveal delay-2">
+        <span class="promise__rule" aria-hidden="true"></span>
+        <span class="promise__title">Complimentary Design</span>
+        <span class="promise__desc">Our designers work with you at no cost</span>
       </div>
     </div>
   </section>
@@ -284,22 +250,31 @@ const featuredProducts = products.slice(0, 8);
 
         <div class="services__list">
           <div class="services__offering">
-            <h3 class="services__title">Design Assistance</h3>
-            <p class="services__desc">Tell us about your space. Our in-house designers work with you from layout to finishing touches — complimentary, no project too small.</p>
+            <span class="services__number">01</span>
+            <div>
+              <h3 class="services__title">Design Assistance</h3>
+              <p class="services__desc">Tell us about your space. Our in-house designers work with you from layout to finishing touches — complimentary, no project too small.</p>
+            </div>
           </div>
           <div class="services__offering">
-            <h3 class="services__title">Custom Sourcing</h3>
-            <p class="services__desc">Looking for something specific? We tap into a global network of makers to find pieces beyond what's on our floor.</p>
+            <span class="services__number">02</span>
+            <div>
+              <h3 class="services__title">Custom Sourcing</h3>
+              <p class="services__desc">Looking for something specific? We tap into a global network of makers to find pieces beyond what's on our floor.</p>
+            </div>
           </div>
           <div class="services__offering">
-            <h3 class="services__title">Custom Upholstery</h3>
-            <p class="services__desc">Choose your fabrics, finishes, and silhouettes. We'll craft a one-of-a-kind piece made to order, just for you.</p>
+            <span class="services__number">03</span>
+            <div>
+              <h3 class="services__title">Custom Upholstery</h3>
+              <p class="services__desc">Choose your fabrics, finishes, and silhouettes. We'll craft a one-of-a-kind piece made to order, just for you.</p>
+            </div>
           </div>
         </div>
 
         <a href="mailto:info@sunnyandranney.com" class="services__link">
           Start a project
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </a>
       </div>
     </div>
@@ -550,17 +525,6 @@ const featuredProducts = products.slice(0, 8);
     </section>
   )}
 
-  <!-- ═══ RECENTLY VIEWED ═══ -->
-  <section class="home-recent section" id="home-recent-section" style="display:none;">
-    <div class="container">
-      <div class="home-products__header">
-        <h2 class="section-title">Pick Up Where You Left Off</h2>
-        <a href="/shop" class="home-products__see-all" data-astro-prefetch>Continue shopping &rarr;</a>
-      </div>
-      <div class="home-recent__scroll" id="home-recent-scroll"></div>
-    </div>
-  </section>
-
 </Base>
 
 <style>
@@ -781,57 +745,6 @@ const featuredProducts = products.slice(0, 8);
     }
   }
 
-  /* ─── Impact Stats ───────────────────── */
-  .impact {
-    background: var(--color-charcoal);
-    padding: clamp(2.5rem, 5vh, 4rem) 0;
-  }
-
-  .impact__inner {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: clamp(1.5rem, 4vw, 3rem);
-    flex-wrap: wrap;
-  }
-
-  .impact__stat {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 0.35rem;
-    flex: 0 0 auto;
-  }
-
-  .impact__number {
-    font-family: var(--font-display);
-    font-size: clamp(2.4rem, 5vw, 3.6rem);
-    font-weight: 700;
-    line-height: 1;
-    color: var(--color-gold);
-    letter-spacing: -0.02em;
-  }
-
-  .impact__label {
-    font-size: clamp(0.72rem, 1vw, 0.85rem);
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.6);
-  }
-
-  .impact__divider {
-    width: 1px;
-    height: 3rem;
-    background: rgba(255, 255, 255, 0.15);
-    flex-shrink: 0;
-  }
-
-  @media (max-width: 479px) {
-    .impact__divider { height: 2rem; }
-    .impact__inner { gap: 1.2rem; }
-  }
 
   /* Mobile: tighter hero so products appear faster */
   @media (max-width: 767px) {
@@ -896,85 +809,79 @@ const featuredProducts = products.slice(0, 8);
 
   /* ─── Promise Strip ──────────────────── */
   .promise {
-    background: var(--color-warm-white);
-    padding: clamp(2rem, 4vh, 3rem) 0;
-    border-top: 1px solid var(--color-cream-dark);
+    background: transparent;
+    padding: clamp(3rem, 6vh, 5rem) 0;
     border-bottom: 1px solid var(--color-cream-dark);
   }
 
   .promise__inner {
-    display: flex;
-    align-items: stretch;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 0;
-  }
-
-  .promise__sep {
-    width: 1px;
-    background: var(--color-cream-dark);
-    flex-shrink: 0;
-    margin: 0.25rem 0;
   }
 
   .promise__item {
     display: flex;
-    align-items: center;
-    gap: 1rem;
-    flex: 1;
-    max-width: 300px;
-    padding: 0.5rem clamp(1.25rem, 3vw, 2.5rem);
-  }
-
-  .promise__icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: rgba(74, 144, 173, 0.08);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    color: var(--color-cyan);
-  }
-
-  .promise__text {
-    display: flex;
     flex-direction: column;
-    gap: 0.2rem;
+    align-items: center;
+    text-align: center;
+    padding: 0 clamp(1.5rem, 3vw, 3rem);
+    position: relative;
+  }
+
+  .promise__item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 10%;
+    height: 80%;
+    width: 1px;
+    background: var(--color-cream-dark);
+  }
+
+  .promise__rule {
+    display: block;
+    width: 32px;
+    height: 1px;
+    background: var(--color-charcoal);
+    margin-bottom: 1.25rem;
   }
 
   .promise__title {
     font-family: var(--font-display);
-    font-size: 0.9rem;
-    font-weight: 600;
+    font-size: clamp(1rem, 1.4vw, 1.2rem);
+    font-weight: 400;
     color: var(--color-charcoal);
-    line-height: 1.2;
-    letter-spacing: 0.01em;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.5rem;
   }
 
   .promise__desc {
-    font-size: 0.76rem;
-    color: var(--color-slate);
-    line-height: 1.4;
+    font-size: clamp(0.82rem, 0.95vw, 0.9rem);
+    color: var(--color-stone);
+    line-height: 1.6;
+    max-width: 28ch;
   }
 
-  /* Mobile: vertical stack, icon left-aligned, full-width items */
   @media (max-width: 679px) {
     .promise__inner {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 0;
+      grid-template-columns: 1fr;
+      gap: 2.5rem;
     }
 
-    .promise__sep {
-      width: auto;
-      height: 1px;
-      margin: 0 1rem;
+    .promise__item:not(:last-child)::after {
+      display: none;
+    }
+
+    .promise__item:not(:last-child) {
+      padding-bottom: 2.5rem;
+      border-bottom: 1px solid var(--color-cream-dark);
     }
 
     .promise__item {
-      max-width: 100%;
-      padding: 1rem 0.5rem;
+      padding-left: 0;
+      padding-right: 0;
     }
   }
 
@@ -1096,7 +1003,6 @@ const featuredProducts = products.slice(0, 8);
   /* ─── Shop the Look (hotspots) ──────────── */
   .shop-look__img-wrap {
     position: relative;
-    border-radius: 16px;
     overflow: hidden;
   }
 
@@ -1104,7 +1010,7 @@ const featuredProducts = products.slice(0, 8);
     width: 100%;
     height: auto;
     display: block;
-    aspect-ratio: 16/10;
+    aspect-ratio: 4/5;
     object-fit: cover;
   }
 
@@ -1380,26 +1286,26 @@ const featuredProducts = products.slice(0, 8);
   /* ─── Design Services ─────────────────── */
   .services {
     background: var(--color-cream);
-    padding: clamp(4rem, 10vh, 7rem) 0;
+    padding: clamp(5rem, 12vh, 10rem) 0;
   }
 
   .services__inner {
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--space-xl);
-    align-items: center;
+    align-items: start;
   }
 
   @media (min-width: 768px) {
     .services__inner {
-      grid-template-columns: 0.9fr 1.1fr;
+      grid-template-columns: 1fr 1fr;
       gap: var(--space-2xl);
     }
   }
 
   @media (min-width: 1024px) {
     .services__inner {
-      gap: var(--space-3xl);
+      gap: clamp(5rem, 8vw, 8rem);
     }
   }
 
@@ -1414,21 +1320,27 @@ const featuredProducts = products.slice(0, 8);
     flex-direction: column;
   }
 
+  @media (min-width: 768px) {
+    .services__content {
+      padding-top: 1rem;
+    }
+  }
+
   .services__kicker {
     font-size: 0.7rem;
     font-weight: 600;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: var(--color-cyan);
-    margin: 0 0 var(--space-md);
+    color: var(--color-stone);
+    margin: 0 0 var(--space-lg);
     display: block;
   }
 
   .services__heading {
-    font-size: clamp(1.8rem, 3.2vw, 2.6rem);
-    line-height: 1.15;
-    letter-spacing: -0.02em;
-    margin: 0 0 clamp(2rem, 5vh, 3.5rem);
+    font-size: clamp(2rem, 3.5vw, 3rem);
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+    margin: 0 0 clamp(2.5rem, 6vh, 4.5rem);
     color: var(--color-charcoal);
   }
 
@@ -1440,7 +1352,10 @@ const featuredProducts = products.slice(0, 8);
   }
 
   .services__offering {
-    padding: var(--space-lg) 0;
+    display: flex;
+    align-items: flex-start;
+    gap: clamp(1rem, 2vw, 1.75rem);
+    padding: clamp(1.5rem, 3vh, 2.25rem) 0;
     border-top: 1px solid var(--color-cream-dark);
   }
 
@@ -1448,20 +1363,29 @@ const featuredProducts = products.slice(0, 8);
     border-bottom: 1px solid var(--color-cream-dark);
   }
 
+  .services__number {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    color: var(--color-stone);
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+    padding-top: 0.15rem;
+  }
+
   .services__title {
     font-family: var(--font-display);
-    font-size: clamp(1.15rem, 1.8vw, 1.35rem);
-    font-weight: 600;
-    margin: 0 0 0.5rem;
+    font-size: clamp(1.15rem, 1.8vw, 1.4rem);
+    font-weight: 400;
+    margin: 0 0 0.6rem;
     color: var(--color-charcoal);
     letter-spacing: -0.01em;
     line-height: 1.25;
   }
 
   .services__desc {
-    font-size: 0.88rem;
+    font-size: clamp(0.88rem, 1vw, 0.95rem);
     color: var(--color-stone);
-    line-height: 1.7;
+    line-height: 1.75;
     max-width: 44ch;
     margin: 0;
   }
@@ -1470,14 +1394,14 @@ const featuredProducts = products.slice(0, 8);
   .services__link {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    margin-top: var(--space-xl);
+    gap: 0.6rem;
+    margin-top: clamp(2rem, 4vh, 3rem);
     font-size: 0.8rem;
     font-weight: 600;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--color-charcoal);
-    transition: color 0.3s;
+    transition: gap 0.4s var(--ease-out), color 0.3s;
   }
 
   .services__link svg {
@@ -1485,7 +1409,8 @@ const featuredProducts = products.slice(0, 8);
   }
 
   .services__link:hover {
-    color: var(--color-cyan);
+    color: var(--color-charcoal);
+    gap: 1rem;
   }
 
   .services__link:hover svg {
@@ -1634,161 +1559,9 @@ const featuredProducts = products.slice(0, 8);
     }
   }
 
-  /* ─── Recently Viewed (homepage) ────────── */
-  .home-recent { background: var(--color-cream); }
-
-  .home-recent__scroll {
-    display: flex;
-    gap: 1rem;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 0.5rem;
-    margin-top: var(--space-lg);
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-cream-dark) transparent;
-  }
-
-  .home-recent__card {
-    flex-shrink: 0;
-    width: 200px;
-    scroll-snap-align: start;
-    background: var(--color-warm-white);
-    border-radius: 8px;
-    transition: transform 0.3s var(--ease-out), box-shadow 0.3s;
-    overflow: hidden;
-  }
-
-  .home-recent__card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 30px rgba(44,44,44,0.08);
-  }
-
-  .home-recent__image {
-    aspect-ratio: 4/5;
-    overflow: hidden;
-    background: var(--color-cream-dark);
-  }
-
-  .home-recent__image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.6s var(--ease-out);
-  }
-
-  .home-recent__card:hover .home-recent__image img { transform: scale(1.05); }
-
-  .home-recent__info {
-    padding: 0.75rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-  }
-
-  .home-recent__title {
-    font-family: var(--font-display);
-    font-size: 0.88rem;
-    font-weight: 500;
-    line-height: 1.3;
-    color: var(--color-charcoal);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .home-recent__price {
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: var(--color-charcoal);
-  }
 </style>
 
 <script>
-  // ─── Animated counters ───────────────────
-  const counterEls = document.querySelectorAll('[data-count]');
-  if (counterEls.length > 0) {
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    const animateCounter = (el: Element) => {
-      const target = parseInt(el.getAttribute('data-count') || '0', 10);
-      const suffix = el.getAttribute('data-suffix') || '';
-
-      // Respect reduced motion — show final value immediately
-      if (prefersReducedMotion) {
-        el.textContent = target.toString() + suffix;
-        return;
-      }
-
-      const duration = 1600;
-      const start = performance.now();
-      const step = (now: number) => {
-        const progress = Math.min((now - start) / duration, 1);
-        const eased = 1 - Math.pow(1 - progress, 3);
-        el.textContent = Math.round(eased * target).toString() + suffix;
-        if (progress < 1) requestAnimationFrame(step);
-      };
-      requestAnimationFrame(step);
-    };
-    const counterObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          animateCounter(entry.target);
-          counterObserver.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.5 });
-    counterEls.forEach(el => counterObserver.observe(el));
-  }
-
-  // ─── Recently viewed on homepage ───────────
-  const recentSection = document.getElementById('home-recent-section');
-  const recentScroll = document.getElementById('home-recent-scroll');
-  if (recentSection && recentScroll) {
-    try {
-      const items = JSON.parse(localStorage.getItem('sr_recent') || '[]');
-      if (items.length > 0) {
-        recentSection.style.display = '';
-        const frag = document.createDocumentFragment();
-        items.slice(0, 8).forEach((item: any) => {
-          const card = document.createElement('a');
-          card.href = `/shop/${encodeURIComponent(item.handle)}`;
-          card.className = 'home-recent__card';
-
-          const imgWrap = document.createElement('div');
-          imgWrap.className = 'home-recent__image';
-          if (item.image) {
-            const img = document.createElement('img');
-            img.src = item.image.includes('cdn.shopify.com') ? `${item.image}?width=400&crop=center` : item.image;
-            img.alt = item.title || '';
-            img.loading = 'lazy';
-            imgWrap.appendChild(img);
-          }
-          card.appendChild(imgWrap);
-
-          const info = document.createElement('div');
-          info.className = 'home-recent__info';
-          const title = document.createElement('span');
-          title.className = 'home-recent__title';
-          title.textContent = item.title;
-          info.appendChild(title);
-          if (item.price) {
-            const price = document.createElement('span');
-            price.className = 'home-recent__price';
-            price.textContent = `$${parseFloat(item.price).toFixed(2)}`;
-            info.appendChild(price);
-          }
-          card.appendChild(info);
-          frag.appendChild(card);
-        });
-        recentScroll.replaceChildren(frag);
-      }
-    } catch (e) {
-      console.warn('Recently viewed failed to load:', e);
-    }
-  }
-
   // Add to cart from homepage product cards (covers both hero + standard grids)
   const homeProducts = document.querySelector('.home-products');
 

@@ -239,19 +239,12 @@ p {
   position: relative;
   display: flex;
   flex-direction: column;
-  background: var(--color-warm-white);
-  transition: transform var(--duration) var(--ease-out),
-              box-shadow var(--duration) var(--ease-out);
-}
-
-.product-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 20px 60px rgba(44, 44, 44, 0.08);
+  background: transparent;
 }
 
 .product-card__image {
   position: relative;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 3 / 4;
   overflow: hidden;
   background: var(--color-cream-dark);
 }
@@ -289,52 +282,39 @@ p {
 }
 
 .product-card__info {
-  padding: var(--space-md);
+  padding: 0.75rem 0.15rem 0;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.3rem;
 }
 
 .product-card__title {
   font-family: var(--font-display);
-  font-size: 1.15rem;
-  font-weight: 500;
+  font-size: 1rem;
+  font-weight: 400;
   line-height: 1.3;
 }
 
 .product-card__price {
   font-family: var(--font-body);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 500;
   color: var(--color-charcoal);
 }
 
 /* Desktop: refined card info */
 @media (min-width: 768px) {
-  .product-card {
-    border-radius: 4px;
-  }
-  .product-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 16px 48px rgba(44, 44, 44, 0.1);
-  }
   .product-card__info {
-    padding: 1rem 0.25rem 0.25rem;
-    background: transparent;
-    gap: 0.25rem;
+    padding: 0.85rem 0 0;
+    gap: 0.2rem;
   }
   .product-card__title {
-    font-size: 1rem;
-    font-weight: 400;
+    font-size: 0.95rem;
   }
   .product-card__price {
     font-size: 0.88rem;
     font-weight: 600;
-  }
-  /* Hide type label on desktop for cleaner look */
-  .product-card__type {
-    display: none;
   }
 }
 
@@ -349,20 +329,20 @@ p {
 .product-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-sm);
+  gap: 1rem 0.75rem;
 }
 
 @media (min-width: 768px) {
   .product-grid {
     grid-template-columns: repeat(3, 1fr);
-    gap: 1.25rem;
+    gap: 2.5rem 1.5rem;
   }
 }
 
 @media (min-width: 1200px) {
   .product-grid {
     grid-template-columns: repeat(4, 1fr);
-    gap: 1.5rem;
+    gap: 2.5rem 1.75rem;
   }
 }
 

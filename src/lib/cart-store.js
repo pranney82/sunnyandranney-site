@@ -1,10 +1,12 @@
 // ═══════════════════════════════════════════════════════
-//  Sunny & Ranney — Lightweight Cart Store
-//  Zero dependencies, ~2KB. Pub/sub pattern with
-//  localStorage persistence + in-memory cache.
+//  Sunny & Ranney — Cart Store with Shopify Cart API
+//  Optimistic localStorage UI + Shopify server-side cart.
+//  Shopify owns the cart; localStorage is a fast cache.
 // ═══════════════════════════════════════════════════════
 
 const STORAGE_KEY = 'sr_cart';
+const CART_ID_KEY = 'sr_cart_id';
+const CHECKOUT_URL_KEY = 'sr_checkout_url';
 const listeners = new Set();
 
 // In-memory cache — avoids JSON.parse on every read
@@ -29,12 +31,236 @@ function notify(items) {
   listeners.forEach(fn => fn(items));
 }
 
+// ─── Shopify Cart API helpers ──────────────────────────
+
+function getShopifyConfig() {
+  if (typeof window === 'undefined') return null;
+  const domain = window.__SHOPIFY_DOMAIN || 'sunnyandranney.myshopify.com';
+  const token = window.__SHOPIFY_TOKEN || '';
+  if (!token) return null;
+  return { domain, token };
+}
+
+async function shopifyCartFetch(query, variables = {}) {
+  const config = getShopifyConfig();
+  if (!config) return null;
+  try {
+    const res = await fetch(`https://${config.domain}/api/2025-01/graphql.json`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shopify-Storefront-Access-Token': config.token,
+      },
+      body: JSON.stringify({ query, variables }),
+    });
+    const json = await res.json();
+    return json.data ?? null;
+  } catch {
+    return null;
+  }
+}
+
+const CART_FRAGMENT = `
+  fragment CartFields on Cart {
+    id
+    checkoutUrl
+    totalQuantity
+    cost {
+      totalAmount { amount currencyCode }
+    }
+    lines(first: 50) {
+      edges {
+        node {
+          id
+          quantity
+          merchandise {
+            ... on ProductVariant {
+              id
+              title
+              availableForSale
+              price { amount }
+              product {
+                title
+                handle
+                images(first: 1) { edges { node { url } } }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+function getStoredCartId() {
+  try { return localStorage.getItem(CART_ID_KEY); } catch { return null; }
+}
+
+function storeCartId(id) {
+  try { localStorage.setItem(CART_ID_KEY, id); } catch {}
+}
+
+function getStoredCheckoutUrl() {
+  try { return localStorage.getItem(CHECKOUT_URL_KEY); } catch { return null; }
+}
+
+function storeCheckoutUrl(url) {
+  try { localStorage.setItem(CHECKOUT_URL_KEY, url); } catch {}
+}
+
+function clearShopifyCart() {
+  try {
+    localStorage.removeItem(CART_ID_KEY);
+    localStorage.removeItem(CHECKOUT_URL_KEY);
+  } catch {}
+}
+
+// Reconcile Shopify cart response → update localStorage cache
+// This is the source of truth: Shopify tells us what's actually in the cart.
+function reconcileFromShopify(shopifyCart) {
+  if (!shopifyCart) return;
+
+  storeCartId(shopifyCart.id);
+  storeCheckoutUrl(shopifyCart.checkoutUrl);
+
+  const lines = shopifyCart.lines?.edges ?? [];
+  const items = lines.map(({ node }) => {
+    const v = node.merchandise;
+    return {
+      variantId: v.id,
+      title: v.product?.title || '',
+      variantTitle: v.title === 'Default Title' ? '' : (v.title || ''),
+      price: parseFloat(v.price?.amount || '0'),
+      image: v.product?.images?.edges?.[0]?.node?.url || '',
+      handle: v.product?.handle || '',
+      qty: node.quantity,
+      lineId: node.id, // Shopify line ID — needed for updates/removes
+    };
+  });
+
+  save(items);
+  notify(items);
+}
+
+// Map of variantId → Shopify line ID (for updates/removes)
+function getLineId(variantId) {
+  const items = load();
+  const item = items.find(i => i.variantId === variantId);
+  return item?.lineId || null;
+}
+
+// ─── Shopify Cart mutations (fire-and-forget with reconciliation) ──
+
+let _syncQueue = Promise.resolve();
+
+// Serialize all Shopify mutations to avoid race conditions
+function enqueueSync(fn) {
+  _syncQueue = _syncQueue.then(fn).catch(() => {});
+}
+
+async function shopifyCreateCart(items) {
+  const lines = items.map(i => ({
+    merchandiseId: i.variantId,
+    quantity: i.qty,
+  }));
+
+  const data = await shopifyCartFetch(`
+    ${CART_FRAGMENT}
+    mutation CartCreate($input: CartInput!) {
+      cartCreate(input: $input) {
+        cart { ...CartFields }
+        userErrors { field message }
+      }
+    }
+  `, { input: { lines } });
+
+  const result = data?.cartCreate;
+  if (result?.cart) {
+    reconcileFromShopify(result.cart);
+  }
+  return result;
+}
+
+async function shopifyAddLines(cartId, newItems) {
+  const lines = newItems.map(i => ({
+    merchandiseId: i.variantId,
+    quantity: i.qty,
+  }));
+
+  const data = await shopifyCartFetch(`
+    ${CART_FRAGMENT}
+    mutation CartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
+      cartLinesAdd(cartId: $cartId, lines: $lines) {
+        cart { ...CartFields }
+        userErrors { field message }
+      }
+    }
+  `, { cartId, lines });
+
+  const result = data?.cartLinesAdd;
+  if (result?.cart) {
+    reconcileFromShopify(result.cart);
+  }
+  return result;
+}
+
+async function shopifyUpdateLines(cartId, updates) {
+  const lines = updates.map(u => ({
+    id: u.lineId,
+    quantity: u.qty,
+  }));
+
+  const data = await shopifyCartFetch(`
+    ${CART_FRAGMENT}
+    mutation CartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) {
+      cartLinesUpdate(cartId: $cartId, lines: $lines) {
+        cart { ...CartFields }
+        userErrors { field message }
+      }
+    }
+  `, { cartId, lines });
+
+  const result = data?.cartLinesUpdate;
+  if (result?.cart) {
+    reconcileFromShopify(result.cart);
+  }
+  return result;
+}
+
+async function shopifyRemoveLines(cartId, lineIds) {
+  const data = await shopifyCartFetch(`
+    ${CART_FRAGMENT}
+    mutation CartLinesRemove($cartId: ID!, $lineIds: [ID!]!) {
+      cartLinesRemove(cartId: $cartId, lineIds: $lineIds) {
+        cart { ...CartFields }
+        userErrors { field message }
+      }
+    }
+  `, { cartId, lineIds });
+
+  const result = data?.cartLinesRemove;
+  if (result?.cart) {
+    reconcileFromShopify(result.cart);
+  }
+  return result;
+}
+
+async function shopifyFetchCart(cartId) {
+  const data = await shopifyCartFetch(`
+    ${CART_FRAGMENT}
+    query GetCart($cartId: ID!) {
+      cart(id: $cartId) { ...CartFields }
+    }
+  `, { cartId });
+
+  return data?.cart ?? null;
+}
+
 // ─── Cross-tab sync ─────────────────────────────────
-// When another tab changes localStorage, invalidate cache and notify
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (e) => {
     if (e.key === STORAGE_KEY) {
-      _cache = null; // bust cache so load() re-reads
+      _cache = null;
       notify(load());
     }
   });
@@ -51,7 +277,7 @@ export const cart = {
   /** Subscribe to cart changes. Returns unsubscribe fn. */
   subscribe(fn) {
     listeners.add(fn);
-    fn(load()); // immediate call with current state
+    fn(load());
     return () => listeners.delete(fn);
   },
 
@@ -60,7 +286,7 @@ export const cart = {
   getTotal() { return load().reduce((s, i) => s + i.price * i.qty, 0); },
   formatMoney(amount) { return currencyFmt.format(amount); },
 
-  /** Add item. If already in cart, increment qty. Supports qty param. */
+  /** Add item. Optimistic UI update, then sync to Shopify. */
   add(product, qty = 1) {
     const items = load();
     const idx = items.findIndex(i => i.variantId === product.variantId);
@@ -71,21 +297,58 @@ export const cart = {
     }
     save(items);
     notify(items);
+
+    // Sync to Shopify in background
+    enqueueSync(async () => {
+      const cartId = getStoredCartId();
+      if (cartId) {
+        // Cart exists — check if this variant already has a line
+        const existingLineId = getLineId(product.variantId);
+        if (existingLineId) {
+          // Update existing line quantity
+          const current = load().find(i => i.variantId === product.variantId);
+          if (current) {
+            await shopifyUpdateLines(cartId, [{ lineId: existingLineId, qty: current.qty }]);
+          }
+        } else {
+          // Add new line
+          await shopifyAddLines(cartId, [{ variantId: product.variantId, qty }]);
+        }
+      } else {
+        // No cart yet — create one with all current items
+        await shopifyCreateCart(load());
+      }
+    });
+
     return items;
   },
 
-  /** Remove item by variantId */
+  /** Remove item by variantId. Optimistic, then sync. */
   remove(variantId) {
+    const lineId = getLineId(variantId);
     const items = load();
     const idx = items.findIndex(i => i.variantId === variantId);
     if (idx >= 0) items.splice(idx, 1);
     save(items);
     notify(items);
+
+    if (items.length === 0) {
+      clearShopifyCart();
+    } else {
+      enqueueSync(async () => {
+        const cartId = getStoredCartId();
+        if (cartId && lineId) {
+          await shopifyRemoveLines(cartId, [lineId]);
+        }
+      });
+    }
+
     return items;
   },
 
-  /** Update quantity */
+  /** Update quantity. Optimistic, then sync. */
   updateQty(variantId, qty) {
+    const lineId = getLineId(variantId);
     const items = load();
     const item = items.find(i => i.variantId === variantId);
     if (item) {
@@ -93,6 +356,14 @@ export const cart = {
     }
     save(items);
     notify(items);
+
+    enqueueSync(async () => {
+      const cartId = getStoredCartId();
+      if (cartId && lineId) {
+        await shopifyUpdateLines(cartId, [{ lineId, qty: Math.min(Math.max(1, qty), 20) }]);
+      }
+    });
+
     return items;
   },
 
@@ -100,20 +371,72 @@ export const cart = {
   clear() {
     save([]);
     notify([]);
+    clearShopifyCart();
   },
 
-  /** Build Shopify checkout URL from cart items */
-  getCheckoutUrl(storeDomain = 'sunnyandranney.myshopify.com') {
+  /** Get Shopify checkout URL (server-validated, not a manual permalink). */
+  getCheckoutUrl() {
+    return getStoredCheckoutUrl() || null;
+  },
+
+  /**
+   * Ensure the Shopify cart is in sync. Call on page load.
+   * - If we have a stored cartId, fetch it from Shopify and reconcile.
+   * - If the Shopify cart is gone (expired/invalid), recreate it.
+   * - Prunes deleted variants, updates prices, provides valid checkoutUrl.
+   */
+  async sync() {
     const items = load();
-    if (!items.length) return null;
-    const lineItems = items.map(i => {
-      // Extract numeric variant ID from Shopify GID
-      const numericId = i.variantId.includes('/') ? i.variantId.split('/').pop() : i.variantId;
-      return `${numericId}:${i.qty}`;
-    }).join(',');
-    return `https://${storeDomain}/cart/${lineItems}`;
-  }
+    const cartId = getStoredCartId();
+
+    if (!items.length) {
+      clearShopifyCart();
+      return;
+    }
+
+    if (cartId) {
+      const shopifyCart = await shopifyFetchCart(cartId);
+      if (shopifyCart) {
+        reconcileFromShopify(shopifyCart);
+        return;
+      }
+      // Cart expired or invalid — fall through to create
+      clearShopifyCart();
+    }
+
+    // No valid Shopify cart — create one from localStorage items
+    await shopifyCreateCart(items);
+  },
+
+  /**
+   * Create a one-off cart for Buy Now (single item, immediate checkout).
+   * Returns the checkoutUrl or null.
+   */
+  async createBuyNowCart(variantId, qty = 1) {
+    const config = getShopifyConfig();
+    if (!config) {
+      // Fallback to legacy permalink if no API token
+      const numericId = variantId.includes('/') ? variantId.split('/').pop() : variantId;
+      return `https://${config?.domain || 'sunnyandranney.myshopify.com'}/cart/${numericId}:${qty}`;
+    }
+
+    const result = await shopifyCreateCart([{ variantId, qty }]);
+    if (result?.cart?.checkoutUrl) {
+      return result.cart.checkoutUrl;
+    }
+
+    // If mutation had userErrors (e.g. variant deleted), return null
+    return null;
+  },
 };
+
+// ─── Boot: sync with Shopify on page load ────────────
+if (typeof window !== 'undefined') {
+  // Defer sync so it doesn't block initial render
+  if (load().length > 0) {
+    setTimeout(() => cart.sync(), 100);
+  }
+}
 
 // ─── Wishlist (lightweight) ────────────────────────────
 

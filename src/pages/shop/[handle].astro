@@ -1315,7 +1315,7 @@ const breadcrumbSchema = {
 </style>
 
 <script>
-  import { recentlyViewed, wishlist } from '@/lib/cart-store.js';
+  import { cart, recentlyViewed, wishlist } from '@/lib/cart-store.js';
 
   // Clean up previous keydown listener on re-init (View Transitions)
   let _pdpKeyHandler: ((e: KeyboardEvent) => void) | null = null;
@@ -1543,13 +1543,26 @@ const breadcrumbSchema = {
 
   // ─── Buy Now ─────────────────────────────────
   const buyNowBtn = document.getElementById('buy-now');
-  buyNowBtn?.addEventListener('click', () => {
+  buyNowBtn?.addEventListener('click', async () => {
     const variantId = addToCartBtn?.dataset.variantId;
     if (!variantId) return;
     const qty = parseInt(qtyInput?.value || '1');
-    const numericId = variantId.includes('/') ? variantId.split('/').pop() : variantId;
-    const domain = (window as any).__SHOPIFY_DOMAIN || 'sunnyandranney.myshopify.com';
-    window.location.href = `https://${domain}/cart/${numericId}:${qty}`;
+
+    if (buyNowBtn instanceof HTMLButtonElement) {
+      buyNowBtn.disabled = true;
+      buyNowBtn.textContent = 'Preparing…';
+    }
+
+    const url = await cart.createBuyNowCart(variantId, qty);
+    if (url) {
+      window.location.href = url;
+    } else {
+      // Variant no longer available
+      if (buyNowBtn instanceof HTMLButtonElement) {
+        buyNowBtn.textContent = 'Unavailable';
+        setTimeout(() => { buyNowBtn.textContent = 'Buy Now'; buyNowBtn.disabled = false; }, 2000);
+      }
+    }
   });
 
   // Sticky bar add to cart

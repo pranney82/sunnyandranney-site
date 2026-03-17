@@ -157,9 +157,11 @@ const allSlides = [...adminSlides, ...defaultSlides];
         All Products
       </a>
       <a href="/shop?sort=newest" data-astro-prefetch class="nav__cat-link">New Arrivals</a>
-      {navCollections.map((cat) => (
-        <a href={cat.href} data-astro-prefetch class="nav__cat-link">{cat.label}</a>
-      ))}
+      <a href="/shop?collection=living" data-astro-prefetch class="nav__cat-link">Living</a>
+      <a href="/shop?collection=dining" data-astro-prefetch class="nav__cat-link">Dining</a>
+      <a href="/shop?collection=bedroom" data-astro-prefetch class="nav__cat-link">Bedroom</a>
+      <a href="/shop?collection=art-mirrors" data-astro-prefetch class="nav__cat-link">Art &amp; Mirrors</a>
+      <a href="/shop?collection=rugs" data-astro-prefetch class="nav__cat-link">Rugs</a>
       <a href="/shop?sale=true" data-astro-prefetch class="nav__cat-link nav__cat-link--sale">Sale</a>
     </div>
   </nav>
