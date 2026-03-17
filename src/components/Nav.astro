@@ -60,7 +60,7 @@ const allSlides = [...adminSlides, ...defaultSlides];
     </a>
     <div class="nav__mobile-actions">
       <a href="/about" class:list={['nav__mission-link nav__mission-link--mobile', { 'nav__mission-link--active': currentPath === '/about' || currentPath === '/about/' }]}>
-        Our Mission
+        Mission
         <img src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/soard-favicon/w=40,h=40,fit=cover,q=80,format=auto" alt="" class="nav__mission-pig" width="20" height="20" loading="lazy" aria-hidden="true" />
       </a>
       <button class="nav__icon-btn nav__search-toggle" aria-label="Search products" id="mobile-search-toggle">
@@ -134,7 +134,7 @@ const allSlides = [...adminSlides, ...defaultSlides];
 
       <div class="nav__actions">
         <a href="/about" data-astro-prefetch class:list={['nav__mission-link', { 'nav__mission-link--active': currentPath === '/about' || currentPath === '/about/' }]}>
-          Our Mission
+          Mission
           <img src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/soard-favicon/w=40,h=40,fit=cover,q=80,format=auto" alt="" class="nav__mission-pig" width="20" height="20" loading="lazy" aria-hidden="true" />
         </a>
         <button class="nav__icon-btn nav__cart" aria-label="Shopping cart" id="cart-trigger">
@@ -276,7 +276,7 @@ const allSlides = [...adminSlides, ...defaultSlides];
   }
 
   .nav__mobile-header .nav__logo-img {
-    height: 32px;
+    height: 38px;
     width: auto;
   }
 
@@ -604,13 +604,28 @@ const allSlides = [...adminSlides, ...defaultSlides];
   }
 
   .nav__mission-link:hover .nav__mission-pig {
-    transform: translateY(-3px) scale(1.15);
+    transform: translateY(-3px) scale(1.15) rotate(-8deg);
+    animation: pig-wiggle 0.5s ease 0.15s 1;
+  }
+
+  @keyframes pig-wiggle {
+    0%   { transform: translateY(-3px) scale(1.15) rotate(-8deg); }
+    25%  { transform: translateY(-3px) scale(1.15) rotate(6deg); }
+    50%  { transform: translateY(-3px) scale(1.15) rotate(-4deg); }
+    75%  { transform: translateY(-3px) scale(1.15) rotate(2deg); }
+    100% { transform: translateY(-3px) scale(1.15) rotate(0deg); }
   }
 
   .nav__mission-link:hover {
     background: var(--color-gold, #d4a843);
     border-color: var(--color-gold, #d4a843);
     color: var(--color-charcoal);
+    box-shadow: 0 0 12px rgba(255, 212, 0, 0.45), 0 0 24px rgba(255, 212, 0, 0.2);
+  }
+
+  .nav__mission-link:active {
+    transform: scale(0.95);
+    box-shadow: 0 0 6px rgba(255, 212, 0, 0.3);
   }
 
   .nav__mission-link--active {
@@ -707,10 +722,6 @@ const allSlides = [...adminSlides, ...defaultSlides];
   @media (max-width: 767px) {
     .nav__categories {
       padding: 0 4px;
-    }
-    /* Hide nav categories on shop page — shop has its own filter pills */
-    .nav--shop-active .nav__categories {
-      display: none;
     }
   }
 

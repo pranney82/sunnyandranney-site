@@ -20,6 +20,7 @@ const SETTINGS_PATHS: Record<string, string> = {
   'settings:trending': 'src/content/settings/trending.json',
   'settings:hero': 'src/content/settings/hero.json',
   'settings:kids': 'src/content/settings/kids.json',
+  'settings:team': 'src/content/settings/team.json',
 };
 
 // ─── Settings ────────────────────────────────────────────────

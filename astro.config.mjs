@@ -6,6 +6,7 @@ export default defineConfig({
   site: 'https://sunnyandranney-site.pages.dev',
   output: 'static',
   adapter: cloudflare(),
+  server: { port: 4322 },
   integrations: [
     sitemap(),
   ],

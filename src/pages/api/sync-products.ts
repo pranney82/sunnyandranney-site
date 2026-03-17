@@ -18,6 +18,7 @@ const PRODUCTS_QUERY = `
           availableForSale
           priceRange { minVariantPrice { amount } }
           compareAtPriceRange { minVariantPrice { amount } }
+          images(first: 1) { edges { node { url } } }
         }
       }
     }
@@ -130,9 +131,9 @@ export const POST: APIRoute = async ({ request }) => {
       const batch = allProducts.slice(i, i + BATCH_SIZE);
       const texts = batch.map(buildEmbeddingText);
 
-      const embeddingResult = await ai.run('@cf/baai/bge-base-en-v1.5', {
+      const embeddingResult = (await ai.run('@cf/baai/bge-base-en-v1.5', {
         text: texts,
-      });
+      })) as { data: number[][] };
 
       if (!embeddingResult.data?.length) continue;
 
@@ -147,6 +148,7 @@ export const POST: APIRoute = async ({ request }) => {
           availableForSale: node.availableForSale,
           price: node.priceRange.minVariantPrice.amount,
           compareAtPrice: node.compareAtPriceRange?.minVariantPrice?.amount || '0',
+          imageUrl: node.images?.edges?.[0]?.node?.url || '',
         },
       }));
 

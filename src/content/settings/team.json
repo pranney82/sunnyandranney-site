@@ -1,0 +1,25 @@
+{
+  "members": [
+    {
+      "name": "Staci",
+      "role": "Store Manager",
+      "desc": "Keeps the showroom running like clockwork and ensures every visitor feels at home from the moment they walk in.",
+      "imageUrl": "https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/team-staci",
+      "initials": ""
+    },
+    {
+      "name": "BJ",
+      "role": "Team Member",
+      "desc": "A valued member of the Sunny & Ranney family, helping create beautiful spaces and brighter futures every day.",
+      "imageUrl": "https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/team-bj",
+      "initials": ""
+    },
+    {
+      "name": "Staci",
+      "role": "AI Shopping Assistant",
+      "desc": "Our tireless digital team member — always ready to help you find the perfect piece, 24/7.",
+      "imageUrl": "",
+      "initials": "ST"
+    }
+  ]
+}

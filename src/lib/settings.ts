@@ -82,6 +82,18 @@ export interface KidsSetting {
   kids: KidStory[];
 }
 
+export interface TeamMember {
+  name: string;
+  role: string;
+  desc: string;
+  imageUrl: string;        // CF Images base URL (no size params), empty for initials-only
+  initials: string;        // e.g. "ST" — shown when no imageUrl
+}
+
+export interface TeamSetting {
+  members: TeamMember[];
+}
+
 // ─── Build-time readers (for static pages) ──────────────────
 
 // Vite's glob import — statically analyzable so it works in CF Pages production builds.
@@ -130,6 +142,10 @@ export async function getHeroStatic(): Promise<HeroSetting | null> {
 
 export async function getKidsStatic(): Promise<KidsSetting | null> {
   return loadLocalJson<KidsSetting>('/src/content/settings/kids.json');
+}
+
+export async function getTeamStatic(): Promise<TeamSetting | null> {
+  return loadLocalJson<TeamSetting>('/src/content/settings/team.json');
 }
 
 // ─── Formatting helpers (shared by static pages + chatbot) ──

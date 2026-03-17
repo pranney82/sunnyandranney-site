@@ -20,6 +20,17 @@ interface Product {
   availableForSale: boolean;
   price: string;
   compareAtPrice: string;
+  imageUrl?: string;
+}
+
+/** Subset of Product sent to the frontend for product cards */
+interface ProductCard {
+  title: string;
+  handle: string;
+  price: string;
+  compareAtPrice: string;
+  availableForSale: boolean;
+  imageUrl: string;
 }
 
 interface ChatMessage {
@@ -49,8 +60,16 @@ const BASE_SYSTEM_PROMPT = `You are Staci, the AI shopping assistant for **Sunny
 - **Returns & Refunds:** All sales are final — **no refunds**. We accept exchanges within 14 days with original receipt. Items must be in original condition. No exchanges on sale items.
 - **Payment:** We accept all major credit cards and cash.
 
-## Mission
-Sunny & Ranney exists to fund Sunshine on a Ranney Day (SOARD). Every single dollar of profit goes directly to providing bedroom makeovers, furniture, and home essentials for children with special needs and their families. When a customer buys from us, they are directly changing a child's life.
+## About Sunshine on a Ranney Day (SOARD)
+- **Founded:** 2012 by **Peter and Holly Ranney** in Roswell, GA.
+- **Status:** 501(c)(3) nonprofit (EIN: 45-4773997).
+- **Origin:** Inspired by a church sermon to use their talents and resources to help others. Their first project in July 2012 was for 11-year-old Mathew, who wanted to spend his final days in a military-themed bedroom. That transformative experience shaped the organization's mission.
+- **Mission:** SOARD creates life-changing home makeovers — dream bedrooms, accessible bathrooms, and therapy rooms — for children with special needs in the greater Atlanta area, all at **no cost** to families.
+- **Services:** Wheelchair-accessible bathroom renovations, dream bedroom makeovers, and in-home therapy room design.
+- **Service area:** Greater Atlanta area (~80-mile radius).
+- **Credentials:** Charity Navigator 3-star rating, GuideStar Transparency Seal, licensed Georgia contractor.
+- **SOARD contact:** info@soardcharity.com | 770-990-2434 | sunshineonaranneyday.com
+- Sunny & Ranney exists to fund SOARD. Every single dollar of profit goes directly to these makeovers. When a customer buys from us, they are directly changing a child's life.
 
 ## Rules
 - Warm and helpful. Be concise but give complete answers — never cut off useful information. Use **bold** for key info.
@@ -58,8 +77,10 @@ Sunny & Ranney exists to fund Sunshine on a Ranney Day (SOARD). Every single dol
 - If a product is SOLD OUT, let the customer know and suggest similar items.
 - If asked about something not in the provided products, say inventory changes often and suggest they visit in person or browse /shop.
 - Never invent products that aren't in the provided context.
-- Occasionally mention the mission — customers love knowing their purchase matters.
-- If a customer seems to be browsing, proactively suggest 2-3 relevant items from the provided products.`;
+- **NEVER fabricate details about SOARD, its founders, or its history.** Only share what is provided above. For deeper questions, direct customers to sunshineonaranneyday.com.
+- If a customer seems to be browsing, proactively suggest 2-3 relevant items from the provided products.
+- Occasionally (not every message, but roughly every 3rd or 4th response) end with: "Remember, every purchase you make at Sunny & Ranney supports a great cause — 100% of our profits go to Sunshine on a Ranney Day, which provides home makeovers for children with special needs."
+- At the end of EVERY response, include exactly 2-3 suggested follow-up questions the customer might want to ask next. Each suggestion must be on its own line starting with "?>" (e.g. "?>What furniture do you have?"). Keep each under 40 characters. Make them contextual to the conversation.`;
 
 const DEFAULT_HOURS = '**Hours (Eastern):** Tuesday–Saturday, 10 AM–6 PM. Closed Sunday & Monday.';
 
@@ -182,18 +203,39 @@ function getSearchQuery(messages: ChatMessage[]): string {
 
 // ─── RAG ─────────────────────────────────────────────────────
 
-async function searchProducts(ai: any, vectorize: any, query: string, topK = 15): Promise<string> {
+interface SearchResult {
+  llmContext: string;
+  cards: ProductCard[];
+}
+
+async function searchProducts(ai: any, vectorize: any, query: string, topK = 15): Promise<SearchResult> {
   const embeddingResult = await ai.run('@cf/baai/bge-base-en-v1.5', { text: [query] });
   const queryVector = embeddingResult.data?.[0];
-  if (!queryVector) return 'No products found.';
+  if (!queryVector) return { llmContext: 'No products found.', cards: [] };
 
   const results = await vectorize.query(queryVector, { topK, returnMetadata: 'all' });
-  if (!results.matches?.length) return 'No matching products found.';
+  if (!results.matches?.length) return { llmContext: 'No matching products found.', cards: [] };
 
-  return results.matches
+  const products = results.matches
     .filter((m: any) => m.metadata)
-    .map((m: any) => formatProductForLLM(m.metadata as Product))
-    .join('\n');
+    .map((m: any) => m.metadata as Product);
+
+  const llmContext = products.map(formatProductForLLM).join('\n');
+
+  // Top 4 available products with images for rich cards
+  const cards: ProductCard[] = products
+    .filter((p: Product) => p.availableForSale && p.imageUrl)
+    .slice(0, 4)
+    .map((p: Product) => ({
+      title: p.title,
+      handle: p.handle,
+      price: parseFloat(p.price).toFixed(2),
+      compareAtPrice: parseFloat(p.compareAtPrice || '0').toFixed(2),
+      availableForSale: p.availableForSale,
+      imageUrl: p.imageUrl || '',
+    }));
+
+  return { llmContext, cards };
 }
 
 // ─── API handler ──────────────────────────────────────────────
@@ -236,9 +278,12 @@ export const POST: APIRoute = async ({ request }) => {
     const trimmedMessages: ChatMessage[] = messages.slice(-MAX_HISTORY);
 
     let productContext = '';
+    let productCards: ProductCard[] = [];
     if (vectorize) {
       const query = getSearchQuery(trimmedMessages);
-      productContext = await searchProducts(ai, vectorize, query);
+      const result = await searchProducts(ai, vectorize, query);
+      productContext = result.llmContext;
+      productCards = result.cards;
     }
 
     const systemPrompt = await buildSystemPrompt(pageContext);
@@ -254,9 +299,28 @@ export const POST: APIRoute = async ({ request }) => {
         messages: llmMessages,
         max_tokens: MAX_TOKENS,
         stream: true,
+      }) as ReadableStream;
+
+      // Prepend a products SSE event before the LLM stream
+      const encoder = new TextEncoder();
+      const productsEvent = productCards.length
+        ? `data: ${JSON.stringify({ products: productCards })}\n\n`
+        : '';
+
+      const combined = new ReadableStream({
+        async start(controller) {
+          if (productsEvent) controller.enqueue(encoder.encode(productsEvent));
+          const reader = eventStream.getReader();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            controller.enqueue(value);
+          }
+          controller.close();
+        },
       });
 
-      return new Response(eventStream as ReadableStream, {
+      return new Response(combined, {
         headers: {
           'Content-Type': 'text/event-stream',
           'Cache-Control': 'no-cache',
@@ -270,7 +334,7 @@ export const POST: APIRoute = async ({ request }) => {
       max_tokens: MAX_TOKENS,
     }) as { response?: string };
 
-    return new Response(JSON.stringify({ reply: response.response }), { headers: JSON_HEADERS });
+    return new Response(JSON.stringify({ reply: response.response, products: productCards }), { headers: JSON_HEADERS });
 
   } catch (err: any) {
     console.error('Chat API error:', err?.message);

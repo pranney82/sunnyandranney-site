@@ -29,6 +29,22 @@ function notify(items) {
   listeners.forEach(fn => fn(items));
 }
 
+// ─── Cross-tab sync ─────────────────────────────────
+// When another tab changes localStorage, invalidate cache and notify
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === STORAGE_KEY) {
+      _cache = null; // bust cache so load() re-reads
+      notify(load());
+    }
+  });
+}
+
+// ─── Formatting ──────────────────────────────────────
+const currencyFmt = new Intl.NumberFormat('en-US', {
+  style: 'currency', currency: 'USD', minimumFractionDigits: 2,
+});
+
 // ─── Public API ────────────────────────────────────────
 
 export const cart = {
@@ -42,15 +58,16 @@ export const cart = {
   getItems() { return load(); },
   getCount() { return load().reduce((n, i) => n + i.qty, 0); },
   getTotal() { return load().reduce((s, i) => s + i.price * i.qty, 0); },
+  formatMoney(amount) { return currencyFmt.format(amount); },
 
   /** Add item. If already in cart, increment qty. Supports qty param. */
   add(product, qty = 1) {
     const items = load();
     const idx = items.findIndex(i => i.variantId === product.variantId);
     if (idx >= 0) {
-      items[idx].qty += qty;
+      items[idx].qty = Math.min(items[idx].qty + qty, 20);
     } else {
-      items.push({ ...product, qty });
+      items.push({ ...product, qty: Math.min(qty, 20) });
     }
     save(items);
     notify(items);
@@ -72,7 +89,7 @@ export const cart = {
     const items = load();
     const item = items.find(i => i.variantId === variantId);
     if (item) {
-      item.qty = Math.max(1, qty);
+      item.qty = Math.min(Math.max(1, qty), 20);
     }
     save(items);
     notify(items);

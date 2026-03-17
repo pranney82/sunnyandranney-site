@@ -449,6 +449,9 @@ const initialCollection = collectionData[0]?.handle ?? '';
     const card = (e.target as HTMLElement).closest<HTMLElement>('.product-pick');
     if (!card) return;
 
+    // Prevent default label behavior (which would toggle the checkbox a second time)
+    e.preventDefault();
+
     const cb = card.querySelector<HTMLInputElement>('input[type="checkbox"]')!;
     const isSelected = card.classList.contains('selected');
     const totalSelected = getSelected().length;

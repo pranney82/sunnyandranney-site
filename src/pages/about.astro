@@ -1,6 +1,6 @@
 ---
 import Base from '@/layouts/Base.astro';
-import { getKidsStatic } from '@/lib/settings';
+import { getKidsStatic, getTeamStatic } from '@/lib/settings';
 
 // Fetch live stats from SOARD at build time
 let soardStats: { roomMakeovers: number; childrenServed: number; livesImpacted: number; yearsGiving: number } | null = null;
@@ -34,6 +34,14 @@ const kidsSetting = await getKidsStatic();
 const kidsHeading = kidsSetting?.heading ?? DEFAULT_KIDS_HEADING;
 const kidsSubheading = kidsSetting?.subheading ?? DEFAULT_KIDS_SUBHEADING;
 const kids = kidsSetting?.kids ?? DEFAULT_KIDS;
+
+const DEFAULT_TEAM = [
+  { name: 'Staci', role: 'Store Manager', desc: 'Keeps the showroom running like clockwork and ensures every visitor feels at home from the moment they walk in.', imageUrl: 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/team-staci', initials: '' },
+  { name: 'BJ', role: 'Team Member', desc: 'A valued member of the Sunny & Ranney family, helping create beautiful spaces and brighter futures every day.', imageUrl: 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/team-bj', initials: '' },
+  { name: 'Staci', role: 'AI Shopping Assistant', desc: 'Our tireless digital team member — always ready to help you find the perfect piece, 24/7.', imageUrl: '', initials: 'ST' },
+];
+const teamSetting = await getTeamStatic();
+const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
 ---
 
 <Base title="About Us — Sunny & Ranney" description="Meet the team behind Sunny & Ranney — a furniture store where 100% of profits fund life-changing room makeovers for children with special needs.">
@@ -235,17 +243,13 @@ const kids = kidsSetting?.kids ?? DEFAULT_KIDS;
         <h2>The faces you'll see<br/>when you <em>walk in</em></h2>
       </div>
       <div class="ab-crew__grid">
-        {[
-          { name: 'Staci', role: 'Store Manager', desc: 'Keeps the showroom running like clockwork and ensures every visitor feels at home from the moment they walk in.', image: 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/team-staci' },
-          { name: 'BJ', role: 'Team Member', desc: 'A valued member of the Sunny & Ranney family, helping create beautiful spaces and brighter futures every day.', image: 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/team-bj' },
-          { name: 'Staci', role: 'AI Shopping Assistant', desc: 'Our tireless digital team member — always ready to help you find the perfect piece, 24/7.', initials: 'ST' },
-        ].map((member, idx) => (
+        {team.map((member, idx) => (
           <article class={`ab-crew__card reveal delay-${idx + 1}`}>
             <div class={`ab-crew__photo${member.initials ? ' ab-crew__photo--ai' : ''}`}>
-              {member.image ? (
+              {member.imageUrl ? (
                 <img
-                  src={`${member.image}/w=200,h=250,fit=cover,gravity=face,q=80,format=auto`}
-                  srcset={`${member.image}/w=160,h=200,fit=cover,gravity=face,q=75,format=auto 160w, ${member.image}/w=320,h=400,fit=cover,gravity=face,q=80,format=auto 320w`}
+                  src={`${member.imageUrl}/w=200,h=250,fit=cover,gravity=face,q=80,format=auto`}
+                  srcset={`${member.imageUrl}/w=160,h=200,fit=cover,gravity=face,q=75,format=auto 160w, ${member.imageUrl}/w=320,h=400,fit=cover,gravity=face,q=80,format=auto 320w`}
                   sizes="160px" alt={member.name} width="160" height="200" loading="lazy" decoding="async"
                 />
               ) : (

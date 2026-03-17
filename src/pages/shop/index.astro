@@ -53,6 +53,17 @@ try {
   console.error('[shop] Domain:', import.meta.env.PUBLIC_SHOPIFY_STORE_DOMAIN || '(missing, using default)');
 }
 
+// Build category pills from actual product types (data-driven, not hardcoded)
+const productTypeCounts: Record<string, number> = {};
+for (const p of products) {
+  const t = (p.productType || '').toLowerCase();
+  if (t) productTypeCounts[t] = (productTypeCounts[t] || 0) + 1;
+}
+// Sort by count descending, take top types
+const productTypes = Object.entries(productTypeCounts)
+  .sort((a, b) => b[1] - a[1])
+  .map(([type, count]) => ({ type, count, label: type.charAt(0).toUpperCase() + type.slice(1) }));
+
 // Preload the first product image as LCP candidate
 const lcpUrl = products[0]?.images?.edges[0]?.node?.url;
 const lcpImage = lcpUrl ? cfImage(lcpUrl, { width: 600 }) : undefined;
@@ -122,12 +133,10 @@ const itemListSchema = hasShopify ? {
     <div class="container">
       <div class="toolbar__row">
         <div class="toolbar__categories">
-          <button class="filter-btn filter-btn--active" data-filter="all">All</button>
-          <button class="filter-btn" data-filter="furniture">Furniture</button>
-          <button class="filter-btn" data-filter="decor">Decor</button>
-          <button class="filter-btn" data-filter="lighting">Lighting</button>
-          <button class="filter-btn" data-filter="gifts">Gifts</button>
-          <button class="filter-btn" data-filter="kitchenware">Kitchenware</button>
+          <button class="filter-btn filter-btn--active" data-filter="all">All <span class="filter-btn__count" data-count-for="all">{products.length}</span></button>
+          {productTypes.map(({ type, count, label }) => (
+            <button class="filter-btn" data-filter={type}>{label} <span class="filter-btn__count" data-count-for={type}>{count}</span></button>
+          ))}
         </div>
         <div class="toolbar__actions">
           <span class="toolbar__count" id="product-count"></span>
@@ -136,6 +145,7 @@ const itemListSchema = hasShopify ? {
               <line x1="1" y1="4" x2="15" y2="4"/><line x1="3" y1="8" x2="13" y2="8"/><line x1="5" y1="12" x2="11" y2="12"/>
             </svg>
             <span class="filter-toggle__text">Filter & Sort</span>
+            <span class="filter-toggle__badge" id="filter-badge" style="display:none;">0</span>
           </button>
         </div>
       </div>
@@ -177,6 +187,12 @@ const itemListSchema = hasShopify ? {
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Active filter chips -->
+      <div class="filter-chips" id="filter-chips" style="display:none;">
+        <div class="filter-chips__list" id="filter-chips-list"></div>
+        <button class="filter-chips__clear" id="filter-chips-clear">Clear All</button>
       </div>
 
       <!-- Active search banner -->
@@ -377,6 +393,7 @@ const itemListSchema = hasShopify ? {
   <!-- ═══ QUICK VIEW MODAL ═══ -->
   <div class="qv-overlay" id="qv-overlay" aria-hidden="true"></div>
   <div class="qv-modal" id="qv-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Quick view">
+    <div class="qv-handle" aria-hidden="true"></div>
     <button class="qv-close" id="qv-close" aria-label="Close quick view">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
@@ -815,6 +832,106 @@ const itemListSchema = hasShopify ? {
       border-radius: 6px;
       border-width: 1px;
       gap: 0;
+    }
+  }
+
+  /* ─── Filter button counts ────────────── */
+  .filter-btn__count {
+    font-size: 0.65em;
+    font-weight: 400;
+    opacity: 0.6;
+    margin-left: 0.15em;
+  }
+  .filter-btn--active .filter-btn__count {
+    opacity: 0.8;
+  }
+
+  /* ─── Filter toggle badge ───────────── */
+  .filter-toggle__badge {
+    width: 18px;
+    height: 18px;
+    background: var(--color-gold);
+    color: var(--color-charcoal);
+    font-size: 0.6rem;
+    font-weight: 700;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    margin-left: -0.1rem;
+  }
+
+  /* ─── Active filter chips ──────────── */
+  .filter-chips {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0 0;
+    flex-wrap: wrap;
+  }
+
+  .filter-chips__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: var(--color-charcoal);
+    background: var(--color-warm-white);
+    border: 1px solid var(--color-cream-dark);
+    border-radius: 100px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+
+  .filter-chip:hover {
+    border-color: var(--color-gold);
+    background: rgba(255, 212, 0, 0.08);
+  }
+
+  .filter-chip__x {
+    font-size: 0.85em;
+    line-height: 1;
+    opacity: 0.5;
+    transition: opacity 0.15s;
+  }
+
+  .filter-chip:hover .filter-chip__x {
+    opacity: 1;
+  }
+
+  .filter-chips__clear {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--color-slate);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0.3rem 0;
+    transition: color 0.15s;
+    white-space: nowrap;
+  }
+
+  .filter-chips__clear:hover {
+    color: var(--color-charcoal);
+  }
+
+  @media (min-width: 768px) {
+    .filter-chip {
+      padding: 0.35rem 0.75rem;
+      font-size: 0.72rem;
     }
   }
 
@@ -1289,25 +1406,60 @@ const itemListSchema = hasShopify ? {
 
   .qv-modal {
     position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(0.95);
+    bottom: 0;
+    left: 0;
+    right: 0;
     z-index: 501;
     background: var(--color-cream);
-    max-width: 900px;
-    width: 92vw;
-    max-height: 88vh;
+    width: 100%;
+    max-height: 90dvh;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.35s var(--ease-out);
-    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15);
+    transform: translateY(100%);
+    transition: opacity 0.3s var(--ease-out), visibility 0.3s var(--ease-out), transform 0.35s var(--ease-out);
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.12);
+    border-radius: 12px 12px 0 0;
   }
 
   .qv-modal[aria-hidden="false"] {
     opacity: 1;
     visibility: visible;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translateY(0);
+    will-change: transform;
+  }
+
+  .qv-handle {
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: var(--color-stone);
+    opacity: 0.3;
+    border-radius: 2px;
+    margin: 8px auto 0;
+  }
+
+  @media (min-width: 640px) {
+    .qv-modal {
+      top: 50%;
+      left: 50%;
+      right: auto;
+      bottom: auto;
+      transform: translate(-50%, -50%) scale(0.95);
+      max-width: 900px;
+      width: 92vw;
+      max-height: 88vh;
+      border-radius: 0;
+      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15);
+    }
+
+    .qv-modal[aria-hidden="false"] {
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .qv-handle { display: none; }
   }
 
   .qv-close {
@@ -1339,9 +1491,17 @@ const itemListSchema = hasShopify ? {
 
   .qv-gallery {
     background: var(--color-cream-dark);
-    aspect-ratio: 1;
+    aspect-ratio: 3 / 4;
+    max-height: 45dvh;
     position: relative;
     overflow: hidden;
+  }
+
+  @media (min-width: 640px) {
+    .qv-gallery {
+      aspect-ratio: 1;
+      max-height: none;
+    }
   }
 
   .qv-image {
@@ -1378,10 +1538,17 @@ const itemListSchema = hasShopify ? {
   }
 
   .qv-info {
-    padding: 2rem;
+    padding: 1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .qv-info {
+      padding: 2rem;
+      gap: 0.75rem;
+    }
   }
 
   .qv-type {
@@ -1628,6 +1795,10 @@ const itemListSchema = hasShopify ? {
   const searchBanner = document.getElementById('search-banner');
   const searchBannerText = document.getElementById('search-banner-text');
   const searchClear = document.getElementById('search-clear');
+  const filterChips = document.getElementById('filter-chips');
+  const filterChipsList = document.getElementById('filter-chips-list');
+  const filterChipsClear = document.getElementById('filter-chips-clear');
+  const filterBadge = document.getElementById('filter-badge');
 
   // ─── Debounce helper ────────────────────────────
   let _applyTimer: ReturnType<typeof setTimeout>;
@@ -1662,10 +1833,156 @@ const itemListSchema = hasShopify ? {
   let activeFilter = 'all';
   let activeSearch = '';
   let activeCollection = '';
+  let activeSale = false;
   let priceMin = 0;
   let priceMax = Infinity;
+  let activeView = 'grid';
   let visiblePage = 0;
   const PAGE_SIZE = 24;
+
+  // ─── URL sync — encode all filter state ──────
+  function syncURL() {
+    const params = new URLSearchParams();
+    if (activeCollection) params.set('collection', activeCollection);
+    if (activeFilter !== 'all') params.set('category', activeFilter);
+    if (activeSearch) params.set('q', activeSearch);
+    if (priceMin > 0) params.set('pmin', String(priceMin));
+    if (priceMax < Infinity) params.set('pmax', String(priceMax));
+    if (sortSelect?.value && sortSelect.value !== 'best-selling') params.set('sort', sortSelect.value);
+    if (activeSale) params.set('sale', 'true');
+    if (activeView !== 'grid') params.set('view', activeView);
+    const qs = params.toString();
+    const url = qs ? `/shop?${qs}` : '/shop';
+    window.history.replaceState({}, '', url);
+  }
+
+  // ─── Filter chips — show active filters as removable pills ──
+  function renderChips() {
+    if (!filterChipsList || !filterChips) return;
+    filterChipsList.innerHTML = '';
+    const chips: { label: string; action: () => void }[] = [];
+
+    if (activeCollection) {
+      const titles = (window as any).__collectionTitles || {};
+      const name = titles[activeCollection] || activeCollection.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      chips.push({ label: name, action: () => {
+        activeCollection = '';
+        const shopTitle = document.getElementById('shop-title');
+        const clearLink = document.getElementById('shop-clear-collection');
+        if (shopTitle) shopTitle.textContent = 'The Collection';
+        if (clearLink) clearLink.style.display = 'none';
+        if (searchBanner) searchBanner.style.display = 'none';
+        visiblePage = 0;
+        applyAll();
+      }});
+    }
+
+    if (activeFilter !== 'all') {
+      const label = activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1);
+      chips.push({ label, action: () => {
+        activeFilter = 'all';
+        filterBtns.forEach(b => b.classList.remove('filter-btn--active'));
+        document.querySelector('[data-filter="all"]')?.classList.add('filter-btn--active');
+        visiblePage = 0;
+        applyAll();
+      }});
+    }
+
+    if (priceMin > 0 || priceMax < Infinity) {
+      const minStr = priceMin > 0 ? `$${priceMin}` : '$0';
+      const maxStr = priceMax < Infinity ? `$${priceMax}` : '+';
+      chips.push({ label: `${minStr}–${maxStr}`, action: () => {
+        priceMin = 0;
+        priceMax = Infinity;
+        if (priceMinInput) priceMinInput.value = '';
+        if (priceMaxInput) priceMaxInput.value = '';
+        visiblePage = 0;
+        applyAll();
+      }});
+    }
+
+    if (sortSelect?.value && sortSelect.value !== 'best-selling') {
+      const sortLabels: Record<string, string> = {
+        'price-asc': 'Price: Low → High',
+        'price-desc': 'Price: High → Low',
+        'title-asc': 'A to Z',
+        'newest': 'Newest',
+      };
+      chips.push({ label: sortLabels[sortSelect.value] || sortSelect.value, action: () => {
+        sortSelect.value = 'best-selling';
+        sortSelect.dispatchEvent(new Event('change'));
+      }});
+    }
+
+    if (activeSale) {
+      chips.push({ label: 'On Sale', action: () => {
+        activeSale = false;
+        visiblePage = 0;
+        applyAll();
+      }});
+    }
+
+    if (activeSearch) {
+      chips.push({ label: `"${activeSearch}"`, action: () => {
+        activeSearch = '';
+        if (searchBanner) searchBanner.style.display = 'none';
+        visiblePage = 0;
+        applyAll();
+      }});
+    }
+
+    for (const chip of chips) {
+      const btn = document.createElement('button');
+      btn.className = 'filter-chip';
+      btn.innerHTML = `${chip.label} <span class="filter-chip__x">&times;</span>`;
+      btn.addEventListener('click', chip.action);
+      filterChipsList.appendChild(btn);
+    }
+
+    filterChips.style.display = chips.length > 0 ? '' : 'none';
+
+    // Update badge count on Filter & Sort toggle
+    const activeCount = chips.length;
+    if (filterBadge) {
+      filterBadge.textContent = String(activeCount);
+      filterBadge.style.display = activeCount > 0 ? 'flex' : 'none';
+    }
+  }
+
+  // ─── Update counts on category pills ─────────
+  function updateFilterCounts() {
+    const cards = getCards();
+    const typeCounts: Record<string, number> = { all: 0 };
+
+    cards.forEach(card => {
+      const type = card.getAttribute('data-type') || '';
+      const cardPrice = parseFloat(card.dataset.price || '0');
+      const collections = card.dataset.collections || '';
+      const title = (card.dataset.title || '').toLowerCase();
+      const tags = card.dataset.tags || '';
+      const desc = card.dataset.description || '';
+
+      // Match everything except category filter (so counts reflect what you'd see if you picked that category)
+      const matchesCollection = !activeCollection || collections.split(',').includes(activeCollection);
+      const matchesSearch = !activeSearch ||
+        title.includes(activeSearch) ||
+        type.includes(activeSearch) ||
+        tags.includes(activeSearch) ||
+        desc.includes(activeSearch);
+      const matchesPrice = cardPrice >= priceMin && cardPrice <= priceMax;
+      const matchesSale = !activeSale || !!card.querySelector('.product-card__badge')?.textContent?.trim().includes('Sale');
+
+      if (matchesCollection && matchesSearch && matchesPrice && matchesSale) {
+        typeCounts['all'] = (typeCounts['all'] || 0) + 1;
+        if (type) typeCounts[type] = (typeCounts[type] || 0) + 1;
+      }
+    });
+
+    document.querySelectorAll('.filter-btn__count').forEach(el => {
+      const type = (el as HTMLElement).dataset.countFor || '';
+      (el as HTMLElement).textContent = String(typeCounts[type] || 0);
+    });
+  }
 
   // ─── Collection filter from URL ─────────────
   const urlParams = new URLSearchParams(window.location.search);
@@ -1715,8 +2032,9 @@ const itemListSchema = hasShopify ? {
         tags.includes(activeSearch) ||
         desc.includes(activeSearch);
       const matchesPrice = cardPrice >= priceMin && cardPrice <= priceMax;
+      const matchesSale = !activeSale || !!card.querySelector('.product-card__badge')?.textContent?.trim().includes('Sale');
 
-      if (matchesCollection && matchesFilter && matchesSearch && matchesPrice) {
+      if (matchesCollection && matchesFilter && matchesSearch && matchesPrice && matchesSale) {
         matchingCards.push(card);
         matchCount++;
       } else {
@@ -1746,6 +2064,11 @@ const itemListSchema = hasShopify ? {
     // No results
     if (noResults) noResults.style.display = matchCount === 0 ? '' : 'none';
     if (grid) grid.style.display = matchCount === 0 ? 'none' : '';
+
+    // Update chips, counts, badge, and URL
+    renderChips();
+    updateFilterCounts();
+    syncURL();
   }
 
   // ─── Category Filter ────────────────────────
@@ -1804,12 +2127,14 @@ const itemListSchema = hasShopify ? {
     btn.addEventListener('click', () => {
       viewBtns.forEach(b => b.classList.remove('toolbar__view--active'));
       btn.classList.add('toolbar__view--active');
-      const view = (btn as HTMLElement).dataset.view;
+      const view = (btn as HTMLElement).dataset.view || 'grid';
+      activeView = view;
       if (view === 'list') {
         grid?.classList.add('view-list');
       } else {
         grid?.classList.remove('view-list');
       }
+      syncURL();
     });
   });
 
@@ -1825,8 +2150,10 @@ const itemListSchema = hasShopify ? {
     }
   });
 
-  // ─── Search ─────────────────────────────────
+  // ─── Restore all filters from URL ────────────
   const params = new URLSearchParams(window.location.search);
+
+  // Search
   const searchQuery = params.get('q');
   if (searchQuery) {
     activeSearch = searchQuery.toLowerCase();
@@ -1834,69 +2161,100 @@ const itemListSchema = hasShopify ? {
     if (searchBannerText) searchBannerText.textContent = `Results for "${searchQuery}"`;
   }
 
-  searchClear?.addEventListener('click', () => {
-    activeSearch = '';
-    activeCollection = '';
-    if (searchBanner) searchBanner.style.display = 'none';
-    if (searchClear) searchClear.textContent = 'Clear search';
-    window.history.replaceState({}, '', '/shop');
-    applyAll();
-  });
-
-  noResultsClear?.addEventListener('click', () => {
-    activeSearch = '';
-    activeCollection = '';
-    activeFilter = 'all';
-    filterBtns.forEach(b => b.classList.remove('filter-btn--active'));
-    document.querySelector('[data-filter="all"]')?.classList.add('filter-btn--active');
-    if (searchBanner) searchBanner.style.display = 'none';
-    if (searchClear) searchClear.textContent = 'Clear search';
-    window.history.replaceState({}, '', '/shop');
-    visiblePage = 0;
-    applyAll();
-  });
-
-  // URL category param
+  // Category
   const category = params.get('category');
   if (category) {
-    const btn = document.querySelector(`[data-filter="${category}"]`) as HTMLElement;
-    if (btn) btn.click();
-  }
-
-  // URL sort param (for New Arrivals nav link)
-  const sortParam = params.get('sort');
-  if (sortParam && sortSelect) {
-    const optMap: Record<string, string> = {
-      'newest': 'newest',
-      'price-asc': 'price-asc',
-      'price-desc': 'price-desc',
-    };
-    if (optMap[sortParam]) {
-      sortSelect.value = optMap[sortParam];
-      sortSelect.dispatchEvent(new Event('change'));
+    activeFilter = category;
+    filterBtns.forEach(b => b.classList.remove('filter-btn--active'));
+    const btn = document.querySelector(`[data-filter="${category}"]`);
+    if (btn) btn.classList.add('filter-btn--active');
+    else {
+      // If no matching button, reset to all
+      document.querySelector('[data-filter="all"]')?.classList.add('filter-btn--active');
     }
   }
 
-  // URL sale param (for Sale nav link)
-  const saleParam = params.get('sale');
-  if (saleParam === 'true') {
-    // Filter to only on-sale items
-    const cards = getCards();
-    cards.forEach(card => {
-      const badge = card.querySelector('.product-card__badge');
-      if (!badge || badge.textContent?.trim() !== 'Sale') {
-        card.style.display = 'none';
-      }
-    });
-    if (searchBanner) searchBanner.style.display = '';
-    if (searchBannerText) searchBannerText.textContent = 'Sale Items';
+  // Price range
+  const pminParam = params.get('pmin');
+  const pmaxParam = params.get('pmax');
+  if (pminParam) { priceMin = parseFloat(pminParam) || 0; if (priceMinInput) priceMinInput.value = pminParam; }
+  if (pmaxParam) { priceMax = parseFloat(pmaxParam) || Infinity; if (priceMaxInput) priceMaxInput.value = pmaxParam; }
+
+  // Sort
+  const sortParam = params.get('sort');
+  if (sortParam && sortSelect) {
+    const validSorts = ['newest', 'price-asc', 'price-desc', 'title-asc'];
+    if (validSorts.includes(sortParam)) {
+      sortSelect.value = sortParam;
+      // Sort cards without triggering change event (we'll call applyAll once at end)
+      const cards = getCards();
+      cards.sort((a, b) => {
+        const priceA = parseFloat(a.dataset.price || '0');
+        const priceB = parseFloat(b.dataset.price || '0');
+        const titleA = (a.dataset.title || '').toLowerCase();
+        const titleB = (b.dataset.title || '').toLowerCase();
+        const idxA = parseInt(a.dataset.idx || '0');
+        const idxB = parseInt(b.dataset.idx || '0');
+        switch (sortParam) {
+          case 'price-asc': return priceA - priceB;
+          case 'price-desc': return priceB - priceA;
+          case 'title-asc': return titleA.localeCompare(titleB);
+          case 'newest': return idxA - idxB;
+          default: return idxA - idxB;
+        }
+      });
+      cards.forEach(card => grid?.appendChild(card));
+    }
   }
 
-  // ─── Initial render — show count + apply any URL filters ────
-  // Only call if no other trigger already fired (sort/category click dispatch their own)
-  if (!sortParam && !saleParam) {
-    applyAllDebounced();
+  // Sale
+  const saleParam = params.get('sale');
+  if (saleParam === 'true') {
+    activeSale = true;
   }
+
+  // View
+  const viewParam = params.get('view');
+  if (viewParam === 'list') {
+    activeView = 'list';
+    grid?.classList.add('view-list');
+    viewBtns.forEach(b => {
+      b.classList.toggle('toolbar__view--active', (b as HTMLElement).dataset.view === 'list');
+    });
+  }
+
+  // ─── Clear handlers ──────────────────────────
+  function clearAllFilters() {
+    activeSearch = '';
+    activeCollection = '';
+    activeFilter = 'all';
+    activeSale = false;
+    priceMin = 0;
+    priceMax = Infinity;
+    if (priceMinInput) priceMinInput.value = '';
+    if (priceMaxInput) priceMaxInput.value = '';
+    if (sortSelect) sortSelect.value = 'best-selling';
+    filterBtns.forEach(b => b.classList.remove('filter-btn--active'));
+    document.querySelector('[data-filter="all"]')?.classList.add('filter-btn--active');
+    if (searchBanner) searchBanner.style.display = 'none';
+    const shopTitle = document.getElementById('shop-title');
+    const clearLink = document.getElementById('shop-clear-collection');
+    if (shopTitle) shopTitle.textContent = 'The Collection';
+    if (clearLink) clearLink.style.display = 'none';
+    // Re-sort to default order
+    const cards = getCards();
+    cards.sort((a, b) => parseInt(a.dataset.idx || '0') - parseInt(b.dataset.idx || '0'));
+    cards.forEach(card => grid?.appendChild(card));
+    visiblePage = 0;
+    applyAll();
+  }
+
+  searchClear?.addEventListener('click', clearAllFilters);
+  noResultsClear?.addEventListener('click', clearAllFilters);
+  filterChipsClear?.addEventListener('click', clearAllFilters);
+
+  // ─── Initial render — apply all URL-restored filters ────
+  applyAllDebounced();
 
   // ─── Add to Cart from Grid ──────────────────
   grid?.addEventListener('click', (e) => {
@@ -1974,6 +2332,7 @@ const itemListSchema = hasShopify ? {
   let qvSelectedVariant: any = null;
   let qvImages: string[] = [];
   let qvCurrentImage = 0;
+  let qvDismissGeneration = 0;
 
   function fmtPrice(amount: number): string {
     return amount % 1 === 0 ? `$${amount.toLocaleString()}` : `$${amount.toFixed(2)}`;
@@ -2045,6 +2404,9 @@ const itemListSchema = hasShopify ? {
       qvAdd.textContent = data.available === 'false' ? 'Sold Out' : 'Add to Cart';
     }
 
+    // Cancel any in-flight swipe-dismiss cleanup
+    qvDismissGeneration++;
+
     // Show
     qvModal?.setAttribute('aria-hidden', 'false');
     qvOverlay?.setAttribute('aria-hidden', 'false');
@@ -2064,6 +2426,94 @@ const itemListSchema = hasShopify ? {
     if (e.key === 'Escape' && qvModal?.getAttribute('aria-hidden') === 'false') closeQuickView();
   };
   document.addEventListener('keydown', _shopKeyHandler);
+
+  // Swipe-down-to-dismiss on mobile bottom sheet
+  if (qvModal && qvOverlay) {
+    let sheetStartX = 0;
+    let sheetStartY = 0;
+    let sheetStartTime = 0;
+    let sheetDragging = false;
+    let sheetAxis: 'pending' | 'vertical' | 'horizontal' = 'pending';
+    // qvDismissGeneration (shared scope) guards against stale cleanup
+
+    function clearSheetInlineStyles() {
+      qvModal.style.transform = '';
+      qvModal.style.transition = '';
+      qvOverlay.style.opacity = '';
+      qvOverlay.style.transition = '';
+    }
+
+    qvModal.addEventListener('touchstart', (e) => {
+      if (qvModal.scrollTop > 0) return;
+      sheetStartX = e.touches[0].clientX;
+      sheetStartY = e.touches[0].clientY;
+      sheetStartTime = Date.now();
+      sheetDragging = true;
+      sheetAxis = 'pending';
+    }, { passive: true });
+
+    qvModal.addEventListener('touchmove', (e) => {
+      if (!sheetDragging || sheetAxis === 'horizontal') return;
+      const dx = Math.abs(e.touches[0].clientX - sheetStartX);
+      const dy = e.touches[0].clientY - sheetStartY;
+
+      // Lock axis after 10px of movement
+      if (sheetAxis === 'pending' && (Math.abs(dy) > 10 || dx > 10)) {
+        sheetAxis = Math.abs(dy) > dx ? 'vertical' : 'horizontal';
+      }
+      if (sheetAxis !== 'vertical') return;
+
+      // Clamp: allow pulling down, snap to 0 if user drags back up
+      const offset = Math.max(0, dy);
+      qvModal.style.transform = `translateY(${offset}px)`;
+      qvModal.style.transition = 'none';
+      const progress = Math.min(offset / 300, 1);
+      qvOverlay.style.opacity = String(1 - progress * 0.6);
+    }, { passive: true });
+
+    qvModal.addEventListener('touchend', (e) => {
+      if (!sheetDragging || sheetAxis !== 'vertical') {
+        sheetDragging = false;
+        return;
+      }
+      sheetDragging = false;
+      const dy = e.changedTouches[0].clientY - sheetStartY;
+      const velocity = dy / (Date.now() - sheetStartTime);
+
+      if (dy > 100 || velocity > 0.5) {
+        const dismissId = ++qvDismissGeneration;
+
+        // Re-enable transitions, animate modal off-screen
+        qvModal.style.transition = '';
+        qvModal.style.transform = 'translateY(100%)';
+
+        // Fade overlay from current drag opacity to 0
+        requestAnimationFrame(() => {
+          qvOverlay.style.transition = 'opacity 0.3s var(--ease-out)';
+          qvOverlay.style.opacity = '0';
+        });
+
+        // Clean up after animation, guarded by generation counter
+        const cleanup = () => {
+          if (qvDismissGeneration !== dismissId) return;
+          clearSheetInlineStyles();
+          closeQuickView();
+        };
+        const fallback = setTimeout(cleanup, 400);
+        qvModal.addEventListener('transitionend', function handler(evt) {
+          if ((evt as TransitionEvent).propertyName !== 'transform') return;
+          qvModal.removeEventListener('transitionend', handler);
+          clearTimeout(fallback);
+          cleanup();
+        });
+      } else {
+        // Snap back
+        qvModal.style.transition = '';
+        qvModal.style.transform = '';
+        qvOverlay.style.opacity = '';
+      }
+    }, { passive: true });
+  }
 
   // Quick view image dots
   qvThumbs?.addEventListener('click', (e) => {
@@ -2112,7 +2562,7 @@ const itemListSchema = hasShopify ? {
     btn.classList.add('qv-variant-btn--active');
     const price = btn.dataset.price;
     if (qvPrice && price) qvPrice.textContent = fmtPrice(parseFloat(price));
-    qvSelectedVariant = { id: btn.dataset.variantId, price };
+    qvSelectedVariant = { id: btn.dataset.variantId, price, title: btn.textContent?.trim() || '' };
     // Switch to variant image if available
     const idx = parseInt(btn.dataset.idx || '0');
     if (qvImages[idx] && qvImage) qvImage.src = qvOptimize(qvImages[idx]);
@@ -2127,7 +2577,7 @@ const itemListSchema = hasShopify ? {
       price: parseFloat(qvSelectedVariant.price),
       image: qvImage?.src || '',
       handle: qvViewFull?.href?.split('/shop/')[1] || '',
-      variantTitle: '',
+      variantTitle: qvSelectedVariant.title || '',
     });
     qvAdd.textContent = 'Added!';
     qvAdd.disabled = true;
