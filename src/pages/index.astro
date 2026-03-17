@@ -72,11 +72,6 @@ try {
 }
 
 // Split products by type for homepage sections
-const onSaleProducts = products.filter(p => {
-  const compare = p.compareAtPriceRange?.minVariantPrice;
-  const price = p.priceRange.minVariantPrice;
-  return compare && parseFloat(compare.amount) > parseFloat(price.amount);
-});
 const featuredProducts = products.slice(0, 8);
 
 ---
@@ -286,7 +281,7 @@ const featuredProducts = products.slice(0, 8);
       <div class="container">
         <div class="home-products__header reveal">
           <div>
-            <h2 class="section-title">Trending Now</h2>
+            <h2 class="section-title">Staff Picks</h2>
             <p class="home-products__subtitle">Hand-picked from our showroom floor</p>
           </div>
           <a href="/shop" class="home-products__see-all" data-astro-prefetch>See all &rarr;</a>
@@ -480,50 +475,6 @@ const featuredProducts = products.slice(0, 8);
   <!-- ═══ GOOGLE REVIEWS ═══ -->
   <GoogleReviews variant="full" />
 
-  <!-- ═══ ON SALE (if any) ═══ -->
-  {onSaleProducts.length > 0 && (
-    <section class="home-products home-products--deals section">
-      <div class="container">
-        <div class="home-products__header reveal">
-          <h2 class="section-title">On Sale</h2>
-          <a href="/shop" class="home-products__see-all" data-astro-prefetch>Shop all deals &rarr;</a>
-        </div>
-        <div class="home-scroll reveal">
-          {onSaleProducts.slice(0, 8).map((product: any) => {
-            const image = product.images.edges[0]?.node;
-            const price = product.priceRange.minVariantPrice;
-            const compareAt = product.compareAtPriceRange?.minVariantPrice;
-            return (
-              <a href={`/shop/${product.handle}`} data-astro-prefetch class="home-scroll__card" aria-label={product.title}>
-                <div class="home-scroll__image">
-                  <span class="product-card__badge">Sale</span>
-                  {image && (
-                    <img
-                      src={cfImage(image.url, { width: 400 })}
-                      srcset={cfSrcset(image.url, [220, 400])}
-                      sizes="220px"
-                      alt=""
-                      width={image.width}
-                      height={image.height}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  )}
-                </div>
-                <div class="home-scroll__info">
-                  <span class="home-scroll__title">{product.title}</span>
-                  <div class="home-scroll__pricing">
-                    <span class="home-scroll__price">${parseFloat(price.amount).toFixed(2)}</span>
-                    <span class="home-scroll__compare">${parseFloat(compareAt.amount).toFixed(2)}</span>
-                  </div>
-                </div>
-              </a>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  )}
 
 </Base>
 
