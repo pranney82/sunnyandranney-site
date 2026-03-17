@@ -159,7 +159,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Trigger CF Pages rebuild with 30-minute debounce
     let rebuilt = false;
     const deployHookUrl = (env as any).CF_DEPLOY_HOOK_URL;
-    const DEBOUNCE_MS = 30 * 60 * 1000; // 30 minutes
+    const DEBOUNCE_MS = 0; // 0 minutes (testing)
 
     if (deployHookUrl) {
       try {

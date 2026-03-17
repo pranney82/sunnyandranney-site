@@ -1054,6 +1054,7 @@
   window.addToCart = function(product, qty = 1) {
     cart.add(product, qty);
     window.showCartToast(product.title);
+    openCart();
   };
 
   // Reset checkout button if user navigates back
