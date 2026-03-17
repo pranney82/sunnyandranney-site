@@ -18,6 +18,8 @@ const SETTINGS_PATHS: Record<string, string> = {
   'settings:contact': 'src/content/settings/contact.json',
   'settings:email-signup': 'src/content/settings/email-signup.json',
   'settings:trending': 'src/content/settings/trending.json',
+  'settings:hero': 'src/content/settings/hero.json',
+  'settings:kids': 'src/content/settings/kids.json',
 };
 
 // ─── Settings ────────────────────────────────────────────────

@@ -46,7 +46,7 @@ const BASE_SYSTEM_PROMPT = `You are Staci, the AI shopping assistant for **Sunny
 - **Phone:** 678.888.5140
 - **Email:** info@sunnyandranney.com
 - **Website:** sunnyandranney.com
-- **Returns:** We accept returns within 14 days with original receipt. Items must be in original condition. No returns on sale items.
+- **Returns & Refunds:** All sales are final — **no refunds**. We accept exchanges within 14 days with original receipt. Items must be in original condition. No exchanges on sale items.
 - **Payment:** We accept all major credit cards and cash.
 
 ## Mission
@@ -61,7 +61,7 @@ Sunny & Ranney exists to fund Sunshine on a Ranney Day (SOARD). Every single dol
 - Occasionally mention the mission — customers love knowing their purchase matters.
 - If a customer seems to be browsing, proactively suggest 2-3 relevant items from the provided products.`;
 
-const DEFAULT_HOURS = '**Hours:** Tuesday–Saturday, 10am–6pm. Closed Sunday & Monday.';
+const DEFAULT_HOURS = '**Hours (Eastern):** Tuesday–Saturday, 10 AM–6 PM. Closed Sunday & Monday.';
 
 interface StoreHours {
   days: Array<{ day: string; open: string; close: string; closed: boolean }>;
@@ -76,19 +76,31 @@ interface StoreSpecials {
   announcements: Array<{ text: string; active: boolean; type: string }>;
 }
 
+/** Convert "14:00" or "18:00" to "2:00 PM"; pass through if already in 12-hour format */
+function to12Hour(time: string): string {
+  const match = time.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return time; // already formatted like "10am"
+  let h = parseInt(match[1], 10);
+  const m = match[2];
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  if (h === 0) h = 12;
+  else if (h > 12) h -= 12;
+  return m === '00' ? `${h} ${suffix}` : `${h}:${m} ${suffix}`;
+}
+
 function formatHoursForPrompt(hours: StoreHours): string {
   const lines = hours.days.map((d) => {
     if (d.closed) return `- ${d.day}: Closed`;
-    return `- ${d.day}: ${d.open}–${d.close}`;
+    return `- ${d.day}: ${to12Hour(d.open)}–${to12Hour(d.close)}`;
   });
 
-  let result = `**Hours:**\n${lines.join('\n')}`;
+  let result = `**Hours (all times Eastern):**\n${lines.join('\n')}`;
 
   if (hours.holidays?.length) {
     const upcoming = hours.holidays.slice(0, 5);
     const holidayLines = upcoming.map((h) => {
       if (h.closed) return `- ${h.label} (${h.date}): Closed`;
-      return `- ${h.label} (${h.date}): ${h.open}–${h.close}`;
+      return `- ${h.label} (${h.date}): ${to12Hour(h.open)}–${to12Hour(h.close)}`;
     });
     result += `\n**Holiday Hours:**\n${holidayLines.join('\n')}`;
   }
