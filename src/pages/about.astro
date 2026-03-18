@@ -5,7 +5,7 @@ import { getKidsStatic, getTeamStatic } from '@/lib/settings';
 // Fetch live stats from SOARD at build time
 let soardStats: { roomMakeovers: number; childrenServed: number; livesImpacted: number; yearsGiving: number } | null = null;
 try {
-  const res = await fetch('https://soard-site.pages.dev/api/stats.json');
+  const res = await fetch('https://soard-site.pages.dev/api/stats.json', { signal: AbortSignal.timeout(3000) });
   if (res.ok) soardStats = await res.json();
 } catch { /* use fallbacks */ }
 
@@ -25,9 +25,9 @@ const stats = [
 const DEFAULT_KIDS_HEADING = 'The Kids Who Inspire Us';
 const DEFAULT_KIDS_SUBHEADING = 'Every room starts with a dream. These are the children who remind us why we do what we do.';
 const DEFAULT_KIDS = [
-  { name: 'Mathew', tag: 'Where It All Began', blurb: 'Our very first makeover — 11-year-old Mathew wanted a military-themed bunker bedroom, and bringing it to life changed everything for us and for him.', imageUrl: 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/mathew/hero' },
-  { name: 'Adrian', tag: 'Room #247', blurb: 'Adrian dreamed of a space-themed bedroom where he could imagine exploring the stars. His new room gave him a launchpad for his biggest adventures.', imageUrl: 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero' },
-  { name: 'Tripp', tag: '1.6 Million Watched', blurb: "Tripp's whole-home makeover drew 1.6 million viewers on WSB-TV and showed the world what a little sunshine can do.", imageUrl: 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/tripp/hero' },
+  { name: 'Mathew', tag: 'Where It All Began', blurb: 'Our very first makeover — 11-year-old Mathew wanted a military-themed bunker bedroom, and bringing it to life changed everything for us and for him.', imageUrl: 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/mathew/hero', storyUrl: 'https://sunshineonaranneyday.com' },
+  { name: 'Adrian', tag: 'Room #247', blurb: 'Adrian dreamed of a space-themed bedroom where he could imagine exploring the stars. His new room gave him a launchpad for his biggest adventures.', imageUrl: 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero', storyUrl: 'https://sunshineonaranneyday.com' },
+  { name: 'Tripp', tag: '1.6 Million Watched', blurb: "Tripp's whole-home makeover drew 1.6 million viewers on WSB-TV and showed the world what a little sunshine can do.", imageUrl: 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/tripp/hero', storyUrl: 'https://sunshineonaranneyday.com' },
 ];
 
 const kidsSetting = await getKidsStatic();
@@ -44,7 +44,13 @@ const teamSetting = await getTeamStatic();
 const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
 ---
 
-<Base title="About Us — Sunny & Ranney" description="Meet the team behind Sunny & Ranney — a furniture store where 100% of profits fund life-changing room makeovers for children with special needs.">
+<Base
+  title="About Us — Sunny & Ranney"
+  description="Meet the team behind Sunny & Ranney — a furniture store where 100% of profits fund life-changing room makeovers for children with special needs."
+  lcpImage="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=500,q=80,format=auto"
+  lcpImageSrcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=400,q=75,format=auto 400w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=500,q=80,format=auto 500w"
+  lcpImageSizes="(max-width: 767px) 90vw, 40vw"
+>
 
   <!-- ═══ HERO ═══ -->
   <section class="ab-hero">
@@ -67,12 +73,21 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
       </div>
       <div class="ab-hero__media animate-fade-up delay-2">
         <img
-          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=500,q=75,format=auto"
-          srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=400,q=70,format=auto 400w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=500,q=75,format=auto 500w"
+          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=500,q=80,format=auto"
+          srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=400,q=75,format=auto 400w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=500,q=80,format=auto 500w"
           sizes="(max-width: 767px) 90vw, 40vw"
-          alt="Inside the Sunny & Ranney showroom in Roswell, Georgia"
-          width="500" height="333"
-          loading="eager" decoding="async"
+          alt="Amari's room reveal — family celebrating a Sunshine on a Ranney Day makeover"
+          width="500" height="375"
+          loading="eager" decoding="async" fetchpriority="high"
+        />
+        <img
+          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/brand-logo-nav-circle/w=160,h=160,fit=scale-down,q=85,format=auto"
+          alt="Sunshine on a Ranney Day"
+          width="80"
+          height="80"
+          loading="eager"
+          decoding="async"
+          class="ab-hero__soard-logo"
         />
       </div>
     </div>
@@ -87,6 +102,19 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
           <span class="ab-stats__label">{s.label}</span>
         </div>
       ))}
+    </div>
+  </section>
+
+  <!-- ═══ PRESS / SOCIAL PROOF ═══ -->
+  <section class="ab-press" aria-label="As featured in">
+    <div class="container ab-press__inner">
+      <span class="ab-press__label">As Featured In</span>
+      <div class="ab-press__logos">
+        <span class="ab-press__logo">WSB-TV</span>
+        <span class="ab-press__logo">Fox 5 Atlanta</span>
+        <span class="ab-press__logo">Atlanta Journal-Constitution</span>
+        <span class="ab-press__logo">11Alive</span>
+      </div>
     </div>
   </section>
 
@@ -116,7 +144,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
   </section>
 
   <!-- ═══ VIDEO ═══ -->
-  <section class="ab-video" id="our-story">
+  <section class="ab-video">
     <div class="container">
       <div class="ab-video__header reveal">
         <span class="label ab-video__label">Our Story</span>
@@ -168,7 +196,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
   </section>
 
   <!-- ═══ FOUNDERS ═══ -->
-  <section class="ab-story">
+  <section class="ab-story" id="our-story">
     <div class="container ab-story__inner">
       <div class="ab-story__image reveal">
         <img
@@ -206,8 +234,9 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
       <div class="ab-kids__grid">
         {kids.map((kid, i) => {
           const base = kid.imageUrl.trim().replace(/\/$/, '');
+          const storyHref = (kid as any).storyUrl || 'https://sunshineonaranneyday.com';
           return (
-            <article class={`ab-kids__card reveal delay-${i + 1}`}>
+            <a href={storyHref} target="_blank" rel="noopener noreferrer" class={`ab-kids__card reveal delay-${i + 1}`}>
               <div class="ab-kids__img">
                 <img
                   src={`${base}/w=600,h=450,fit=cover,q=80,format=auto`}
@@ -223,7 +252,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
                 <h3>{kid.name}</h3>
                 <p>{kid.blurb}</p>
               </div>
-            </article>
+            </a>
           );
         })}
       </div>
@@ -338,8 +367,19 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
   .ab-hero__actions { display: flex; align-items: center; gap: 1.5rem; margin-top: var(--space-lg); flex-wrap: wrap; }
   .text-link { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; font-weight: 600; color: var(--color-charcoal); letter-spacing: 0.03em; transition: color 0.3s; }
   .text-link:hover { color: var(--color-cyan); }
-  .ab-hero__media { border-radius: 4px; overflow: hidden; }
-  .ab-hero__media img { width: 100%; height: auto; display: block; aspect-ratio: 3 / 2; object-fit: cover; }
+  .ab-hero__media { position: relative; border-radius: 4px; overflow: visible; }
+  .ab-hero__media > img:first-child { width: 100%; height: auto; display: block; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 4px; }
+  .ab-hero__soard-logo {
+    position: absolute;
+    bottom: -24px;
+    right: 24px;
+    width: 80px !important;
+    height: 80px !important;
+    aspect-ratio: 1 !important;
+    border-radius: 50%;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    border: 3px solid #fff;
+  }
   @media (max-width: 767px) {
     .ab-hero__text { padding-bottom: 0; text-align: center; }
     .ab-hero__sub { margin: 0 auto; }
@@ -353,6 +393,17 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
   .ab-stats__item { text-align: center; min-width: 110px; }
   .ab-stats__number { font-family: var(--font-display); font-size: clamp(2.2rem, 4.5vw, 3rem); font-weight: 600; color: white; line-height: 1; }
   .ab-stats__label { display: block; font-size: 0.7rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.6); margin-top: 0.4rem; }
+
+  /* ─── Press Strip ─── */
+  .ab-press { background: var(--color-warm-white); padding: var(--space-lg) 0; border-top: 1px solid var(--color-cream-dark); }
+  .ab-press__inner { display: flex; align-items: center; justify-content: center; gap: var(--space-lg); flex-wrap: wrap; }
+  .ab-press__label { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-stone); white-space: nowrap; }
+  .ab-press__logos { display: flex; align-items: center; gap: var(--space-xl); flex-wrap: wrap; justify-content: center; }
+  .ab-press__logo { font-family: var(--font-display); font-size: clamp(0.95rem, 1.5vw, 1.15rem); font-weight: 400; color: var(--color-charcoal); opacity: 0.35; white-space: nowrap; letter-spacing: 0.02em; }
+  @media (max-width: 567px) {
+    .ab-press__inner { flex-direction: column; gap: var(--space-sm); }
+    .ab-press__logos { gap: var(--space-lg); }
+  }
 
   /* ─── How It Works ─── */
   .ab-how { background: var(--color-cream); padding: clamp(3rem, 8vh, 5rem) 0; text-align: center; }
@@ -532,6 +583,9 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
 
   /* Card */
   .ab-kids__card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
     background: #fff;
     border-radius: 10px;
     overflow: hidden;

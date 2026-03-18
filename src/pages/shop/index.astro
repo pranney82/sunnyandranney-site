@@ -71,6 +71,11 @@ for (const handle of Object.keys(collectionSubcategories)) {
   collectionSubcategories[handle].sort();
 }
 
+// Random position for mission card (build-time, between index 3 and 20)
+const missionIdx = products.length >= 4
+  ? 3 + Math.floor(Math.random() * Math.min(products.length - 3, 18))
+  : -1;
+
 // Preload the first product image as LCP candidate
 const lcpUrl = products[0]?.images?.edges[0]?.node?.url;
 const lcpImage = lcpUrl ? cfImage(lcpUrl, { width: 600 }) : undefined;
@@ -163,14 +168,14 @@ const itemListSchema = hasShopify ? {
         </div>
       </div>
 
+      <!-- Expanded subcategory row (toggled by "+X more") -->
+      <div class="toolbar__subcats-expand" id="subcats-expand" hidden>
+        <div class="toolbar__category-list" id="panel-category-list"></div>
+      </div>
+
       <!-- Panel: top-down dropdown -->
       <div class="toolbar__panel" id="filter-panel" hidden>
         <div class="toolbar__panel-inner">
-          <!-- Category -->
-          <div class="toolbar__panel-group" id="panel-category-group" style="display:none;">
-            <label class="toolbar__panel-label">Category</label>
-            <div class="toolbar__category-list" id="panel-category-list"></div>
-          </div>
           <!-- Sort -->
           <div class="toolbar__panel-group">
             <label class="toolbar__panel-label" for="sort-select">Sort by</label>
@@ -229,8 +234,8 @@ const itemListSchema = hasShopify ? {
 
               return (
                 <>
-                {idx === 9 && (
-                  <div class="grid-editorial">
+                {idx === missionIdx && (
+                  <div class="grid-editorial" id="grid-editorial">
                     <div class="grid-editorial__inner">
                       <span class="grid-editorial__label">Our Mission</span>
                       <p class="grid-editorial__text">
@@ -669,6 +674,26 @@ const itemListSchema = hasShopify ? {
     color: var(--color-charcoal);
   }
 
+  /* ─── Expandable subcategory row ─────── */
+  .toolbar__subcats-expand {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.2s ease;
+    opacity: 0;
+  }
+  .toolbar__subcats-expand[hidden] {
+    display: block;
+    max-height: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .toolbar__subcats-expand.is-open {
+    max-height: 200px;
+    opacity: 1;
+    pointer-events: auto;
+    padding-top: 0.75rem;
+  }
+
   /* ─── Filter panel (top-down dropdown) ─ */
   .toolbar__panel {
     max-height: 0;
@@ -900,15 +925,15 @@ const itemListSchema = hasShopify ? {
       pointer-events: none;
     }
     .toolbar__panel.is-open {
-      max-height: 500px;
+      max-height: 300px;
       opacity: 1;
       pointer-events: auto;
     }
 
     .toolbar__panel-inner {
       flex-direction: row;
-      flex-wrap: wrap;
-      gap: 1.5rem 2rem;
+      flex-wrap: nowrap;
+      gap: 2rem;
       padding: 1rem 0 0.25rem;
       border-top: 1px solid var(--color-cream-dark);
       margin-top: 0.75rem;
@@ -916,10 +941,6 @@ const itemListSchema = hasShopify ? {
 
     .toolbar__panel-group { gap: 0.35rem; }
 
-    /* Category group spans full width, other groups share a row */
-    #panel-category-group {
-      flex-basis: 100%;
-    }
 
     .toolbar__sort {
       font-size: 0.78rem;
@@ -1956,6 +1977,7 @@ const itemListSchema = hasShopify ? {
 
   // ─── Debounce helper ────────────────────────────
   let _applyTimer: ReturnType<typeof setTimeout>;
+  let _isInitialRender = true;
   function applyAllDebounced() {
     clearTimeout(_applyTimer);
     _applyTimer = setTimeout(applyAll, 60);
@@ -2201,7 +2223,7 @@ const itemListSchema = hasShopify ? {
       moreBtn.className = 'filter-btn filter-btn--more';
       moreBtn.textContent = `+${remainingCount} more`;
       for (const attr of scopeAttrs) moreBtn.setAttribute(attr, '');
-      moreBtn.addEventListener('click', () => openFilterPanel());
+      moreBtn.addEventListener('click', () => toggleSubcatsExpand());
       categoryNav.appendChild(moreBtn);
     }
 
@@ -2219,9 +2241,14 @@ const itemListSchema = hasShopify ? {
     syncPillBarState();
   }
 
-  // ─── Populate category list in Filter & Sort panel ─────────
-  const panelCategoryGroup = document.getElementById('panel-category-group');
+  // ─── Expandable subcategory row ─────────
+  const subcatsExpand = document.getElementById('subcats-expand');
   const panelCategoryList = document.getElementById('panel-category-list');
+
+  function toggleSubcatsExpand() {
+    if (!subcatsExpand) return;
+    subcatsExpand.classList.toggle('is-open');
+  }
 
   function syncPillBarState() {
     if (!categoryNav) return;
@@ -2250,16 +2277,13 @@ const itemListSchema = hasShopify ? {
   }
 
   function buildPanelCategories() {
-    if (!panelCategoryList || !panelCategoryGroup) return;
+    if (!panelCategoryList) return;
     panelCategoryList.innerHTML = '';
+    // Close the expand row when rebuilding
+    if (subcatsExpand) subcatsExpand.classList.remove('is-open');
 
     const allSubcats = activeCollection ? (subcatMap[activeCollection] || []) : [];
-    if (allSubcats.length <= 1) {
-      panelCategoryGroup.style.display = 'none';
-      return;
-    }
-
-    panelCategoryGroup.style.display = '';
+    if (allSubcats.length <= 1) return;
 
     // Sort alphabetically for the full list
     const sorted = [...allSubcats].sort((a, b) => a.localeCompare(b));
@@ -2350,10 +2374,35 @@ const itemListSchema = hasShopify ? {
     if (noResults) noResults.style.display = matchCount === 0 ? '' : 'none';
     if (grid) grid.style.display = matchCount === 0 ? 'none' : '';
 
-    // Hide editorial block only for search / sale filters (keep it visible for collection & category browsing)
-    const hideEditorial = activeSearch || activeSale;
-    const editorial = document.querySelector('.grid-editorial') as HTMLElement;
-    if (editorial) editorial.style.display = hideEditorial ? 'none' : '';
+    // Position editorial card at a random spot among visible products
+    // On initial render with no filters, keep the build-time position (zero JS cost)
+    const editorial = document.getElementById('grid-editorial') as HTMLElement;
+    if (editorial) {
+      const hideEditorial = activeSearch || activeSale;
+      if (hideEditorial) {
+        editorial.style.display = 'none';
+      } else if (_isInitialRender && !activeCollection && !activeProductType && !activeSearch && !activeSale) {
+        // Build-time position is already correct — do nothing
+        editorial.style.display = '';
+      } else {
+        const visibleCards = matchingCards.filter(c => c.style.display !== 'none');
+        if (visibleCards.length < 3) {
+          editorial.style.display = 'none';
+        } else {
+          const minPos = 3;
+          const maxPos = Math.min(visibleCards.length, shownCount);
+          const randomIdx = minPos + Math.floor(Math.random() * (maxPos - minPos));
+          const refCard = visibleCards[randomIdx];
+          if (refCard && grid) {
+            grid.insertBefore(editorial, refCard);
+            editorial.style.display = '';
+          } else {
+            editorial.style.display = 'none';
+          }
+        }
+      }
+    }
+    _isInitialRender = false;
 
     // Update chips, badge, and URL
     renderChips();
@@ -2902,7 +2951,5 @@ const itemListSchema = hasShopify ? {
     });
   }
 
-  // ─── Initial render ─────────────────────────
-  applyAll();
   }); // end astro:page-load
 </script>

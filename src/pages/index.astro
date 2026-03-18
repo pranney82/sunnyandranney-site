@@ -322,29 +322,59 @@ function fmt(amount: number): string {
       <div class="mission__media reveal">
         <div class="mission__img-wrap">
           <img
-            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero/w=600,h=400,fit=cover,q=80,format=auto"
-            srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero/w=600,h=400,fit=cover,q=80,format=auto 600w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero/w=900,h=600,fit=cover,q=80,format=auto 900w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/adrian/hero/w=1200,h=800,fit=cover,q=80,format=auto 1200w"
+            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/desmond/photo-11/w=900,h=600,fit=cover,q=80,format=auto"
+            srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/desmond/photo-11/w=600,h=400,fit=cover,q=80,format=auto 600w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/desmond/photo-11/w=900,h=600,fit=cover,q=80,format=auto 900w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/desmond/photo-11/w=1200,h=800,fit=cover,q=80,format=auto 1200w"
             sizes="(max-width: 767px) 90vw, (max-width: 1024px) 45vw, 540px"
-            alt="Adrian — a Sunshine on a Ranney Day room makeover recipient"
-            width="600"
-            height="400"
+            alt="Desmond seeing his new room for the first time during a Sunshine on a Ranney Day reveal"
+            width="900"
+            height="600"
             loading="lazy"
             decoding="async"
           />
         </div>
       </div>
+
+      <!-- Content -->
       <div class="mission__content reveal delay-1">
-        <p class="mission__kicker">Our Why</p>
+        <div class="mission__badge">
+          <img
+            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/brand-logo-nav-circle/w=120,h=120,fit=scale-down,q=85,format=auto"
+            alt="Sunshine on a Ranney Day"
+            width="48"
+            height="48"
+            loading="lazy"
+            decoding="async"
+          />
+          <span class="mission__badge-text">Sunshine on a Ranney Day</span>
+        </div>
         <h2 class="mission__title">Every Purchase Changes a Child's World</h2>
         <p class="mission__body">
           When you shop at Sunny and Ranney, you're not just buying furniture.
-          Through <strong>Sunshine on a Ranney Day</strong>, 100% of store profits
-          fund bedroom and living space makeovers for children with special needs.
-          {statRooms} rooms transformed. {statYears} years and counting.
+          100% of store profits fund bedroom and living space makeovers
+          for children with special needs.
         </p>
+
+        <!-- Stats -->
+        <div class="mission__stats">
+          <div class="mission__stat">
+            <span class="mission__stat-num" data-count={statRooms}>{statRooms}+</span>
+            <span class="mission__stat-label">Rooms Transformed</span>
+          </div>
+          <div class="mission__stat-divider" aria-hidden="true"></div>
+          <div class="mission__stat">
+            <span class="mission__stat-num" data-count={statYears}>{statYears}</span>
+            <span class="mission__stat-label">Years &amp; Counting</span>
+          </div>
+          <div class="mission__stat-divider" aria-hidden="true"></div>
+          <div class="mission__stat">
+            <span class="mission__stat-num">100%</span>
+            <span class="mission__stat-label">Profits Donated</span>
+          </div>
+        </div>
+
         <div class="mission__actions">
-          <a href="/shop" class="btn btn--gold mission__cta" data-astro-prefetch>Shop &amp; Give Back</a>
-          <a href="/about" class="btn btn--outline mission__cta" data-astro-prefetch>Read Our Full Story</a>
+          <a href="/shop" class="btn btn--gold mission__cta-primary" data-astro-prefetch>Shop &amp; Give Back</a>
+          <a href="/about" class="mission__cta-link" data-astro-prefetch>Read Our Full Story <span aria-hidden="true">&rarr;</span></a>
         </div>
       </div>
     </div>
@@ -1676,7 +1706,8 @@ function fmt(amount: number): string {
   /* ─── Mission Section ──────────────────── */
   .mission {
     background: var(--color-cream);
-    padding: clamp(3rem, 8vh, 5rem) 0;
+    padding: clamp(4rem, 10vh, 7rem) 0;
+    position: relative;
   }
 
   .mission__inner {
@@ -1697,7 +1728,7 @@ function fmt(amount: number): string {
 
   @media (min-width: 768px) {
     .mission__inner {
-      grid-template-columns: 0.9fr 1.1fr;
+      grid-template-columns: 1.1fr 1fr;
       gap: var(--space-2xl);
     }
   }
@@ -1706,16 +1737,17 @@ function fmt(amount: number): string {
     order: -1;
   }
 
+  /* ─ Mission image ─ */
   .mission__img-wrap {
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 16px 48px rgba(0,0,0,0.12);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.14);
   }
 
   .mission__img-wrap img {
+    display: block;
     width: 100%;
     height: auto;
-    display: block;
     aspect-ratio: 3/2;
     object-fit: cover;
     transition: transform 0.8s var(--ease-out);
@@ -1725,19 +1757,35 @@ function fmt(amount: number): string {
     transform: scale(1.03);
   }
 
-  .mission__kicker {
-    font-size: 0.7rem;
+  /* ─ Badge (logo + name) ─ */
+  .mission__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    background: white;
+    border-radius: 100px;
+    padding: 0.35rem 1rem 0.35rem 0.35rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    margin-bottom: var(--space-md);
+  }
+
+  .mission__badge img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+  }
+
+  .mission__badge-text {
+    font-size: 0.75rem;
     font-weight: 600;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--color-cyan);
-    margin: 0 0 var(--space-sm);
+    letter-spacing: 0.03em;
+    color: var(--color-charcoal);
   }
 
   .mission__title {
     color: var(--color-charcoal);
-    font-size: clamp(1.6rem, 3.5vw, 2.5rem);
-    line-height: 1.1;
+    font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+    line-height: 1.08;
     margin-bottom: var(--space-md);
   }
 
@@ -1745,35 +1793,91 @@ function fmt(amount: number): string {
     color: var(--color-stone);
     font-size: 0.95rem;
     line-height: 1.7;
-    max-width: 52ch;
+    max-width: 48ch;
     margin: 0 0 var(--space-lg);
   }
 
-  .mission__body strong {
-    color: var(--color-cyan);
-    font-weight: 600;
+  /* ─ Stats row ─ */
+  .mission__stats {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: var(--space-xl);
   }
 
+  .mission__stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .mission__stat-num {
+    font-family: var(--font-display);
+    font-size: clamp(1.8rem, 3vw, 2.4rem);
+    font-weight: 400;
+    line-height: 1;
+    color: var(--color-cyan);
+  }
+
+  .mission__stat-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-stone);
+  }
+
+  .mission__stat-divider {
+    width: 1px;
+    height: 2.5rem;
+    background: var(--color-cream-dark);
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 480px) {
+    .mission__stats {
+      gap: 1rem;
+    }
+    .mission__stat-num {
+      font-size: 1.5rem;
+    }
+  }
+
+  /* ─ CTAs ─ */
   .mission__actions {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 1.5rem;
     flex-wrap: wrap;
   }
 
-  .mission__cta {
-    border-color: var(--color-charcoal);
+  .mission__cta-primary {
     color: var(--color-charcoal);
   }
 
-  .mission__cta.btn--gold {
-    color: var(--color-charcoal);
+  .mission__cta-primary:hover {
+    color: var(--color-cream);
   }
 
-  .mission__cta:hover {
-    background: var(--color-gold);
-    border-color: var(--color-gold);
+  .mission__cta-link {
+    font-size: 0.85rem;
+    font-weight: 600;
     color: var(--color-charcoal);
+    letter-spacing: 0.02em;
+    transition: color 0.2s;
+  }
+
+  .mission__cta-link span {
+    display: inline-block;
+    transition: transform 0.3s var(--ease-out);
+  }
+
+  .mission__cta-link:hover {
+    color: var(--color-cyan);
+  }
+
+  .mission__cta-link:hover span {
+    transform: translateX(4px);
   }
 
   /* ─── Product card add to cart (homepage) ── */
