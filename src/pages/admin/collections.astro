@@ -78,20 +78,6 @@ const collections = shopifyCollections.map((c, i) => {
                 <span class="admin-toggle-slider"></span>
               </label>
             </div>
-            <div class="collection-nav-row">
-              <label class="collection-nav-label">
-                <input type="checkbox" name={`nav-${c.handle}`} checked={c.showInNav} class="collection-nav-check" />
-                <span>Show in nav</span>
-              </label>
-              <input
-                type="text"
-                name={`navlabel-${c.handle}`}
-                value={c.navLabel}
-                placeholder={c.title}
-                class="collection-nav-input"
-                aria-label={`Nav label for ${c.title}`}
-              />
-            </div>
             <div class="collection-thumb">
               {c.imageUrl
                 ? <img src={`${c.imageUrl}&width=200`} alt={c.title} width="200" height="140" />

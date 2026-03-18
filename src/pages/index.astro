@@ -3,7 +3,7 @@ import Base from '@/layouts/Base.astro';
 import GoogleReviews from '@/components/GoogleReviews.astro';
 import { getProducts, getCollectionByHandle, getProductByHandle } from '@/lib/shopify';
 import { cfImage, cfSrcset } from '@/lib/images';
-import { getCollectionsStatic, getTrendingStatic, getHeroStatic, type CollectionSetting } from '@/lib/settings';
+import { getCollectionsStatic, getHeroStatic, type CollectionSetting } from '@/lib/settings';
 
 // Fetch live stats from SOARD at build time
 let soardStats: { roomMakeovers: number; yearsGiving: number } | null = null;
@@ -36,13 +36,12 @@ const HERO_SIZES = '(max-width: 767px) 280px, (max-width: 1023px) 400px, 440px';
 let heroProduct: any = null;
 
 try {
-  // Load trending product handles from admin setting
-  const trendingSetting = await getTrendingStatic();
-  if (trendingSetting && trendingSetting.handles.length > 0) {
-    products = (await Promise.all(
-      trendingSetting.handles.map(h => getProductByHandle(h))
-    )).filter(Boolean);
+  // Load new arrivals from Shopify automated collection
+  const newArrivals = await getCollectionByHandle('new-arrivals', 8);
+  if (newArrivals && newArrivals.products.length > 0) {
+    products = newArrivals.products;
   } else {
+    // Fallback: latest products by best-selling if collection doesn't exist yet
     const result = await getProducts(8);
     products = result.products;
   }
@@ -71,9 +70,10 @@ try {
   console.log('Shopify API not configured.');
 }
 
-// Split products by type for homepage sections
-const featuredProducts = products.slice(0, 8);
-
+// Price formatter — drops .00 on whole numbers ($800 not $800.00)
+function fmt(amount: number): string {
+  return amount % 1 === 0 ? `$${amount.toLocaleString()}` : `$${amount.toFixed(2)}`;
+}
 ---
 
 <Base lcpImage={heroSrc} lcpImageSrcset={heroSrcset} lcpImageSizes={HERO_SIZES}>
@@ -184,12 +184,12 @@ const featuredProducts = products.slice(0, 8);
                 <div class="collection-tile__image">
                   {imgUrl ? (
                     <img
-                      src={cfImage(imgUrl, { width: 500, height: 500 })}
-                      srcset={cfSrcset(imgUrl, [250, 500])}
+                      src={cfImage(imgUrl, { width: 1000, height: 1000 })}
+                      srcset={cfSrcset(imgUrl, [500, 1000])}
                       sizes="(max-width: 480px) 45vw, (max-width: 768px) 30vw, 200px"
                       alt=""
-                      width="500"
-                      height="500"
+                      width="1000"
+                      height="1000"
                       loading="lazy"
                       decoding="async"
                     />
@@ -216,26 +216,34 @@ const featuredProducts = products.slice(0, 8);
       <div class="services__media reveal">
         <div class="shop-look__img-wrap">
           <img
-            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=800,q=80,format=auto"
-            srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=500,q=75,format=auto 500w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=800,q=80,format=auto 800w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/w=1100,q=80,format=auto 1100w"
+            src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/showroom-editorial/w=800,q=80,format=auto"
+            srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/showroom-editorial/w=500,q=75,format=auto 500w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/showroom-editorial/w=800,q=80,format=auto 800w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/showroom-editorial/w=1100,q=80,format=auto 1100w"
             sizes="(max-width: 767px) 90vw, 45vw"
-            alt="Inside the Sunny & Ranney showroom — curated furniture and decor"
+            alt="Elegant living room with cream boucle sofa and cognac leather accent chair"
             width="800"
             height="1000"
             loading="lazy"
             decoding="async"
           />
-          <a href="/shop?collection=sofas" class="shop-look__tag" style="top: 40%; left: 25%;" data-astro-prefetch>
+          <a href="/shop?collection=art-mirrors" class="shop-look__tag" style="top: 20%; left: 50%;" data-astro-prefetch>
+            <span class="shop-look__dot"></span>
+            <span class="shop-look__label">Art & Mirrors</span>
+          </a>
+          <a href="/shop?collection=sofas" class="shop-look__tag" style="top: 45%; left: 10%;" data-astro-prefetch>
             <span class="shop-look__dot"></span>
             <span class="shop-look__label">Sofas</span>
           </a>
-          <a href="/shop?collection=accent-chairs" class="shop-look__tag" style="top: 30%; left: 70%;" data-astro-prefetch>
+          <a href="/shop?collection=accent-chairs" class="shop-look__tag" style="top: 55%; left: 88%;" data-astro-prefetch>
             <span class="shop-look__dot"></span>
             <span class="shop-look__label">Accent Chairs</span>
           </a>
-          <a href="/shop?collection=coffee-tables" class="shop-look__tag" style="top: 65%; left: 50%;" data-astro-prefetch>
+          <a href="/shop?collection=coffee-tables" class="shop-look__tag" style="top: 65%; left: 28%;" data-astro-prefetch>
             <span class="shop-look__dot"></span>
             <span class="shop-look__label">Coffee Tables</span>
+          </a>
+          <a href="/shop?collection=rugs" class="shop-look__tag" style="top: 88%; left: 72%;" data-astro-prefetch>
+            <span class="shop-look__dot"></span>
+            <span class="shop-look__label">Rugs</span>
           </a>
         </div>
       </div>
@@ -275,168 +283,35 @@ const featuredProducts = products.slice(0, 8);
     </div>
   </section>
 
-  <!-- ═══ FEATURED / TRENDING ═══ -->
-  {hasShopify && featuredProducts.length > 0 && (
-    <section class="home-products section">
-      <div class="container">
-        <div class="home-products__header reveal">
-          <div>
-            <h2 class="section-title">Staff Picks</h2>
-            <p class="home-products__subtitle">Hand-picked from our showroom floor</p>
-          </div>
-          <a href="/shop" class="home-products__see-all" data-astro-prefetch>See all &rarr;</a>
-        </div>
 
-        {/* ── Hero row: first 2 products, editorial size ── */}
-        <div class="trending-hero reveal" id="home-grid">
-          {featuredProducts.slice(0, 2).map((product: any, idx: number) => {
-            const image = product.images.edges[0]?.node;
-            const image2 = product.images.edges[1]?.node;
-            const price = product.priceRange.minVariantPrice;
-            const compareAt = product.compareAtPriceRange?.minVariantPrice;
-            const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.amount);
-            const firstVariant = product.variants.edges[0]?.node;
-
-            return (
-              <div class="product-card product-card--hero" data-type={product.productType.toLowerCase()}>
-                {isOnSale && <span class="product-card__badge">Sale</span>}
-                {!isOnSale && !product.availableForSale && <span class="product-card__badge product-card__badge--sold">Sold Out</span>}
-                <a href={`/shop/${product.handle}`} data-astro-prefetch class="product-card__image" aria-hidden="true" tabindex="-1">
-                  {image ? (
-                    <>
-                      <img
-                        src={cfImage(image.url, { width: 900 })}
-                        srcset={cfSrcset(image.url, [450, 900])}
-                        sizes="(max-width: 768px) 90vw, 45vw"
-                        alt=""
-                        width={image.width}
-                        height={image.height}
-                        loading="lazy"
-                        decoding="async"
-                        class="product-card__img-primary"
-                      />
-                      {image2 && (
-                        <img
-                          src={cfImage(image2.url, { width: 900 })}
-                          srcset={cfSrcset(image2.url, [450, 900])}
-                          sizes="(max-width: 768px) 90vw, 45vw"
-                          alt=""
-                          width={image2.width}
-                          height={image2.height}
-                          loading="lazy"
-                          decoding="async"
-                          class="product-card__img-hover"
-                        />
-                      )}
-                    </>
-                  ) : (
-                    <div class="product-card__image-ph">{product.productType || 'Product'}</div>
-                  )}
-                </a>
-                <div class="product-card__info">
-                  {product.productType && <span class="product-card__type">{product.productType}</span>}
-                  <a href={`/shop/${product.handle}`} data-astro-prefetch class="product-card__title">{product.title}</a>
-                  <div class="product-card__pricing">
-                    <span class="product-card__price">${parseFloat(price.amount).toFixed(2)}</span>
-                    {isOnSale && (
-                      <span class="product-card__price--compare">${parseFloat(compareAt.amount).toFixed(2)}</span>
-                    )}
-                  </div>
-                  {product.availableForSale && firstVariant && (
-                    <button class="product-card__add-btn"
-                      data-variant-id={firstVariant.id}
-                      data-title={product.title}
-                      data-price={parseFloat(price.amount)}
-                      data-image={image?.url || ''}
-                      data-handle={product.handle}
-                      data-variant-title={firstVariant.title}
-                    >
-                      Add to Cart
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* ── Standard row: remaining products ── */}
-        {featuredProducts.length > 2 && (
-          <div class="product-grid reveal delay-1">
-            {featuredProducts.slice(2, 6).map((product: any, idx: number) => {
-              const image = product.images.edges[0]?.node;
-              const image2 = product.images.edges[1]?.node;
-              const price = product.priceRange.minVariantPrice;
-              const compareAt = product.compareAtPriceRange?.minVariantPrice;
-              const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.amount);
-              const firstVariant = product.variants.edges[0]?.node;
-
-              return (
-                <div class="product-card" data-type={product.productType.toLowerCase()}>
-                  {isOnSale && <span class="product-card__badge">Sale</span>}
-                  {!isOnSale && !product.availableForSale && <span class="product-card__badge product-card__badge--sold">Sold Out</span>}
-                  <a href={`/shop/${product.handle}`} data-astro-prefetch class="product-card__image" aria-hidden="true" tabindex="-1">
-                    {image ? (
-                      <>
-                        <img
-                          src={cfImage(image.url, { width: 600 })}
-                          srcset={cfSrcset(image.url, [300, 600])}
-                          sizes="(max-width: 768px) 50vw, 25vw"
-                          alt=""
-                          width={image.width}
-                          height={image.height}
-                          loading="lazy"
-                          decoding="async"
-                          class="product-card__img-primary"
-                        />
-                        {image2 && (
-                          <img
-                            src={cfImage(image2.url, { width: 600 })}
-                            srcset={cfSrcset(image2.url, [300, 600])}
-                            sizes="(max-width: 768px) 50vw, 25vw"
-                            alt=""
-                            width={image2.width}
-                            height={image2.height}
-                            loading="lazy"
-                            decoding="async"
-                            class="product-card__img-hover"
-                          />
-                        )}
-                      </>
-                    ) : (
-                      <div class="product-card__image-ph">{product.productType || 'Product'}</div>
-                    )}
-                  </a>
-                  <div class="product-card__info">
-                    {product.productType && <span class="product-card__type">{product.productType}</span>}
-                    <a href={`/shop/${product.handle}`} data-astro-prefetch class="product-card__title">{product.title}</a>
-                    <div class="product-card__pricing">
-                      <span class="product-card__price">${parseFloat(price.amount).toFixed(2)}</span>
-                      {isOnSale && (
-                        <span class="product-card__price--compare">${parseFloat(compareAt.amount).toFixed(2)}</span>
-                      )}
-                    </div>
-                    {product.availableForSale && firstVariant && (
-                      <button class="product-card__add-btn"
-                        data-variant-id={firstVariant.id}
-                        data-title={product.title}
-                        data-price={parseFloat(price.amount)}
-                        data-image={image?.url || ''}
-                        data-handle={product.handle}
-                        data-variant-title={firstVariant.title}
-                      >
-                        Add to Cart
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+  <!-- ═══ QUICK VIEW MODAL ═══ -->
+  <div class="qv-overlay" id="qv-overlay" aria-hidden="true"></div>
+  <div class="qv-modal" id="qv-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Quick view">
+    <div class="qv-handle" aria-hidden="true"></div>
+    <button class="qv-close" id="qv-close" aria-label="Close quick view">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="qv-body">
+      <div class="qv-gallery">
+        <img class="qv-image" id="qv-image" src="" alt="" />
+        <div class="qv-thumbs" id="qv-thumbs"></div>
       </div>
-    </section>
-  )}
+      <div class="qv-info">
+        <span class="qv-type" id="qv-type"></span>
+        <h2 class="qv-title" id="qv-title"></h2>
+        <div class="qv-pricing">
+          <span class="qv-price" id="qv-price"></span>
+          <span class="qv-compare" id="qv-compare"></span>
+        </div>
+        <p class="qv-description" id="qv-description"></p>
+        <div class="qv-variants" id="qv-variants"></div>
+        <div class="qv-actions">
+          <button class="btn btn--gold qv-add" id="qv-add">Add to Cart</button>
+          <a class="btn btn--outline qv-view-full" id="qv-view-full" href="#">View Full Details</a>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ═══ MISSION ═══ -->
   <section class="mission" id="mission">
@@ -1134,6 +1009,61 @@ const featuredProducts = products.slice(0, 8);
     margin-top: var(--space-lg);
   }
 
+  /* ─── Product card structure ────────────── */
+  .home-products .product-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .product-card__image-container {
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ─── Wishlist heart ─────────────────────── */
+  .product-card__wishlist {
+    position: absolute;
+    top: 0.65rem;
+    right: 0.65rem;
+    z-index: 3;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(6px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-stone);
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.25s;
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
+  .product-card:hover .product-card__wishlist,
+  .product-card__wishlist.is-wished {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .product-card__wishlist:hover {
+    color: #e74c3c;
+    transform: scale(1.15);
+  }
+
+  .product-card__wishlist.is-wished {
+    color: #e74c3c;
+  }
+
+  .product-card__wishlist.is-wished svg {
+    fill: #e74c3c;
+  }
+
   /* ─── Image hover swap (homepage cards) ── */
   .product-card__img-primary,
   .product-card__img-hover {
@@ -1149,6 +1079,90 @@ const featuredProducts = products.slice(0, 8);
   .product-card:hover .product-card__img-primary { opacity: 0; }
   .product-card:hover .product-card__img-hover { opacity: 1; transform: scale(1.03); }
   .product-card:hover .product-card__img-primary:only-child { opacity: 1; transform: scale(1.05); }
+
+  /* ─── Quick View overlay ─────────────────── */
+  .product-card__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(44, 44, 44, 0.0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .product-card:hover .product-card__overlay {
+    background: rgba(44, 44, 44, 0.15);
+    pointer-events: all;
+  }
+
+  .product-card__quick-view {
+    padding: 0.6rem 1.5rem;
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--color-charcoal);
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.25s, transform 0.25s, background 0.2s;
+    backdrop-filter: blur(8px);
+  }
+
+  .product-card__quick-view:hover {
+    background: var(--color-gold);
+  }
+
+  .product-card:hover .product-card__quick-view {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (max-width: 767px) {
+    .product-card__overlay {
+      position: static;
+      background: none;
+      pointer-events: all;
+      margin-top: 0.5rem;
+    }
+    .product-card:hover .product-card__overlay {
+      background: none;
+    }
+    .product-card__quick-view {
+      opacity: 1;
+      transform: none;
+      width: 100%;
+      background: var(--color-cream-dark);
+      backdrop-filter: none;
+      padding: 0.5rem;
+      font-size: 0.68rem;
+    }
+    .product-card__quick-view:hover {
+      background: var(--color-gold);
+    }
+  }
+
+  /* ─── Badge variants ──────────────────────── */
+  .product-card__badge--sold {
+    background: var(--color-charcoal) !important;
+    color: var(--color-cream) !important;
+  }
+
+  .product-card__badge--new {
+    background: var(--color-cyan, #2a7d8c);
+    color: #fff;
+  }
+
+  /* ─── Sale price styling ─────────────────── */
+  .product-card__price--sale {
+    color: #c0392b;
+  }
 
   @media (min-width: 768px) {
     .product-card__add-btn {
@@ -1166,6 +1180,285 @@ const featuredProducts = products.slice(0, 8);
       margin-top: 0.5rem;
     }
   }
+
+  /* ─── Staggered card entrance ────────────── */
+  .home-products .product-card {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.45s var(--ease-out),
+                transform 0.45s var(--ease-out);
+  }
+
+  /* Fallback: if JS hasn't run after 1s, show all cards */
+  @keyframes card-fallback {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .home-products .product-card {
+    animation: card-fallback 0s 1s forwards;
+  }
+
+  .home-products .product-card.card-visible {
+    opacity: 1;
+    transform: translateY(0);
+    animation: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .home-products .product-card {
+      opacity: 1;
+      transform: none;
+      transition: none;
+      animation: none;
+    }
+  }
+
+  /* First two cards visible immediately — no blank flash */
+  .trending-hero .product-card:nth-child(-n+2) {
+    opacity: 1;
+    transform: translateY(0);
+    animation: none;
+  }
+
+  /* ─── Quick View Modal ─────────────────── */
+  .qv-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 500;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+    backdrop-filter: blur(4px);
+  }
+
+  .qv-overlay[aria-hidden="false"] {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .qv-modal {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 501;
+    background: var(--color-cream);
+    width: 100%;
+    max-height: 90dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(100%);
+    transition: opacity 0.3s var(--ease-out), visibility 0.3s var(--ease-out), transform 0.35s var(--ease-out);
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.12);
+    border-radius: 12px 12px 0 0;
+  }
+
+  .qv-modal[aria-hidden="false"] {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    will-change: transform;
+  }
+
+  .qv-handle {
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: var(--color-stone);
+    opacity: 0.3;
+    border-radius: 2px;
+    margin: 8px auto 0;
+  }
+
+  @media (min-width: 640px) {
+    .qv-modal {
+      top: 50%;
+      left: 50%;
+      right: auto;
+      bottom: auto;
+      transform: translate(-50%, -50%) scale(0.95);
+      max-width: 900px;
+      width: 92vw;
+      max-height: 88vh;
+      border-radius: 0;
+      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15);
+    }
+
+    .qv-modal[aria-hidden="false"] {
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .qv-handle { display: none; }
+  }
+
+  .qv-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 2;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.9);
+    border: none;
+    border-radius: 50%;
+    color: var(--color-charcoal);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .qv-close:hover { background: var(--color-gold); }
+
+  .qv-body {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  @media (min-width: 640px) {
+    .qv-body { grid-template-columns: 1fr 1fr; }
+  }
+
+  .qv-gallery {
+    background: var(--color-cream-dark);
+    aspect-ratio: 3 / 4;
+    max-height: 45dvh;
+    position: relative;
+    overflow: hidden;
+  }
+
+  @media (min-width: 640px) {
+    .qv-gallery {
+      aspect-ratio: 1;
+      max-height: none;
+    }
+  }
+
+  .qv-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.3s;
+  }
+
+  .qv-thumbs {
+    position: absolute;
+    bottom: 0.75rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 0.35rem;
+  }
+
+  .qv-thumb {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.5);
+    border: 1.5px solid rgba(255,255,255,0.8);
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 0;
+  }
+
+  .qv-thumb--active,
+  .qv-thumb:hover {
+    background: white;
+    transform: scale(1.2);
+  }
+
+  .qv-info {
+    padding: 1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .qv-info {
+      padding: 2rem;
+      gap: 0.75rem;
+    }
+  }
+
+  .qv-type {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+  }
+
+  .qv-title {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 400;
+    line-height: 1.2;
+    margin: 0;
+  }
+
+  .qv-pricing {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+  }
+
+  .qv-price {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .qv-compare {
+    font-size: 1rem;
+    color: var(--color-stone);
+    text-decoration: line-through;
+  }
+
+  .qv-description {
+    font-size: 0.88rem;
+    color: var(--color-slate);
+    line-height: 1.6;
+    max-width: none;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .qv-variants {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .qv-variant-btn {
+    padding: 0.45rem 1rem;
+    border: 1.5px solid var(--color-cream-dark);
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    cursor: pointer;
+    background: none;
+    font-family: var(--font-body);
+  }
+  .qv-variant-btn:hover { border-color: var(--color-charcoal); }
+  .qv-variant-btn--active { border-color: var(--color-charcoal); background: var(--color-charcoal); color: var(--color-cream); }
+  .qv-variant-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .qv-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+  }
+
+  .qv-add { width: 100%; justify-content: center; }
+  .qv-view-full { width: 100%; justify-content: center; font-size: 0.75rem; }
 
   /* ─── Horizontal Scroll (deals) ────────── */
   .home-scroll {
@@ -1505,18 +1798,20 @@ const featuredProducts = products.slice(0, 8);
     .home-products .product-card__info {
       padding: 1rem 0.25rem 0.25rem;
     }
-    .home-products .product-card__type {
-      display: none;
-    }
   }
 
 </style>
 
 <script>
-  // Add to cart from homepage product cards (covers both hero + standard grids)
-  const homeProducts = document.querySelector('.home-products');
+  import { wishlist } from '@/lib/cart-store.js';
 
-  homeProducts?.addEventListener('click', (e) => {
+  document.addEventListener('astro:page-load', () => {
+
+  const homeProducts = document.querySelector('.home-products');
+  if (!homeProducts) return;
+
+  // ─── Add to Cart ──────────────────────────
+  homeProducts.addEventListener('click', (e) => {
     const btn = (e.target as Element)?.closest('.product-card__add-btn');
     if (!btn) return;
     e.preventDefault();
@@ -1543,4 +1838,321 @@ const featuredProducts = products.slice(0, 8);
     }, 1500);
   });
 
+  // ─── Wishlist Hearts ──────────────────────
+  function initWishlistHearts() {
+    homeProducts.querySelectorAll('.product-card__wishlist').forEach(btn => {
+      const handle = (btn as HTMLElement).dataset.handle || '';
+      if (wishlist.has(handle)) {
+        btn.classList.add('is-wished');
+      }
+    });
+  }
+
+  homeProducts.addEventListener('click', (e) => {
+    const btn = (e.target as Element)?.closest('.product-card__wishlist');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const handle = (btn as HTMLElement).dataset.handle || '';
+    wishlist.toggle(handle);
+    btn.classList.toggle('is-wished');
+
+    btn.animate([
+      { transform: 'scale(1)' },
+      { transform: 'scale(1.3)' },
+      { transform: 'scale(1)' },
+    ], { duration: 300, easing: 'ease-out' });
+  });
+
+  initWishlistHearts();
+
+  // ─── Quick View Modal ─────────────────────
+  const qvOverlay = document.getElementById('qv-overlay');
+  const qvModal = document.getElementById('qv-modal');
+  const qvClose = document.getElementById('qv-close');
+  const qvImage = document.getElementById('qv-image') as HTMLImageElement;
+  const qvThumbs = document.getElementById('qv-thumbs');
+  const qvType = document.getElementById('qv-type');
+  const qvTitle = document.getElementById('qv-title');
+  const qvPrice = document.getElementById('qv-price');
+  const qvCompare = document.getElementById('qv-compare');
+  const qvDescription = document.getElementById('qv-description');
+  const qvVariants = document.getElementById('qv-variants');
+  const qvAdd = document.getElementById('qv-add') as HTMLButtonElement;
+  const qvViewFull = document.getElementById('qv-view-full') as HTMLAnchorElement;
+
+  let qvSelectedVariant: any = null;
+  let qvImages: string[] = [];
+  let qvCurrentImage = 0;
+  let qvDismissGeneration = 0;
+
+  function fmtPrice(amount: number): string {
+    return amount % 1 === 0 ? `$${amount.toLocaleString()}` : `$${amount.toFixed(2)}`;
+  }
+
+  function qvOptimize(url: string) {
+    if (!url) return url;
+    if (url.includes('cdn.shopify.com')) {
+      const sep = url.includes('?') ? '&' : '?';
+      return `${url}${sep}width=600&crop=center`;
+    }
+    return url;
+  }
+
+  function openQuickView(data: any) {
+    qvImages = JSON.parse(data.images || '[]');
+    const variants = JSON.parse(data.variants || '[]');
+
+    if (qvImage && qvImages.length) {
+      qvImage.src = qvOptimize(qvImages[0]);
+      qvImage.alt = data.title;
+      qvCurrentImage = 0;
+    }
+
+    if (qvThumbs) {
+      qvThumbs.innerHTML = qvImages.length > 1
+        ? qvImages.map((_: string, i: number) =>
+            `<button class="qv-thumb ${i === 0 ? 'qv-thumb--active' : ''}" data-idx="${i}"></button>`
+          ).join('')
+        : '';
+    }
+
+    if (qvType) qvType.textContent = data.type || '';
+    if (qvTitle) qvTitle.textContent = data.title || '';
+    if (qvPrice) qvPrice.textContent = fmtPrice(parseFloat(data.price));
+    if (qvCompare) {
+      if (data.comparePrice) {
+        qvCompare.textContent = fmtPrice(parseFloat(data.comparePrice));
+        qvCompare.style.display = '';
+      } else {
+        qvCompare.style.display = 'none';
+      }
+    }
+    if (qvDescription) qvDescription.textContent = data.description || '';
+
+    if (qvVariants && variants.length > 1) {
+      qvVariants.innerHTML = variants.map((v: any, i: number) =>
+        `<button class="qv-variant-btn ${i === 0 ? 'qv-variant-btn--active' : ''}"
+          data-idx="${i}" data-variant-id="${v.id}" data-price="${v.price}"
+          ${!v.available ? 'disabled' : ''}>
+          ${v.title}
+        </button>`
+      ).join('');
+      qvVariants.style.display = '';
+    } else if (qvVariants) {
+      qvVariants.innerHTML = '';
+      qvVariants.style.display = 'none';
+    }
+
+    qvSelectedVariant = variants[0] || null;
+    if (qvViewFull) qvViewFull.href = `/shop/${data.handle}`;
+
+    if (qvAdd) {
+      qvAdd.disabled = data.available === 'false';
+      qvAdd.textContent = data.available === 'false' ? 'Sold Out' : 'Add to Cart';
+    }
+
+    qvDismissGeneration++;
+    qvModal?.setAttribute('aria-hidden', 'false');
+    qvOverlay?.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeQuickView() {
+    qvModal?.setAttribute('aria-hidden', 'true');
+    qvOverlay?.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  qvOverlay?.addEventListener('click', closeQuickView);
+  qvClose?.addEventListener('click', closeQuickView);
+  document.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && qvModal?.getAttribute('aria-hidden') === 'false') closeQuickView();
+  });
+
+  // Swipe-down-to-dismiss on mobile
+  if (qvModal && qvOverlay) {
+    let sheetStartY = 0;
+    let sheetStartTime = 0;
+    let sheetDragging = false;
+    let sheetAxis: 'pending' | 'vertical' | 'horizontal' = 'pending';
+
+    function clearSheetInlineStyles() {
+      qvModal.style.transform = '';
+      qvModal.style.transition = '';
+      qvOverlay.style.opacity = '';
+      qvOverlay.style.transition = '';
+    }
+
+    qvModal.addEventListener('touchstart', (e) => {
+      if (qvModal.scrollTop > 0) return;
+      sheetStartY = e.touches[0].clientY;
+      sheetStartTime = Date.now();
+      sheetDragging = true;
+      sheetAxis = 'pending';
+    }, { passive: true });
+
+    qvModal.addEventListener('touchmove', (e) => {
+      if (!sheetDragging || sheetAxis === 'horizontal') return;
+      const dx = Math.abs(e.touches[0].clientX - (e.touches[0].clientX));
+      const dy = e.touches[0].clientY - sheetStartY;
+
+      if (sheetAxis === 'pending' && (Math.abs(dy) > 10 || dx > 10)) {
+        sheetAxis = Math.abs(dy) > dx ? 'vertical' : 'horizontal';
+      }
+      if (sheetAxis !== 'vertical') return;
+
+      const offset = Math.max(0, dy);
+      qvModal.style.transform = `translateY(${offset}px)`;
+      qvModal.style.transition = 'none';
+      const progress = Math.min(offset / 300, 1);
+      qvOverlay.style.opacity = String(1 - progress * 0.6);
+    }, { passive: true });
+
+    qvModal.addEventListener('touchend', (e) => {
+      if (!sheetDragging || sheetAxis !== 'vertical') {
+        sheetDragging = false;
+        return;
+      }
+      sheetDragging = false;
+      const dy = e.changedTouches[0].clientY - sheetStartY;
+      const velocity = dy / (Date.now() - sheetStartTime);
+
+      if (dy > 100 || velocity > 0.5) {
+        const dismissId = ++qvDismissGeneration;
+        qvModal.style.transition = '';
+        qvModal.style.transform = 'translateY(100%)';
+        requestAnimationFrame(() => {
+          qvOverlay.style.transition = 'opacity 0.3s var(--ease-out)';
+          qvOverlay.style.opacity = '0';
+        });
+        const cleanup = () => {
+          if (qvDismissGeneration !== dismissId) return;
+          clearSheetInlineStyles();
+          closeQuickView();
+        };
+        const fallback = setTimeout(cleanup, 400);
+        qvModal.addEventListener('transitionend', function handler(evt) {
+          if ((evt as TransitionEvent).propertyName !== 'transform') return;
+          qvModal.removeEventListener('transitionend', handler);
+          clearTimeout(fallback);
+          cleanup();
+        });
+      } else {
+        qvModal.style.transition = '';
+        qvModal.style.transform = '';
+        qvOverlay.style.opacity = '';
+      }
+    }, { passive: true });
+  }
+
+  // QV image dots
+  qvThumbs?.addEventListener('click', (e) => {
+    const btn = (e.target as Element)?.closest('.qv-thumb') as HTMLElement;
+    if (!btn) return;
+    const idx = parseInt(btn.dataset.idx || '0');
+    qvCurrentImage = idx;
+    if (qvImage) qvImage.src = qvOptimize(qvImages[idx]);
+    qvThumbs.querySelectorAll('.qv-thumb').forEach((t, i) => {
+      t.classList.toggle('qv-thumb--active', i === idx);
+    });
+  });
+
+  // QV touch swipe images
+  if (qvImage) {
+    let qvStartX = 0;
+    let qvStartY = 0;
+    let qvTracking = false;
+    qvImage.addEventListener('touchstart', (e) => {
+      qvStartX = e.touches[0].clientX;
+      qvStartY = e.touches[0].clientY;
+      qvTracking = true;
+    }, { passive: true });
+    qvImage.addEventListener('touchend', (e) => {
+      if (!qvTracking || qvImages.length < 2) return;
+      qvTracking = false;
+      const dx = e.changedTouches[0].clientX - qvStartX;
+      const dy = e.changedTouches[0].clientY - qvStartY;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+        qvCurrentImage = dx < 0
+          ? (qvCurrentImage + 1) % qvImages.length
+          : (qvCurrentImage - 1 + qvImages.length) % qvImages.length;
+        qvImage.src = qvOptimize(qvImages[qvCurrentImage]);
+        qvThumbs?.querySelectorAll('.qv-thumb').forEach((t, i) => {
+          t.classList.toggle('qv-thumb--active', i === qvCurrentImage);
+        });
+      }
+    }, { passive: true });
+  }
+
+  // QV variant selection
+  qvVariants?.addEventListener('click', (e) => {
+    const btn = (e.target as Element)?.closest('.qv-variant-btn') as HTMLElement;
+    if (!btn || btn.hasAttribute('disabled')) return;
+    qvVariants.querySelectorAll('.qv-variant-btn').forEach(b => b.classList.remove('qv-variant-btn--active'));
+    btn.classList.add('qv-variant-btn--active');
+    const price = btn.dataset.price;
+    if (qvPrice && price) qvPrice.textContent = fmtPrice(parseFloat(price));
+    qvSelectedVariant = { id: btn.dataset.variantId, price, title: btn.textContent?.trim() || '' };
+    const idx = parseInt(btn.dataset.idx || '0');
+    if (qvImages[idx] && qvImage) qvImage.src = qvOptimize(qvImages[idx]);
+  });
+
+  // QV add to cart
+  qvAdd?.addEventListener('click', () => {
+    if (!qvSelectedVariant) return;
+    window.addToCart?.({
+      variantId: qvSelectedVariant.id,
+      title: qvTitle?.textContent || '',
+      price: parseFloat(qvSelectedVariant.price),
+      image: qvImage?.src || '',
+      handle: qvViewFull?.href?.split('/shop/')[1] || '',
+      variantTitle: qvSelectedVariant.title || '',
+    });
+    qvAdd.textContent = 'Added!';
+    qvAdd.disabled = true;
+    setTimeout(() => {
+      qvAdd.textContent = 'Add to Cart';
+      qvAdd.disabled = false;
+    }, 1500);
+  });
+
+  // Open quick view from card
+  homeProducts.addEventListener('click', (e) => {
+    const btn = (e.target as Element)?.closest('.product-card__quick-view') as HTMLElement;
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    openQuickView(btn.dataset);
+  });
+
+  // ─── Staggered card entrance animation ────
+  function getCards(): HTMLElement[] {
+    return Array.from(homeProducts.querySelectorAll('.product-card') || []) as HTMLElement[];
+  }
+
+  function observeCards() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const card = entry.target as HTMLElement;
+          const rect = card.getBoundingClientRect();
+          const col = Math.floor((rect.left / window.innerWidth) * 4);
+          card.style.transitionDelay = `${col * 60}ms`;
+          card.classList.add('card-visible');
+          observer.unobserve(card);
+        }
+      });
+    }, { threshold: 0.05, rootMargin: '50px' });
+
+    getCards().forEach(card => {
+      observer.observe(card);
+    });
+  }
+
+  observeCards();
+
+  }); // end astro:page-load
 </script>

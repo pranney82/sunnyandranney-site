@@ -41,6 +41,12 @@ const PRODUCT_FRAGMENT = `
     description
     descriptionHtml
     productType
+    productCategory {
+      productTaxonomyNode {
+        name
+        fullName
+      }
+    }
     tags
     vendor
     availableForSale
@@ -76,6 +82,7 @@ const PRODUCT_FRAGMENT = `
           id
           title
           availableForSale
+          quantityAvailable
           price {
             amount
             currencyCode
@@ -91,6 +98,28 @@ const PRODUCT_FRAGMENT = `
           image {
             url
             altText
+          }
+        }
+      }
+    }
+    media(first: 10) {
+      edges {
+        node {
+          mediaContentType
+          ... on Video {
+            id
+            sources {
+              url
+              mimeType
+            }
+            previewImage {
+              url
+            }
+          }
+          ... on ExternalVideo {
+            id
+            host
+            embeddedUrl
           }
         }
       }
@@ -441,6 +470,12 @@ export interface Product {
   description: string;
   descriptionHtml: string;
   productType: string;
+  productCategory: {
+    productTaxonomyNode: {
+      name: string;
+      fullName: string;
+    } | null;
+  } | null;
   tags: string[];
   vendor: string;
   availableForSale: boolean;
@@ -457,6 +492,9 @@ export interface Product {
   variants: {
     edges: Array<{ node: ProductVariant }>;
   };
+  media?: {
+    edges: Array<{ node: ProductMedia }>;
+  };
   seo: {
     title: string;
     description: string;
@@ -467,10 +505,20 @@ export interface ProductVariant {
   id: string;
   title: string;
   availableForSale: boolean;
+  quantityAvailable: number | null;
   price: MoneyV2;
   compareAtPrice: MoneyV2 | null;
   selectedOptions: Array<{ name: string; value: string }>;
   image: ShopifyImage | null;
+}
+
+export interface ProductMedia {
+  mediaContentType: 'IMAGE' | 'VIDEO' | 'EXTERNAL_VIDEO' | 'MODEL_3D';
+  id?: string;
+  sources?: Array<{ url: string; mimeType: string }>;
+  previewImage?: { url: string };
+  host?: string;
+  embeddedUrl?: string;
 }
 
 export interface Collection {

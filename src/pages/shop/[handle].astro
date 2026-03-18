@@ -5,7 +5,7 @@ import Base from '@/layouts/Base.astro';
 import GoogleReviews from '@/components/GoogleReviews.astro';
 import { cfImage, cfSrcset, SIZES } from '@/lib/images';
 import { getCollectionByHandle, getProductByHandle, getProducts } from '@/lib/shopify';
-import { getCollectionsStatic, getTrendingStatic, getHeroStatic } from '@/lib/settings';
+import { getCollectionsStatic, getHeroStatic } from '@/lib/settings';
 
 export async function getStaticPaths() {
   // Only build PDPs for products in admin-enabled collections
@@ -29,30 +29,34 @@ export async function getStaticPaths() {
     }
   }
 
-  // Also include any trending/hero products — they may be from non-enabled collections
-  // and would 404 without pages built for them.
+  // Also include new-arrivals collection + hero products — they may be from
+  // non-enabled collections and would 404 without pages built for them.
   try {
-    const [trendingSetting, heroSetting] = await Promise.all([
-      getTrendingStatic(),
+    const [newArrivals, heroSetting] = await Promise.all([
+      getCollectionByHandle('new-arrivals', 8),
       getHeroStatic(),
     ]);
 
-    const seenHandles = new Set(allProducts.map((p: any) => p.handle));
-    const extraHandles = [
-      ...(trendingSetting?.handles ?? []),
-      heroSetting?.productHandle,
-    ].filter((h): h is string => Boolean(h) && !seenHandles.has(h));
-
-    if (!trendingSetting) {
+    // Add new arrivals products
+    if (newArrivals) {
+      for (const p of newArrivals.products) {
+        if (!seen.has(p.id)) { seen.add(p.id); allProducts.push(p); }
+      }
+    } else {
       // Homepage falls back to getProducts(8) — ensure those pages are built
       const { products: fallback } = await getProducts(8);
       for (const p of fallback) {
         if (!seen.has(p.id)) { seen.add(p.id); allProducts.push(p); }
       }
-    } else if (extraHandles.length > 0) {
-      const extras = (await Promise.all(extraHandles.map(h => getProductByHandle(h)))).filter(Boolean) as any[];
-      for (const p of extras) {
-        if (!seen.has(p.id)) { seen.add(p.id); allProducts.push(p); }
+    }
+
+    // Add hero product
+    const heroHandle = heroSetting?.productHandle;
+    if (heroHandle && !new Set(allProducts.map((p: any) => p.handle)).has(heroHandle)) {
+      const heroProduct = await getProductByHandle(heroHandle);
+      if (heroProduct && !seen.has(heroProduct.id)) {
+        seen.add(heroProduct.id);
+        allProducts.push(heroProduct);
       }
     }
   } catch { /* Shopify not configured — skip */ }
@@ -93,6 +97,17 @@ const lcpImage = mainImage ? cfImage(mainImage.url, { width: 900 }) : undefined;
 const price = product.priceRange.minVariantPrice;
 const compareAt = product.compareAtPriceRange?.minVariantPrice;
 const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.amount);
+
+// Extract videos from media
+const videos = (product.media?.edges || [])
+  .filter((e: any) => e.node.mediaContentType === 'VIDEO' || e.node.mediaContentType === 'EXTERNAL_VIDEO')
+  .map((e: any) => e.node);
+
+// Low stock threshold - show urgency when <= 5 items left
+const firstVariant = variants[0];
+const stockQty = firstVariant?.quantityAvailable;
+const isLowStock = stockQty !== null && stockQty > 0 && stockQty <= 5;
+const isSoldOut = !product.availableForSale;
 
 const productUrl = `https://sunnyandranney.com/shop/${product.handle}`;
 
@@ -227,8 +242,28 @@ const breadcrumbSchema = {
                     data-url={img.url}
                     data-alt={img.altText || product.title}
                     data-idx={i}
+                    data-type="image"
                   >
                     <img src={cfImage(img.url, { width: 150 })} alt={img.altText || `${product.title} ${i + 1}`} loading="lazy" />
+                  </button>
+                ))}
+                {/* Video thumbnails */}
+                {videos.map((video: any, i: number) => (
+                  <button
+                    class="pdp-thumb pdp-thumb--video"
+                    data-type="video"
+                    data-video-url={video.sources?.[0]?.url || video.embeddedUrl || ''}
+                    data-video-type={video.mediaContentType}
+                    data-idx={images.length + i}
+                  >
+                    <img
+                      src={video.previewImage?.url ? cfImage(video.previewImage.url, { width: 150 }) : '/placeholder-video.svg'}
+                      alt={`${product.title} video ${i + 1}`}
+                      loading="lazy"
+                    />
+                    <span class="pdp-thumb__play">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    </span>
                   </button>
                 ))}
               </div>
@@ -258,9 +293,15 @@ const breadcrumbSchema = {
             )}
           </div>
 
-          <hr class="divider" />
+          {/* Low stock urgency indicator */}
+          {isLowStock && (
+            <div class="pdp-urgency" id="pdp-urgency">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+              <span>Only <strong id="stock-count">{stockQty}</strong> left in stock — order soon</span>
+            </div>
+          )}
 
-          <div class="pdp-description" set:html={product.descriptionHtml || product.description} />
+          <hr class="divider" />
 
           {/* Variant selector with grouped options */}
           {variants.length > 1 && (
@@ -278,6 +319,7 @@ const breadcrumbSchema = {
                     data-variant-available={String(v.availableForSale)}
                     data-variant-image={v.image?.url || ''}
                     data-variant-title={v.title}
+                    data-variant-qty={v.quantityAvailable ?? ''}
                     disabled={!v.availableForSale}
                   >
                     {v.title}
@@ -308,6 +350,7 @@ const breadcrumbSchema = {
               data-product-image={mainImage?.url || ''}
               data-product-handle={product.handle}
               data-variant-title={variants[0]?.title || ''}
+              data-variant-qty={firstVariant?.quantityAvailable ?? ''}
               disabled={!product.availableForSale}
             >
               {product.availableForSale ? 'Add to Cart' : 'Sold Out'}
@@ -321,6 +364,27 @@ const breadcrumbSchema = {
               {product.availableForSale ? 'Buy Now' : 'Sold Out'}
             </button>
           </div>
+
+          {/* Back in stock notification */}
+          {isSoldOut && (
+            <div class="pdp-notify" id="pdp-notify">
+              <p class="pdp-notify__text">Get notified when this item is back in stock</p>
+              <form class="pdp-notify__form" id="notify-form">
+                <input
+                  type="email"
+                  class="pdp-notify__input"
+                  id="notify-email"
+                  placeholder="Enter your email"
+                  required
+                  aria-label="Email for back in stock notification"
+                />
+                <button type="submit" class="btn btn--gold pdp-notify__btn">Notify Me</button>
+              </form>
+              <p class="pdp-notify__success" id="notify-success" style="display:none;">
+                We'll email you when it's back!
+              </p>
+            </div>
+          )}
 
           {/* Express checkout hint */}
           {product.availableForSale && (
@@ -336,10 +400,16 @@ const breadcrumbSchema = {
             </div>
           )}
 
-          <button class="pdp-wishlist-btn" id="pdp-wishlist" data-handle={product.handle} aria-label="Add to wishlist">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            <span id="wishlist-text">Add to Wishlist</span>
-          </button>
+          <div class="pdp-secondary-actions">
+            <button class="pdp-wishlist-btn" id="pdp-wishlist" data-handle={product.handle} aria-label="Add to wishlist">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              <span id="wishlist-text">Save</span>
+            </button>
+            <button class="pdp-share-btn" id="pdp-share" aria-label="Share product">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              <span>Share</span>
+            </button>
+          </div>
 
           {/* Local pickup only */}
           <div class="pdp-delivery">
@@ -385,6 +455,43 @@ const breadcrumbSchema = {
               This purchase supports <strong>Sunshine on a Ranney Day</strong> —
               100% of profits fund home makeovers for kids with special needs.
             </p>
+          </div>
+
+          {/* ─── Product Details Accordion ─── */}
+          <div class="pdp-accordion">
+            <details class="pdp-accordion__item" open>
+              <summary class="pdp-accordion__header">
+                <span>Product Details</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </summary>
+              <div class="pdp-accordion__content">
+                <div class="pdp-details-content" set:html={product.descriptionHtml || product.description} />
+              </div>
+            </details>
+
+            <details class="pdp-accordion__item">
+              <summary class="pdp-accordion__header">
+                <span>Shipping & Pickup</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </summary>
+              <div class="pdp-accordion__content">
+                <p><strong>Local Pickup Only</strong></p>
+                <p>All items are available for pickup at our Roswell, GA showroom:</p>
+                <p>109A Oak Street, Roswell, GA 30075</p>
+                <p>We do not currently offer shipping. Stop by to see our full collection in person!</p>
+              </div>
+            </details>
+
+            <details class="pdp-accordion__item">
+              <summary class="pdp-accordion__header">
+                <span>Returns & Care</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </summary>
+              <div class="pdp-accordion__content">
+                <p>All sales are final. Please inspect items carefully before purchase.</p>
+                <p>For care instructions specific to your item, please ask a team member at pickup.</p>
+              </div>
+            </details>
           </div>
         </div>
       </div>
@@ -503,6 +610,40 @@ const breadcrumbSchema = {
     <button class="btn btn--gold sticky-bar__btn" id="sticky-add" disabled={!product.availableForSale}>
       {product.availableForSale ? 'Add to Cart' : 'Sold Out'}
     </button>
+  </div>
+
+  {/* ═══ STICKY DESKTOP HEADER ═══ */}
+  <div class="sticky-header" id="sticky-header" aria-hidden="true">
+    <div class="container sticky-header__inner">
+      <div class="sticky-header__product">
+        {mainImage && (
+          <img
+            src={cfImage(mainImage.url, { width: 80 })}
+            alt={product.title}
+            class="sticky-header__img"
+          />
+        )}
+        <div class="sticky-header__details">
+          <span class="sticky-header__title">{product.title}</span>
+          <span class="sticky-header__price" id="sticky-header-price">${parseFloat(price.amount).toFixed(2)}</span>
+        </div>
+      </div>
+      <div class="sticky-header__actions">
+        {isLowStock && (
+          <span class="sticky-header__urgency">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+            Only {stockQty} left
+          </span>
+        )}
+        <button
+          class="btn btn--gold sticky-header__atc"
+          id="sticky-header-add"
+          disabled={!product.availableForSale}
+        >
+          {product.availableForSale ? 'Add to Cart' : 'Sold Out'}
+        </button>
+      </div>
+    </div>
   </div>
 </Base>
 
@@ -658,10 +799,104 @@ const breadcrumbSchema = {
     letter-spacing: 0.02em;
   }
 
-  .pdp-description {
+  /* ─── Low Stock Urgency ─────────────────── */
+  .pdp-urgency {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.9rem;
+    background: #fef3cd;
+    border: 1px solid #f0c674;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    color: #856404;
+    margin-bottom: var(--space-md);
+    animation: pulse-urgency 2s ease-in-out infinite;
+  }
+
+  .pdp-urgency svg { color: #e67e22; flex-shrink: 0; }
+  .pdp-urgency strong { font-weight: 700; }
+
+  @keyframes pulse-urgency {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.85; }
+  }
+
+  /* ─── Back in Stock Notification ─────────── */
+  .pdp-notify {
     margin: var(--space-md) 0;
+    padding: var(--space-md);
+    background: var(--color-warm-white);
+    border: 1px solid var(--color-cream-dark);
+  }
+
+  .pdp-notify__text {
+    font-size: 0.85rem;
     color: var(--color-slate);
-    line-height: 1.7;
+    margin: 0 0 0.75rem;
+  }
+
+  .pdp-notify__form {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .pdp-notify__input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid var(--color-cream-dark);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .pdp-notify__input:focus { border-color: var(--color-charcoal); }
+
+  .pdp-notify__btn {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+
+  .pdp-notify__success {
+    font-size: 0.85rem;
+    color: #27ae60;
+    margin: 0.75rem 0 0;
+    font-weight: 500;
+  }
+
+  /* ─── Video Thumbnail ───────────────────── */
+  .pdp-thumb--video { position: relative; }
+
+  .pdp-thumb__play {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.35);
+    color: white;
+    transition: background 0.2s;
+  }
+
+  .pdp-thumb--video:hover .pdp-thumb__play { background: rgba(0,0,0,0.5); }
+
+  /* ─── Video Container ───────────────────── */
+  .pdp-video-container {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    z-index: 5;
+  }
+
+  .pdp-video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
   }
 
   .pdp-variants { margin: var(--space-md) 0; }
@@ -803,11 +1038,19 @@ const breadcrumbSchema = {
     font-size: 0.8rem;
   }
 
-  .pdp-wishlist-btn {
+  .pdp-secondary-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: var(--space-sm);
+  }
+
+  .pdp-wishlist-btn,
+  .pdp-share-btn {
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
     padding: 0.6rem 1rem;
     border: 1.5px solid var(--color-cream-dark);
     color: var(--color-slate);
@@ -818,9 +1061,10 @@ const breadcrumbSchema = {
     cursor: pointer;
     font-family: var(--font-body);
     white-space: nowrap;
-    width: 100%;
   }
-  .pdp-wishlist-btn:hover { border-color: var(--color-charcoal); color: var(--color-charcoal); }
+
+  .pdp-wishlist-btn:hover,
+  .pdp-share-btn:hover { border-color: var(--color-charcoal); color: var(--color-charcoal); }
   .pdp-wishlist-btn.is-wished { color: #e74c3c; border-color: #e74c3c; }
   .pdp-wishlist-btn.is-wished svg { fill: #e74c3c; }
 
@@ -918,6 +1162,63 @@ const breadcrumbSchema = {
 
   .pdp-charity-note__icon { font-size: 1.5rem; flex-shrink: 0; }
   .pdp-charity-note p { font-size: 0.85rem; color: var(--color-charcoal); margin: 0; max-width: none; }
+
+  /* ─── Product Details Accordion ─────────── */
+  .pdp-accordion {
+    margin-top: var(--space-lg);
+    border-top: 1px solid var(--color-cream-dark);
+  }
+
+  .pdp-accordion__item {
+    border-bottom: 1px solid var(--color-cream-dark);
+  }
+
+  .pdp-accordion__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 0;
+    cursor: pointer;
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-charcoal);
+    list-style: none;
+    transition: color 0.2s;
+  }
+
+  .pdp-accordion__header::-webkit-details-marker { display: none; }
+  .pdp-accordion__header:hover { color: var(--color-gold); }
+
+  .pdp-accordion__header svg {
+    flex-shrink: 0;
+    transition: transform 0.25s ease;
+  }
+
+  .pdp-accordion__item[open] .pdp-accordion__header svg {
+    transform: rotate(180deg);
+  }
+
+  .pdp-accordion__content {
+    padding: 0 0 1rem;
+    font-size: 0.85rem;
+    color: var(--color-slate);
+    line-height: 1.7;
+  }
+
+  .pdp-accordion__content p {
+    margin: 0 0 0.5rem;
+  }
+
+  .pdp-details-content {
+    font-size: 0.85rem;
+    color: var(--color-slate);
+    line-height: 1.7;
+  }
+
+  .pdp-details-content p { margin: 0 0 0.75rem; }
+  .pdp-details-content ul { margin: 0.5rem 0; padding-left: 1.25rem; }
+  .pdp-details-content li { margin: 0.25rem 0; }
 
   /* ─── Frequently Bought Together ─────────── */
   .fbt-section {
@@ -1312,6 +1613,173 @@ const breadcrumbSchema = {
   @media (max-width: 768px) {
     .pdp-actions { flex-direction: column; }
   }
+
+  /* ─── Sticky Desktop Header ─────────────── */
+  .sticky-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: var(--color-cream);
+    border-bottom: 1px solid var(--color-cream-dark);
+    box-shadow: 0 2px 20px rgba(0,0,0,0.06);
+    transform: translateY(-100%);
+    opacity: 0;
+    transition: transform 0.35s var(--ease-out), opacity 0.35s var(--ease-out);
+    display: none;
+  }
+
+  .sticky-header[aria-hidden="false"] {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  @media (min-width: 769px) {
+    .sticky-header { display: block; }
+  }
+
+  .sticky-header__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    gap: 1rem;
+  }
+
+  .sticky-header__product {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .sticky-header__img {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .sticky-header__details {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .sticky-header__title {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+  }
+
+  .sticky-header__price {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-charcoal);
+  }
+
+  .sticky-header__actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .sticky-header__urgency {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #e67e22;
+    white-space: nowrap;
+  }
+
+  .sticky-header__urgency svg { flex-shrink: 0; }
+
+  .sticky-header__atc {
+    padding: 0.7rem 1.75rem;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+
+  /* ─── Enhanced Zoom Lens ────────────────── */
+  @media (min-width: 769px) {
+    .pdp-gallery__main {
+      --lens-x: 50%;
+      --lens-y: 50%;
+    }
+
+    .pdp-gallery__main::after {
+      content: '';
+      position: absolute;
+      width: 140px;
+      height: 140px;
+      left: var(--lens-x);
+      top: var(--lens-y);
+      border: 2px solid var(--color-gold);
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(-50%, -50%);
+      transition: opacity 0.15s;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.12), inset 0 0 30px rgba(255,255,255,0.1);
+      z-index: 10;
+      background: radial-gradient(circle, transparent 30%, rgba(255,255,255,0.05) 100%);
+    }
+
+    .pdp-gallery__main.is-zooming::after {
+      opacity: 1;
+    }
+
+    .pdp-gallery__main.is-zooming {
+      cursor: none;
+    }
+  }
+
+  /* ─── Improved Micro-interactions ─────────── */
+  .pdp-add-to-cart,
+  .pdp-buy-now {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .pdp-add-to-cart::after,
+  .pdp-buy-now::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transform: translateX(-100%);
+  }
+
+  .pdp-add-to-cart:not(:disabled):hover::after,
+  .pdp-buy-now:not(:disabled):hover::after {
+    animation: shimmer 0.6s ease-out;
+  }
+
+  @keyframes shimmer {
+    to { transform: translateX(100%); }
+  }
+
+  /* Price update animation */
+  .pdp-price__current {
+    transition: transform 0.2s ease-out;
+  }
+
+  .pdp-price__current.price-changed {
+    animation: price-pop 0.3s ease-out;
+  }
+
+  @keyframes price-pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
 </style>
 
 <script>
@@ -1339,6 +1807,11 @@ const breadcrumbSchema = {
   const stickyBar = document.getElementById('sticky-bar');
   const stickyAdd = document.getElementById('sticky-add');
   const stickyPrice = document.getElementById('sticky-price');
+  const stickyHeader = document.getElementById('sticky-header');
+  const stickyHeaderAdd = document.getElementById('sticky-header-add');
+  const stickyHeaderPrice = document.getElementById('sticky-header-price');
+  const urgencyEl = document.getElementById('pdp-urgency');
+  const stockCountEl = document.getElementById('stock-count');
 
   function cfImg(url: string, width = 900) {
     if (!url || !url.includes('cdn.shopify.com')) return url;
@@ -1412,20 +1885,62 @@ const breadcrumbSchema = {
     }, { passive: true });
   }
 
-  // ─── Thumbnail gallery ──────────────────────
+  // ─── Thumbnail gallery (images + videos) ──────
+  const videoContainer = document.createElement('div');
+  videoContainer.className = 'pdp-video-container';
+  videoContainer.style.display = 'none';
+  galleryMain?.appendChild(videoContainer);
+
+  let isShowingVideo = false;
+
   thumbs.forEach((thumb, i) => {
     thumb.addEventListener('click', () => {
+      const el = thumb as HTMLElement;
+      const type = el.dataset.type;
+
       thumbs.forEach(t => t.classList.remove('pdp-thumb--active'));
       thumb.classList.add('pdp-thumb--active');
-      currentImageIdx = i;
-      syncDots(i);
-      if (mainImg) {
-        mainImg.style.opacity = '0';
-        setTimeout(() => {
-          mainImg.src = cfImg((thumb as HTMLElement).dataset.url || '');
-          mainImg.alt = (thumb as HTMLElement).dataset.alt || '';
-          mainImg.style.opacity = '1';
-        }, 150);
+
+      if (type === 'video') {
+        // Show video
+        const videoUrl = el.dataset.videoUrl || '';
+        const videoType = el.dataset.videoType;
+
+        if (mainImg) mainImg.style.display = 'none';
+        videoContainer.style.display = 'flex';
+        isShowingVideo = true;
+
+        if (videoType === 'VIDEO') {
+          videoContainer.innerHTML = `
+            <video controls autoplay playsinline class="pdp-video">
+              <source src="${videoUrl}" type="video/mp4">
+            </video>
+          `;
+        } else if (videoType === 'EXTERNAL_VIDEO') {
+          // YouTube/Vimeo embed
+          videoContainer.innerHTML = `
+            <iframe class="pdp-video" src="${videoUrl}" frameborder="0" allowfullscreen allow="autoplay"></iframe>
+          `;
+        }
+      } else {
+        // Show image
+        if (isShowingVideo) {
+          videoContainer.innerHTML = '';
+          videoContainer.style.display = 'none';
+          if (mainImg) mainImg.style.display = '';
+          isShowingVideo = false;
+        }
+
+        currentImageIdx = i;
+        syncDots(i);
+        if (mainImg) {
+          mainImg.style.opacity = '0';
+          setTimeout(() => {
+            mainImg.src = cfImg(el.dataset.url || '');
+            mainImg.alt = el.dataset.alt || '';
+            mainImg.style.opacity = '1';
+          }, 150);
+        }
       }
     });
   });
@@ -1469,8 +1984,28 @@ const breadcrumbSchema = {
       // Update sticky bar price
       if (stickyPrice) stickyPrice.textContent = `$${parseFloat(variantPrice).toFixed(2)}`;
 
+      // Update sticky header price
+      if (stickyHeaderPrice) stickyHeaderPrice.textContent = `$${parseFloat(variantPrice).toFixed(2)}`;
+
       // Update selected label
       if (selectedLabel) selectedLabel.textContent = variantTitle;
+
+      // Update stock quantity and urgency indicator
+      const variantQty = parseInt(el.dataset.variantQty || '');
+      if (urgencyEl && stockCountEl) {
+        if (!isNaN(variantQty) && variantQty > 0 && variantQty <= 5) {
+          stockCountEl.textContent = String(variantQty);
+          urgencyEl.style.display = 'flex';
+        } else {
+          urgencyEl.style.display = 'none';
+        }
+      }
+
+      // Price change animation
+      if (currentPriceEl) {
+        currentPriceEl.classList.add('price-changed');
+        setTimeout(() => currentPriceEl.classList.remove('price-changed'), 300);
+      }
 
       // Switch image if variant has one
       if (variantImage && mainImg) {
@@ -1588,6 +2123,30 @@ const breadcrumbSchema = {
   });
 
   updateWishlistUI();
+
+  // ─── Share Button ─────────────────────────
+  const shareBtn = document.getElementById('pdp-share');
+  shareBtn?.addEventListener('click', async () => {
+    const url = window.location.href;
+    const title = addToCartBtn?.dataset.productTitle || document.title;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, url });
+      } catch { /* User cancelled */ }
+    } else {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(url);
+        const span = shareBtn.querySelector('span');
+        if (span) {
+          const orig = span.textContent;
+          span.textContent = 'Copied!';
+          setTimeout(() => { span.textContent = orig; }, 2000);
+        }
+      } catch { /* Clipboard failed */ }
+    }
+  });
 
   // ─── Touch swipe helper ────────────────────
   function addSwipe(el: HTMLElement, onLeft: () => void, onRight: () => void) {
@@ -1719,16 +2278,21 @@ const breadcrumbSchema = {
     );
   }
 
-  // ─── Sticky mobile bar ─────────────────────
-  if (stickyBar) {
+  // ─── Sticky mobile bar & desktop header ─────
+  if (stickyBar || stickyHeader) {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        stickyBar.classList.toggle('is-visible', !entry.isIntersecting);
+        const isHidden = !entry.isIntersecting;
+        if (stickyBar) stickyBar.classList.toggle('is-visible', isHidden);
+        if (stickyHeader) stickyHeader.setAttribute('aria-hidden', String(!isHidden));
       },
       { threshold: 0 }
     );
     if (addToCartBtn) observer.observe(addToCartBtn);
   }
+
+  // Sticky header add to cart
+  stickyHeaderAdd?.addEventListener('click', handleAddToCart);
 
   // ─── Frequently Bought Together ──────────────
   const fbtAddAll = document.getElementById('fbt-add-all');
@@ -1773,20 +2337,54 @@ const breadcrumbSchema = {
     }, 2000);
   });
 
-  // ─── Inline Image Zoom (hover) ───────────────
+  // ─── Enhanced Image Zoom with lens effect ───────
   if (galleryMain && mainImg) {
-    galleryMain.addEventListener('mousemove', (e) => {
-      const rect = galleryMain.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 100;
-      const y = ((e.clientY - rect.top) / rect.height) * 100;
-      mainImg.style.transformOrigin = `${x}% ${y}%`;
-      mainImg.style.transform = 'scale(2)';
-    });
-    galleryMain.addEventListener('mouseleave', () => {
-      mainImg.style.transformOrigin = 'center';
-      mainImg.style.transform = 'scale(1)';
-    });
+    const isDesktop = window.matchMedia('(min-width: 769px)').matches;
+
+    if (isDesktop) {
+      galleryMain.addEventListener('mouseenter', () => {
+        galleryMain.classList.add('is-zooming');
+      });
+
+      galleryMain.addEventListener('mousemove', (e) => {
+        const rect = galleryMain.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        mainImg.style.transformOrigin = `${x}% ${y}%`;
+        mainImg.style.transform = 'scale(2.5)';
+        // Move the lens pseudo-element
+        (galleryMain as HTMLElement).style.setProperty('--lens-x', `${e.clientX - rect.left}px`);
+        (galleryMain as HTMLElement).style.setProperty('--lens-y', `${e.clientY - rect.top}px`);
+      });
+
+      galleryMain.addEventListener('mouseleave', () => {
+        galleryMain.classList.remove('is-zooming');
+        mainImg.style.transformOrigin = 'center';
+        mainImg.style.transform = 'scale(1)';
+      });
+    }
   }
+
+  // ─── Back in Stock Notification ───────────────
+  const notifyForm = document.getElementById('notify-form');
+  const notifyEmail = document.getElementById('notify-email') as HTMLInputElement;
+  const notifySuccess = document.getElementById('notify-success');
+
+  notifyForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = notifyEmail?.value;
+    if (!email) return;
+
+    // Store locally (in production, send to backend/Klaviyo/etc)
+    const productHandle = addToCartBtn?.dataset.productHandle || '';
+    const notifyList = JSON.parse(localStorage.getItem('notify-stock') || '{}');
+    notifyList[productHandle] = { email, date: new Date().toISOString() };
+    localStorage.setItem('notify-stock', JSON.stringify(notifyList));
+
+    // Show success
+    if (notifyForm) notifyForm.style.display = 'none';
+    if (notifySuccess) notifySuccess.style.display = '';
+  });
 
   // ─── Track recently viewed ──────────────────
   const pdpTitle = addToCartBtn?.dataset.productTitle;

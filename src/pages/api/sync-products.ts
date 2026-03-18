@@ -14,6 +14,12 @@ const PRODUCTS_QUERY = `
           handle
           description
           productType
+          productCategory {
+            productTaxonomyNode {
+              name
+              fullName
+            }
+          }
           tags
           availableForSale
           priceRange { minVariantPrice { amount } }
@@ -27,9 +33,10 @@ const PRODUCTS_QUERY = `
 
 /** Text used to generate the embedding — rich enough for semantic search */
 function buildEmbeddingText(node: any): string {
+  const category = node.productCategory?.productTaxonomyNode?.fullName || node.productType;
   return [
     node.title,
-    node.productType,
+    category,
     node.description?.slice(0, 200),
     ...(node.tags || []),
   ].filter(Boolean).join('. ');
@@ -145,6 +152,8 @@ export const POST: APIRoute = async ({ request }) => {
           title: node.title,
           handle: node.handle,
           productType: node.productType || '',
+          category: node.productCategory?.productTaxonomyNode?.name || '',
+          categoryFull: node.productCategory?.productTaxonomyNode?.fullName || '',
           availableForSale: node.availableForSale,
           price: node.priceRange.minVariantPrice.amount,
           compareAtPrice: node.compareAtPriceRange?.minVariantPrice?.amount || '0',
