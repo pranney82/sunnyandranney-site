@@ -92,6 +92,18 @@ export interface TeamSetting {
   members: TeamMember[];
 }
 
+export interface ReviewItem {
+  name: string;
+  text: string;
+  rating: number;
+}
+
+export interface ReviewsSetting {
+  googleRating: number;
+  reviewCount: number;
+  featured: ReviewItem[];
+}
+
 // ─── Setting key → type map ─────────────────────────────────
 
 interface SettingsMap {
@@ -104,6 +116,7 @@ interface SettingsMap {
   'kids': KidsSetting;
   'team': TeamSetting;
   'staff-picks': StaffPicksSetting;
+  'reviews': ReviewsSetting;
 }
 
 // ─── Build-time reader ──────────────────────────────────────
@@ -137,6 +150,7 @@ export function getHeroStatic() { return getSetting('hero'); }
 export function getKidsStatic() { return getSetting('kids'); }
 export function getTeamStatic() { return getSetting('team'); }
 export function getStaffPicksStatic() { return getSetting('staff-picks'); }
+export function getReviewsStatic() { return getSetting('reviews'); }
 
 // ─── Formatting helpers (shared by static pages + chatbot) ──
 

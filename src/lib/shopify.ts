@@ -68,6 +68,7 @@ const PRODUCT_FRAGMENT = `
     handle
     description
     descriptionHtml
+    createdAt
     productType
     category {
       id
@@ -530,6 +531,7 @@ export interface Product {
   handle: string;
   description: string;
   descriptionHtml: string;
+  createdAt: string;
   productType: string;
   category: {
     id: string;

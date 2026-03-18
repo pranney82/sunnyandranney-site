@@ -19,6 +19,9 @@ dist/
 .DS_Store
 Thumbs.db
 
+# build-time generated
+public/reviews/
+
 # cloudflare
 .wrangler/
 package-lock.json

@@ -171,27 +171,6 @@ const members = saved?.members?.length ? saved.members : DEFAULT_MEMBERS;
     line-height: 1.5;
   }
 
-  .admin-input {
-    width: 100%;
-    padding: 0.55rem 0.75rem;
-    border: 1px solid var(--admin-border);
-    border-radius: var(--admin-radius);
-    font-size: 0.88rem;
-    color: var(--admin-text);
-    background: var(--admin-bg);
-    box-sizing: border-box;
-    transition: border-color 0.15s;
-    font-family: inherit;
-  }
-  .admin-input:focus {
-    outline: none;
-    border-color: var(--admin-accent);
-  }
-  .admin-textarea {
-    resize: vertical;
-    line-height: 1.55;
-  }
-
   .member-card { padding-bottom: 1.5rem; }
 
   .member-fields {
@@ -429,11 +408,4 @@ const members = saved?.members?.length ? saved.members : DEFAULT_MEMBERS;
     }
   });
 
-  // ⌘S save
-  document.addEventListener('keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-      e.preventDefault();
-      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-    }
-  });
 </script>

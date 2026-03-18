@@ -199,27 +199,6 @@ try {
     font-size: 0.76rem;
   }
 
-  .admin-input {
-    width: 100%;
-    padding: 0.55rem 0.75rem;
-    border: 1px solid var(--admin-border);
-    border-radius: var(--admin-radius);
-    font-size: 0.88rem;
-    color: var(--admin-text);
-    background: var(--admin-bg);
-    box-sizing: border-box;
-    transition: border-color 0.15s;
-    font-family: inherit;
-  }
-  .admin-input:focus {
-    outline: none;
-    border-color: var(--admin-accent);
-  }
-  .admin-textarea {
-    resize: vertical;
-    line-height: 1.55;
-  }
-
   /* SOARD picker */
   .soard-picker-group {
     background: rgba(74, 168, 196, 0.06);
@@ -444,11 +423,4 @@ try {
     }
   });
 
-  // ⌘S save
-  document.addEventListener('keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-      e.preventDefault();
-      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-    }
-  });
 </script>

@@ -128,11 +128,17 @@ const itemListSchema = hasShopify ? {
   <!-- ═══ SHOP HERO ═══ -->
   <section class="shop-hero">
     <div class="container shop-hero__inner">
-      <div class="shop-hero__text">
-        <h1 class="shop-hero__title animate-fade-up" id="shop-title">The Collection</h1>
-        <a href="/shop" class="shop-hero__clear animate-fade-up delay-1" id="shop-clear-collection" style="display:none;">← All Products</a>
+      <div class="shop-hero__row">
+        <div class="shop-hero__text">
+          <h1 class="shop-hero__title animate-fade-up" id="shop-title">The Collection</h1>
+          <a href="/shop" class="shop-hero__clear animate-fade-up delay-1" id="shop-clear-collection" style="display:none;">← All Products</a>
+        </div>
+        <a href="/about" class="shop-hero__mission animate-fade-up delay-1">
+          <img src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/soard-favicon/w=40,h=40,fit=cover,q=80,format=auto" alt="" aria-hidden="true" width="20" height="20" class="shop-hero__mission-icon" />
+          <span>100% of profits fund kids' room makeovers</span>
+          <span class="shop-hero__mission-arrow">→</span>
+        </a>
       </div>
-      <p class="shop-hero__sub animate-fade-up delay-1">100% of profits fund home makeovers for kids with special needs</p>
     </div>
   </section>
 
@@ -142,9 +148,8 @@ const itemListSchema = hasShopify ? {
       <div class="toolbar__row">
         <div class="toolbar__categories-wrap">
           <div class="toolbar__categories" id="category-nav">
-            <button class="filter-btn filter-btn--active" data-filter="all">All <span class="filter-btn__count" data-count-for="all"></span></button>
+            <button class="filter-btn filter-btn--active" data-filter="all">All</button>
           </div>
-          <button class="toolbar__more-toggle" id="subcats-toggle" style="display:none;" aria-expanded="false">+<span id="subcats-toggle-count">0</span> more</button>
         </div>
         <div class="toolbar__actions">
           <span class="toolbar__count" id="product-count"></span>
@@ -161,6 +166,11 @@ const itemListSchema = hasShopify ? {
       <!-- Panel: top-down dropdown -->
       <div class="toolbar__panel" id="filter-panel" hidden>
         <div class="toolbar__panel-inner">
+          <!-- Category -->
+          <div class="toolbar__panel-group" id="panel-category-group" style="display:none;">
+            <label class="toolbar__panel-label">Category</label>
+            <div class="toolbar__category-list" id="panel-category-list"></div>
+          </div>
           <!-- Sort -->
           <div class="toolbar__panel-group">
             <label class="toolbar__panel-label" for="sort-select">Sort by</label>
@@ -240,6 +250,7 @@ const itemListSchema = hasShopify ? {
                   data-tags={product.tags?.join(',').toLowerCase() || ''}
                   data-collections={(productCollections[product.handle] || []).join(',')}
                   data-description={product.description?.toLowerCase().slice(0, 200) || ''}
+                  data-created={product.createdAt || ''}
                   data-idx={idx}
                   style={idx >= 24 ? 'display:none;' : ''}
                   data-page={Math.floor(idx / 24)}
@@ -309,7 +320,7 @@ const itemListSchema = hasShopify ? {
                     </div>
                   </div>
                   <div class="product-card__info">
-                    {product.productType && <span class="product-card__type">{product.productType}</span>}
+                    <span class="product-card__type">{product.productType || '\u00A0'}</span>
                     <a href={`/shop/${product.handle}`} class="product-card__title">{product.title}</a>
                     <div class="product-card__pricing">
                       <span class={`product-card__price${isOnSale ? ' product-card__price--sale' : ''}`}>
@@ -321,7 +332,7 @@ const itemListSchema = hasShopify ? {
                         </span>
                       )}
                     </div>
-                    {product.availableForSale && firstVariant && (
+                    {product.availableForSale && firstVariant ? (
                       <button class="product-card__add-btn"
                         data-variant-id={firstVariant.id}
                         data-title={product.title}
@@ -332,6 +343,8 @@ const itemListSchema = hasShopify ? {
                       >
                         Add to Cart
                       </button>
+                    ) : (
+                      <div class="product-card__add-btn-placeholder" aria-hidden="true"></div>
                     )}
                   </div>
                 </div>
@@ -438,11 +451,14 @@ const itemListSchema = hasShopify ? {
   }
 
   .shop-hero__inner {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
     padding-top: 2.5rem;
     padding-bottom: 1.75rem;
+  }
+
+  .shop-hero__row {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
   }
 
   .shop-hero__title {
@@ -453,11 +469,38 @@ const itemListSchema = hasShopify ? {
     margin: 0;
   }
 
-  .shop-hero__sub {
+  .shop-hero__mission {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
     color: var(--color-stone);
-    font-size: 0.82rem;
-    letter-spacing: 0.01em;
-    margin: 0;
+    background: var(--color-warm-white);
+    border: 1px solid var(--color-cream-dark);
+    border-radius: 100px;
+    text-decoration: none;
+    transition: border-color 0.25s, color 0.25s;
+    align-self: flex-start;
+  }
+  .shop-hero__mission-icon {
+    flex-shrink: 0;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  .shop-hero__mission:hover {
+    border-color: var(--color-stone);
+    color: var(--color-charcoal);
+  }
+  .shop-hero__mission-arrow {
+    opacity: 0.4;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  .shop-hero__mission:hover .shop-hero__mission-arrow {
+    opacity: 0.8;
+    transform: translateX(2px);
   }
 
   .shop-hero__clear {
@@ -474,19 +517,22 @@ const itemListSchema = hasShopify ? {
 
   @media (min-width: 768px) {
     .shop-hero__inner {
-      flex-direction: row;
-      align-items: baseline;
-      justify-content: space-between;
       padding-top: var(--space-2xl);
       padding-bottom: var(--space-lg);
+    }
+
+    .shop-hero__row {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
     }
 
     .shop-hero__title {
       font-size: clamp(2.5rem, 4.5vw, 3.5rem);
     }
 
-    .shop-hero__sub {
-      font-size: 0.82rem;
+    .shop-hero__mission {
+      align-self: center;
     }
   }
 
@@ -541,24 +587,6 @@ const itemListSchema = hasShopify ? {
     z-index: 1;
   }
 
-  .toolbar__more-toggle {
-    display: none;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-family: var(--font-body);
-    font-size: 0.68rem;
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--color-stone);
-    white-space: nowrap;
-    padding: 0.45rem 0.75rem;
-    transition: color 0.18s;
-    flex-shrink: 0;
-  }
-  .toolbar__more-toggle:hover { color: var(--color-charcoal); }
-
   .toolbar__actions {
     display: flex;
     align-items: center;
@@ -599,8 +627,22 @@ const itemListSchema = hasShopify ? {
     border-color: var(--color-charcoal);
     font-weight: 600;
   }
+  .filter-btn--more {
+    color: var(--color-stone);
+    border: 1px dashed var(--color-cream-dark);
+  }
+  .filter-btn--more:hover {
+    border-color: var(--color-stone);
+    color: var(--color-charcoal);
+  }
+  .filter-btn--more.filter-btn--active {
+    border-style: solid;
+    border-color: var(--color-charcoal);
+    color: var(--color-charcoal);
+  }
 
   .toolbar__filter-toggle {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -668,6 +710,36 @@ const itemListSchema = hasShopify ? {
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--color-stone);
+  }
+
+  /* ─── Category list in filter panel (global: buttons are JS-created) ──── */
+  :global(.toolbar__category-list) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+  :global(.toolbar__category-btn) {
+    padding: 0.4rem 0.75rem;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--color-stone);
+    border: 1px solid var(--color-cream-dark);
+    border-radius: 100px;
+    background: transparent;
+    cursor: pointer;
+    transition: color 0.18s, border-color 0.18s, background-color 0.18s;
+    white-space: nowrap;
+  }
+  :global(.toolbar__category-btn:hover) {
+    color: var(--color-charcoal);
+    border-color: var(--color-charcoal);
+  }
+  :global(.toolbar__category-btn--active),
+  :global(.toolbar__category-btn--active:hover) {
+    color: #fff;
+    background: var(--color-charcoal);
+    border-color: var(--color-charcoal);
   }
 
   /* ─── Sort select ────────────────────── */
@@ -784,29 +856,9 @@ const itemListSchema = hasShopify ? {
       gap: 0.25rem;
       scroll-snap-type: none;
       padding-right: 0;
-      flex-wrap: wrap;
-      overflow-x: visible;
-      max-height: 3rem;
-      overflow-y: hidden;
-      transition: max-height 0.25s ease;
-    }
-    .toolbar__categories--expanded {
-      max-height: 500px;
-    }
-    .toolbar__categories-wrap {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.25rem;
     }
     .toolbar__categories-wrap::after {
       display: none;
-    }
-    .toolbar__more-toggle {
-      display: inline-flex;
-      align-items: center;
-    }
-    .toolbar__more-toggle[style*="display:none"] {
-      display: none !important;
     }
 
     .filter-btn {
@@ -848,21 +900,26 @@ const itemListSchema = hasShopify ? {
       pointer-events: none;
     }
     .toolbar__panel.is-open {
-      max-height: 300px;
+      max-height: 500px;
       opacity: 1;
       pointer-events: auto;
     }
 
     .toolbar__panel-inner {
       flex-direction: row;
-      flex-wrap: nowrap;
-      gap: 2rem;
+      flex-wrap: wrap;
+      gap: 1.5rem 2rem;
       padding: 1rem 0 0.25rem;
       border-top: 1px solid var(--color-cream-dark);
       margin-top: 0.75rem;
     }
 
     .toolbar__panel-group { gap: 0.35rem; }
+
+    /* Category group spans full width, other groups share a row */
+    #panel-category-group {
+      flex-basis: 100%;
+    }
 
     .toolbar__sort {
       font-size: 0.78rem;
@@ -898,19 +955,11 @@ const itemListSchema = hasShopify ? {
     }
   }
 
-  /* ─── Filter button counts ────────────── */
-  .filter-btn__count {
-    font-size: 0.65em;
-    font-weight: 400;
-    opacity: 0.6;
-    margin-left: 0.15em;
-  }
-  .filter-btn--active .filter-btn__count {
-    opacity: 0.8;
-  }
-
   /* ─── Filter toggle badge ───────────── */
   .filter-toggle__badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
     width: 16px;
     height: 16px;
     background: var(--color-charcoal);
@@ -922,7 +971,6 @@ const itemListSchema = hasShopify ? {
     align-items: center;
     justify-content: center;
     line-height: 1;
-    margin-left: -0.1rem;
   }
 
   /* ─── Active filter chips ──────────── */
@@ -1319,9 +1367,10 @@ const itemListSchema = hasShopify ? {
     font-weight: 500;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--color-stone);
+    color: var(--color-slate);
     display: block;
     margin-bottom: 0;
+    min-height: 0.65rem; /* reserve space even when empty via ::before */
   }
 
   .product-card__info {
@@ -1340,8 +1389,12 @@ const itemListSchema = hasShopify ? {
     line-height: 1.35;
     color: var(--color-charcoal);
     text-decoration: none;
-    display: block;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
     margin: 0.1rem 0 0.15rem;
+    min-height: calc(2 * 0.92rem * 1.35); /* exactly 2 lines reserved */
     transition: color 0.2s;
   }
 
@@ -1353,6 +1406,7 @@ const itemListSchema = hasShopify ? {
     display: flex;
     align-items: baseline;
     gap: 0.5rem;
+    min-height: 1.1rem; /* consistent height whether or not compare price shown */
   }
 
   .product-card__price {
@@ -1393,8 +1447,47 @@ const itemListSchema = hasShopify ? {
     color: var(--color-cream) !important;
   }
 
+  .product-card__add-btn,
+  .product-card__add-btn-placeholder {
+    padding: 0.55rem 1rem;
+    font-size: 0.68rem;
+    margin-top: 0.35rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .product-card__add-btn-placeholder {
+    visibility: hidden;
+  }
+
   .product-card__add-btn {
-    display: none;
+    font-family: var(--font-body);
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: var(--color-charcoal);
+    color: var(--color-cream);
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    text-align: center;
+  }
+
+  .product-card__add-btn:active {
+    transform: scale(0.98);
+  }
+
+  .product-card__add-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Desktop: hide card button — Quick View handles it */
+  @media (min-width: 768px) {
+    .product-card__add-btn,
+    .product-card__add-btn-placeholder {
+      display: none;
+    }
   }
 
   /* ─── Load More ────────────────────────── */
@@ -1607,7 +1700,7 @@ const itemListSchema = hasShopify ? {
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--color-gold);
+    color: var(--color-slate);
   }
 
   .qv-title {
@@ -1728,71 +1821,65 @@ const itemListSchema = hasShopify ? {
     flex-shrink: 0;
   }
 
-  /* ─── Editorial Break in Grid ────────── */
+  /* ─── Editorial Card in Grid ────────── */
   .grid-editorial {
-    display: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: var(--color-cream, #faf8f5);
+    border-radius: 8px;
+    padding: 2rem 1.25rem;
+    aspect-ratio: auto;
+    min-height: 100%;
   }
 
-  @media (min-width: 768px) {
-    .grid-editorial {
-      display: flex;
-      grid-column: 1 / -1;
-      align-items: center;
-      justify-content: center;
-      padding: 3rem 2rem;
-      margin: 0.5rem 0;
-      border-top: 1px solid var(--color-cream-dark);
-      border-bottom: 1px solid var(--color-cream-dark);
-      text-align: center;
-    }
+  .grid-editorial__inner {
+    max-width: 280px;
+  }
 
-    .grid-editorial__inner {
-      max-width: 420px;
-    }
+  .grid-editorial__label {
+    font-family: var(--font-body);
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-stone);
+    display: block;
+    margin-bottom: 0.6rem;
+  }
 
-    .grid-editorial__label {
-      font-family: var(--font-body);
-      font-size: 0.6rem;
-      font-weight: 600;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--color-stone);
-      display: block;
-      margin-bottom: 0.6rem;
-    }
+  .grid-editorial__text {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--color-charcoal);
+    max-width: none;
+    margin: 0;
+  }
 
-    .grid-editorial__text {
-      font-family: var(--font-display);
-      font-size: 1.15rem;
-      font-weight: 400;
-      line-height: 1.5;
-      color: var(--color-charcoal);
-      max-width: none;
-      margin: 0;
-    }
+  .grid-editorial__text strong {
+    font-weight: 500;
+  }
 
-    .grid-editorial__text strong {
-      font-weight: 500;
-    }
+  .grid-editorial__link {
+    display: inline-block;
+    margin-top: 0.85rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-charcoal);
+    text-decoration: none;
+    border-bottom: 1px solid var(--color-charcoal);
+    padding-bottom: 2px;
+    transition: color 0.2s, border-color 0.2s;
+  }
 
-    .grid-editorial__link {
-      display: inline-block;
-      margin-top: 0.85rem;
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--color-charcoal);
-      text-decoration: none;
-      border-bottom: 1px solid var(--color-charcoal);
-      padding-bottom: 2px;
-      transition: color 0.2s, border-color 0.2s;
-    }
-
-    .grid-editorial__link:hover {
-      color: var(--color-stone);
-      border-color: var(--color-stone);
-    }
+  .grid-editorial__link:hover {
+    color: var(--color-stone);
+    border-color: var(--color-stone);
   }
 
   /* ─── Mission reminder ────────────────── */
@@ -1892,6 +1979,7 @@ const itemListSchema = hasShopify ? {
     filterPanel?.classList.contains('is-open') ? closeFilterPanel() : openFilterPanel();
   });
 
+
   // Close on Escape
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && filterPanel?.classList.contains('is-open')) closeFilterPanel();
@@ -1946,8 +2034,8 @@ const itemListSchema = hasShopify ? {
     if (activeProductType) {
       chips.push({ label: activeProductType, action: () => {
         activeProductType = '';
-        categoryNav?.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('filter-btn--active'));
-        categoryNav?.querySelector('[data-filter="all"]')?.classList.add('filter-btn--active');
+        syncPillBarState();
+        syncPanelCategoryState();
         if (searchBanner && !activeCollection) searchBanner.style.display = 'none';
         visiblePage = 0;
         applyAll();
@@ -2037,10 +2125,10 @@ const itemListSchema = hasShopify ? {
     if (searchBannerText) searchBannerText.textContent = `Viewing: ${viewingText}`;
     if (searchClear) searchClear.textContent = 'View all products';
   } else if (productTypeParam) {
-    // Product type without collection
-    if (searchBanner) searchBanner.style.display = '';
-    if (searchBannerText) searchBannerText.textContent = `Viewing: ${productTypeParam}`;
-    if (searchClear) searchClear.textContent = 'View all products';
+    // Product type without collection — title-case it
+    const typeTitle = productTypeParam.split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    if (shopTitle) shopTitle.textContent = typeTitle;
+    if (clearCollectionLink) clearCollectionLink.style.display = '';
   }
 
   // ─── Build subcategory pills from taxonomy ─────────────
@@ -2055,11 +2143,21 @@ const itemListSchema = hasShopify ? {
     if (allBtn) categoryNav.appendChild(allBtn);
 
     // Get subcategories for the active collection — only show if more than 1
-    const subcats = activeCollection ? (subcatMap[activeCollection] || []) : [];
-    if (subcats.length <= 1) {
-      if (subcatsToggle) subcatsToggle.style.display = 'none';
-      return;
+    const allSubcats = activeCollection ? (subcatMap[activeCollection] || []) : [];
+    if (allSubcats.length <= 1) return;
+
+    // Count products per subcategory to pick the top 5 for pills
+    const cards = getCards();
+    const subcatCounts: Record<string, number> = {};
+    for (const card of cards) {
+      const collections = card.dataset.collections || '';
+      if (activeCollection && !collections.split(',').includes(activeCollection)) continue;
+      const category = card.getAttribute('data-category') || '';
+      if (category) subcatCounts[category] = (subcatCounts[category] || 0) + 1;
     }
+    const topSubcats = [...allSubcats]
+      .sort((a, b) => (subcatCounts[b] || 0) - (subcatCounts[a] || 0))
+      .slice(0, 5);
 
     // Copy Astro scoped attributes from existing button so scoped CSS applies
     const scopeAttrs: string[] = [];
@@ -2069,33 +2167,42 @@ const itemListSchema = hasShopify ? {
       }
     }
 
-    for (const subcat of subcats) {
+    for (const subcat of topSubcats) {
       const btn = document.createElement('button');
       btn.className = 'filter-btn';
       btn.dataset.subcat = subcat;
-      btn.appendChild(document.createTextNode(subcat + ' '));
+      btn.textContent = subcat;
       // Apply Astro scoped attributes
       for (const attr of scopeAttrs) btn.setAttribute(attr, '');
-
-      const count = document.createElement('span');
-      count.className = 'filter-btn__count';
-      for (const attr of scopeAttrs) count.setAttribute(attr, '');
-      btn.appendChild(count);
 
       btn.addEventListener('click', () => {
         activeProductType = activeProductType === subcat ? '' : subcat;
         visiblePage = 0;
-        // Update active states
-        categoryNav!.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('filter-btn--active'));
-        if (activeProductType) {
-          btn.classList.add('filter-btn--active');
-        } else {
-          categoryNav!.querySelector('.filter-btn[data-filter="all"]')?.classList.add('filter-btn--active');
-        }
+        // Sync active states
+        syncPillBarState();
+        syncPanelCategoryState();
         applyAll();
+        // Scroll so product grid starts just below the sticky nav + toolbar
+        const grid = document.getElementById('shop-grid');
+        const bar = document.querySelector('.filters-bar');
+        if (grid && bar) {
+          const offset = grid.getBoundingClientRect().top + window.scrollY - bar.offsetHeight - parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-height') || '0');
+          window.scrollTo({ top: offset, behavior: 'smooth' });
+        }
       });
 
       categoryNav.appendChild(btn);
+    }
+
+    // Add "+X more" pill if there are more subcats than shown
+    const remainingCount = allSubcats.length - topSubcats.length;
+    if (remainingCount > 0) {
+      const moreBtn = document.createElement('button');
+      moreBtn.className = 'filter-btn filter-btn--more';
+      moreBtn.textContent = `+${remainingCount} more`;
+      for (const attr of scopeAttrs) moreBtn.setAttribute(attr, '');
+      moreBtn.addEventListener('click', () => openFilterPanel());
+      categoryNav.appendChild(moreBtn);
     }
 
     // Update "All" button click
@@ -2103,95 +2210,80 @@ const itemListSchema = hasShopify ? {
     newAllBtn?.addEventListener('click', () => {
       activeProductType = '';
       visiblePage = 0;
-      categoryNav!.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('filter-btn--active'));
-      newAllBtn.classList.add('filter-btn--active');
+      syncPillBarState();
+      syncPanelCategoryState();
       applyAll();
     });
 
     // Set active state from URL
-    if (activeProductType) {
-      categoryNav.querySelector('.filter-btn[data-filter="all"]')?.classList.remove('filter-btn--active');
-      const match = categoryNav.querySelector(`.filter-btn[data-subcat="${CSS.escape(activeProductType)}"]`);
-      match?.classList.add('filter-btn--active');
+    syncPillBarState();
+  }
+
+  // ─── Populate category list in Filter & Sort panel ─────────
+  const panelCategoryGroup = document.getElementById('panel-category-group');
+  const panelCategoryList = document.getElementById('panel-category-list');
+
+  function syncPillBarState() {
+    if (!categoryNav) return;
+    categoryNav.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('filter-btn--active'));
+    if (!activeProductType) {
+      categoryNav.querySelector('.filter-btn[data-filter="all"]')?.classList.add('filter-btn--active');
+      return;
+    }
+    // Try to highlight matching pill
+    const pillMatch = categoryNav.querySelector(`.filter-btn[data-subcat="${CSS.escape(activeProductType)}"]`);
+    if (pillMatch) {
+      pillMatch.classList.add('filter-btn--active');
+    } else {
+      // Non-top-5 subcat: highlight the "+X more" pill
+      const moreBtn = categoryNav.querySelector('.filter-btn--more');
+      if (moreBtn) moreBtn.classList.add('filter-btn--active');
+    }
+  }
+
+  function syncPanelCategoryState() {
+    if (!panelCategoryList) return;
+    panelCategoryList.querySelectorAll('.toolbar__category-btn').forEach(b => {
+      const isActive = b.textContent === activeProductType;
+      b.classList.toggle('toolbar__category-btn--active', isActive);
+    });
+  }
+
+  function buildPanelCategories() {
+    if (!panelCategoryList || !panelCategoryGroup) return;
+    panelCategoryList.innerHTML = '';
+
+    const allSubcats = activeCollection ? (subcatMap[activeCollection] || []) : [];
+    if (allSubcats.length <= 1) {
+      panelCategoryGroup.style.display = 'none';
+      return;
     }
 
-    updateSubcatCounts();
-    updateMoreToggle();
-  }
+    panelCategoryGroup.style.display = '';
 
-  // ─── "+X more" toggle for collapsed subcategory pills ─────────
-  const subcatsToggle = document.getElementById('subcats-toggle');
-  const subcatsToggleCount = document.getElementById('subcats-toggle-count');
+    // Sort alphabetically for the full list
+    const sorted = [...allSubcats].sort((a, b) => a.localeCompare(b));
 
-  function updateMoreToggle() {
-    if (!categoryNav || !subcatsToggle) return;
-    // Reset expanded state
-    categoryNav.classList.remove('toolbar__categories--expanded');
-    subcatsToggle.setAttribute('aria-expanded', 'false');
-
-    // Wait a frame so layout is computed
-    requestAnimationFrame(() => {
-      const pills = categoryNav.querySelectorAll('.filter-btn');
-      if (pills.length <= 1) {
-        subcatsToggle.style.display = 'none';
-        return;
-      }
-
-      // Find how many pills overflow the first row
-      let firstRowBottom = 0;
-      let hiddenCount = 0;
-      pills.forEach((pill, i) => {
-        const rect = pill.getBoundingClientRect();
-        if (i === 0) firstRowBottom = rect.bottom;
-        if (rect.top > firstRowBottom + 2) hiddenCount++;
+    for (const subcat of sorted) {
+      const btn = document.createElement('button');
+      btn.className = 'toolbar__category-btn' + (activeProductType === subcat ? ' toolbar__category-btn--active' : '');
+      btn.textContent = subcat;
+      btn.addEventListener('click', () => {
+        activeProductType = activeProductType === subcat ? '' : subcat;
+        visiblePage = 0;
+        // Sync pill bar active state
+        syncPillBarState();
+        // Sync panel button active states
+        panelCategoryList.querySelectorAll('.toolbar__category-btn').forEach(b => b.classList.remove('toolbar__category-btn--active'));
+        if (activeProductType) btn.classList.add('toolbar__category-btn--active');
+        applyAll();
       });
-
-      if (hiddenCount > 0) {
-        subcatsToggle.style.display = '';
-        if (subcatsToggleCount) subcatsToggleCount.textContent = String(hiddenCount);
-        subcatsToggle.innerHTML = `+${hiddenCount} more`;
-      } else {
-        subcatsToggle.style.display = 'none';
-      }
-    });
-  }
-
-  subcatsToggle?.addEventListener('click', () => {
-    if (!categoryNav) return;
-    const isExpanded = categoryNav.classList.toggle('toolbar__categories--expanded');
-    subcatsToggle.setAttribute('aria-expanded', String(isExpanded));
-    subcatsToggle.innerHTML = isExpanded ? 'Show less' : `+${subcatsToggleCount?.textContent || ''} more`;
-  });
-
-  function updateSubcatCounts() {
-    if (!categoryNav) return;
-    const cards = getCards();
-    let allCount = 0;
-    const subcatCounts: Record<string, number> = {};
-
-    cards.forEach(card => {
-      const collections = card.dataset.collections || '';
-      const category = card.getAttribute('data-category') || '';
-      const matchesCollection = !activeCollection || collections.split(',').includes(activeCollection);
-      if (!matchesCollection) return;
-
-      allCount++;
-      if (category) {
-        subcatCounts[category] = (subcatCounts[category] || 0) + 1;
-      }
-    });
-
-    const allCountEl = categoryNav.querySelector('.filter-btn[data-filter="all"] .filter-btn__count');
-    if (allCountEl) allCountEl.textContent = String(allCount);
-
-    categoryNav.querySelectorAll('.filter-btn[data-subcat]').forEach(btn => {
-      const subcat = (btn as HTMLElement).dataset.subcat || '';
-      const countEl = btn.querySelector('.filter-btn__count');
-      if (countEl) countEl.textContent = String(subcatCounts[subcat] || 0);
-    });
+      panelCategoryList.appendChild(btn);
+    }
   }
 
   buildSubcategoryPills();
+  buildPanelCategories();
 
   const priceMinInput = document.getElementById('price-min') as HTMLInputElement;
   const priceMaxInput = document.getElementById('price-max') as HTMLInputElement;
@@ -2217,7 +2309,7 @@ const itemListSchema = hasShopify ? {
       const cardPrice = parseFloat(card.dataset.price || '0');
       const collections = card.dataset.collections || '';
       const matchesCollection = !activeCollection || collections.split(',').includes(activeCollection);
-      const matchesProductType = !activeProductType || category === activeProductType;
+      const matchesProductType = !activeProductType || category === activeProductType || type.toLowerCase() === activeProductType.toLowerCase();
       const matchesSearch = !activeSearch ||
         title.includes(activeSearch) ||
         type.includes(activeSearch) ||
@@ -2258,14 +2350,13 @@ const itemListSchema = hasShopify ? {
     if (noResults) noResults.style.display = matchCount === 0 ? '' : 'none';
     if (grid) grid.style.display = matchCount === 0 ? 'none' : '';
 
-    // Hide editorial block when filtering
-    const isFiltered = activeCollection || activeSearch || activeSale || activeProductType;
+    // Hide editorial block only for search / sale filters (keep it visible for collection & category browsing)
+    const hideEditorial = activeSearch || activeSale;
     const editorial = document.querySelector('.grid-editorial') as HTMLElement;
-    if (editorial) editorial.style.display = isFiltered ? 'none' : '';
+    if (editorial) editorial.style.display = hideEditorial ? 'none' : '';
 
-    // Update chips, counts, badge, and URL
+    // Update chips, badge, and URL
     renderChips();
-    updateSubcatCounts();
     syncURL();
 
     // Re-observe cards so newly-visible ones get the card-visible animation class
@@ -2305,7 +2396,12 @@ const itemListSchema = hasShopify ? {
         case 'price-asc': return priceA - priceB;
         case 'price-desc': return priceB - priceA;
         case 'title-asc': return titleA.localeCompare(titleB);
-        case 'newest': return idxA - idxB;
+        case 'newest': {
+          const dateA = a.dataset.created || '';
+          const dateB = b.dataset.created || '';
+          // Newest first — reverse chronological
+          return dateB.localeCompare(dateA) || idxA - idxB;
+        }
         default: return idxA - idxB;
       }
     });
@@ -2379,7 +2475,11 @@ const itemListSchema = hasShopify ? {
           case 'price-asc': return priceA - priceB;
           case 'price-desc': return priceB - priceA;
           case 'title-asc': return titleA.localeCompare(titleB);
-          case 'newest': return idxA - idxB;
+          case 'newest': {
+            const dateA = a.dataset.created || '';
+            const dateB = b.dataset.created || '';
+            return dateB.localeCompare(dateA) || idxA - idxB;
+          }
           default: return idxA - idxB;
         }
       });
@@ -2391,6 +2491,8 @@ const itemListSchema = hasShopify ? {
   const saleParam = params.get('sale');
   if (saleParam === 'true') {
     activeSale = true;
+    if (shopTitle) shopTitle.textContent = 'Sale';
+    if (clearCollectionLink) clearCollectionLink.style.display = '';
   }
 
   // View
@@ -2415,7 +2517,7 @@ const itemListSchema = hasShopify ? {
     if (priceMaxInput) priceMaxInput.value = '';
     if (sortSelect) sortSelect.value = 'best-selling';
     buildSubcategoryPills();
-    categoryNav?.querySelector('[data-filter="all"]')?.classList.add('filter-btn--active');
+    buildPanelCategories();
     if (searchBanner) searchBanner.style.display = 'none';
     const shopTitle = document.getElementById('shop-title');
     const clearLink = document.getElementById('shop-clear-collection');

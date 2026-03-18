@@ -30,8 +30,6 @@ const collections = shopifyCollections.map((c, i) => {
     imageUrl: c.image?.url || '',
     enabled: saved ? saved.enabled : false,
     order: saved ? saved.order : i,
-    showInNav: saved ? (saved.showInNav ?? false) : false,
-    navLabel: saved ? (saved.navLabel ?? '') : '',
   };
 }).sort((a, b) => {
   // Selected (enabled) collections first, then by order
@@ -234,53 +232,6 @@ const collections = shopifyCollections.map((c, i) => {
     color: var(--admin-text-light);
   }
 
-  .collection-nav-row {
-    padding: 0.4rem 0.75rem;
-    border-top: 1px solid var(--admin-border);
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-  }
-
-  .collection-nav-label {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.75rem;
-    color: var(--admin-text-light);
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .collection-nav-check {
-    width: 13px;
-    height: 13px;
-    accent-color: var(--admin-accent);
-    cursor: pointer;
-    flex-shrink: 0;
-  }
-
-  .collection-nav-input {
-    width: 100%;
-    font-size: 0.75rem;
-    padding: 0.25rem 0.4rem;
-    border: 1px solid var(--admin-border);
-    border-radius: 4px;
-    background: var(--admin-bg);
-    color: var(--admin-text);
-    font-family: inherit;
-    display: none;
-  }
-
-  .collection-nav-input:focus {
-    outline: none;
-    border-color: var(--admin-accent);
-  }
-
-  .collection-card:has(.collection-nav-check:checked) .collection-nav-input {
-    display: block;
-  }
-
   .collection-info {
     padding: 0.6rem 0.75rem;
   }
@@ -372,22 +323,12 @@ const collections = shopifyCollections.map((c, i) => {
     const items = [...list.querySelectorAll('.collection-card')];
     const value = items.map((el, i) => {
       const handle = (el as HTMLElement).dataset.handle!;
-      const navLabel = ((el as HTMLElement).querySelector('.collection-nav-input') as HTMLInputElement)?.value.trim() || '';
       return {
         handle,
         enabled: ((el as HTMLElement).querySelector(`input[name="enabled-${handle}"]`) as HTMLInputElement).checked,
         order: i,
-        showInNav: ((el as HTMLElement).querySelector('.collection-nav-check') as HTMLInputElement).checked,
-        navLabel: navLabel || undefined,
       };
     });
-
-    // Snapshot for undo
-    const prevChecked = items.map(el => {
-      const handle = (el as HTMLElement).dataset.handle!;
-      return (el.querySelector(`input[name="enabled-${handle}"]`) as HTMLInputElement).checked;
-    });
-    const prevOrder = [...items];
 
     try {
       const res = await fetch('/api/admin/settings', {
@@ -400,16 +341,7 @@ const collections = shopifyCollections.map((c, i) => {
       if (data.warning) {
         (window as any).showToast(`Saved, but site won't update: ${data.warning}`, true);
       } else {
-        (window as any).showToast('Collections saved — site will rebuild shortly', false, () => {
-          // Undo: restore previous order and checked states
-          list.innerHTML = '';
-          prevOrder.forEach((el, i) => {
-            const handle = (el as HTMLElement).dataset.handle!;
-            (el.querySelector(`input[name="enabled-${handle}"]`) as HTMLInputElement).checked = prevChecked[i];
-            list.appendChild(el);
-          });
-          updateCount();
-        });
+        (window as any).showToast('Collections saved — site will rebuild shortly');
       }
     } catch {
       (window as any).showToast('Failed to save', true);

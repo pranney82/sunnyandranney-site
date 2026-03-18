@@ -2,7 +2,6 @@
 export const prerender = true;
 
 import Base from '@/layouts/Base.astro';
-import GoogleReviews from '@/components/GoogleReviews.astro';
 import { cfImage, cfSrcset, SIZES } from '@/lib/images';
 import { getCollectionByHandle, getProductByHandle, getProducts } from '@/lib/shopify';
 import { getCollectionsStatic, getHeroStatic } from '@/lib/settings';
@@ -109,9 +108,14 @@ const stockQty = firstVariant?.quantityAvailable;
 const isLowStock = stockQty !== null && stockQty > 0 && stockQty <= 5;
 const isSoldOut = !product.availableForSale;
 
+// Price formatter — drops .00 on whole numbers ($800 not $800.00)
+function fmt(amount: number): string {
+  return amount % 1 === 0 ? `$${amount.toLocaleString()}` : `$${amount.toFixed(2)}`;
+}
+
 const productUrl = `https://sunnyandranney.com/shop/${product.handle}`;
 
-// Full Product schema — drives Google Shopping rich results + SERP stars
+// Full Product schema — drives Google Shopping rich results
 const productSchema = {
   '@context': 'https://schema.org',
   '@type': 'Product',
@@ -121,13 +125,6 @@ const productSchema = {
   brand: { '@type': 'Brand', name: product.vendor || 'Sunny & Ranney' },
   url: productUrl,
   image: images.map((img: any) => img.url),
-  aggregateRating: {
-    '@type': 'AggregateRating',
-    ratingValue: '4.9',
-    reviewCount: '117',
-    bestRating: '5',
-    worstRating: '1',
-  },
   offers: {
     '@type': 'Offer',
     url: productUrl,
@@ -160,7 +157,7 @@ const breadcrumbSchema = {
     { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://sunnyandranney.com' },
     { '@type': 'ListItem', position: 2, name: 'Shop', item: 'https://sunnyandranney.com/shop' },
     ...(product.productType ? [
-      { '@type': 'ListItem', position: 3, name: product.productType, item: `https://sunnyandranney.com/shop?category=${product.productType.toLowerCase()}` },
+      { '@type': 'ListItem', position: 3, name: product.productType.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '), item: `https://sunnyandranney.com/shop?type=${encodeURIComponent(product.productType)}` },
       { '@type': 'ListItem', position: 4, name: product.title, item: productUrl },
     ] : [
       { '@type': 'ListItem', position: 3, name: product.title, item: productUrl },
@@ -182,17 +179,14 @@ const breadcrumbSchema = {
   <section class="pdp section">
     <div class="container">
       <nav class="breadcrumbs" aria-label="Breadcrumb">
-        <a href="/">Home</a>
-        <span>/</span>
-        <a href="/shop">Shop</a>
-        {product.productType && (
-          <>
-            <span>/</span>
-            <a href={`/shop?category=${product.productType.toLowerCase()}`}>{product.productType}</a>
-          </>
-        )}
-        <span>/</span>
-        <span>{product.title}</span>
+        <ol class="breadcrumbs__list">
+          <li><a href="/">Home</a></li>
+          <li><a href="/shop">Shop</a></li>
+          {product.productType && (
+            <li><a href={`/shop?type=${encodeURIComponent(product.productType)}`}>{product.productType.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')}</a></li>
+          )}
+          <li aria-current="page">{product.title}</li>
+        </ol>
       </nav>
 
       <div class="pdp-grid">
@@ -275,15 +269,14 @@ const breadcrumbSchema = {
         <div class="pdp-info">
           {product.productType && <span class="label">{product.productType}</span>}
           <h1>{product.title}</h1>
-          <GoogleReviews variant="compact" />
 
           <div class="pdp-price" id="pdp-price-area">
             <span class="pdp-price__current" id="pdp-current-price">
-              ${parseFloat(price.amount).toFixed(2)}
+              {fmt(parseFloat(price.amount))}
             </span>
             {isOnSale && (
               <span class="pdp-price__compare" id="pdp-compare-price">
-                ${parseFloat(compareAt.amount).toFixed(2)}
+                {fmt(parseFloat(compareAt.amount))}
               </span>
             )}
             {isOnSale && (
@@ -356,49 +349,24 @@ const breadcrumbSchema = {
               {product.availableForSale ? 'Add to Cart' : 'Sold Out'}
             </button>
 
-            <button
-              class="btn btn--primary pdp-buy-now"
-              id="buy-now"
-              disabled={!product.availableForSale}
-            >
-              {product.availableForSale ? 'Buy Now' : 'Sold Out'}
-            </button>
+            {product.availableForSale && (
+              <button
+                class="btn btn--primary pdp-buy-now"
+                id="buy-now"
+              >
+                Buy Now
+              </button>
+            )}
           </div>
 
-          {/* Back in stock notification */}
+          {/* Sold out — direct to showroom */}
           {isSoldOut && (
             <div class="pdp-notify" id="pdp-notify">
-              <p class="pdp-notify__text">Get notified when this item is back in stock</p>
-              <form class="pdp-notify__form" id="notify-form">
-                <input
-                  type="email"
-                  class="pdp-notify__input"
-                  id="notify-email"
-                  placeholder="Enter your email"
-                  required
-                  aria-label="Email for back in stock notification"
-                />
-                <button type="submit" class="btn btn--gold pdp-notify__btn">Notify Me</button>
-              </form>
-              <p class="pdp-notify__success" id="notify-success" style="display:none;">
-                We'll email you when it's back!
-              </p>
+              <p class="pdp-notify__text">This item is currently sold out. Visit our showroom or call us to ask about availability and upcoming inventory.</p>
+              <a href="tel:+16788885140" class="btn btn--outline pdp-notify__btn" style="text-align:center;">Call (678) 888-5140</a>
             </div>
           )}
 
-          {/* Express checkout hint */}
-          {product.availableForSale && (
-            <div class="pdp-express">
-              <span class="pdp-express__or">or checkout with</span>
-              <div class="pdp-express__methods">
-                <span class="pdp-express__method">Shop Pay</span>
-                <span class="pdp-express__divider">·</span>
-                <span class="pdp-express__method">Apple Pay</span>
-                <span class="pdp-express__divider">·</span>
-                <span class="pdp-express__method">Google Pay</span>
-              </div>
-            </div>
-          )}
 
           <div class="pdp-secondary-actions">
             <button class="pdp-wishlist-btn" id="pdp-wishlist" data-handle={product.handle} aria-label="Add to wishlist">
@@ -411,6 +379,14 @@ const breadcrumbSchema = {
             </button>
           </div>
 
+          {/* Shop Pay Installments for items $50+ */}
+          {product.availableForSale && parseFloat(price.amount) >= 50 && (
+            <div class="pdp-installments">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              <span>4 interest-free payments of <strong>{fmt(parseFloat(price.amount) / 4)}</strong> with Shop Pay</span>
+            </div>
+          )}
+
           {/* Local pickup only */}
           <div class="pdp-delivery">
             <div class="pdp-delivery__item">
@@ -421,17 +397,6 @@ const breadcrumbSchema = {
               </div>
             </div>
           </div>
-
-          {/* Financing for items $100+ */}
-          {parseFloat(price.amount) >= 100 && (
-            <div class="pdp-financing">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-              <span>
-                As low as <strong>${(parseFloat(price.amount) / 4).toFixed(2)}/mo</strong> with Shop Pay Installments
-              </span>
-            </div>
-          )}
-
 
           {/* Trust signals */}
           <div class="pdp-trust">
@@ -453,7 +418,7 @@ const breadcrumbSchema = {
             <span class="pdp-charity-note__icon"></span>
             <p>
               This purchase supports <strong>Sunshine on a Ranney Day</strong> —
-              100% of profits fund home makeovers for kids with special needs.
+              100% of profits fund home makeovers for kids with special needs. <a href="/about" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Our&nbsp;mission&nbsp;→</a>
             </p>
           </div>
 
@@ -509,14 +474,15 @@ const breadcrumbSchema = {
               {mainImage && <img src={cfImage(mainImage.url, { width: 300 })} alt={product.title} loading="lazy" />}
             </div>
             <span class="fbt-item__name">{product.title}</span>
-            <span class="fbt-item__price">${parseFloat(price.amount).toFixed(2)}</span>
+            <span class="fbt-item__price">{fmt(parseFloat(price.amount))}</span>
             <span class="fbt-item__this">This item</span>
           </div>
           <span class="fbt-plus">+</span>
-          {relatedProducts.slice(0, 2).map((rp: any) => {
+          {relatedProducts.slice(0, 2).map((rp: any, rpIdx: number) => {
             const rpImage = rp.images.edges[0]?.node;
             const rpPrice = rp.priceRange.minVariantPrice;
             const rpVariant = rp.variants?.edges[0]?.node;
+            const isLast = rpIdx === Math.min(relatedProducts.length, 2) - 1;
             return (
               <>
                 <div class="fbt-item">
@@ -531,16 +497,16 @@ const breadcrumbSchema = {
                     {rpImage && <img src={cfImage(rpImage.url, { width: 300 })} alt={rp.title} loading="lazy" />}
                   </a>
                   <a href={`/shop/${rp.handle}`} class="fbt-item__name">{rp.title}</a>
-                  <span class="fbt-item__price">${parseFloat(rpPrice.amount).toFixed(2)}</span>
+                  <span class="fbt-item__price">{fmt(parseFloat(rpPrice.amount))}</span>
                 </div>
-                <span class="fbt-plus">+</span>
+                {!isLast && <span class="fbt-plus">+</span>}
               </>
             );
           })}
           <div class="fbt-total">
             <span class="fbt-total__label">Bundle Price</span>
             <span class="fbt-total__price" id="fbt-total-price">
-              ${(parseFloat(price.amount) + relatedProducts.slice(0, 2).reduce((s: number, rp: any) => s + parseFloat(rp.priceRange.minVariantPrice.amount), 0)).toFixed(2)}
+              {fmt(parseFloat(price.amount) + relatedProducts.slice(0, 2).reduce((s: number, rp: any) => s + parseFloat(rp.priceRange.minVariantPrice.amount), 0))}
             </span>
             <button class="btn btn--gold fbt-total__btn" id="fbt-add-all">Add All to Cart</button>
           </div>
@@ -562,13 +528,22 @@ const breadcrumbSchema = {
               <a href={`/shop/${rp.handle}`} class="related-card">
                 <div class="related-card__image">
                   {rpImage && (
-                    <img src={cfImage(rpImage.url, { width: 400 })} alt={rpImage.altText || rp.title} loading="lazy" decoding="async" />
+                    <img
+                      src={cfImage(rpImage.url, { width: 400 })}
+                      srcset={cfSrcset(rpImage.url, [200, 400, 600])}
+                      sizes={SIZES.related}
+                      alt={rpImage.altText || rp.title}
+                      width={rpImage.width}
+                      height={rpImage.height}
+                      loading="lazy"
+                      decoding="async"
+                    />
                   )}
                 </div>
                 <div class="related-card__info">
                   {rp.productType && <span class="related-card__type">{rp.productType}</span>}
                   <span class="related-card__title">{rp.title}</span>
-                  <span class="related-card__price">${parseFloat(rpPrice.amount).toFixed(2)}</span>
+                  <span class="related-card__price">{fmt(parseFloat(rpPrice.amount))}</span>
                 </div>
               </a>
             );
@@ -597,7 +572,7 @@ const breadcrumbSchema = {
     <button class="lightbox__nav lightbox__next" id="lightbox-next" aria-label="Next image">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/></svg>
     </button>
-    <img class="lightbox__img" id="lightbox-img" src="" alt="" />
+    <img class="lightbox__img" id="lightbox-img" src="" alt="" decoding="async" />
     <div class="lightbox__counter" id="lightbox-counter"></div>
   </div>
 
@@ -605,7 +580,7 @@ const breadcrumbSchema = {
   <div class="sticky-bar" id="sticky-bar">
     <div class="sticky-bar__info">
       <span class="sticky-bar__title">{product.title}</span>
-      <span class="sticky-bar__price" id="sticky-price">${parseFloat(price.amount).toFixed(2)}</span>
+      <span class="sticky-bar__price" id="sticky-price">{fmt(parseFloat(price.amount))}</span>
     </div>
     <button class="btn btn--gold sticky-bar__btn" id="sticky-add" disabled={!product.availableForSale}>
       {product.availableForSale ? 'Add to Cart' : 'Sold Out'}
@@ -625,7 +600,7 @@ const breadcrumbSchema = {
         )}
         <div class="sticky-header__details">
           <span class="sticky-header__title">{product.title}</span>
-          <span class="sticky-header__price" id="sticky-header-price">${parseFloat(price.amount).toFixed(2)}</span>
+          <span class="sticky-header__price" id="sticky-header-price">{fmt(parseFloat(price.amount))}</span>
         </div>
       </div>
       <div class="sticky-header__actions">
@@ -649,17 +624,68 @@ const breadcrumbSchema = {
 
 <style>
   .breadcrumbs {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.8rem;
-    color: var(--color-stone);
     margin-bottom: var(--space-lg);
-    flex-wrap: wrap;
   }
 
-  .breadcrumbs a:hover { color: var(--color-charcoal); }
-  .breadcrumbs > span:last-child { color: var(--color-charcoal); }
+  .breadcrumbs__list {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 0.78rem;
+    color: var(--color-stone);
+  }
+
+  .breadcrumbs__list li {
+    display: flex;
+    align-items: center;
+  }
+
+  /* Chevron separator between items */
+  .breadcrumbs__list li + li::before {
+    content: '';
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-right: 1.5px solid var(--color-stone);
+    border-top: 1.5px solid var(--color-stone);
+    transform: rotate(45deg);
+    margin: 0 0.6rem;
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
+
+  .breadcrumbs__list a {
+    color: var(--color-stone);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .breadcrumbs__list a:hover {
+    color: var(--color-charcoal);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--color-cream-dark);
+  }
+
+  /* Current page — not a link, darker color */
+  .breadcrumbs__list li[aria-current="page"] {
+    color: var(--color-charcoal);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 280px;
+  }
+
+  @media (min-width: 768px) {
+    .breadcrumbs__list li[aria-current="page"] {
+      max-width: 400px;
+    }
+  }
 
   .pdp-grid {
     display: grid;
@@ -684,7 +710,7 @@ const breadcrumbSchema = {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.2s ease, opacity 0.25s ease;
+    transition: transform 0.2s ease, opacity 0.2s ease;
     will-change: transform;
   }
 
@@ -834,36 +860,15 @@ const breadcrumbSchema = {
     font-size: 0.85rem;
     color: var(--color-slate);
     margin: 0 0 0.75rem;
+    line-height: 1.6;
   }
-
-  .pdp-notify__form {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .pdp-notify__input {
-    flex: 1;
-    padding: 0.75rem 1rem;
-    border: 1.5px solid var(--color-cream-dark);
-    font-family: var(--font-body);
-    font-size: 0.85rem;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  .pdp-notify__input:focus { border-color: var(--color-charcoal); }
 
   .pdp-notify__btn {
     padding: 0.75rem 1.25rem;
     font-size: 0.78rem;
     white-space: nowrap;
-  }
-
-  .pdp-notify__success {
-    font-size: 0.85rem;
-    color: #27ae60;
-    margin: 0.75rem 0 0;
-    font-weight: 500;
+    display: inline-flex;
+    justify-content: center;
   }
 
   /* ─── Video Thumbnail ───────────────────── */
@@ -1005,39 +1010,6 @@ const breadcrumbSchema = {
     font-size: 0.9rem;
   }
 
-  /* ─── Express checkout ─────────────────── */
-  .pdp-express {
-    text-align: center;
-    margin-bottom: var(--space-md);
-  }
-
-  .pdp-express__or {
-    font-size: 0.72rem;
-    color: var(--color-stone);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-
-  .pdp-express__methods {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    margin-top: 0.25rem;
-  }
-
-  .pdp-express__method {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--color-slate);
-    letter-spacing: 0.02em;
-  }
-
-  .pdp-express__divider {
-    color: var(--color-cream-dark);
-    font-size: 0.8rem;
-  }
-
   .pdp-secondary-actions {
     display: flex;
     gap: 0.5rem;
@@ -1067,6 +1039,20 @@ const breadcrumbSchema = {
   .pdp-share-btn:hover { border-color: var(--color-charcoal); color: var(--color-charcoal); }
   .pdp-wishlist-btn.is-wished { color: #e74c3c; border-color: #e74c3c; }
   .pdp-wishlist-btn.is-wished svg { fill: #e74c3c; }
+
+  /* ─── Shop Pay Installments ───────────── */
+  .pdp-installments {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.75rem var(--space-md);
+    background: var(--color-gold-soft);
+    font-size: 0.82rem;
+    color: var(--color-charcoal);
+    margin-bottom: var(--space-sm);
+  }
+
+  .pdp-installments svg { color: var(--color-charcoal); flex-shrink: 0; }
 
   /* ─── Delivery & Shipping ──────────────── */
   .pdp-delivery {
@@ -1114,20 +1100,6 @@ const breadcrumbSchema = {
   }
 
   .pdp-delivery__free-hint svg { color: var(--color-gold); flex-shrink: 0; }
-
-  /* ─── Financing ────────────────────────── */
-  .pdp-financing {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.75rem var(--space-md);
-    background: var(--color-gold-soft);
-    font-size: 0.82rem;
-    color: var(--color-charcoal);
-    margin-bottom: var(--space-sm);
-  }
-
-  .pdp-financing svg { color: var(--color-charcoal); flex-shrink: 0; }
 
   /* ─── Trust signals ────────────────────── */
   .pdp-trust {
@@ -1292,7 +1264,7 @@ const breadcrumbSchema = {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: var(--color-gold);
+    color: var(--color-slate);
   }
 
   .fbt-check {
@@ -1310,8 +1282,6 @@ const breadcrumbSchema = {
     color: var(--color-stone);
     font-weight: 300;
   }
-
-  .fbt-plus:last-of-type { display: none; }
 
   .fbt-total {
     display: flex;
@@ -1412,7 +1382,7 @@ const breadcrumbSchema = {
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--color-gold);
+    color: var(--color-slate);
   }
 
   .related-card__title {
@@ -1766,6 +1736,14 @@ const breadcrumbSchema = {
     to { transform: translateX(100%); }
   }
 
+  /* Added-to-cart confirmation state */
+  .btn--added {
+    background: #27ae60 !important;
+    border-color: #27ae60 !important;
+    color: white !important;
+    pointer-events: none;
+  }
+
   /* Price update animation */
   .pdp-price__current {
     transition: transform 0.2s ease-out;
@@ -1812,6 +1790,11 @@ const breadcrumbSchema = {
   const stickyHeaderPrice = document.getElementById('sticky-header-price');
   const urgencyEl = document.getElementById('pdp-urgency');
   const stockCountEl = document.getElementById('stock-count');
+
+  // Smart price formatter — drops .00 on whole numbers ($800 not $800.00)
+  function fmtPrice(amount: number): string {
+    return amount % 1 === 0 ? `$${amount.toLocaleString()}` : `$${amount.toFixed(2)}`;
+  }
 
   function cfImg(url: string, width = 900) {
     if (!url || !url.includes('cdn.shopify.com')) return url;
@@ -1910,22 +1893,33 @@ const breadcrumbSchema = {
         videoContainer.style.display = 'flex';
         isShowingVideo = true;
 
+        // Clear previous video content safely
+        videoContainer.replaceChildren();
+
         if (videoType === 'VIDEO') {
-          videoContainer.innerHTML = `
-            <video controls autoplay playsinline class="pdp-video">
-              <source src="${videoUrl}" type="video/mp4">
-            </video>
-          `;
+          const video = document.createElement('video');
+          video.controls = true;
+          video.autoplay = true;
+          video.playsInline = true;
+          video.className = 'pdp-video';
+          const source = document.createElement('source');
+          source.src = videoUrl;
+          source.type = 'video/mp4';
+          video.appendChild(source);
+          videoContainer.appendChild(video);
         } else if (videoType === 'EXTERNAL_VIDEO') {
-          // YouTube/Vimeo embed
-          videoContainer.innerHTML = `
-            <iframe class="pdp-video" src="${videoUrl}" frameborder="0" allowfullscreen allow="autoplay"></iframe>
-          `;
+          const iframe = document.createElement('iframe');
+          iframe.className = 'pdp-video';
+          iframe.src = videoUrl;
+          iframe.setAttribute('frameborder', '0');
+          iframe.allowFullscreen = true;
+          iframe.allow = 'autoplay';
+          videoContainer.appendChild(iframe);
         }
       } else {
         // Show image
         if (isShowingVideo) {
-          videoContainer.innerHTML = '';
+          videoContainer.replaceChildren();
           videoContainer.style.display = 'none';
           if (mainImg) mainImg.style.display = '';
           isShowingVideo = false;
@@ -1971,10 +1965,10 @@ const breadcrumbSchema = {
       }
 
       // Update price display
-      if (currentPriceEl) currentPriceEl.textContent = `$${parseFloat(variantPrice).toFixed(2)}`;
+      if (currentPriceEl) currentPriceEl.textContent = fmtPrice(parseFloat(variantPrice));
       if (comparePriceEl) {
         if (variantCompare && parseFloat(variantCompare) > parseFloat(variantPrice)) {
-          comparePriceEl.textContent = `$${parseFloat(variantCompare).toFixed(2)}`;
+          comparePriceEl.textContent = fmtPrice(parseFloat(variantCompare));
           comparePriceEl.style.display = '';
         } else {
           comparePriceEl.style.display = 'none';
@@ -1982,10 +1976,10 @@ const breadcrumbSchema = {
       }
 
       // Update sticky bar price
-      if (stickyPrice) stickyPrice.textContent = `$${parseFloat(variantPrice).toFixed(2)}`;
+      if (stickyPrice) stickyPrice.textContent = fmtPrice(parseFloat(variantPrice));
 
       // Update sticky header price
-      if (stickyHeaderPrice) stickyHeaderPrice.textContent = `$${parseFloat(variantPrice).toFixed(2)}`;
+      if (stickyHeaderPrice) stickyHeaderPrice.textContent = fmtPrice(parseFloat(variantPrice));
 
       // Update selected label
       if (selectedLabel) selectedLabel.textContent = variantTitle;
@@ -2066,12 +2060,12 @@ const breadcrumbSchema = {
       variantTitle,
     }, qty);
 
-    addToCartBtn.textContent = 'Added to Cart';
-    addToCartBtn.disabled = true;
+    addToCartBtn.textContent = 'Added!';
+    addToCartBtn.classList.add('btn--added');
     setTimeout(() => {
       addToCartBtn.textContent = 'Add to Cart';
-      addToCartBtn.disabled = false;
-    }, 2000);
+      addToCartBtn.classList.remove('btn--added');
+    }, 1500);
   }
 
   addToCartBtn?.addEventListener('click', handleAddToCart);
@@ -2109,7 +2103,7 @@ const breadcrumbSchema = {
   function updateWishlistUI() {
     const isWished = wishlist.has(pdpHandle);
     if (wishlistBtn) wishlistBtn.classList.toggle('is-wished', isWished);
-    if (wishlistText) wishlistText.textContent = isWished ? 'Saved' : 'Add to Wishlist';
+    if (wishlistText) wishlistText.textContent = isWished ? 'Saved' : 'Save';
   }
 
   wishlistBtn?.addEventListener('click', () => {
@@ -2308,7 +2302,7 @@ const breadcrumbSchema = {
         total += parseFloat((cb as HTMLElement).dataset.price || '0');
       }
     });
-    if (fbtTotalPrice) fbtTotalPrice.textContent = `$${total.toFixed(2)}`;
+    if (fbtTotalPrice) fbtTotalPrice.textContent = fmtPrice(total);
   }
 
   fbtChecks.forEach(cb => cb.addEventListener('change', updateFbtTotal));
@@ -2365,27 +2359,6 @@ const breadcrumbSchema = {
     }
   }
 
-  // ─── Back in Stock Notification ───────────────
-  const notifyForm = document.getElementById('notify-form');
-  const notifyEmail = document.getElementById('notify-email') as HTMLInputElement;
-  const notifySuccess = document.getElementById('notify-success');
-
-  notifyForm?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const email = notifyEmail?.value;
-    if (!email) return;
-
-    // Store locally (in production, send to backend/Klaviyo/etc)
-    const productHandle = addToCartBtn?.dataset.productHandle || '';
-    const notifyList = JSON.parse(localStorage.getItem('notify-stock') || '{}');
-    notifyList[productHandle] = { email, date: new Date().toISOString() };
-    localStorage.setItem('notify-stock', JSON.stringify(notifyList));
-
-    // Show success
-    if (notifyForm) notifyForm.style.display = 'none';
-    if (notifySuccess) notifySuccess.style.display = '';
-  });
-
   // ─── Track recently viewed ──────────────────
   const pdpTitle = addToCartBtn?.dataset.productTitle;
   const pdpImage = addToCartBtn?.dataset.productImage;
@@ -2428,7 +2401,7 @@ const breadcrumbSchema = {
         if (item.price) {
           const priceEl = document.createElement('span');
           priceEl.className = 'recently-card__price';
-          priceEl.textContent = `$${parseFloat(item.price).toFixed(2)}`;
+          priceEl.textContent = fmtPrice(parseFloat(item.price));
           card.appendChild(priceEl);
         }
 

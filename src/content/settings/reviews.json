@@ -1,0 +1,26 @@
+{
+  "googleRating": 5.0,
+  "reviewCount": 117,
+  "featured": [
+    {
+      "name": "Sarah M.",
+      "text": "The most beautiful store! Every piece is curated with such care, and knowing it all goes to charity makes it even more special.",
+      "rating": 5
+    },
+    {
+      "name": "James T.",
+      "text": "Found the perfect dining table here. Great quality, fair prices, and the staff is incredibly helpful. Will definitely be back.",
+      "rating": 5
+    },
+    {
+      "name": "Rachel K.",
+      "text": "Such a hidden gem in Roswell! Beautiful furniture and decor. Love supporting a store where every dollar goes to help kids.",
+      "rating": 5
+    },
+    {
+      "name": "Michael D.",
+      "text": "Fantastic selection of home decor. We furnished our entire living room here. The mission behind this store is truly inspiring.",
+      "rating": 5
+    }
+  ]
+}

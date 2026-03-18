@@ -517,14 +517,6 @@ const initialCollection = collectionData[0]?.handle ?? '';
     }
   });
 
-  // ⌘S save
-  document.addEventListener('keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-      e.preventDefault();
-      document.getElementById('picks-form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-    }
-  });
-
   // Initialize
   updateCount();
 </script>

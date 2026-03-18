@@ -1,20 +1,13 @@
 ---
-import type { ContactInfo, StoreHours } from '@/lib/settings';
+import type { ContactInfo } from '@/lib/settings';
 
 interface Props {
-  hours?: string | null;
   contact?: ContactInfo | null;
-  holidays?: StoreHours['holidays'];
 }
 
-const { hours, contact, holidays = [] } = Astro.props;
+const { contact } = Astro.props;
 const currentYear = new Date().getFullYear();
-const displayHours = hours || 'Tue\u2013Thu 10\u20135 \u00b7 Fri\u2013Sat 10\u20136';
 
-const address = contact?.address || '109A Oak Street';
-const city = contact?.city || 'Roswell';
-const state = contact?.state || 'GA';
-const zip = contact?.zip || '30075';
 const phone = contact?.phone || '678.888.5140';
 const email = contact?.email || 'info@sunnyandranney.com';
 const instagramUrl = contact?.instagramUrl || 'https://www.instagram.com/sunnyandranney/';
@@ -93,18 +86,13 @@ const phoneDigits = phone.replace(/\D/g, '');
         </nav>
       </details>
 
-      <!-- Visit Us -->
+      <!-- Contact -->
       <details class="footer__col" open>
         <summary class="footer__heading">
-          Visit Us
+          Contact
           <svg class="footer__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
         </summary>
         <address class="footer__address">
-          <p>{address}<br />{city}, {state} {zip}</p>
-          <p class="footer__hours">{displayHours}</p>
-          {holidays.length > 0 && (
-            <div class="footer__holiday-hours" data-holidays={JSON.stringify(holidays)}></div>
-          )}
           <p>
             <a href={`tel:${phoneDigits}`}>{phone}</a><br />
             <a href={`mailto:${email}`}>{email}</a>
@@ -340,8 +328,8 @@ const phoneDigits = phone.replace(/\D/g, '');
 
   /* ─── Address ──────────────────────────── */
   .footer__address {
-    color: #A0A09D;
-    font-size: 0.85rem;
+    color: #C0C0BD;
+    font-size: 0.8rem;
     font-style: normal;
     line-height: 1.6;
   }
@@ -349,19 +337,6 @@ const phoneDigits = phone.replace(/\D/g, '');
   .footer__address p {
     margin: 0 0 0.5rem;
     max-width: none;
-  }
-
-  .footer__hours {
-    font-size: 0.78rem;
-    color: var(--color-cyan-light);
-  }
-
-  .footer__holiday-hours {
-    font-size: 0.75rem;
-    color: var(--color-gold);
-    opacity: 0.7;
-    margin-top: 0.15rem;
-    line-height: 1.5;
   }
 
   .footer__address a {
@@ -469,58 +444,6 @@ const phoneDigits = phone.replace(/\D/g, '');
     });
   }
 
-  function formatTime(time: string): string {
-    const [h, m] = time.split(':').map(Number);
-    const suffix = h >= 12 ? 'pm' : 'am';
-    const hour = h > 12 ? h - 12 : h === 0 ? 12 : h;
-    return m === 0 ? `${hour}${suffix}` : `${hour}:${m.toString().padStart(2, '0')}${suffix}`;
-  }
-
-  function initHolidayDisplay() {
-    const el = document.querySelector('.footer__holiday-hours') as HTMLElement | null;
-    if (!el) return;
-    const holidays = JSON.parse(el.dataset.holidays || '[]');
-    if (!holidays.length) return;
-
-    const today = new Date().toISOString().split('T')[0];
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() + 30);
-    const cutoffStr = cutoff.toISOString().split('T')[0];
-
-    // Show today's holiday or upcoming ones
-    const todayHoliday = holidays.find((h: any) => h.date === today);
-    const upcoming = holidays
-      .filter((h: any) => h.date > today && h.date <= cutoffStr)
-      .sort((a: any, b: any) => a.date.localeCompare(b.date))
-      .slice(0, 2);
-
-    const lines: string[] = [];
-    if (todayHoliday) {
-      if (todayHoliday.closed) {
-        lines.push(`Today: Closed for ${todayHoliday.label}`);
-      } else {
-        lines.push(`Today: ${todayHoliday.label} ${formatTime(todayHoliday.open)}\u2013${formatTime(todayHoliday.close)}`);
-      }
-    }
-    for (const h of upcoming) {
-      const d = new Date(h.date + 'T12:00:00');
-      const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      if (h.closed) {
-        lines.push(`${label}: Closed (${h.label})`);
-      } else {
-        lines.push(`${label}: ${h.label} ${formatTime(h.open)}\u2013${formatTime(h.close)}`);
-      }
-    }
-
-    if (lines.length) {
-      el.innerHTML = lines.map(l => `<p style="margin:0">${l}</p>`).join('');
-    }
-  }
-
   initFooterAccordion();
-  initHolidayDisplay();
-  document.addEventListener('astro:after-swap', () => {
-    initFooterAccordion();
-    initHolidayDisplay();
-  });
+  document.addEventListener('astro:after-swap', initFooterAccordion);
 </script>

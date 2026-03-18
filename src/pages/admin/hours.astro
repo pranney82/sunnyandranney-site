@@ -63,7 +63,7 @@ const data = hours || defaults;
       </p>
       <div id="holidays-container">
         {data.holidays.map((h: any, i: number) => (
-          <div class="holiday-row" data-holiday-index={i}>
+          <div class="holiday-row">
             <div class="holiday-row-top">
               <div class="admin-field" style="flex:1; margin-bottom:0">
                 <label class="admin-label">Date</label>
@@ -282,28 +282,24 @@ const data = hours || defaults;
     });
   });
 
-  // Holiday closed toggle
-  function initHolidayToggles() {
-    document.querySelectorAll('.holiday-closed').forEach((cb) => {
-      cb.addEventListener('change', (e) => {
-        const input = e.target as HTMLInputElement;
-        const row = input.closest('.holiday-row');
-        if (!row) return;
-        const times = row.querySelector('.holiday-times') as HTMLElement;
-        const label = row.querySelector('.holiday-closed-label') as HTMLElement;
-        if (input.checked) {
-          times.style.opacity = '0.3';
-          times.style.pointerEvents = 'none';
-          label.textContent = 'Closed all day';
-        } else {
-          times.style.opacity = '1';
-          times.style.pointerEvents = 'auto';
-          label.textContent = 'Modified hours';
-        }
-      });
-    });
-  }
-  initHolidayToggles();
+  // Holiday closed toggle (event delegation)
+  document.getElementById('holidays-container')?.addEventListener('change', (e) => {
+    const input = e.target as HTMLInputElement;
+    if (!input.classList.contains('holiday-closed')) return;
+    const row = input.closest('.holiday-row');
+    if (!row) return;
+    const times = row.querySelector('.holiday-times') as HTMLElement;
+    const label = row.querySelector('.holiday-closed-label') as HTMLElement;
+    if (input.checked) {
+      times.style.opacity = '0.3';
+      times.style.pointerEvents = 'none';
+      label.textContent = 'Closed all day';
+    } else {
+      times.style.opacity = '1';
+      times.style.pointerEvents = 'auto';
+      label.textContent = 'Modified hours';
+    }
+  });
 
   // Add holiday
   let holidayCount = form.querySelectorAll('.holiday-row').length;
@@ -311,7 +307,6 @@ const data = hours || defaults;
     const container = document.getElementById('holidays-container')!;
     const row = document.createElement('div');
     row.className = 'holiday-row';
-    row.dataset.holidayIndex = String(holidayCount);
     row.innerHTML = `
       <div class="holiday-row-top">
         <div class="admin-field" style="flex:1; margin-bottom:0">
@@ -339,7 +334,6 @@ const data = hours || defaults;
     `;
     container.appendChild(row);
     holidayCount++;
-    initHolidayToggles();
   });
 
   // Remove holiday
@@ -353,9 +347,6 @@ const data = hours || defaults;
     e.preventDefault();
     const btn = document.getElementById('save-btn') as HTMLButtonElement;
     (window as any).setButtonLoading(btn, true);
-
-    // Snapshot for undo
-    const snapshot = new FormData(form);
 
     const days = DAYS.map((day, i) => {
       const isOpen = (form.querySelector(`[name="closed-${i}"]`) as HTMLInputElement).checked;
@@ -399,15 +390,7 @@ const data = hours || defaults;
       if (data.warning) {
         (window as any).showToast(`Saved, but site won't update: ${data.warning}`, true);
       } else {
-        (window as any).showToast('Store hours saved — site will rebuild shortly', false, () => {
-          // Restore snapshot values
-          for (const [key, val] of snapshot.entries()) {
-            const el = form.querySelector(`[name="${key}"]`) as HTMLInputElement | null;
-            if (!el) continue;
-            if (el.type === 'checkbox') el.checked = val === 'on';
-            else el.value = val as string;
-          }
-        });
+        (window as any).showToast('Store hours saved — site will rebuild shortly');
       }
     } catch {
       (window as any).showToast('Failed to save', true);

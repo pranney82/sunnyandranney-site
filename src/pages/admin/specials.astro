@@ -61,7 +61,7 @@ const data = specials || defaults;
       </p>
       <div id="announcements-container">
         {data.announcements.map((a: any, i: number) => (
-          <div class="announcement-card" data-index={i}>
+          <div class="announcement-card">
             <div class="announcement-card-header">
               <select class="admin-input ann-type">
                 <option value="banner" selected={a.type === 'banner'}>Banner</option>
@@ -163,17 +163,13 @@ const data = specials || defaults;
   const form = document.getElementById('specials-form') as HTMLFormElement;
   const container = document.getElementById('announcements-container')!;
 
-  // Update active label text when toggle changes
-  function initAnnToggles() {
-    document.querySelectorAll('.ann-active').forEach((cb) => {
-      cb.addEventListener('change', (e) => {
-        const input = e.target as HTMLInputElement;
-        const label = input.closest('.ann-toggle-wrap')?.querySelector('.ann-active-label');
-        if (label) label.textContent = input.checked ? 'Active' : 'Inactive';
-      });
-    });
-  }
-  initAnnToggles();
+  // Update active label text when toggle changes (event delegation)
+  container.addEventListener('change', (e) => {
+    const input = e.target as HTMLInputElement;
+    if (!input.classList.contains('ann-active')) return;
+    const label = input.closest('.ann-toggle-wrap')?.querySelector('.ann-active-label');
+    if (label) label.textContent = input.checked ? 'Active' : 'Inactive';
+  });
 
   // Add announcement
   document.getElementById('add-announcement')?.addEventListener('click', () => {
@@ -207,7 +203,6 @@ const data = specials || defaults;
       </div>
     `;
     container.appendChild(card);
-    initAnnToggles();
   });
 
   // Remove announcement

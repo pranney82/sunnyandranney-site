@@ -6,7 +6,7 @@ import type { HeroSetting, CollectionSetting, StoreSpecials, EmailSignupConfig, 
 
 export const prerender = false;
 
-const settingKeys = [
+const SETTING_KEYS = [
   'settings:hours',
   'settings:collections',
   'settings:specials',
@@ -17,21 +17,15 @@ const settingKeys = [
   'settings:staff-picks',
 ] as const;
 
-const [hours, collections, specials, contact, emailSignup, hero, kids, staffPicks] = await Promise.all([
-  getSetting('settings:hours'),
-  getSetting<CollectionSetting[]>('settings:collections'),
-  getSetting<StoreSpecials>('settings:specials'),
-  getSetting('settings:contact'),
-  getSetting<EmailSignupConfig>('settings:email-signup'),
-  getSetting<HeroSetting>('settings:hero'),
-  getSetting<KidsSetting>('settings:kids'),
-  getSetting<StaffPicksSetting>('settings:staff-picks'),
-]);
+const [hours, collections, specials, contact, emailSignup, hero, kids, staffPicks] = await Promise.all(
+  SETTING_KEYS.map(k => getSetting(k))
+) as [any, CollectionSetting[] | null, StoreSpecials | null, any, EmailSignupConfig | null, HeroSetting | null, KidsSetting | null, StaffPicksSetting | null];
 
 // Fetch updated_at timestamps
+const placeholders = SETTING_KEYS.map(() => '?').join(', ');
 const timestampRows = await env.DB
-  .prepare('SELECT key, updated_at FROM settings WHERE key IN (?, ?, ?, ?, ?, ?, ?, ?)')
-  .bind(...settingKeys)
+  .prepare(`SELECT key, updated_at FROM settings WHERE key IN (${placeholders})`)
+  .bind(...SETTING_KEYS)
   .all<{ key: string; updated_at: string }>();
 
 const timestamps: Record<string, string | null> = {};

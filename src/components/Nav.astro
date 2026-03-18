@@ -24,12 +24,12 @@ const roomCollections = [
 
 // Default slides + any admin-configured announcements
 const defaultSlides = [
-  { html: '100% of profits support <a href="/about" class="nav__banner-link"><strong>Sunshine on a Ranney Day</strong></a> — <a href="/about" class="nav__banner-link">Our Story</a>' },
-  { html: 'LOCAL PICKUP ONLY — <a href="/shop" class="nav__banner-link">Shop Now</a>' },
-  { html: 'Visit our Roswell showroom — Tue–Sat, 10am–6pm' },
+  { text: '100% of profits support&nbsp;<strong>Sunshine on a Ranney Day</strong>&nbsp;—&nbsp;Our Story', link: '/about' },
+  { text: 'LOCAL PICKUP ONLY — Shop Now', link: '/shop' },
+  { text: 'Visit our Roswell showroom — Tue–Sat, 10am–6pm', link: '/about' },
 ];
 const adminSlides = announcements.map(a =>
-  ({ html: a.link ? `${a.text} — <a href="${a.link}" class="nav__banner-link">Learn More</a>` : a.text })
+  ({ text: a.link ? `${a.text} — Learn More` : a.text, link: a.link || '' })
 );
 const allSlides = [...adminSlides, ...defaultSlides];
 ---
@@ -40,7 +40,9 @@ const allSlides = [...adminSlides, ...defaultSlides];
     <div class="container nav__banner-inner">
       <div class="nav__banner-slider" id="banner-slider">
         {allSlides.map((slide, i) => (
-          <span class:list={['nav__banner-slide', { 'nav__banner-slide--active': i === 0 }]} set:html={slide.html} />
+          slide.link
+            ? <a href={slide.link} class:list={['nav__banner-slide', { 'nav__banner-slide--active': i === 0 }]} set:html={slide.text} />
+            : <span class:list={['nav__banner-slide', { 'nav__banner-slide--active': i === 0 }]} set:html={slide.text} />
         ))}
       </div>
     </div>
@@ -86,7 +88,7 @@ const allSlides = [...adminSlides, ...defaultSlides];
         <input
           type="search"
           id="mobile-topbar-search"
-          placeholder="Search furniture, decor, lighting, gifts..."
+          placeholder="Search furniture, decor, accessories, gifts..."
           autocomplete="off"
           role="combobox"
           aria-expanded="false"
@@ -119,7 +121,7 @@ const allSlides = [...adminSlides, ...defaultSlides];
         <input
           type="search"
           id="nav-search-input"
-          placeholder="Search furniture, decor, lighting, gifts..."
+          placeholder="Search furniture, decor, accessories, gifts..."
           autocomplete="off"
           role="combobox"
           aria-expanded="false"
@@ -154,10 +156,10 @@ const allSlides = [...adminSlides, ...defaultSlides];
     <div class="container nav__categories-inner">
       <span class="nav__cat-indicator" id="cat-indicator" aria-hidden="true"></span>
       <a href="/shop" data-astro-prefetch class:list={['nav__cat-link', { 'nav__cat-link--active': currentPath === '/shop' || currentPath === '/shop/' }]}>
-        All Products
+        All
       </a>
       <a href="/shop?collection=new-arrivals" data-astro-prefetch class="nav__cat-link nav__cat-link--new">
-        New Arrivals
+        New
       </a>
       {roomCollections.map(col => (
         <a href={`/shop?collection=${col.handle}`} data-astro-prefetch class="nav__cat-link">
@@ -196,9 +198,15 @@ const allSlides = [...adminSlides, ...defaultSlides];
 
   .nav__banner strong { color: var(--color-gold); }
 
-  .nav__banner-link {
-    color: var(--color-gold);
+  a.nav__banner-slide {
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  a.nav__banner-slide:hover {
     text-decoration: underline;
+    text-decoration-color: var(--color-gold);
   }
 
   /* Smooth banner collapse on scroll — no position:absolute jump */
@@ -728,32 +736,33 @@ const allSlides = [...adminSlides, ...defaultSlides];
 
   @media (max-width: 767px) {
     .nav__cat-indicator {
-      height: 2px;
-      border-radius: 1px 1px 0 0;
+      /* Mobile: solid pill behind active tab */
+      top: 50%;
+      bottom: auto;
+      transform: translateY(-50%);
+      height: 36px;
+      border-radius: 100px;
+      background: var(--color-cream-dark);
     }
   }
 
   @media (max-width: 767px) {
     .nav__categories {
-      /* Only fade right edge — left stays fully visible so first item isn't clipped */
-      -webkit-mask-image: linear-gradient(to right, black calc(100% - 36px), transparent 100%);
-      mask-image: linear-gradient(to right, black calc(100% - 36px), transparent 100%);
       padding: 0;
       scroll-snap-type: x proximity;
     }
 
     .nav__categories-inner {
       justify-content: flex-start;
-      padding: 0 14px;
-      /* Right padding so last item (Sale) isn't hidden under the fade */
-      padding-right: 56px;
+      padding: 0 10px;
+      padding-right: 32px;
     }
   }
 
   /* ─── Category Links ─────────────────────── */
   .nav__cat-link {
-    padding: 0.72rem 1rem;
-    font-size: 0.78rem;
+    padding: 0.85rem 1.15rem;
+    font-size: 0.88rem;
     font-weight: 500;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -768,16 +777,17 @@ const allSlides = [...adminSlides, ...defaultSlides];
 
   @media (max-width: 767px) {
     .nav__cat-link {
-      padding: 0.75rem 0.8rem;
-      font-size: 0.68rem;
-      min-height: 44px;
+      padding: 1.1rem 0.85rem;
+      font-size: 0.85rem;
+      min-height: 56px;
       scroll-snap-align: start;
+      z-index: 1; /* text above pill indicator */
     }
   }
 
   @media (min-width: 768px) {
     .nav__cat-link {
-      padding: 0.8rem 1.15rem;
+      padding: 0.95rem 1.35rem;
     }
   }
 
@@ -1083,11 +1093,11 @@ const allSlides = [...adminSlides, ...defaultSlides];
     function moveToLink(link: HTMLElement) {
       const containerRect = container!.getBoundingClientRect();
       const linkRect = link.getBoundingClientRect();
-      const scrollOffset = container!.closest('.nav__categories')?.scrollLeft || 0;
-      // On mobile, inset the indicator so it aligns with text, not full padding
+      // getBoundingClientRect already accounts for scroll position,
+      // so no need to add scrollLeft — that would double-count
       const isMobile = window.innerWidth < 768;
-      const inset = isMobile ? 10 : 0;
-      indicator!.style.left = `${linkRect.left - containerRect.left + scrollOffset + inset}px`;
+      const inset = isMobile ? 4 : 0;
+      indicator!.style.left = `${linkRect.left - containerRect.left + inset}px`;
       indicator!.style.width = `${linkRect.width - inset * 2}px`;
       indicator!.style.opacity = '1';
     }
