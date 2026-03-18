@@ -2,7 +2,7 @@
 import Admin from '@/layouts/Admin.astro';
 import { getSetting } from '@/lib/db';
 import { env } from 'cloudflare:workers';
-import type { TrendingSetting, HeroSetting, CollectionSetting, StoreSpecials, EmailSignupConfig, KidsSetting } from '@/lib/settings';
+import type { TrendingSetting, HeroSetting, CollectionSetting, StoreSpecials, EmailSignupConfig, KidsSetting, StaffPicksSetting } from '@/lib/settings';
 
 export const prerender = false;
 
@@ -15,9 +15,10 @@ const settingKeys = [
   'settings:trending',
   'settings:hero',
   'settings:kids',
+  'settings:staff-picks',
 ] as const;
 
-const [hours, collections, specials, contact, emailSignup, trending, hero, kids] = await Promise.all([
+const [hours, collections, specials, contact, emailSignup, trending, hero, kids, staffPicks] = await Promise.all([
   getSetting('settings:hours'),
   getSetting<CollectionSetting[]>('settings:collections'),
   getSetting<StoreSpecials>('settings:specials'),
@@ -26,11 +27,12 @@ const [hours, collections, specials, contact, emailSignup, trending, hero, kids]
   getSetting<TrendingSetting>('settings:trending'),
   getSetting<HeroSetting>('settings:hero'),
   getSetting<KidsSetting>('settings:kids'),
+  getSetting<StaffPicksSetting>('settings:staff-picks'),
 ]);
 
 // Fetch updated_at timestamps
 const timestampRows = await env.DB
-  .prepare('SELECT key, updated_at FROM settings WHERE key IN (?, ?, ?, ?, ?, ?, ?, ?)')
+  .prepare('SELECT key, updated_at FROM settings WHERE key IN (?, ?, ?, ?, ?, ?, ?, ?, ?)')
   .bind(...settingKeys)
   .all<{ key: string; updated_at: string }>();
 
@@ -101,6 +103,14 @@ const stats = [
     status: trending && trending.handles.length > 0 ? 'admin-status--success' : 'admin-status--neutral',
     updated: timeAgo(timestamps['settings:trending']),
     href: '/admin/trending',
+  },
+  {
+    label: 'Staff Picks',
+    desc: 'Hand-picked products featured on the home page',
+    value: staffPicks && staffPicks.handles.length > 0 ? `${staffPicks.handles.length} products` : 'None',
+    status: staffPicks && staffPicks.handles.length > 0 ? 'admin-status--success' : 'admin-status--neutral',
+    updated: timeAgo(timestamps['settings:staff-picks']),
+    href: '/admin/staff-picks',
   },
   {
     label: 'Hero Section',

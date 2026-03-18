@@ -1,5 +1,6 @@
 ---
 import { getCollectionsStatic } from '@/lib/settings';
+import { getCategoryNamesByCollection } from '@/lib/shopify';
 
 interface Props {
   announcements?: Array<{ text: string; link?: string; type: string }>;
@@ -12,6 +13,16 @@ const collectionSettings = await getCollectionsStatic();
 const enabledCollectionHandles = (collectionSettings ?? [])
   .filter(c => c.enabled)
   .map(c => c.handle);
+
+// Fetch subcategory taxonomy at build time — zero client-side API calls
+const roomCollections = [
+  { handle: 'living', label: 'Living' },
+  { handle: 'dining', label: 'Dining' },
+  { handle: 'bedroom', label: 'Bedroom' },
+  { handle: 'art-mirrors', label: 'Art & Mirrors' },
+  { handle: 'rugs', label: 'Rugs' },
+];
+const categoryMap = await getCategoryNamesByCollection(roomCollections.map(c => c.handle));
 
 // Default slides + any admin-configured announcements
 const defaultSlides = [
@@ -148,11 +159,23 @@ const allSlides = [...adminSlides, ...defaultSlides];
         All Products
       </a>
       <a href="/shop?collection=new-arrivals" data-astro-prefetch class="nav__cat-link">New Arrivals</a>
-      <a href="/shop?collection=living" data-astro-prefetch class="nav__cat-link">Living</a>
-      <a href="/shop?collection=dining" data-astro-prefetch class="nav__cat-link">Dining</a>
-      <a href="/shop?collection=bedroom" data-astro-prefetch class="nav__cat-link">Bedroom</a>
-      <a href="/shop?collection=art-mirrors" data-astro-prefetch class="nav__cat-link">Art &amp; Mirrors</a>
-      <a href="/shop?collection=rugs" data-astro-prefetch class="nav__cat-link">Rugs</a>
+      {roomCollections.map(col => {
+        const cats = categoryMap[col.handle] || [];
+        return (
+          <div class="nav__cat-dropdown" data-collection={col.handle}>
+            <a href={`/shop?collection=${col.handle}`} data-astro-prefetch class="nav__cat-link">
+              {col.label}
+            </a>
+            {cats.length > 0 && (
+              <div class="nav__cat-dropdown-menu">
+                {cats.map(cat => (
+                  <a href={`/shop?collection=${col.handle}&type=${encodeURIComponent(cat)}`}>{cat}</a>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
       <a href="/shop?sale=true" data-astro-prefetch class="nav__cat-link nav__cat-link--sale">Sale</a>
     </div>
   </nav>
@@ -765,6 +788,61 @@ const allSlides = [...adminSlides, ...defaultSlides];
     margin: 0 0.25rem;
   }
 
+  /* ─── Category Dropdowns ─────────────────── */
+  .nav__cat-dropdown {
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .nav__cat-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 160px;
+    background: var(--color-warm-white);
+    border: 1px solid var(--color-cream-dark);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(44, 44, 44, 0.1);
+    padding: 0.5rem 0;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, visibility 0.2s;
+    z-index: 60;
+  }
+
+  .nav__cat-dropdown:hover .nav__cat-dropdown-menu,
+  .nav__cat-dropdown-menu:hover {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .nav__cat-dropdown-menu a {
+    display: block;
+    padding: 0.5rem 1rem;
+    font-size: 0.82rem;
+    color: var(--color-charcoal);
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+
+  .nav__cat-dropdown-menu a:hover {
+    background: var(--color-cream-dark);
+    color: var(--color-gold);
+  }
+
+  .nav__cat-dropdown-menu--empty {
+    display: none;
+  }
+
+  /* Hide dropdowns on mobile - use full category page instead */
+  @media (max-width: 767px) {
+    .nav__cat-dropdown-menu {
+      display: none;
+    }
+  }
+
 </style>
 
 <script is:inline define:vars={{ enabledCollectionHandles }}>
@@ -887,7 +965,7 @@ const allSlides = [...adminSlides, ...defaultSlides];
 
       // Build GraphQL aliases for each enabled collection so we only get products
       // that have a pre-built static page.
-      const productFragment = `{ title handle productType productCategory { productTaxonomyNode { name fullName } } priceRange { minVariantPrice { amount } } images(first: 1) { edges { node { url } } } }`;
+      const productFragment = `{ title handle productType priceRange { minVariantPrice { amount } } images(first: 1) { edges { node { url } } } }`;
       let gqlQuery: string;
       if (enabledHandles.length > 0) {
         const aliases = enabledHandles
@@ -930,8 +1008,6 @@ const allSlides = [...adminSlides, ...defaultSlides];
         price: e.node.priceRange.minVariantPrice.amount,
         image: e.node.images.edges[0]?.node?.url || '',
         type: (e.node.productType || '').toLowerCase(),
-        category: e.node.productCategory?.productTaxonomyNode?.name || '',
-        categoryFull: e.node.productCategory?.productTaxonomyNode?.fullName || '',
       }));
 
       // Cache in sessionStorage

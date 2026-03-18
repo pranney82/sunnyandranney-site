@@ -1,0 +1,530 @@
+---
+import Admin from '@/layouts/Admin.astro';
+import { getSetting } from '@/lib/db';
+import { getCollectionByHandle } from '@/lib/shopify';
+import { getCollectionsStatic } from '@/lib/settings';
+import type { StaffPicksSetting } from '@/lib/settings';
+
+export const prerender = false;
+
+const MAX_PICKS = 6;
+
+// Load enabled collection handles from admin settings
+const collectionSettings = await getCollectionsStatic();
+const enabledHandles = collectionSettings
+  ?.filter(c => c.enabled)
+  .sort((a, b) => a.order - b.order)
+  .map(c => c.handle) ?? [];
+
+// Fetch products for each enabled collection (deduplicated across collections)
+type CollectionData = { handle: string; title: string; products: any[] };
+let collectionData: CollectionData[] = [];
+const seenProductIds = new Set<string>();
+
+try {
+  const results = await Promise.all(
+    enabledHandles.map(h => getCollectionByHandle(h, 100))
+  );
+  for (const c of results) {
+    if (!c) continue;
+    const uniqueProducts = c.products.filter((p: any) => {
+      if (seenProductIds.has(p.id)) return false;
+      seenProductIds.add(p.id);
+      return true;
+    });
+    collectionData.push({ handle: c.handle, title: c.title, products: uniqueProducts });
+  }
+} catch (e) {
+  console.error('Failed to fetch collections:', e);
+}
+
+// Load current staff picks setting
+const saved = await getSetting<StaffPicksSetting>('settings:staff-picks');
+const savedHandles: string[] = saved?.handles ?? [];
+
+const initialCollection = collectionData[0]?.handle ?? '';
+---
+
+<Admin title="Staff Picks">
+  <div class="admin-header">
+    <div>
+      <h2>Staff Picks</h2>
+      <p>Pick up to {MAX_PICKS} products your team is loving right now. These appear on the home page.</p>
+    </div>
+    <div class="admin-unsaved-badge" aria-live="polite">
+      <span class="admin-unsaved-dot"></span>
+      Unsaved changes
+    </div>
+  </div>
+
+  {collectionData.length === 0 ? (
+    <div class="admin-card">
+      <p style="color: var(--admin-text-light);">
+        No enabled collections found. Go to <a href="/admin/collections">Collections</a> to enable some first.
+      </p>
+    </div>
+  ) : (
+    <form id="picks-form">
+      <div class="picks-toolbar">
+        <span class="picks-count" id="picks-count">
+          {savedHandles.length} of {MAX_PICKS} selected
+        </span>
+        <button type="button" class="admin-btn admin-btn--outline" id="clear-btn">Clear All</button>
+      </div>
+
+      <!-- Collection Tabs -->
+      <div class="admin-card collection-tab-card">
+        <div class="collection-tab-top">
+          <div class="field-label">Collection</div>
+          <input
+            type="search"
+            id="product-search"
+            class="product-search"
+            placeholder="Search products…"
+            autocomplete="off"
+          />
+        </div>
+        <div class="collection-tabs" role="tablist">
+          {collectionData.map(c => (
+            <button
+              type="button"
+              role="tab"
+              class:list={['collection-tab', { active: c.handle === initialCollection }]}
+              data-collection={c.handle}
+              aria-selected={c.handle === initialCollection ? 'true' : 'false'}
+            >
+              {c.title}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <!-- Product Grid per Collection -->
+      {collectionData.map(c => (
+        <div
+          class:list={['collection-products', { 'collection-products--hidden': c.handle !== initialCollection }]}
+          data-collection={c.handle}
+          role="tabpanel"
+        >
+          <div class="admin-card">
+            <div class="field-label">{c.title}</div>
+            {c.products.length === 0 ? (
+              <p style="color: var(--admin-text-light); font-size: 0.85rem; margin-top: 0.5rem;">No products in this collection.</p>
+            ) : (
+              <div class="picks-grid">
+                {c.products.map((p: any) => {
+                  const img = p.images.edges[0]?.node;
+                  const price = p.priceRange.minVariantPrice;
+                  const isSelected = savedHandles.includes(p.handle);
+                  const selOrder = savedHandles.indexOf(p.handle);
+                  return (
+                    <label
+                      class:list={['product-pick', { selected: isSelected }]}
+                      data-handle={p.handle}
+                      data-order={isSelected ? selOrder : 99}
+                    >
+                      <input
+                        type="checkbox"
+                        name="handle"
+                        value={p.handle}
+                        checked={isSelected}
+                        class="product-pick-checkbox"
+                      />
+                      {isSelected && (
+                        <span class="product-pick-badge">{selOrder + 1}</span>
+                      )}
+                      <div class="product-pick-img">
+                        {img
+                          ? <img src={`${img.url}&width=200`} alt={p.title} width="200" height="160" />
+                          : <div class="product-pick-ph">{p.title.charAt(0)}</div>
+                        }
+                      </div>
+                      <div class="product-pick-info">
+                        <strong>{p.title}</strong>
+                        <span>${parseFloat(price.amount).toFixed(2)}</span>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+
+      <div class="admin-save-bar">
+        <button type="submit" class="admin-btn admin-btn--primary" id="save-btn">
+          <span class="btn-spinner"></span>
+          <span class="btn-label">Save Staff Picks</span>
+        </button>
+        <span class="admin-save-hint">
+          <kbd class="admin-kbd">⌘S</kbd> to save
+        </span>
+      </div>
+    </form>
+  )}
+</Admin>
+
+<style>
+  .collection-tab-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .collection-tab-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .product-search {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-radius);
+    font-size: 0.85rem;
+    color: var(--admin-text);
+    background: var(--admin-bg);
+    width: 220px;
+    max-width: 100%;
+    transition: border-color 0.15s;
+    font-family: inherit;
+  }
+
+  .product-search:focus {
+    outline: none;
+    border-color: var(--admin-accent);
+  }
+
+  .collection-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .collection-tab {
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--admin-border);
+    border-radius: 2rem;
+    background: var(--admin-bg);
+    color: var(--admin-text);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+
+  .collection-tab:hover {
+    border-color: #bbb;
+  }
+
+  .collection-tab.active {
+    background: var(--admin-accent, #f59e0b);
+    border-color: var(--admin-accent, #f59e0b);
+    color: #000;
+    font-weight: 600;
+  }
+
+  .collection-products--hidden {
+    display: none;
+  }
+
+  .field-label {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--admin-text);
+    margin-bottom: 0.5rem;
+  }
+
+  .picks-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .picks-count {
+    font-size: 0.82rem;
+    color: var(--admin-text-light);
+    font-weight: 500;
+  }
+
+  .picks-count.at-max {
+    color: var(--admin-accent, #f59e0b);
+    font-weight: 600;
+  }
+
+  .picks-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  @media (max-width: 1200px) {
+    .picks-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+  @media (max-width: 900px) {
+    .picks-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .picks-grid { grid-template-columns: repeat(2, 1fr); }
+
+    .collection-tab-top {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .product-search {
+      width: 100%;
+    }
+  }
+
+  .product-pick {
+    position: relative;
+    background: var(--admin-card);
+    border: 2px solid var(--admin-border);
+    border-radius: var(--admin-radius);
+    cursor: pointer;
+    transition: box-shadow 0.2s, border-color 0.2s;
+    overflow: hidden;
+    display: block;
+    user-select: none;
+  }
+
+  .product-pick:hover {
+    border-color: #ccc;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+
+  .product-pick.selected {
+    border-color: var(--admin-accent, #f59e0b);
+    box-shadow: 0 2px 10px rgba(255, 212, 0, 0.25);
+  }
+
+  .product-pick-checkbox {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .product-pick-badge {
+    position: absolute;
+    top: 0.4rem;
+    right: 0.4rem;
+    background: var(--admin-accent, #f59e0b);
+    color: #000;
+    font-size: 0.72rem;
+    font-weight: 700;
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+  }
+
+  .product-pick-img {
+    width: 100%;
+    height: 120px;
+    overflow: hidden;
+    background: #f0f0f0;
+  }
+
+  .product-pick-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.2s;
+  }
+
+  .product-pick:hover .product-pick-img img {
+    transform: scale(1.03);
+  }
+
+  .product-pick-ph {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--admin-text-light);
+  }
+
+  .product-pick-info {
+    padding: 0.6rem 0.75rem;
+  }
+
+  .product-pick-info strong {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .product-pick-info span {
+    font-size: 0.78rem;
+    color: var(--admin-text-light);
+    display: block;
+    margin-top: 0.1rem;
+  }
+</style>
+
+<script>
+  const MAX_PICKS = 6;
+
+  function getAllCards(): HTMLElement[] {
+    return [...document.querySelectorAll<HTMLElement>('.product-pick')];
+  }
+
+  function getSelected(): HTMLElement[] {
+    return getAllCards()
+      .filter(c => c.classList.contains('selected'))
+      .sort((a, b) => parseInt(a.dataset.order || '99') - parseInt(b.dataset.order || '99'));
+  }
+
+  function updateBadges() {
+    const selected = getSelected();
+    getAllCards().forEach(card => {
+      let badge = card.querySelector<HTMLElement>('.product-pick-badge');
+      if (card.classList.contains('selected')) {
+        const idx = selected.indexOf(card);
+        if (!badge) {
+          badge = document.createElement('span');
+          badge.className = 'product-pick-badge';
+          card.insertBefore(badge, card.firstChild);
+        }
+        badge.textContent = String(idx + 1);
+      } else {
+        badge?.remove();
+      }
+    });
+  }
+
+  function updateCount() {
+    const n = getSelected().length;
+    const el = document.getElementById('picks-count')!;
+    el.textContent = `${n} of ${MAX_PICKS} selected`;
+    el.classList.toggle('at-max', n >= MAX_PICKS);
+  }
+
+  // Product search
+  document.getElementById('product-search')?.addEventListener('input', (e) => {
+    const q = (e.target as HTMLInputElement).value.trim().toLowerCase();
+    getAllCards().forEach(card => {
+      const title = card.querySelector<HTMLElement>('.product-pick-info strong')?.textContent?.toLowerCase() ?? '';
+      card.style.display = !q || title.includes(q) ? '' : 'none';
+    });
+  });
+
+  // Collection tab switching
+  document.querySelectorAll<HTMLElement>('.collection-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const handle = tab.dataset.collection!;
+
+      document.querySelectorAll<HTMLElement>('.collection-tab').forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      tab.classList.add('active');
+      tab.setAttribute('aria-selected', 'true');
+
+      document.querySelectorAll<HTMLElement>('.collection-products').forEach(g => {
+        g.classList.toggle('collection-products--hidden', g.dataset.collection !== handle);
+      });
+    });
+  });
+
+  // Product selection (event delegation across all grids)
+  document.getElementById('picks-form')?.addEventListener('click', (e) => {
+    const card = (e.target as HTMLElement).closest<HTMLElement>('.product-pick');
+    if (!card) return;
+
+    e.preventDefault();
+
+    const cb = card.querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+    const isSelected = card.classList.contains('selected');
+    const totalSelected = getSelected().length;
+
+    if (!isSelected && totalSelected >= MAX_PICKS) {
+      const el = document.getElementById('picks-count')!;
+      el.style.color = 'var(--admin-error, #dc2626)';
+      setTimeout(() => el.style.color = '', 800);
+      return;
+    }
+
+    card.classList.toggle('selected', !isSelected);
+    cb.checked = !isSelected;
+
+    if (!isSelected) {
+      const currentMax = Math.max(
+        ...getSelected().map(c => parseInt(c.dataset.order || '-1')),
+        -1
+      );
+      card.dataset.order = String(currentMax + 1);
+    } else {
+      card.dataset.order = '99';
+    }
+
+    updateBadges();
+    updateCount();
+  });
+
+  document.getElementById('clear-btn')?.addEventListener('click', () => {
+    getAllCards().forEach(card => {
+      card.classList.remove('selected');
+      const cb = card.querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+      if (cb) cb.checked = false;
+      card.dataset.order = '99';
+    });
+    updateBadges();
+    updateCount();
+  });
+
+  document.getElementById('picks-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('save-btn') as HTMLButtonElement;
+    (window as any).setButtonLoading(btn, true);
+
+    const handles = getSelected().map(card => card.dataset.handle!);
+
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'settings:staff-picks', value: { handles } }),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      const data = await res.json();
+      if (data.warning) {
+        (window as any).showToast(`Saved, but site won't update: ${data.warning}`, true);
+      } else {
+        (window as any).showToast('Staff picks saved — site will rebuild shortly');
+      }
+    } catch {
+      (window as any).showToast('Failed to save', true);
+    } finally {
+      (window as any).setButtonLoading(btn, false);
+    }
+  });
+
+  // ⌘S save
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+      e.preventDefault();
+      document.getElementById('picks-form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    }
+  });
+
+  // Initialize
+  updateCount();
+</script>

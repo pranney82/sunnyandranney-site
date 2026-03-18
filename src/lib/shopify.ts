@@ -41,6 +41,14 @@ const PRODUCT_FRAGMENT = `
     description
     descriptionHtml
     productType
+    category {
+      id
+      name
+      ancestors {
+        id
+        name
+      }
+    }
     tags
     vendor
     availableForSale
@@ -315,6 +323,37 @@ export async function getProductsByType(productType: string, first = 8, excludeH
   }
 }
 
+// ─── Category Taxonomy (build-time) ─────────────────────────────
+
+export async function getCategoryNamesByCollection(
+  handles: string[]
+): Promise<Record<string, string[]>> {
+  const aliases = handles
+    .map((h, i) => `c${i}: collection(handle: ${JSON.stringify(h)}) { products(first: 100) { edges { node { category { name } } } } }`)
+    .join(' ');
+
+  try {
+    const data = await shopifyFetch<Record<string, { products: { edges: Array<{ node: { category: { name: string } | null } }> } } | null>>(
+      `{ ${aliases} }`
+    );
+
+    const result: Record<string, string[]> = {};
+    handles.forEach((handle, i) => {
+      const edges = data[`c${i}`]?.products?.edges || [];
+      const names = new Set<string>();
+      for (const e of edges) {
+        const name = e.node.category?.name;
+        if (name && name !== 'Uncategorized') names.add(name);
+      }
+      result[handle] = Array.from(names).sort();
+    });
+    return result;
+  } catch (err) {
+    console.error('[shopify] Failed to fetch category names:', err);
+    return Object.fromEntries(handles.map(h => [h, []]));
+  }
+}
+
 // ─── Cart / Checkout ─────────────────────────────────────────────
 
 export async function createCart(lines: Array<{ merchandiseId: string; quantity: number }>) {
@@ -464,6 +503,11 @@ export interface Product {
   description: string;
   descriptionHtml: string;
   productType: string;
+  category: {
+    id: string;
+    name: string;
+    ancestors: Array<{ id: string; name: string }>;
+  } | null;
   tags: string[];
   vendor: string;
   availableForSale: boolean;

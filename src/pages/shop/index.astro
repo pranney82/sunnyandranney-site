@@ -133,10 +133,12 @@ const itemListSchema = hasShopify ? {
   <section class="filters-bar">
     <div class="container">
       <div class="toolbar__row">
-        <div class="toolbar__categories">
-          {categoryFilters.map(({ filter, label }) => (
-            <button class={`filter-btn${filter === 'all' ? ' filter-btn--active' : ''}`} data-filter={filter}>{label} <span class="filter-btn__count" data-count-for={filter}></span></button>
-          ))}
+        <div class="toolbar__categories-wrap">
+          <div class="toolbar__categories" id="category-nav">
+            {categoryFilters.map(({ filter, label }) => (
+              <button class={`filter-btn${filter === 'all' ? ' filter-btn--active' : ''}`} data-filter={filter}>{label} <span class="filter-btn__count" data-count-for={filter}></span></button>
+            ))}
+          </div>
         </div>
         <div class="toolbar__actions">
           <span class="toolbar__count" id="product-count"></span>
@@ -235,6 +237,7 @@ const itemListSchema = hasShopify ? {
                 )}
                 <div class="product-card"
                   data-type={product.productType.toLowerCase()}
+                  data-category={product.category?.name || ''}
                   data-price={parseFloat(price.amount)}
                   data-title={product.title}
                   data-handle={product.handle}
@@ -512,16 +515,36 @@ const itemListSchema = hasShopify ? {
   .toolbar__categories {
     display: flex;
     flex-wrap: nowrap;
-    gap: 0.35rem;
+    gap: 0.5rem;
     overflow-x: auto;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
     flex: 1;
     min-width: 0;
-    -webkit-mask-image: linear-gradient(to right, black calc(100% - 32px), transparent 100%);
-    mask-image: linear-gradient(to right, black calc(100% - 32px), transparent 100%);
+    scroll-snap-type: x mandatory;
+    scroll-padding-left: 0.5rem;
+    padding-right: 2.5rem;
+    position: relative;
   }
   .toolbar__categories::-webkit-scrollbar { display: none; }
+
+  /* Scroll fade indicator */
+  .toolbar__categories-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+  }
+  .toolbar__categories-wrap::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 3rem;
+    background: linear-gradient(to left, var(--color-cream) 30%, transparent);
+    pointer-events: none;
+    z-index: 1;
+  }
 
   .toolbar__actions {
     display: flex;
@@ -535,19 +558,26 @@ const itemListSchema = hasShopify ? {
   .filter-toggle__text { display: none; }
 
   .filter-btn {
-    padding: 0.4rem 0.85rem;
-    font-size: 0.7rem;
+    padding: 0.55rem 1rem;
+    font-size: 0.75rem;
     font-weight: 500;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--color-stone);
     border: 1px solid transparent;
     border-radius: 100px;
-    transition: color 0.18s, border-color 0.18s;
+    transition: color 0.18s, border-color 0.18s, background-color 0.18s, transform 0.1s;
     background: transparent;
     white-space: nowrap;
     flex-shrink: 0;
     cursor: pointer;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    scroll-snap-align: start;
+  }
+  .filter-btn:active {
+    transform: scale(0.97);
   }
 
   .filter-btn:hover { color: var(--color-charcoal); }
@@ -739,8 +769,11 @@ const itemListSchema = hasShopify ? {
 
     .toolbar__categories {
       gap: 0.25rem;
-      -webkit-mask-image: none;
-      mask-image: none;
+      scroll-snap-type: none;
+      padding-right: 0;
+    }
+    .toolbar__categories-wrap::after {
+      display: none;
     }
 
     .filter-btn {
@@ -1846,6 +1879,7 @@ const itemListSchema = hasShopify ? {
   function syncURL() {
     const params = new URLSearchParams();
     if (activeCollection) params.set('collection', activeCollection);
+    if (activeProductType) params.set('type', activeProductType);
     if (activeFilter !== 'all') params.set('category', activeFilter);
     if (activeSearch) params.set('q', activeSearch);
     if (priceMin > 0) params.set('pmin', String(priceMin));
@@ -1874,6 +1908,15 @@ const itemListSchema = hasShopify ? {
         if (shopTitle) shopTitle.textContent = 'The Collection';
         if (clearLink) clearLink.style.display = 'none';
         if (searchBanner) searchBanner.style.display = 'none';
+        visiblePage = 0;
+        applyAll();
+      }});
+    }
+
+    if (activeProductType) {
+      chips.push({ label: activeProductType, action: () => {
+        activeProductType = '';
+        if (searchBanner && !activeCollection) searchBanner.style.display = 'none';
         visiblePage = 0;
         applyAll();
       }});
@@ -1998,9 +2041,11 @@ const itemListSchema = hasShopify ? {
     });
   }
 
-  // ─── Collection filter from URL ─────────────
+  // ─── Collection + Product Type filter from URL ─────────────
   const urlParams = new URLSearchParams(window.location.search);
   const collectionParam = urlParams.get('collection') || '';
+  const productTypeParam = urlParams.get('type') || '';
+  let activeProductType = productTypeParam;
   const shopTitle = document.getElementById('shop-title');
   const clearCollectionLink = document.getElementById('shop-clear-collection');
   const titles = (window as any).__collectionTitles || {};
@@ -2012,7 +2057,13 @@ const itemListSchema = hasShopify ? {
     if (clearCollectionLink) clearCollectionLink.style.display = '';
     // Show collection context in the toolbar
     if (searchBanner) searchBanner.style.display = '';
-    if (searchBannerText) searchBannerText.textContent = `Viewing: ${collectionTitle}`;
+    const viewingText = productTypeParam ? `${collectionTitle} > ${productTypeParam}` : collectionTitle;
+    if (searchBannerText) searchBannerText.textContent = `Viewing: ${viewingText}`;
+    if (searchClear) searchClear.textContent = 'View all products';
+  } else if (productTypeParam) {
+    // Product type without collection
+    if (searchBanner) searchBanner.style.display = '';
+    if (searchBannerText) searchBannerText.textContent = `Viewing: ${productTypeParam}`;
     if (searchClear) searchClear.textContent = 'View all products';
   }
 
@@ -2032,6 +2083,7 @@ const itemListSchema = hasShopify ? {
 
     cards.forEach(card => {
       const type = card.getAttribute('data-type') || '';
+      const category = card.getAttribute('data-category') || '';
       const title = (card.dataset.title || '').toLowerCase();
       const tags = card.dataset.tags || '';
       const desc = card.dataset.description || '';
@@ -2039,18 +2091,20 @@ const itemListSchema = hasShopify ? {
       const cardPrice = parseFloat(card.dataset.price || '0');
       const collections = card.dataset.collections || '';
       const matchesCollection = !activeCollection || collections.split(',').includes(activeCollection);
+      const matchesProductType = !activeProductType || category === activeProductType;
       const matchesFilter = activeFilter === 'all'
         || (activeFilter === 'sale' ? !!card.querySelector('.product-card__badge')?.textContent?.trim().includes('Sale')
         : collections.split(',').includes(activeFilter));
       const matchesSearch = !activeSearch ||
         title.includes(activeSearch) ||
         type.includes(activeSearch) ||
+        category.toLowerCase().includes(activeSearch) ||
         tags.includes(activeSearch) ||
         desc.includes(activeSearch);
       const matchesPrice = cardPrice >= priceMin && cardPrice <= priceMax;
       const matchesSale = !activeSale || !!card.querySelector('.product-card__badge')?.textContent?.trim().includes('Sale');
 
-      if (matchesCollection && matchesFilter && matchesSearch && matchesPrice && matchesSale) {
+      if (matchesCollection && matchesProductType && matchesFilter && matchesSearch && matchesPrice && matchesSale) {
         matchingCards.push(card);
         matchCount++;
       } else {
@@ -2094,6 +2148,15 @@ const itemListSchema = hasShopify ? {
       activeFilter = (btn as HTMLElement).getAttribute('data-filter') || 'all';
       filterBtns.forEach(b => b.classList.remove('filter-btn--active'));
       btn.classList.add('filter-btn--active');
+      // Auto-scroll selected category into view on mobile
+      const nav = document.getElementById('category-nav');
+      if (nav) {
+        const navRect = nav.getBoundingClientRect();
+        const btnRect = btn.getBoundingClientRect();
+        if (btnRect.left < navRect.left || btnRect.right > navRect.right) {
+          btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+      }
       // Update shop title based on selected category
       const shopTitle = document.getElementById('shop-title');
       if (shopTitle) shopTitle.textContent = categoryTitles[activeFilter] || 'The Collection';
@@ -2187,8 +2250,10 @@ const itemListSchema = hasShopify ? {
     activeFilter = category;
     filterBtns.forEach(b => b.classList.remove('filter-btn--active'));
     const btn = document.querySelector(`[data-filter="${category}"]`);
-    if (btn) btn.classList.add('filter-btn--active');
-    else {
+    if (btn) {
+      btn.classList.add('filter-btn--active');
+      setTimeout(() => btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }), 100);
+    } else {
       // If no matching button, reset to all
       document.querySelector('[data-filter="all"]')?.classList.add('filter-btn--active');
     }
@@ -2247,6 +2312,7 @@ const itemListSchema = hasShopify ? {
   function clearAllFilters() {
     activeSearch = '';
     activeCollection = '';
+    activeProductType = '';
     activeFilter = 'all';
     activeSale = false;
     priceMin = 0;

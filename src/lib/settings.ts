@@ -82,6 +82,10 @@ export interface KidsSetting {
   kids: KidStory[];
 }
 
+export interface StaffPicksSetting {
+  handles: string[];
+}
+
 export interface TeamMember {
   name: string;
   role: string;
@@ -146,6 +150,10 @@ export async function getKidsStatic(): Promise<KidsSetting | null> {
 
 export async function getTeamStatic(): Promise<TeamSetting | null> {
   return loadLocalJson<TeamSetting>('/src/content/settings/team.json');
+}
+
+export async function getStaffPicksStatic(): Promise<StaffPicksSetting | null> {
+  return loadLocalJson<StaffPicksSetting>('/src/content/settings/staff-picks.json');
 }
 
 // ─── Formatting helpers (shared by static pages + chatbot) ──

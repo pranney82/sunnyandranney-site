@@ -21,6 +21,7 @@ const SETTINGS_PATHS: Record<string, string> = {
   'settings:hero': 'src/content/settings/hero.json',
   'settings:kids': 'src/content/settings/kids.json',
   'settings:team': 'src/content/settings/team.json',
+  'settings:staff-picks': 'src/content/settings/staff-picks.json',
 };
 
 // ─── Settings ────────────────────────────────────────────────
