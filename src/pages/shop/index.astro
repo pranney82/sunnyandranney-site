@@ -248,8 +248,8 @@ const itemListSchema = hasShopify ? {
                   style={idx >= 24 ? 'display:none;' : ''}
                   data-page={Math.floor(idx / 24)}
                 >
-                  {isOnSale && <span class="product-card__badge">Sale</span>}
-                  {!isOnSale && !product.availableForSale && <span class="product-card__badge product-card__badge--sold">Sold Out</span>}
+                  {!product.availableForSale && <span class="product-card__badge product-card__badge--sold">Sold Out</span>}
+                  {product.availableForSale && isOnSale && <span class="product-card__badge">Sale</span>}
 
                   {/* Wishlist heart */}
                   <button class="product-card__wishlist" data-handle={product.handle} aria-label="Add to wishlist">

@@ -1,11 +1,9 @@
 /**
- * Settings reader that works at both BUILD TIME and RUNTIME.
+ * Build-time settings reader for static pages.
  *
- * - Static pages (build time): reads from local JSON files in src/content/settings/
- *   These files are committed by the admin panel via GitHub API, which triggers
- *   a CF Pages rebuild so static pages pick up the new data.
- *
- * - SSR pages (runtime): reads from D1 for sub-ms edge reads.
+ * Reads from local JSON files in src/content/settings/ that are committed
+ * by the admin panel via GitHub API. Each commit triggers a CF Pages rebuild
+ * so static pages pick up the new data.
  */
 
 // ─── Types ──────────────────────────────────────────────────
@@ -98,7 +96,22 @@ export interface TeamSetting {
   members: TeamMember[];
 }
 
-// ─── Build-time readers (for static pages) ──────────────────
+// ─── Setting key → type map ─────────────────────────────────
+
+interface SettingsMap {
+  'hours': StoreHours;
+  'collections': CollectionSetting[];
+  'specials': StoreSpecials;
+  'contact': ContactInfo;
+  'email-signup': EmailSignupConfig;
+  'trending': TrendingSetting;
+  'hero': HeroSetting;
+  'kids': KidsSetting;
+  'team': TeamSetting;
+  'staff-picks': StaffPicksSetting;
+}
+
+// ─── Build-time reader ──────────────────────────────────────
 
 // Vite's glob import — statically analyzable so it works in CF Pages production builds.
 // Dynamic import(/* @vite-ignore */) is NOT bundled correctly in production.
@@ -108,53 +121,28 @@ const _settingsFiles = import.meta.glob('/src/content/settings/*.json', {
 });
 
 /**
- * Safely read a settings JSON file bundled at build time.
+ * Read a settings JSON file bundled at build time.
  * Returns null if the file doesn't exist (first deploy before any admin saves).
+ *
+ * Synchronous — all JSON is eagerly loaded via Vite glob at bundle time.
+ * Callers may `await` this safely (await on a non-Promise resolves immediately).
  */
-function loadLocalJson<T>(path: string): T | null {
-  const data = _settingsFiles[path];
-  return data !== undefined ? (data as T) : null;
+function getSetting<K extends keyof SettingsMap>(key: K): SettingsMap[K] | null {
+  const data = _settingsFiles[`/src/content/settings/${key}.json`];
+  return data !== undefined ? (data as SettingsMap[K]) : null;
 }
 
-export async function getHoursStatic(): Promise<StoreHours | null> {
-  return loadLocalJson<StoreHours>('/src/content/settings/hours.json');
-}
-
-export async function getCollectionsStatic(): Promise<CollectionSetting[] | null> {
-  return loadLocalJson<CollectionSetting[]>('/src/content/settings/collections.json');
-}
-
-export async function getSpecialsStatic(): Promise<StoreSpecials | null> {
-  return loadLocalJson<StoreSpecials>('/src/content/settings/specials.json');
-}
-
-export async function getContactStatic(): Promise<ContactInfo | null> {
-  return loadLocalJson<ContactInfo>('/src/content/settings/contact.json');
-}
-
-export async function getEmailSignupStatic(): Promise<EmailSignupConfig | null> {
-  return loadLocalJson<EmailSignupConfig>('/src/content/settings/email-signup.json');
-}
-
-export async function getTrendingStatic(): Promise<TrendingSetting | null> {
-  return loadLocalJson<TrendingSetting>('/src/content/settings/trending.json');
-}
-
-export async function getHeroStatic(): Promise<HeroSetting | null> {
-  return loadLocalJson<HeroSetting>('/src/content/settings/hero.json');
-}
-
-export async function getKidsStatic(): Promise<KidsSetting | null> {
-  return loadLocalJson<KidsSetting>('/src/content/settings/kids.json');
-}
-
-export async function getTeamStatic(): Promise<TeamSetting | null> {
-  return loadLocalJson<TeamSetting>('/src/content/settings/team.json');
-}
-
-export async function getStaffPicksStatic(): Promise<StaffPicksSetting | null> {
-  return loadLocalJson<StaffPicksSetting>('/src/content/settings/staff-picks.json');
-}
+// Named exports for discoverability — thin wrappers over getSetting
+export function getHoursStatic() { return getSetting('hours'); }
+export function getCollectionsStatic() { return getSetting('collections'); }
+export function getSpecialsStatic() { return getSetting('specials'); }
+export function getContactStatic() { return getSetting('contact'); }
+export function getEmailSignupStatic() { return getSetting('email-signup'); }
+export function getTrendingStatic() { return getSetting('trending'); }
+export function getHeroStatic() { return getSetting('hero'); }
+export function getKidsStatic() { return getSetting('kids'); }
+export function getTeamStatic() { return getSetting('team'); }
+export function getStaffPicksStatic() { return getSetting('staff-picks'); }
 
 // ─── Formatting helpers (shared by static pages + chatbot) ──
 
@@ -204,12 +192,7 @@ export function getUpcomingHolidays(hours: StoreHours, limit = 3): Array<StoreHo
     .map(h => {
       const d = new Date(h.date + 'T12:00:00');
       const dayLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      let timeLabel: string;
-      if (h.closed) {
-        timeLabel = 'Closed';
-      } else {
-        timeLabel = `${formatTime(h.open)}–${formatTime(h.close)}`;
-      }
+      const timeLabel = h.closed ? 'Closed' : `${formatTime(h.open)}–${formatTime(h.close)}`;
       return { ...h, formatted: `${h.label} (${dayLabel}): ${timeLabel}` };
     });
 }
