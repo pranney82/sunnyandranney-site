@@ -8,7 +8,7 @@ import { getHeroStatic, getStaffPicksStatic } from '@/lib/settings';
 // Fetch live stats from SOARD at build time
 let soardStats: { roomMakeovers: number; yearsGiving: number } | null = null;
 try {
-  const res = await fetch('https://soard-site.pages.dev/api/stats.json');
+  const res = await fetch('https://soard-site.pages.dev/api/stats.json', { signal: AbortSignal.timeout(3000) });
   if (res.ok) soardStats = await res.json();
 } catch { /* use fallbacks */ }
 const statRooms = soardStats?.roomMakeovers ?? 269;

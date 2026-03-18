@@ -795,7 +795,7 @@ const itemListSchema = hasShopify ? {
     border: 1.5px solid var(--color-cream-dark);
     border-radius: 10px;
     font-family: var(--font-body);
-    font-size: 0.9rem;
+    font-size: 1rem; /* ≥16px prevents iOS Safari auto-zoom on focus */
     background: var(--color-warm-white);
     color: var(--color-charcoal);
     outline: none;
@@ -954,7 +954,7 @@ const itemListSchema = hasShopify ? {
       flex: none;
       width: 72px;
       padding: 0.4rem 0.5rem;
-      font-size: 0.78rem;
+      font-size: 1rem;
       border-radius: 6px;
       border-width: 1px;
     }
@@ -1577,10 +1577,10 @@ const itemListSchema = hasShopify ? {
     z-index: 501;
     background: var(--color-cream);
     width: 100%;
-    max-height: 90dvh;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
+    max-height: 85dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     opacity: 0;
     visibility: hidden;
     transform: translateY(100%);
@@ -1645,19 +1645,28 @@ const itemListSchema = hasShopify ? {
   .qv-close:hover { background: var(--color-gold); }
 
   .qv-body {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
   }
 
   @media (min-width: 640px) {
-    .qv-body { grid-template-columns: 1fr 1fr; }
+    .qv-body {
+      flex-direction: row;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+    .qv-body > * { flex: 1; }
   }
 
   .qv-gallery {
     background: var(--color-cream-dark);
     aspect-ratio: 3 / 4;
-    max-height: 45dvh;
+    flex-shrink: 1;
+    min-height: 0;
     position: relative;
     overflow: hidden;
   }
@@ -1707,6 +1716,10 @@ const itemListSchema = hasShopify ? {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    flex-shrink: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 
   @media (min-width: 640px) {
@@ -2300,7 +2313,15 @@ const itemListSchema = hasShopify ? {
         // Sync panel button active states
         panelCategoryList.querySelectorAll('.toolbar__category-btn').forEach(b => b.classList.remove('toolbar__category-btn--active'));
         if (activeProductType) btn.classList.add('toolbar__category-btn--active');
+        // Close expand row and scroll to products
+        if (subcatsExpand) subcatsExpand.classList.remove('is-open');
         applyAll();
+        const gridEl = document.getElementById('shop-grid');
+        const barEl = document.querySelector('.filters-bar');
+        if (gridEl && barEl) {
+          const top = gridEl.getBoundingClientRect().top + window.scrollY - barEl.offsetHeight - parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-height') || '0');
+          window.scrollTo({ top, behavior: 'smooth' });
+        }
       });
       panelCategoryList.appendChild(btn);
     }
@@ -2374,31 +2395,26 @@ const itemListSchema = hasShopify ? {
     if (noResults) noResults.style.display = matchCount === 0 ? '' : 'none';
     if (grid) grid.style.display = matchCount === 0 ? 'none' : '';
 
-    // Position editorial card at a random spot among visible products
-    // On initial render with no filters, keep the build-time position (zero JS cost)
+    // Position editorial card among visible products
+    // Initial render with no filters: build-time HTML is already correct — zero JS cost
     const editorial = document.getElementById('grid-editorial') as HTMLElement;
     if (editorial) {
       const hideEditorial = activeSearch || activeSale;
+      const noFilters = !activeCollection && !activeProductType && !activeSearch && !activeSale;
       if (hideEditorial) {
         editorial.style.display = 'none';
-      } else if (_isInitialRender && !activeCollection && !activeProductType && !activeSearch && !activeSale) {
-        // Build-time position is already correct — do nothing
-        editorial.style.display = '';
+      } else if (_isInitialRender && noFilters) {
+        // Build-time position is correct — touch nothing
       } else {
         const visibleCards = matchingCards.filter(c => c.style.display !== 'none');
-        if (visibleCards.length < 3) {
+        if (visibleCards.length < 4) {
           editorial.style.display = 'none';
         } else {
           const minPos = 3;
-          const maxPos = Math.min(visibleCards.length, shownCount);
+          const maxPos = visibleCards.length;
           const randomIdx = minPos + Math.floor(Math.random() * (maxPos - minPos));
-          const refCard = visibleCards[randomIdx];
-          if (refCard && grid) {
-            grid.insertBefore(editorial, refCard);
-            editorial.style.display = '';
-          } else {
-            editorial.style.display = 'none';
-          }
+          grid!.insertBefore(editorial, visibleCards[randomIdx]);
+          editorial.style.display = '';
         }
       }
     }

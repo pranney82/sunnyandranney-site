@@ -26,6 +26,7 @@ export function cfImage(url: string, opts: ImageOptions = {}): string {
     if (width) params.set('width', String(width));
     if (height) params.set('height', String(height));
     if (width || height) params.set('crop', 'center');
+    params.set('format', 'webp');
     const sep = url.includes('?') ? '&' : '?';
     return `${url}${sep}${params.toString()}`;
   }

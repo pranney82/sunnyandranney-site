@@ -23,6 +23,7 @@ async function shopifyFetch<T>(query: string, variables: Record<string, unknown>
           'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_TOKEN,
         },
         body: JSON.stringify({ query, variables }),
+        signal: AbortSignal.timeout(10000),
       });
 
       // Retry on rate-limit or server errors
@@ -490,6 +491,7 @@ export function shopifyImageUrl(url: string, width?: number, height?: number, cr
   if (width) params.set('width', String(width));
   if (height) params.set('height', String(height));
   if (crop && (width || height)) params.set('crop', crop);
+  params.set('format', 'webp');
 
   const separator = url.includes('?') ? '&' : '?';
   return `${url}${separator}${params.toString()}`;

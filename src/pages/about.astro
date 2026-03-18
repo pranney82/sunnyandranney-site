@@ -558,7 +558,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
   }
 
   /* ─── Our Story ─── */
-  .ab-story { background: var(--color-warm-white); padding: clamp(4rem, 10vh, 7rem) 0; }
+  .ab-story { background: var(--color-warm-white); padding: clamp(4rem, 10vh, 7rem) 0; scroll-margin-top: var(--nav-height); }
   .ab-story__inner { display: grid; gap: var(--space-xl); align-items: center; max-width: 1040px; margin: 0 auto; }
   @media (min-width: 768px) { .ab-story__inner { grid-template-columns: 0.9fr 1.1fr; gap: var(--space-2xl); } }
   .ab-story__image { border-radius: 4px; overflow: hidden; box-shadow: 0 20px 60px rgba(44,44,44,0.12); }
@@ -695,6 +695,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
     if (player) {
       const observer = new IntersectionObserver(
         ([entry]) => {
+          if (!player.src) return;
           const msg = entry.isIntersecting ? '{"method":"play"}' : '{"method":"pause"}';
           player.contentWindow?.postMessage(msg, 'https://customer-cuav5h47lgfe96ql.cloudflarestream.com');
         },
