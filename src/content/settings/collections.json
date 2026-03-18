@@ -1,97 +1,97 @@
 [
   {
-    "handle": "bedroom-furniture",
-    "enabled": false,
-    "order": 0,
-    "showInNav": false
-  },
-  {
-    "handle": "dining-room-furniture",
-    "enabled": false,
-    "order": 1,
-    "showInNav": false
-  },
-  {
-    "handle": "occasional-furniture",
-    "enabled": false,
-    "order": 2,
-    "showInNav": false
-  },
-  {
-    "handle": "living-room-furniture",
-    "enabled": false,
-    "order": 3,
-    "showInNav": false
-  },
-  {
-    "handle": "accent-chairs",
-    "enabled": false,
-    "order": 4,
-    "showInNav": false
-  },
-  {
-    "handle": "dining-chairs",
-    "enabled": false,
-    "order": 5,
-    "showInNav": false
-  },
-  {
-    "handle": "coffee-tables",
-    "enabled": false,
-    "order": 6,
-    "showInNav": false
-  },
-  {
-    "handle": "consoles-sideboards-sofa-tables",
-    "enabled": false,
-    "order": 7,
-    "showInNav": false
-  },
-  {
-    "handle": "desks",
-    "enabled": false,
-    "order": 8,
-    "showInNav": false
-  },
-  {
-    "handle": "dining-tables",
-    "enabled": false,
-    "order": 9,
-    "showInNav": false
-  },
-  {
-    "handle": "accent-end-tables",
-    "enabled": false,
-    "order": 10,
-    "showInNav": false
-  },
-  {
-    "handle": "ottoman-benches",
-    "enabled": false,
-    "order": 11,
-    "showInNav": false
-  },
-  {
-    "handle": "sectionals",
-    "enabled": false,
-    "order": 12,
-    "showInNav": false
-  },
-  {
-    "handle": "sofas",
-    "enabled": false,
-    "order": 13,
-    "showInNav": false
-  },
-  {
     "handle": "living",
     "enabled": true,
-    "order": 14,
+    "order": 0,
     "showInNav": false
   },
   {
     "handle": "outdoor",
     "enabled": true,
+    "order": 1,
+    "showInNav": false
+  },
+  {
+    "handle": "bedroom-furniture",
+    "enabled": false,
+    "order": 2,
+    "showInNav": false
+  },
+  {
+    "handle": "dining-room-furniture",
+    "enabled": false,
+    "order": 3,
+    "showInNav": false
+  },
+  {
+    "handle": "occasional-furniture",
+    "enabled": false,
+    "order": 4,
+    "showInNav": false
+  },
+  {
+    "handle": "living-room-furniture",
+    "enabled": false,
+    "order": 5,
+    "showInNav": false
+  },
+  {
+    "handle": "accent-chairs",
+    "enabled": false,
+    "order": 6,
+    "showInNav": false
+  },
+  {
+    "handle": "dining-chairs",
+    "enabled": false,
+    "order": 7,
+    "showInNav": false
+  },
+  {
+    "handle": "coffee-tables",
+    "enabled": false,
+    "order": 8,
+    "showInNav": false
+  },
+  {
+    "handle": "consoles-sideboards-sofa-tables",
+    "enabled": false,
+    "order": 9,
+    "showInNav": false
+  },
+  {
+    "handle": "desks",
+    "enabled": false,
+    "order": 10,
+    "showInNav": false
+  },
+  {
+    "handle": "dining-tables",
+    "enabled": false,
+    "order": 11,
+    "showInNav": false
+  },
+  {
+    "handle": "accent-end-tables",
+    "enabled": false,
+    "order": 12,
+    "showInNav": false
+  },
+  {
+    "handle": "ottoman-benches",
+    "enabled": false,
+    "order": 13,
+    "showInNav": false
+  },
+  {
+    "handle": "sectionals",
+    "enabled": false,
+    "order": 14,
+    "showInNav": false
+  },
+  {
+    "handle": "sofas",
+    "enabled": false,
     "order": 15,
     "showInNav": false
   },
@@ -111,6 +111,36 @@
     "handle": "jewelry",
     "enabled": false,
     "order": 18,
+    "showInNav": false
+  },
+  {
+    "handle": "dining",
+    "enabled": true,
+    "order": 19,
+    "showInNav": false
+  },
+  {
+    "handle": "bedroom",
+    "enabled": true,
+    "order": 20,
+    "showInNav": false
+  },
+  {
+    "handle": "art-mirrors",
+    "enabled": true,
+    "order": 21,
+    "showInNav": false
+  },
+  {
+    "handle": "rugs-collection",
+    "enabled": true,
+    "order": 22,
+    "showInNav": false
+  },
+  {
+    "handle": "new-arrivals",
+    "enabled": true,
+    "order": 23,
     "showInNav": false
   }
 ]
