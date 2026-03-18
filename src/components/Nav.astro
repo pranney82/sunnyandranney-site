@@ -1,6 +1,5 @@
 ---
 import { getCollectionsStatic } from '@/lib/settings';
-import { getCategoryNamesByCollection } from '@/lib/shopify';
 
 interface Props {
   announcements?: Array<{ text: string; link?: string; type: string }>;
@@ -22,7 +21,6 @@ const roomCollections = [
   { handle: 'art-mirrors', label: 'Art & Mirrors' },
   { handle: 'rugs', label: 'Rugs' },
 ];
-const categoryMap = await getCategoryNamesByCollection(roomCollections.map(c => c.handle));
 
 // Default slides + any admin-configured announcements
 const defaultSlides = [
@@ -158,24 +156,14 @@ const allSlides = [...adminSlides, ...defaultSlides];
       <a href="/shop" data-astro-prefetch class:list={['nav__cat-link', { 'nav__cat-link--active': currentPath === '/shop' || currentPath === '/shop/' }]}>
         All Products
       </a>
-      <a href="/shop?collection=new-arrivals" data-astro-prefetch class="nav__cat-link">New Arrivals</a>
-      {roomCollections.map(col => {
-        const cats = categoryMap[col.handle] || [];
-        return (
-          <div class="nav__cat-dropdown" data-collection={col.handle}>
-            <a href={`/shop?collection=${col.handle}`} data-astro-prefetch class="nav__cat-link">
-              {col.label}
-            </a>
-            {cats.length > 0 && (
-              <div class="nav__cat-dropdown-menu">
-                {cats.map(cat => (
-                  <a href={`/shop?collection=${col.handle}&type=${encodeURIComponent(cat)}`}>{cat}</a>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
+      <a href="/shop?collection=new-arrivals" data-astro-prefetch class="nav__cat-link nav__cat-link--new">
+        New Arrivals
+      </a>
+      {roomCollections.map(col => (
+        <a href={`/shop?collection=${col.handle}`} data-astro-prefetch class="nav__cat-link">
+          {col.label}
+        </a>
+      ))}
       <a href="/shop?sale=true" data-astro-prefetch class="nav__cat-link nav__cat-link--sale">Sale</a>
     </div>
   </nav>
@@ -694,20 +682,11 @@ const allSlides = [...adminSlides, ...defaultSlides];
   /* ─── Category Bar ─────────────────────── */
   .nav__categories {
     border-bottom: 1px solid var(--color-cream-dark);
+    background: var(--color-warm-white);
     display: block;
     overflow-x: auto;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
-    /* Fade right edge to hint scrollable content on mobile */
-    -webkit-mask-image: linear-gradient(to right, black calc(100% - 48px), transparent 100%);
-    mask-image: linear-gradient(to right, black calc(100% - 48px), transparent 100%);
-  }
-
-  @media (min-width: 768px) {
-    .nav__categories {
-      -webkit-mask-image: none;
-      mask-image: none;
-    }
   }
 
   .nav__categories::-webkit-scrollbar { display: none; }
@@ -715,6 +694,7 @@ const allSlides = [...adminSlides, ...defaultSlides];
   .nav__categories-inner {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0;
     white-space: nowrap;
     position: relative;
@@ -724,25 +704,38 @@ const allSlides = [...adminSlides, ...defaultSlides];
   .nav__cat-indicator {
     position: absolute;
     bottom: 0;
-    height: 2px;
+    height: 2.5px;
     background: var(--color-gold);
-    border-radius: 1px;
+    border-radius: 2px 2px 0 0;
     pointer-events: none;
     opacity: 0;
-    transition: left 0.22s cubic-bezier(0.4, 0, 0.2, 1),
-                width 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    /* Spring-like easing for premium feel */
+    transition: left 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
                 opacity 0.15s ease;
     will-change: left, width;
   }
 
   @media (max-width: 767px) {
     .nav__categories {
-      padding: 0 4px;
+      /* Only fade right edge — left stays fully visible so first item isn't clipped */
+      -webkit-mask-image: linear-gradient(to right, black calc(100% - 36px), transparent 100%);
+      mask-image: linear-gradient(to right, black calc(100% - 36px), transparent 100%);
+      padding: 0;
+      scroll-snap-type: x proximity;
+    }
+
+    .nav__categories-inner {
+      justify-content: flex-start;
+      padding: 0 14px;
+      /* Right padding so last item (Sale) isn't hidden under the fade */
+      padding-right: 40px;
     }
   }
 
+  /* ─── Category Links ─────────────────────── */
   .nav__cat-link {
-    padding: 0.6rem 1.25rem;
+    padding: 0.72rem 1rem;
     font-size: 0.78rem;
     font-weight: 500;
     letter-spacing: 0.06em;
@@ -750,15 +743,24 @@ const allSlides = [...adminSlides, ...defaultSlides];
     color: var(--color-slate);
     transition: color 0.2s;
     flex-shrink: 0;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
   }
 
   @media (max-width: 767px) {
     .nav__cat-link {
-      padding: 0.75rem 0.85rem;
-      font-size: 0.7rem;
+      padding: 0.75rem 0.8rem;
+      font-size: 0.68rem;
       min-height: 44px;
-      display: flex;
-      align-items: center;
+      scroll-snap-align: start;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .nav__cat-link {
+      padding: 0.8rem 1.15rem;
     }
   }
 
@@ -766,80 +768,53 @@ const allSlides = [...adminSlides, ...defaultSlides];
     color: var(--color-charcoal);
   }
 
-  .nav__cat-link--active {
-    color: var(--color-charcoal);
+  .nav__cat-link:focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: -2px;
+    border-radius: 3px;
   }
 
+  .nav__cat-link--active {
+    color: var(--color-charcoal);
+    font-weight: 600;
+  }
+
+  /* ─── "New Arrivals" accent dot ──────────── */
+  .nav__cat-link--new::after {
+    content: '';
+    width: 3.5px;
+    height: 3.5px;
+    border-radius: 50%;
+    background: var(--color-gold);
+    flex-shrink: 0;
+    align-self: flex-start;
+    margin-top: 2px;
+    margin-left: -1px;
+  }
+
+  /* ─── Sale treatment ─────────────────────── */
   .nav__cat-link--sale {
     color: var(--color-cyan);
     font-weight: 600;
   }
 
   .nav__cat-link--sale:hover {
-    color: var(--color-charcoal);
-    background: rgba(75, 149, 180, 0.08);
+    color: #2d6e89;
   }
 
-.nav__cat-divider {
+  /* ─── Dividers between groups ────────────── */
+  .nav__cat-divider {
     width: 1px;
-    height: 16px;
+    height: 14px;
     background: var(--color-cream-dark);
     flex-shrink: 0;
-    margin: 0 0.25rem;
+    margin: 0 0.35rem;
+    opacity: 0.7;
   }
 
-  /* ─── Category Dropdowns ─────────────────── */
-  .nav__cat-dropdown {
-    position: relative;
-    flex-shrink: 0;
-  }
-
-  .nav__cat-dropdown-menu {
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    min-width: 160px;
-    background: var(--color-warm-white);
-    border: 1px solid var(--color-cream-dark);
-    border-radius: 6px;
-    box-shadow: 0 8px 24px rgba(44, 44, 44, 0.1);
-    padding: 0.5rem 0;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.2s, visibility 0.2s;
-    z-index: 60;
-  }
-
-  .nav__cat-dropdown:hover .nav__cat-dropdown-menu,
-  .nav__cat-dropdown-menu:hover {
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .nav__cat-dropdown-menu a {
-    display: block;
-    padding: 0.5rem 1rem;
-    font-size: 0.82rem;
-    color: var(--color-charcoal);
-    text-decoration: none;
-    transition: background 0.15s, color 0.15s;
-    white-space: nowrap;
-  }
-
-  .nav__cat-dropdown-menu a:hover {
-    background: var(--color-cream-dark);
-    color: var(--color-gold);
-  }
-
-  .nav__cat-dropdown-menu--empty {
-    display: none;
-  }
-
-  /* Hide dropdowns on mobile - use full category page instead */
   @media (max-width: 767px) {
-    .nav__cat-dropdown-menu {
-      display: none;
+    .nav__cat-divider {
+      margin: 0 0.15rem;
     }
   }
 
@@ -1217,13 +1192,18 @@ const allSlides = [...adminSlides, ...defaultSlides];
   // ─── Sliding category indicator ────────────────────────
   function setupCatIndicator() {
     const indicator = document.getElementById('cat-indicator');
+    const container = document.querySelector<HTMLElement>('.nav__categories-inner');
     const catLinks = document.querySelectorAll<HTMLElement>('.nav__cat-link');
-    if (!indicator || !catLinks.length) return;
+    if (!indicator || !container || !catLinks.length) return;
 
     function moveToLink(link: HTMLElement) {
-      // Use offsetLeft for reliable positioning in scrollable container
-      indicator!.style.left = `${link.offsetLeft}px`;
-      indicator!.style.width = `${link.offsetWidth}px`;
+      // Use getBoundingClientRect relative to container for correct positioning
+      // even when links are nested inside position:relative dropdown wrappers
+      const containerRect = container!.getBoundingClientRect();
+      const linkRect = link.getBoundingClientRect();
+      const scrollOffset = container!.closest('.nav__categories')?.scrollLeft || 0;
+      indicator!.style.left = `${linkRect.left - containerRect.left + scrollOffset}px`;
+      indicator!.style.width = `${linkRect.width}px`;
       indicator!.style.opacity = '1';
     }
 
@@ -1237,10 +1217,7 @@ const allSlides = [...adminSlides, ...defaultSlides];
     }
 
     catLinks.forEach((link) => {
-      // Desktop hover
-      link.addEventListener('mouseenter', () => moveToLink(link));
-      link.addEventListener('mouseleave', () => moveToActive());
-      // Mobile tap - move indicator immediately on click for instant feedback
+      // Move indicator on click for instant feedback during navigation
       link.addEventListener('click', () => moveToLink(link));
     });
 
@@ -1255,9 +1232,18 @@ const allSlides = [...adminSlides, ...defaultSlides];
     if (!activeLink) return;
     const container = activeLink.closest('.nav__categories') as HTMLElement;
     if (!container) return;
-    // Center the active tab in the scrollable area
-    const scrollLeft = activeLink.offsetLeft - (container.clientWidth / 2) + (activeLink.offsetWidth / 2);
+    const inner = container.querySelector('.nav__categories-inner') as HTMLElement;
+    if (!inner) return;
+
+    // Position active link roughly centered in the scrollable area
+    const innerRect = inner.getBoundingClientRect();
+    const linkRect = activeLink.getBoundingClientRect();
+    const linkOffsetInInner = linkRect.left - innerRect.left + container.scrollLeft;
+    const scrollLeft = linkOffsetInInner - (container.clientWidth / 2) + (linkRect.width / 2);
     container.scrollTo({ left: Math.max(0, scrollLeft), behavior: 'smooth' });
+
+    // Recalculate indicator position after scroll settles
+    setTimeout(() => setupCatIndicator(), 350);
   }
 
   // Run after initial load and after navigation

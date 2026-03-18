@@ -12,23 +12,51 @@ interface ShopifyResponse<T> {
 }
 
 async function shopifyFetch<T>(query: string, variables: Record<string, unknown> = {}): Promise<T> {
-  const response = await fetch(STOREFRONT_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_TOKEN,
-    },
-    body: JSON.stringify({ query, variables }),
-  });
+  let lastError: Error | undefined;
 
-  const json: ShopifyResponse<T> = await response.json();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const response = await fetch(STOREFRONT_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_TOKEN,
+        },
+        body: JSON.stringify({ query, variables }),
+      });
 
-  if (json.errors) {
-    console.error('Shopify API errors:', json.errors);
-    throw new Error(json.errors.map((e) => e.message).join(', '));
+      // Retry on rate-limit or server errors
+      if (response.status === 429 || response.status >= 500) {
+        lastError = new Error(`Shopify API ${response.status}`);
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
+
+      const json: ShopifyResponse<T> = await response.json();
+
+      if (json.errors) {
+        // Throttled errors from Shopify GraphQL are retryable
+        const isThrottled = json.errors.some(e => e.message.includes('Throttled'));
+        if (isThrottled && attempt < 2) {
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+          continue;
+        }
+        console.error('Shopify API errors:', json.errors);
+        throw new Error(json.errors.map((e) => e.message).join(', '));
+      }
+
+      return json.data;
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      if (attempt < 2 && !lastError.message.includes('Shopify API errors')) {
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
+      throw lastError;
+    }
   }
 
-  return json.data;
+  throw lastError || new Error('Shopify fetch failed after retries');
 }
 
 // ─── Product Queries ─────────────────────────────────────────────

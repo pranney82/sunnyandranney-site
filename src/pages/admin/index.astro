@@ -2,7 +2,7 @@
 import Admin from '@/layouts/Admin.astro';
 import { getSetting } from '@/lib/db';
 import { env } from 'cloudflare:workers';
-import type { TrendingSetting, HeroSetting, CollectionSetting, StoreSpecials, EmailSignupConfig, KidsSetting, StaffPicksSetting } from '@/lib/settings';
+import type { HeroSetting, CollectionSetting, StoreSpecials, EmailSignupConfig, KidsSetting, StaffPicksSetting } from '@/lib/settings';
 
 export const prerender = false;
 
@@ -12,19 +12,17 @@ const settingKeys = [
   'settings:specials',
   'settings:contact',
   'settings:email-signup',
-  'settings:trending',
   'settings:hero',
   'settings:kids',
   'settings:staff-picks',
 ] as const;
 
-const [hours, collections, specials, contact, emailSignup, trending, hero, kids, staffPicks] = await Promise.all([
+const [hours, collections, specials, contact, emailSignup, hero, kids, staffPicks] = await Promise.all([
   getSetting('settings:hours'),
   getSetting<CollectionSetting[]>('settings:collections'),
   getSetting<StoreSpecials>('settings:specials'),
   getSetting('settings:contact'),
   getSetting<EmailSignupConfig>('settings:email-signup'),
-  getSetting<TrendingSetting>('settings:trending'),
   getSetting<HeroSetting>('settings:hero'),
   getSetting<KidsSetting>('settings:kids'),
   getSetting<StaffPicksSetting>('settings:staff-picks'),
@@ -32,7 +30,7 @@ const [hours, collections, specials, contact, emailSignup, trending, hero, kids,
 
 // Fetch updated_at timestamps
 const timestampRows = await env.DB
-  .prepare('SELECT key, updated_at FROM settings WHERE key IN (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+  .prepare('SELECT key, updated_at FROM settings WHERE key IN (?, ?, ?, ?, ?, ?, ?, ?)')
   .bind(...settingKeys)
   .all<{ key: string; updated_at: string }>();
 
@@ -95,14 +93,6 @@ const stats = [
       : (totalSpecials > 0 ? 'admin-status--warning' : 'admin-status--neutral'),
     updated: timeAgo(timestamps['settings:specials']),
     href: '/admin/specials',
-  },
-  {
-    label: 'Trending Now',
-    desc: 'Products featured in the Trending Now section',
-    value: trending && trending.handles.length > 0 ? `${trending.handles.length} products` : 'Auto',
-    status: trending && trending.handles.length > 0 ? 'admin-status--success' : 'admin-status--neutral',
-    updated: timeAgo(timestamps['settings:trending']),
-    href: '/admin/trending',
   },
   {
     label: 'Staff Picks',

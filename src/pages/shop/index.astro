@@ -29,6 +29,9 @@ try {
       enabledHandles.map(handle => shopify.getCollectionByHandle(handle, 100))
     );
 
+    console.log('[shop] Enabled handles:', enabledHandles);
+    console.log('[shop] Results per collection:', results.map((r, i) => `${enabledHandles[i]}: ${r ? r.products.length : 'null'} products`));
+
     const seen = new Set<string>();
     for (const collection of results) {
       if (!collection) continue;

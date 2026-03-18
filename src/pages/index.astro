@@ -3,7 +3,7 @@ import Base from '@/layouts/Base.astro';
 import GoogleReviews from '@/components/GoogleReviews.astro';
 import { getProducts, getCollectionByHandle, getProductByHandle } from '@/lib/shopify';
 import { cfImage, cfSrcset } from '@/lib/images';
-import { getCollectionsStatic, getHeroStatic, getStaffPicksStatic, type CollectionSetting } from '@/lib/settings';
+import { getHeroStatic, getStaffPicksStatic } from '@/lib/settings';
 
 // Fetch live stats from SOARD at build time
 let soardStats: { roomMakeovers: number; yearsGiving: number } | null = null;
@@ -15,15 +15,8 @@ const statRooms = soardStats?.roomMakeovers ?? 269;
 const statYears = soardStats?.yearsGiving ?? 14;
 
 let products: any[] = [];
-let collections: any[] = [];
 let staffPickProducts: any[] = [];
 let hasShopify = false;
-
-// Fallback handles if admin hasn't configured collections yet
-const DEFAULT_HANDLES = [
-  'accent-chairs', 'accent-end-tables', 'bedroom-furniture', 'coffee-tables',
-  'consoles-sideboards-sofa-tables', 'dining-tables', 'sofas', 'sectionals',
-];
 
 // Load hero setting (image URL + featured product handle)
 const heroSetting = await getHeroStatic();
@@ -55,18 +48,6 @@ try {
   if (!heroProduct && products.length > 0) {
     heroProduct = products[0];
   }
-
-  // Load admin collection settings (committed JSON) or fall back to defaults
-  const saved = await getCollectionsStatic();
-  const enabledHandles: string[] = saved
-    ? saved.filter(c => c.enabled).sort((a, b) => a.order - b.order).map(c => c.handle)
-    : DEFAULT_HANDLES;
-
-  // Fetch only enabled collections by handle — no wasted API calls
-  const collectionResults = await Promise.all(
-    enabledHandles.map(handle => getCollectionByHandle(handle, 4))
-  );
-  collections = collectionResults.filter(Boolean);
 
   // Load staff picks — admin-curated product handles
   const staffPicksSetting = await getStaffPicksStatic();
@@ -166,8 +147,8 @@ function fmt(amount: number): string {
       </div>
       <div class="promise__item reveal delay-1">
         <span class="promise__rule" aria-hidden="true"></span>
-        <span class="promise__title">White-Glove Delivery</span>
-        <span class="promise__desc">Across metro Atlanta, to your door</span>
+        <span class="promise__title">Curated Selection</span>
+        <span class="promise__desc">Quality furniture, handpicked for you</span>
       </div>
       <div class="promise__item reveal delay-2">
         <span class="promise__rule" aria-hidden="true"></span>
@@ -204,8 +185,8 @@ function fmt(amount: number): string {
                       alt={p.title}
                       width="600"
                       height="600"
-                      loading="lazy"
-                      decoding="async"
+                      loading={idx < 3 ? 'eager' : 'lazy'}
+                      decoding={idx < 3 ? 'sync' : 'async'}
                     />
                   )}
                   {hasDiscount && <span class="staff-pick-card__sale">Sale</span>}
@@ -231,50 +212,6 @@ function fmt(amount: number): string {
 
   <!-- ═══ GOOGLE REVIEWS ═══ -->
   <GoogleReviews variant="full" />
-
-  <!-- ═══ SHOP BY COLLECTION ═══ -->
-  {collections.length > 0 && (
-    <section class="collections-grid section">
-      <div class="container">
-        <div class="collections-grid__header reveal">
-          <h2 class="section-title">Shop by Collection</h2>
-          <a href="/shop" class="collections-grid__link" data-astro-prefetch>View all &rarr;</a>
-        </div>
-        <div class="collections-grid__items">
-          {collections.map((col: any, idx: number) => {
-            const colImage = col.image;
-            const previewProduct = col.products?.[0];
-            const imgUrl = colImage?.url || previewProduct?.images?.edges?.[0]?.node?.url;
-            return (
-              <a href={`/shop?collection=${col.handle}`} data-astro-prefetch class={`collection-tile reveal${idx > 0 ? ` delay-${Math.min(idx, 3)}` : ''}`}>
-                <div class="collection-tile__image">
-                  {imgUrl ? (
-                    <img
-                      src={cfImage(imgUrl, { width: 1000, height: 1000 })}
-                      srcset={cfSrcset(imgUrl, [500, 1000])}
-                      sizes="(max-width: 480px) 45vw, (max-width: 768px) 30vw, 200px"
-                      alt=""
-                      width="1000"
-                      height="1000"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : (
-                    <div class="collection-tile__placeholder">
-                      <span>{col.title.charAt(0)}</span>
-                    </div>
-                  )}
-                  <div class="collection-tile__overlay">
-                    <span>{col.title}</span>
-                  </div>
-                </div>
-              </a>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  )}
 
   <!-- ═══ SHOWROOM EXPERIENCE ═══ -->
   <section class="services">
@@ -904,115 +841,6 @@ function fmt(amount: number): string {
   .staff-picks__footer {
     text-align: center;
     margin-top: clamp(2rem, 4vh, 3rem);
-  }
-
-  /* ─── Collections Grid ────────────────── */
-  .collections-grid__header {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 1rem;
-  }
-
-  .collections-grid__header .section-title { margin-bottom: 0; }
-
-  .collections-grid__link {
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: var(--color-cyan);
-    letter-spacing: 0.03em;
-    transition: color 0.2s;
-    flex-shrink: 0;
-  }
-
-  .collections-grid__link:hover { color: var(--color-charcoal); }
-
-  .collections-grid__items {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-    margin-top: var(--space-lg);
-  }
-
-  @media (min-width: 640px) {
-    .collections-grid__items {
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1rem;
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .collections-grid__items {
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1rem;
-    }
-  }
-
-  .collection-tile {
-    display: block;
-    text-decoration: none;
-    color: var(--color-charcoal);
-    transition: transform 0.4s var(--ease-out);
-  }
-
-  .collection-tile:hover {
-    transform: translateY(-4px);
-  }
-
-  .collection-tile__image {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 1;
-    overflow: hidden;
-    border-radius: 12px;
-    background: var(--color-cream-dark);
-  }
-
-  .collection-tile__image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.6s var(--ease-out);
-  }
-
-  .collection-tile:hover .collection-tile__image img {
-    transform: scale(1.06);
-  }
-
-  .collection-tile__overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(0deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 60%);
-    display: flex;
-    align-items: flex-end;
-    padding: 0.75rem;
-    transition: background 0.3s;
-  }
-
-  .collection-tile:hover .collection-tile__overlay {
-    background: linear-gradient(0deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.05) 70%);
-  }
-
-  .collection-tile__overlay span {
-    font-family: var(--font-display);
-    font-size: clamp(0.82rem, 1.2vw, 0.95rem);
-    font-weight: 600;
-    color: white;
-    line-height: 1.2;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
-  }
-
-  .collection-tile__placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--color-charcoal);
-    color: var(--color-gold);
-    font-family: var(--font-display);
-    font-size: 2.5rem;
-    font-weight: 300;
   }
 
   /* ─── Shop the Look (hotspots) ──────────── */
@@ -1847,7 +1675,7 @@ function fmt(amount: number): string {
 
   /* ─── Mission Section ──────────────────── */
   .mission {
-    background: var(--color-charcoal);
+    background: var(--color-cream);
     padding: clamp(3rem, 8vh, 5rem) 0;
   }
 
@@ -1881,7 +1709,7 @@ function fmt(amount: number): string {
   .mission__img-wrap {
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 16px 48px rgba(0,0,0,0.3);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.12);
   }
 
   .mission__img-wrap img {
@@ -1902,19 +1730,19 @@ function fmt(amount: number): string {
     font-weight: 600;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--color-cyan-light);
+    color: var(--color-cyan);
     margin: 0 0 var(--space-sm);
   }
 
   .mission__title {
-    color: white;
+    color: var(--color-charcoal);
     font-size: clamp(1.6rem, 3.5vw, 2.5rem);
     line-height: 1.1;
     margin-bottom: var(--space-md);
   }
 
   .mission__body {
-    color: rgba(255,255,255,0.75);
+    color: var(--color-stone);
     font-size: 0.95rem;
     line-height: 1.7;
     max-width: 52ch;
@@ -1922,7 +1750,7 @@ function fmt(amount: number): string {
   }
 
   .mission__body strong {
-    color: var(--color-gold);
+    color: var(--color-cyan);
     font-weight: 600;
   }
 
@@ -1934,8 +1762,8 @@ function fmt(amount: number): string {
   }
 
   .mission__cta {
-    border-color: rgba(255,255,255,0.3);
-    color: white;
+    border-color: var(--color-charcoal);
+    color: var(--color-charcoal);
   }
 
   .mission__cta.btn--gold {

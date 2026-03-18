@@ -801,6 +801,15 @@
   // Subscribe to cart changes
   cart.subscribe(renderCart);
 
+  // Surface Shopify errors in cart drawer
+  cart.onError((error) => {
+    if (alertEl && drawer?.getAttribute('aria-hidden') === 'false') {
+      alertEl.textContent = error.message;
+      alertEl.style.display = 'block';
+      setTimeout(() => { alertEl.style.display = 'none'; }, 6000);
+    }
+  });
+
   // Checkout — uses Shopify Cart API checkoutUrl (server-validated)
   let checkoutInFlight = false;
 

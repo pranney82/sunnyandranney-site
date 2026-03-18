@@ -57,10 +57,6 @@ export interface EmailSignupConfig {
   constantContactListName: string;
 }
 
-export interface TrendingSetting {
-  handles: string[];
-}
-
 export interface HeroSetting {
   imageUrl: string;           // Shopify product image URL (or fallback CF Images URL)
   productHandle: string;      // Shopify product handle for the hero card
@@ -104,7 +100,6 @@ interface SettingsMap {
   'specials': StoreSpecials;
   'contact': ContactInfo;
   'email-signup': EmailSignupConfig;
-  'trending': TrendingSetting;
   'hero': HeroSetting;
   'kids': KidsSetting;
   'team': TeamSetting;
@@ -138,7 +133,6 @@ export function getCollectionsStatic() { return getSetting('collections'); }
 export function getSpecialsStatic() { return getSetting('specials'); }
 export function getContactStatic() { return getSetting('contact'); }
 export function getEmailSignupStatic() { return getSetting('email-signup'); }
-export function getTrendingStatic() { return getSetting('trending'); }
 export function getHeroStatic() { return getSetting('hero'); }
 export function getKidsStatic() { return getSetting('kids'); }
 export function getTeamStatic() { return getSetting('team'); }

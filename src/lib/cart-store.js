@@ -44,20 +44,36 @@ function getShopifyConfig() {
 async function shopifyCartFetch(query, variables = {}) {
   const config = getShopifyConfig();
   if (!config) return null;
-  try {
-    const res = await fetch(`https://${config.domain}/api/2025-01/graphql.json`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Shopify-Storefront-Access-Token': config.token,
-      },
-      body: JSON.stringify({ query, variables }),
-    });
-    const json = await res.json();
-    return json.data ?? null;
-  } catch {
-    return null;
+
+  let lastError;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(`https://${config.domain}/api/2025-01/graphql.json`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Storefront-Access-Token': config.token,
+        },
+        body: JSON.stringify({ query, variables }),
+      });
+
+      if (res.status === 429 || res.status >= 500) {
+        lastError = new Error(`Shopify ${res.status}`);
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
+
+      const json = await res.json();
+      return json.data ?? null;
+    } catch (err) {
+      lastError = err;
+      if (attempt < 2) {
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+      }
+    }
   }
+  console.error('[cart] Shopify fetch failed after retries:', lastError);
+  return null;
 }
 
 const CART_FRAGMENT = `
@@ -115,6 +131,23 @@ function clearShopifyCart() {
   } catch {}
 }
 
+// ─── Error events ────────────────────────────────────
+// Subscribers can listen for Shopify-side errors (e.g. item unavailable)
+const errorListeners = new Set();
+
+function notifyError(error) {
+  errorListeners.forEach(fn => fn(error));
+}
+
+// Handle userErrors from Shopify mutations
+function handleUserErrors(userErrors, context) {
+  if (!userErrors?.length) return false;
+  const msg = userErrors.map(e => e.message).join('; ');
+  console.warn(`[cart] Shopify ${context}:`, msg);
+  notifyError({ type: context, message: msg, errors: userErrors });
+  return true;
+}
+
 // Reconcile Shopify cart response → update localStorage cache
 // This is the source of truth: Shopify tells us what's actually in the cart.
 function reconcileFromShopify(shopifyCart) {
@@ -124,6 +157,7 @@ function reconcileFromShopify(shopifyCart) {
   storeCheckoutUrl(shopifyCart.checkoutUrl);
 
   const lines = shopifyCart.lines?.edges ?? [];
+  const previousItems = load();
   const items = lines.map(({ node }) => {
     const v = node.merchandise;
     return {
@@ -135,8 +169,17 @@ function reconcileFromShopify(shopifyCart) {
       handle: v.product?.handle || '',
       qty: node.quantity,
       lineId: node.id, // Shopify line ID — needed for updates/removes
+      available: v.availableForSale !== false,
     };
   });
+
+  // Detect items that were in localStorage but Shopify pruned (unavailable/deleted)
+  const shopifyVariantIds = new Set(items.map(i => i.variantId));
+  const pruned = previousItems.filter(i => !shopifyVariantIds.has(i.variantId));
+  if (pruned.length > 0) {
+    const names = pruned.map(i => i.title).join(', ');
+    notifyError({ type: 'items_unavailable', message: `Removed from cart (no longer available): ${names}`, pruned });
+  }
 
   save(items);
   notify(items);
@@ -176,6 +219,7 @@ async function shopifyCreateCart(items) {
 
   const result = data?.cartCreate;
   if (result?.cart) {
+    handleUserErrors(result.userErrors, 'cartCreate');
     reconcileFromShopify(result.cart);
   }
   return result;
@@ -199,6 +243,7 @@ async function shopifyAddLines(cartId, newItems) {
 
   const result = data?.cartLinesAdd;
   if (result?.cart) {
+    handleUserErrors(result.userErrors, 'cartLinesAdd');
     reconcileFromShopify(result.cart);
   }
   return result;
@@ -222,6 +267,7 @@ async function shopifyUpdateLines(cartId, updates) {
 
   const result = data?.cartLinesUpdate;
   if (result?.cart) {
+    handleUserErrors(result.userErrors, 'cartLinesUpdate');
     reconcileFromShopify(result.cart);
   }
   return result;
@@ -240,6 +286,7 @@ async function shopifyRemoveLines(cartId, lineIds) {
 
   const result = data?.cartLinesRemove;
   if (result?.cart) {
+    handleUserErrors(result.userErrors, 'cartLinesRemove');
     reconcileFromShopify(result.cart);
   }
   return result;
@@ -279,6 +326,12 @@ export const cart = {
     listeners.add(fn);
     fn(load());
     return () => listeners.delete(fn);
+  },
+
+  /** Subscribe to cart errors (Shopify userErrors, unavailable items, network failures). Returns unsubscribe fn. */
+  onError(fn) {
+    errorListeners.add(fn);
+    return () => errorListeners.delete(fn);
   },
 
   getItems() { return load(); },
@@ -416,8 +469,9 @@ export const cart = {
     const config = getShopifyConfig();
     if (!config) {
       // Fallback to legacy permalink if no API token
+      const domain = (typeof window !== 'undefined' && window.__SHOPIFY_DOMAIN) || 'sunnyandranney.myshopify.com';
       const numericId = variantId.includes('/') ? variantId.split('/').pop() : variantId;
-      return `https://${config?.domain || 'sunnyandranney.myshopify.com'}/cart/${numericId}:${qty}`;
+      return `https://${domain}/cart/${numericId}:${qty}`;
     }
 
     const result = await shopifyCreateCart([{ variantId, qty }]);
@@ -425,7 +479,9 @@ export const cart = {
       return result.cart.checkoutUrl;
     }
 
-    // If mutation had userErrors (e.g. variant deleted), return null
+    if (result?.userErrors?.length) {
+      handleUserErrors(result.userErrors, 'buyNow');
+    }
     return null;
   },
 };
