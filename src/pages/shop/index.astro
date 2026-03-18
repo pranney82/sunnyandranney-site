@@ -599,8 +599,14 @@ const itemListSchema = hasShopify ? {
     flex-shrink: 0;
   }
 
-  /* Hide count and text on mobile */
-  .toolbar__count { display: none; }
+  /* Show count on mobile (subtle), hide filter text */
+  .toolbar__count {
+    display: block;
+    font-size: 0.65rem;
+    color: var(--color-slate);
+    white-space: nowrap;
+    opacity: 0.7;
+  }
   .filter-toggle__text { display: none; }
 
   .filter-btn {
@@ -1577,10 +1583,10 @@ const itemListSchema = hasShopify ? {
     z-index: 501;
     background: var(--color-cream);
     width: 100%;
-    max-height: 85dvh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    max-height: min(85dvh, calc(100dvh - 3.5rem));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     opacity: 0;
     visibility: hidden;
     transform: translateY(100%);
@@ -1645,28 +1651,19 @@ const itemListSchema = hasShopify ? {
   .qv-close:hover { background: var(--color-gold); }
 
   .qv-body {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
   }
 
   @media (min-width: 640px) {
-    .qv-body {
-      flex-direction: row;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior: contain;
-    }
-    .qv-body > * { flex: 1; }
+    .qv-body { grid-template-columns: 1fr 1fr; }
   }
 
   .qv-gallery {
     background: var(--color-cream-dark);
     aspect-ratio: 3 / 4;
-    flex-shrink: 1;
-    min-height: 0;
+    max-height: 40vh;
     position: relative;
     overflow: hidden;
   }
@@ -1716,10 +1713,6 @@ const itemListSchema = hasShopify ? {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    flex-shrink: 0;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
   }
 
   @media (min-width: 640px) {
