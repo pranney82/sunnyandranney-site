@@ -41,12 +41,6 @@ const PRODUCT_FRAGMENT = `
     description
     descriptionHtml
     productType
-    productCategory {
-      productTaxonomyNode {
-        name
-        fullName
-      }
-    }
     tags
     vendor
     availableForSale
@@ -470,12 +464,6 @@ export interface Product {
   description: string;
   descriptionHtml: string;
   productType: string;
-  productCategory: {
-    productTaxonomyNode: {
-      name: string;
-      fullName: string;
-    } | null;
-  } | null;
   tags: string[];
   vendor: string;
   availableForSale: boolean;

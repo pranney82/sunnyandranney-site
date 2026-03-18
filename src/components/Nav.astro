@@ -1145,12 +1145,9 @@ const allSlides = [...adminSlides, ...defaultSlides];
     if (!indicator || !catLinks.length) return;
 
     function moveToLink(link: HTMLElement) {
-      const container = indicator!.closest('.nav__categories-inner') as HTMLElement;
-      if (!container) return;
-      const containerRect = container.getBoundingClientRect();
-      const linkRect = link.getBoundingClientRect();
-      indicator!.style.left = `${linkRect.left - containerRect.left}px`;
-      indicator!.style.width = `${linkRect.width}px`;
+      // Use offsetLeft for reliable positioning in scrollable container
+      indicator!.style.left = `${link.offsetLeft}px`;
+      indicator!.style.width = `${link.offsetWidth}px`;
       indicator!.style.opacity = '1';
     }
 
@@ -1164,8 +1161,11 @@ const allSlides = [...adminSlides, ...defaultSlides];
     }
 
     catLinks.forEach((link) => {
+      // Desktop hover
       link.addEventListener('mouseenter', () => moveToLink(link));
       link.addEventListener('mouseleave', () => moveToActive());
+      // Mobile tap - move indicator immediately on click for instant feedback
+      link.addEventListener('click', () => moveToLink(link));
     });
 
     moveToActive();
