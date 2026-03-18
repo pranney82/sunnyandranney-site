@@ -1866,7 +1866,7 @@ const itemListSchema = hasShopify ? {
 
     if (activeCollection) {
       const titles = (window as any).__collectionTitles || {};
-      const name = titles[activeCollection] || activeCollection.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      const name = activeCollection === 'new-arrivals' ? 'New Arrivals' : (titles[activeCollection] || activeCollection.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '));
       chips.push({ label: name, action: () => {
         activeCollection = '';
         const shopTitle = document.getElementById('shop-title');
@@ -2007,7 +2007,7 @@ const itemListSchema = hasShopify ? {
 
   if (collectionParam) {
     activeCollection = collectionParam;
-    const collectionTitle = titles[collectionParam] || collectionParam.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    const collectionTitle = collectionParam === 'new-arrivals' ? 'New Arrivals' : (titles[collectionParam] || collectionParam.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '));
     if (shopTitle) shopTitle.textContent = collectionTitle;
     if (clearCollectionLink) clearCollectionLink.style.display = '';
     // Show collection context in the toolbar
@@ -2088,11 +2088,15 @@ const itemListSchema = hasShopify ? {
   }
 
   // ─── Category Filter ────────────────────────
+  const categoryTitles: Record<string, string> = { 'all': 'The Collection', 'new-arrivals': 'New Arrivals', 'living': 'Living', 'dining': 'Dining', 'bedroom': 'Bedroom', 'art-mirrors': 'Art & Mirrors', 'rugs': 'Rugs', 'sale': 'Sale' };
   filterBtns.forEach((btn) => {
     btn.addEventListener('click', () => {
       activeFilter = (btn as HTMLElement).getAttribute('data-filter') || 'all';
       filterBtns.forEach(b => b.classList.remove('filter-btn--active'));
       btn.classList.add('filter-btn--active');
+      // Update shop title based on selected category
+      const shopTitle = document.getElementById('shop-title');
+      if (shopTitle) shopTitle.textContent = categoryTitles[activeFilter] || 'The Collection';
       visiblePage = 0;
       applyAllDebounced();
     });

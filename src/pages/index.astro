@@ -233,7 +233,7 @@ function fmt(amount: number): string {
             <span class="shop-look__dot"></span>
             <span class="shop-look__label">Sofas</span>
           </a>
-          <a href="/shop?collection=accent-chairs" class="shop-look__tag" style="top: 55%; left: 88%;" data-astro-prefetch>
+          <a href="/shop?collection=accent-chairs" class="shop-look__tag" style="top: 55%; left: 82%;" data-astro-prefetch>
             <span class="shop-look__dot"></span>
             <span class="shop-look__label">Accent Chairs</span>
           </a>
@@ -884,21 +884,11 @@ function fmt(amount: number): string {
     border-radius: 6px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.12);
     white-space: nowrap;
-    opacity: 0;
-    transform: translateX(-6px);
-    transition: opacity 0.25s, transform 0.25s var(--ease-out);
-    pointer-events: none;
   }
 
   .shop-look__tag:hover .shop-look__dot {
     transform: scale(1.15);
     box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-  }
-
-  .shop-look__tag:hover .shop-look__label {
-    opacity: 1;
-    transform: translateX(0);
-    pointer-events: auto;
   }
 
   /* Pulse animation on dots */
