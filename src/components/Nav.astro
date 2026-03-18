@@ -9,15 +9,6 @@ const { announcements = [] } = Astro.props;
 const currentPath = Astro.url.pathname;
 
 const collectionSettings = await getCollectionsStatic();
-const navCollections = (collectionSettings ?? [])
-  .filter(c => c.enabled)
-  .sort((a, b) => a.order - b.order)
-  .map(c => ({
-    href: `/shop?collection=${c.handle}`,
-    handle: c.handle,
-    label: c.navLabel || c.handle.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-  }));
-
 const enabledCollectionHandles = (collectionSettings ?? [])
   .filter(c => c.enabled)
   .map(c => c.handle);
