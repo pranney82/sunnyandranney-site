@@ -2,6 +2,7 @@
 // Cart Drawer — rendered on every page via Base layout
 ---
 
+<div id="cart-system" transition:persist="cart-system">
 <!-- Cart Overlay -->
 <div class="cart-overlay" id="cart-overlay" aria-hidden="true"></div>
 
@@ -38,6 +39,10 @@
       <span class="cart-footer__total" id="cart-total">$0.00</span>
     </div>
     <p class="cart-footer__note">Taxes calculated at checkout · Local pickup only</p>
+    <div class="cart-footer__rewards">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <span>Earn &amp; redeem rewards at checkout</span>
+    </div>
     <div class="cart-footer__alert" id="cart-alert" style="display:none;" role="alert"></div>
     <button class="btn btn--gold cart-footer__checkout" id="cart-checkout" style="width:100%; justify-content:center;">
       Proceed to Checkout
@@ -57,6 +62,7 @@
     <span class="cart-toast__title" id="cart-toast-title"></span>
     <span class="cart-toast__sub">Added to cart</span>
   </div>
+</div>
 </div>
 
 <style is:global>
@@ -348,6 +354,25 @@
     margin-bottom: 1rem;
   }
 
+  .cart-footer__rewards {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: #7a5a06;
+    background: color-mix(in srgb, var(--color-gold, #b8860b) 12%, transparent);
+    border-radius: 6px;
+    letter-spacing: 0.02em;
+  }
+  .cart-footer__rewards svg {
+    flex-shrink: 0;
+    stroke: #7a5a06;
+  }
+
   .cart-footer__mission {
     text-align: center;
     font-size: 0.75rem;
@@ -495,7 +520,7 @@
 
   // No shipping — local pickup only
 
-  // DOM refs
+  // DOM refs — elements inside CartDrawer (transition:persist, never replaced)
   const overlay = document.getElementById('cart-overlay');
   const drawer = document.getElementById('cart-drawer');
   const closeBtn = document.getElementById('cart-close');
@@ -504,11 +529,12 @@
   const footerEl = document.getElementById('cart-footer');
   const countEl = document.getElementById('cart-drawer-count');
   const totalEl = document.getElementById('cart-total');
-  const navCount = document.getElementById('cart-count');
   const shippingText = document.getElementById('shipping-text');
   const checkoutBtn = document.getElementById('cart-checkout');
   const alertEl = document.getElementById('cart-alert');
   const shippingEl = document.getElementById('cart-shipping');
+  // Nav badge lives OUTSIDE CartDrawer (inside Nav, which is replaced on
+  // each View Transition). Must query fresh each time — never cache the ref.
 
   // ─── Focus Trap ─────────────────────────
   function trapFocus(container, e) {
@@ -573,8 +599,8 @@
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
 
   window.showCartToast = function(title?: string) {
-    // Badge bounce
-    [navCount, document.getElementById('mobile-cart-count')].forEach(el => {
+    // Badge bounce (fresh query — Nav elements replaced on View Transitions)
+    [document.getElementById('cart-count'), document.getElementById('mobile-cart-count')].forEach(el => {
       if (!el) return;
       el.classList.remove('bounce');
       void el.offsetWidth;
@@ -710,7 +736,8 @@
     const count = items.reduce((n, i) => n + i.qty, 0);
     const total = items.reduce((s, i) => s + i.price * i.qty, 0);
 
-    // Nav badge
+    // Nav badge (fresh query — Nav is replaced on each View Transition)
+    const navCount = document.getElementById('cart-count');
     if (navCount) {
       navCount.textContent = String(count);
       navCount.style.display = count > 0 ? 'flex' : 'none';
@@ -857,6 +884,7 @@
   window.addToCart = function(product, qty = 1) {
     cart.add(product, qty);
     window.showCartToast(product.title);
+    openCart();
   };
 
   // Reset checkout button if user navigates back

@@ -19,12 +19,12 @@ const roomCollections = [
   { handle: 'dining', label: 'Dining' },
   { handle: 'bedroom', label: 'Bedroom' },
   { handle: 'art-mirrors', label: 'Art & Mirrors' },
-  { handle: 'rugs', label: 'Rugs' },
+  { handle: 'rugs-collection', label: 'Rugs' },
 ];
 
 // Default slides + any admin-configured announcements
 const defaultSlides = [
-  { html: '100% of profits support <strong>Sunshine on a Ranney Day</strong> — <a href="/about" class="nav__banner-link">Our Story</a>' },
+  { html: '100% of profits support <a href="/about" class="nav__banner-link"><strong>Sunshine on a Ranney Day</strong></a> — <a href="/about" class="nav__banner-link">Our Story</a>' },
   { html: 'LOCAL PICKUP ONLY — <a href="/shop" class="nav__banner-link">Shop Now</a>' },
   { html: 'Visit our Roswell showroom — Tue–Sat, 10am–6pm' },
 ];
@@ -266,7 +266,15 @@ const allSlides = [...adminSlides, ...defaultSlides];
   }
 
   .nav--scrolled {
-    box-shadow: 0 2px 20px rgba(44, 44, 44, 0.06);
+    box-shadow: 0 4px 24px rgba(44, 44, 44, 0.08), 0 1px 3px rgba(44, 44, 44, 0.04);
+  }
+
+  .nav--scrolled .nav__categories {
+    box-shadow: none;
+  }
+
+  .nav--scrolled .nav__mobile-header {
+    border-bottom-color: transparent;
   }
 
   /* ─── Mobile Header (logo + cart) ──────── */
@@ -277,6 +285,7 @@ const allSlides = [...adminSlides, ...defaultSlides];
     padding: 0 8px;
     height: 48px;
     border-bottom: 1px solid var(--color-cream-dark);
+    transition: border-color 0.3s ease;
   }
 
   .nav__mobile-header .nav__logo-img {
@@ -681,8 +690,9 @@ const allSlides = [...adminSlides, ...defaultSlides];
 
   /* ─── Category Bar ─────────────────────── */
   .nav__categories {
-    border-bottom: 1px solid var(--color-cream-dark);
-    background: var(--color-warm-white);
+    border-bottom: none;
+    background: var(--color-cream);
+    box-shadow: inset 0 1px 0 var(--color-cream-dark);
     display: block;
     overflow-x: auto;
     scrollbar-width: none;
@@ -717,6 +727,13 @@ const allSlides = [...adminSlides, ...defaultSlides];
   }
 
   @media (max-width: 767px) {
+    .nav__cat-indicator {
+      height: 2px;
+      border-radius: 1px 1px 0 0;
+    }
+  }
+
+  @media (max-width: 767px) {
     .nav__categories {
       /* Only fade right edge — left stays fully visible so first item isn't clipped */
       -webkit-mask-image: linear-gradient(to right, black calc(100% - 36px), transparent 100%);
@@ -729,7 +746,7 @@ const allSlides = [...adminSlides, ...defaultSlides];
       justify-content: flex-start;
       padding: 0 14px;
       /* Right padding so last item (Sale) isn't hidden under the fade */
-      padding-right: 40px;
+      padding-right: 56px;
     }
   }
 
@@ -825,92 +842,14 @@ const allSlides = [...adminSlides, ...defaultSlides];
 </script>
 
 <script>
-  // ─── Dynamic nav height → CSS variable (drives main margin-top) ─────
-  const nav = document.getElementById('main-nav');
-  if (nav) {
-    const syncHeight = () => {
-      const h = nav.getBoundingClientRect().height;
-      document.documentElement.style.setProperty('--nav-height', `${h}px`);
-    };
-    new ResizeObserver(syncHeight).observe(nav);
-    syncHeight();
+  // ═══════════════════════════════════════════════════════════════
+  //  Nav script — View Transitions safe
+  //  Uses AbortController so every listener, observer, and timer
+  //  is torn down cleanly before re-init on astro:after-swap.
+  // ═══════════════════════════════════════════════════════════════
 
-    // Update nav--shop-active before the DOM swap so height is correct
-    // before new content paints — eliminates the layout gap on navigation
-    document.addEventListener('astro:before-swap', (e) => {
-      const going = new URL((e as any).to).pathname;
-      nav.classList.toggle('nav--shop-active', going.startsWith('/shop'));
-    });
-  }
+  // ─── Module-level (persists across navigations) ─────────────
 
-  // ─── Scroll behavior ────────────────────────────────────────
-  const mobileSearch = nav?.querySelector('.nav__mobile-topbar') as HTMLElement;
-  let lastScrollY = 0;
-  let scrollTicking = false;
-
-  window.addEventListener('scroll', () => {
-    if (!scrollTicking) {
-      scrollTicking = true;
-      requestAnimationFrame(() => {
-        const y = window.scrollY;
-        nav?.classList.toggle('nav--scrolled', y > 20);
-
-        // Auto-close search bar on scroll down when user opened it
-        if (mobileSearch?.classList.contains('is-forced-open') && y > 60 && y > lastScrollY) {
-          mobileSearch.classList.remove('is-forced-open');
-          mobileSearch.classList.add('is-hidden');
-        }
-        lastScrollY = y;
-        scrollTicking = false;
-      });
-    }
-  }, { passive: true });
-
-  // ─── Mobile search toggle — tap icon to reveal/hide search ────────────
-  const searchToggle = document.getElementById('mobile-search-toggle');
-  const mobileSearchInput = document.getElementById('mobile-topbar-search') as HTMLInputElement;
-
-  searchToggle?.addEventListener('click', () => {
-    if (!mobileSearch) return;
-    const isOpen = mobileSearch.classList.contains('is-forced-open');
-    if (isOpen) {
-      mobileSearch.classList.remove('is-forced-open');
-      mobileSearch.classList.add('is-hidden');
-    } else {
-      mobileSearch.classList.remove('is-hidden');
-      mobileSearch.classList.add('is-forced-open');
-      setTimeout(() => mobileSearchInput?.focus(), 260);
-    }
-  });
-
-  // Close search bar when input loses focus and user has scrolled
-  mobileSearchInput?.addEventListener('blur', () => {
-    setTimeout(() => {
-      if (mobileSearch && window.scrollY > 60) {
-        mobileSearch.classList.remove('is-forced-open');
-      }
-    }, 300);
-  });
-
-  // ─── Cart buttons (no inline onclick) ────────────
-  document.getElementById('cart-trigger')?.addEventListener('click', () => window.openCart?.());
-  document.getElementById('mobile-cart-trigger')?.addEventListener('click', () => window.openCart?.());
-
-  // ─── Search submit ──────────────────────────────
-  function doSearch(input: HTMLInputElement) {
-    const q = input.value.trim();
-    if (q) window.location.href = `/shop?q=${encodeURIComponent(q)}`;
-  }
-
-  const searchInput = document.getElementById('nav-search-input') as HTMLInputElement;
-  const searchSubmit = document.getElementById('nav-search-submit');
-  const mobileTopbarSearch = document.getElementById('mobile-topbar-search') as HTMLInputElement;
-
-  searchInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(searchInput); });
-  searchSubmit?.addEventListener('click', () => { if (searchInput) doSearch(searchInput); });
-  mobileTopbarSearch?.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(mobileTopbarSearch); });
-
-  // ─── Shared typeahead engine ────────────────────
   type Product = { title: string; handle: string; price: string; image: string; type: string };
   let productIndex: Product[] | null = null;
   const SEARCH_CACHE_KEY = 'sr_search_idx';
@@ -938,8 +877,6 @@ const allSlides = [...adminSlides, ...defaultSlides];
 
       const enabledHandles: string[] = (window as any).__ENABLED_COLLECTIONS || [];
 
-      // Build GraphQL aliases for each enabled collection so we only get products
-      // that have a pre-built static page.
       const productFragment = `{ title handle productType priceRange { minVariantPrice { amount } } images(first: 1) { edges { node { url } } } }`;
       let gqlQuery: string;
       if (enabledHandles.length > 0) {
@@ -985,10 +922,9 @@ const allSlides = [...adminSlides, ...defaultSlides];
         type: (e.node.productType || '').toLowerCase(),
       }));
 
-      // Cache in sessionStorage
       try {
         sessionStorage.setItem(SEARCH_CACHE_KEY, JSON.stringify({ data: productIndex, ts: Date.now() }));
-      } catch { /* quota exceeded — fine, just skip */ }
+      } catch { /* quota exceeded */ }
 
       return productIndex!;
     } catch {
@@ -1049,7 +985,12 @@ const allSlides = [...adminSlides, ...defaultSlides];
     suggestEl.style.display = 'block';
   }
 
-  function setupTypeahead(input: HTMLInputElement, suggestEl: HTMLElement) {
+  function doSearch(input: HTMLInputElement) {
+    const q = input.value.trim();
+    if (q) window.location.href = `/shop?q=${encodeURIComponent(q)}`;
+  }
+
+  function setupTypeahead(input: HTMLInputElement, suggestEl: HTMLElement, signal: AbortSignal) {
     let timer: ReturnType<typeof setTimeout>;
 
     input.addEventListener('input', () => {
@@ -1065,9 +1006,8 @@ const allSlides = [...adminSlides, ...defaultSlides];
         renderSuggestions(suggestEl, q, items);
         input.setAttribute('aria-expanded', suggestEl.style.display !== 'none' ? 'true' : 'false');
       }, 300);
-    });
+    }, { signal });
 
-    // Keyboard navigation
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         suggestEl.style.display = 'none';
@@ -1096,70 +1036,18 @@ const allSlides = [...adminSlides, ...defaultSlides];
         e.preventDefault();
         (active as HTMLAnchorElement).click();
       }
-    });
+    }, { signal });
 
-    // Close on click outside
     document.addEventListener('click', (e) => {
       if (!suggestEl.contains(e.target as Node) && e.target !== input) {
         suggestEl.style.display = 'none';
         input.setAttribute('aria-expanded', 'false');
       }
-    });
+    }, { signal });
   }
 
-  // Wire up both search bars with shared logic
-  const suggestEl = document.getElementById('search-suggest');
-  const mobileSuggestEl = document.getElementById('mobile-search-suggest');
-  if (searchInput && suggestEl) setupTypeahead(searchInput, suggestEl);
-  if (mobileTopbarSearch && mobileSuggestEl) setupTypeahead(mobileTopbarSearch, mobileSuggestEl);
+  // ─── Pure helpers (query fresh DOM each call) ───────────────
 
-  // ─── Rotating banner (with cleanup for persist) ────
-  let bannerInterval: ReturnType<typeof setInterval> | undefined;
-
-  function startBanner() {
-    if (bannerInterval) clearInterval(bannerInterval);
-    const bannerSlider = document.getElementById('banner-slider');
-    if (!bannerSlider) return;
-    const slides = bannerSlider.querySelectorAll('.nav__banner-slide');
-    let currentSlide = 0;
-    if (slides.length > 1) {
-      bannerInterval = setInterval(() => {
-        slides[currentSlide].classList.remove('nav__banner-slide--active');
-        currentSlide = (currentSlide + 1) % slides.length;
-        slides[currentSlide].classList.add('nav__banner-slide--active');
-      }, 8000);
-    }
-  }
-  // Defer banner start — not critical for first paint
-  const scheduleIdle = window.requestIdleCallback || ((cb: () => void) => setTimeout(cb, 200));
-  scheduleIdle(startBanner);
-
-  // ─── Sync mobile cart badge ────────────────────
-  function syncMobileCartBadge() {
-    const headerCount = document.getElementById('cart-count');
-    const mobileCount = document.getElementById('mobile-cart-count');
-    if (!headerCount || !mobileCount) return;
-
-    const update = () => {
-      const count = headerCount.textContent || '0';
-      const visible = headerCount.style.display !== 'none';
-      mobileCount.textContent = count;
-      mobileCount.style.display = visible ? 'flex' : 'none';
-    };
-
-    new MutationObserver(update).observe(headerCount, {
-      childList: true,
-      attributes: true,
-      attributeFilter: ['style'],
-    });
-
-    update();
-  }
-
-  scheduleIdle(syncMobileCartBadge);
-  document.addEventListener('astro:after-swap', syncMobileCartBadge);
-
-  // ─── Update active tab on client after persist ────
   function updateActiveTab() {
     const path = window.location.pathname.replace(/\/$/, '') || '/';
     const search = window.location.search;
@@ -1186,10 +1074,6 @@ const allSlides = [...adminSlides, ...defaultSlides];
     });
   }
 
-  updateActiveTab();
-  document.addEventListener('astro:after-swap', () => { updateActiveTab(); setupCatIndicator(); });
-
-  // ─── Sliding category indicator ────────────────────────
   function setupCatIndicator() {
     const indicator = document.getElementById('cat-indicator');
     const container = document.querySelector<HTMLElement>('.nav__categories-inner');
@@ -1197,13 +1081,14 @@ const allSlides = [...adminSlides, ...defaultSlides];
     if (!indicator || !container || !catLinks.length) return;
 
     function moveToLink(link: HTMLElement) {
-      // Use getBoundingClientRect relative to container for correct positioning
-      // even when links are nested inside position:relative dropdown wrappers
       const containerRect = container!.getBoundingClientRect();
       const linkRect = link.getBoundingClientRect();
       const scrollOffset = container!.closest('.nav__categories')?.scrollLeft || 0;
-      indicator!.style.left = `${linkRect.left - containerRect.left + scrollOffset}px`;
-      indicator!.style.width = `${linkRect.width}px`;
+      // On mobile, inset the indicator so it aligns with text, not full padding
+      const isMobile = window.innerWidth < 768;
+      const inset = isMobile ? 10 : 0;
+      indicator!.style.left = `${linkRect.left - containerRect.left + scrollOffset + inset}px`;
+      indicator!.style.width = `${linkRect.width - inset * 2}px`;
       indicator!.style.opacity = '1';
     }
 
@@ -1217,16 +1102,12 @@ const allSlides = [...adminSlides, ...defaultSlides];
     }
 
     catLinks.forEach((link) => {
-      // Move indicator on click for instant feedback during navigation
       link.addEventListener('click', () => moveToLink(link));
     });
 
     moveToActive();
   }
 
-  setupCatIndicator();
-
-  // ─── Auto-scroll active category into view on mobile ────
   function scrollActiveTabIntoView() {
     const activeLink = document.querySelector('.nav__cat-link--active') as HTMLElement;
     if (!activeLink) return;
@@ -1235,19 +1116,160 @@ const allSlides = [...adminSlides, ...defaultSlides];
     const inner = container.querySelector('.nav__categories-inner') as HTMLElement;
     if (!inner) return;
 
-    // Position active link roughly centered in the scrollable area
     const innerRect = inner.getBoundingClientRect();
     const linkRect = activeLink.getBoundingClientRect();
     const linkOffsetInInner = linkRect.left - innerRect.left + container.scrollLeft;
     const scrollLeft = linkOffsetInInner - (container.clientWidth / 2) + (linkRect.width / 2);
     container.scrollTo({ left: Math.max(0, scrollLeft), behavior: 'smooth' });
 
-    // Recalculate indicator position after scroll settles
     setTimeout(() => setupCatIndicator(), 350);
   }
 
-  // Run after initial load and after navigation
-  requestAnimationFrame(scrollActiveTabIntoView);
-  document.addEventListener('astro:after-swap', () => requestAnimationFrame(scrollActiveTabIntoView));
+  // ─── Per-navigation init ────────────────────────────────────
+  //  Re-queries all DOM refs, attaches listeners via AbortController
+  //  signal so everything is auto-cleaned on the next navigation.
+
+  let _ac: AbortController | null = null;
+
+  function init() {
+    // Tear down previous lifecycle
+    _ac?.abort();
+    _ac = new AbortController();
+    const { signal } = _ac;
+
+    // ── Fresh DOM refs ──────────────────────────
+    const nav = document.getElementById('main-nav');
+    const mobileSearch = nav?.querySelector('.nav__mobile-topbar') as HTMLElement | null;
+    const searchToggle = document.getElementById('mobile-search-toggle');
+    const mobileSearchInput = document.getElementById('mobile-topbar-search') as HTMLInputElement | null;
+    const searchInput = document.getElementById('nav-search-input') as HTMLInputElement | null;
+    const searchSubmit = document.getElementById('nav-search-submit');
+    const mobileTopbarSearch = document.getElementById('mobile-topbar-search') as HTMLInputElement | null;
+    const suggestEl = document.getElementById('search-suggest');
+    const mobileSuggestEl = document.getElementById('mobile-search-suggest');
+
+    // ── Nav height → CSS variable ───────────────
+    if (nav) {
+      const syncHeight = () => {
+        const h = nav.getBoundingClientRect().height;
+        document.documentElement.style.setProperty('--nav-height', `${h}px`);
+      };
+      const ro = new ResizeObserver(syncHeight);
+      ro.observe(nav);
+      syncHeight();
+      signal.addEventListener('abort', () => ro.disconnect());
+
+      // Pre-swap: toggle shop-active so height is correct before new content paints
+      document.addEventListener('astro:before-swap', (e) => {
+        const going = new URL((e as any).to).pathname;
+        nav.classList.toggle('nav--shop-active', going.startsWith('/shop'));
+      }, { signal });
+    }
+
+    // ── Scroll behavior ─────────────────────────
+    let lastScrollY = 0;
+    let scrollTicking = false;
+
+    window.addEventListener('scroll', () => {
+      if (!scrollTicking) {
+        scrollTicking = true;
+        requestAnimationFrame(() => {
+          const y = window.scrollY;
+          nav?.classList.toggle('nav--scrolled', y > 20);
+
+          if (mobileSearch?.classList.contains('is-forced-open') && y > 60 && y > lastScrollY) {
+            mobileSearch.classList.remove('is-forced-open');
+            mobileSearch.classList.add('is-hidden');
+          }
+          lastScrollY = y;
+          scrollTicking = false;
+        });
+      }
+    }, { passive: true, signal });
+
+    // ── Mobile search toggle ────────────────────
+    searchToggle?.addEventListener('click', () => {
+      if (!mobileSearch) return;
+      const isOpen = mobileSearch.classList.contains('is-forced-open');
+      if (isOpen) {
+        mobileSearch.classList.remove('is-forced-open');
+        mobileSearch.classList.add('is-hidden');
+      } else {
+        mobileSearch.classList.remove('is-hidden');
+        mobileSearch.classList.add('is-forced-open');
+        setTimeout(() => mobileSearchInput?.focus(), 260);
+      }
+    }, { signal });
+
+    mobileSearchInput?.addEventListener('blur', () => {
+      setTimeout(() => {
+        if (mobileSearch && window.scrollY > 60) {
+          mobileSearch.classList.remove('is-forced-open');
+        }
+      }, 300);
+    }, { signal });
+
+    // ── Cart buttons ────────────────────────────
+    document.getElementById('cart-trigger')?.addEventListener('click', () => window.openCart?.(), { signal });
+    document.getElementById('mobile-cart-trigger')?.addEventListener('click', () => window.openCart?.(), { signal });
+
+    // ── Search submit ───────────────────────────
+    searchInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(searchInput); }, { signal });
+    searchSubmit?.addEventListener('click', () => { if (searchInput) doSearch(searchInput); }, { signal });
+    mobileTopbarSearch?.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(mobileTopbarSearch); }, { signal });
+
+    // ── Typeahead ───────────────────────────────
+    if (searchInput && suggestEl) setupTypeahead(searchInput, suggestEl, signal);
+    if (mobileTopbarSearch && mobileSuggestEl) setupTypeahead(mobileTopbarSearch, mobileSuggestEl, signal);
+
+    // ── Banner rotation ─────────────────────────
+    let bannerInterval: ReturnType<typeof setInterval> | undefined;
+    function startBanner() {
+      const bannerSlider = document.getElementById('banner-slider');
+      if (!bannerSlider) return;
+      const slides = bannerSlider.querySelectorAll('.nav__banner-slide');
+      let currentSlide = 0;
+      if (slides.length > 1) {
+        bannerInterval = setInterval(() => {
+          slides[currentSlide].classList.remove('nav__banner-slide--active');
+          currentSlide = (currentSlide + 1) % slides.length;
+          slides[currentSlide].classList.add('nav__banner-slide--active');
+        }, 8000);
+      }
+    }
+    const scheduleIdle = window.requestIdleCallback || ((cb: () => void) => setTimeout(cb, 200));
+    scheduleIdle(startBanner);
+    signal.addEventListener('abort', () => { if (bannerInterval) clearInterval(bannerInterval); });
+
+    // ── Sync mobile cart badge ──────────────────
+    function syncMobileCartBadge() {
+      const headerCount = document.getElementById('cart-count');
+      const mobileCount = document.getElementById('mobile-cart-count');
+      if (!headerCount || !mobileCount) return;
+
+      const update = () => {
+        const count = headerCount.textContent || '0';
+        const visible = headerCount.style.display !== 'none';
+        mobileCount.textContent = count;
+        mobileCount.style.display = visible ? 'flex' : 'none';
+      };
+
+      const mo = new MutationObserver(update);
+      mo.observe(headerCount, { childList: true, attributes: true, attributeFilter: ['style'] });
+      signal.addEventListener('abort', () => mo.disconnect());
+
+      update();
+    }
+    scheduleIdle(syncMobileCartBadge);
+
+    // ── Active tab + indicator + scroll-into-view ──
+    updateActiveTab();
+    setupCatIndicator();
+    requestAnimationFrame(scrollActiveTabIntoView);
+  }
+
+  // ─── Boot ───────────────────────────────────────────────────
+  init();
+  document.addEventListener('astro:after-swap', init);
 
 </script>

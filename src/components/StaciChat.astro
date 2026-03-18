@@ -1070,7 +1070,8 @@
     if (chips) chips.style.display = '';
   }
 
-  /** Parse "?>" follow-up suggestions from bot response and return cleaned text + suggestions */
+  /** Parse "?>" follow-up suggestions from bot response and return cleaned text + suggestions.
+   *  Also detects question-style follow-ups the LLM writes as plain text at the end of a message. */
   function parseSuggestions(text: string): { clean: string; suggestions: string[] } {
     const lines = text.split('\n');
     const suggestions: string[] = [];
@@ -1083,6 +1084,51 @@
         if (q) suggestions.push(q);
       } else {
         cleanLines.push(line);
+      }
+    }
+
+    // If no ?>-prefixed suggestions found, try to detect trailing question lines.
+    // The LLM sometimes outputs follow-ups as plain questions on the last line(s).
+    if (suggestions.length === 0) {
+      // Pattern 1: single line with multiple short questions separated by double-space or "  "
+      // e.g. "What's your budget?  Need directions?  Open today?"
+      const lastNonBlank = cleanLines.slice().reverse().find(l => l.trim().length > 0);
+      if (lastNonBlank) {
+        const multiQ = lastNonBlank.trim().split(/\s{2,}/).filter(s => s.endsWith('?') && s.length <= 50);
+        if (multiQ.length >= 2) {
+          suggestions.push(...multiQ);
+          // Remove that line from clean output
+          const idx = cleanLines.lastIndexOf(lastNonBlank);
+          if (idx !== -1) cleanLines.splice(idx, 1);
+        }
+      }
+
+      // Pattern 2: consecutive trailing lines that are each a short question
+      // e.g. "- What's your budget?\n- Need directions?\n- Open today?"
+      if (suggestions.length === 0) {
+        const trailing: string[] = [];
+        for (let i = cleanLines.length - 1; i >= 0; i--) {
+          const t = cleanLines[i].trim();
+          if (!t) continue; // skip blank lines
+          // Match lines like "What's new?", "- What's new?", "• What's new?"
+          const stripped = t.replace(/^[-•*]\s*/, '').replace(/^\d+[.)]\s*/, '');
+          if (stripped.endsWith('?') && stripped.length <= 50 && stripped.length >= 8) {
+            trailing.unshift(stripped);
+          } else {
+            break;
+          }
+        }
+        if (trailing.length >= 2) {
+          suggestions.push(...trailing);
+          // Remove those trailing question lines from clean output
+          let removed = 0;
+          for (let i = cleanLines.length - 1; i >= 0 && removed < trailing.length; i--) {
+            const t = cleanLines[i].trim();
+            if (!t) continue;
+            cleanLines.splice(i, 1);
+            removed++;
+          }
+        }
       }
     }
 
