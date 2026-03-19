@@ -250,14 +250,14 @@ async function searchProducts(ai: any, vectorize: any, query: string, topK = 10)
     .filter((m: any) => m.metadata && m.score >= 0.35 && (!validHandles || validHandles.has(m.id)))
     .map((m: any) => m.metadata as Product);
 
-  const llmContext = products.map((p, i) => formatProductForLLM(p, i)).join('\n');
+  const llmContext = products.map((p: Product, i: number) => formatProductForLLM(p, i)).join('\n');
 
   // Top 4 available products with images for rich cards — track original index
-  const indexed = products.map((p: Product, i: number) => ({ product: p, index: i }));
+  const indexed: Array<{ product: Product; index: number }> = products.map((p: Product, i: number) => ({ product: p, index: i }));
   const cards: ProductCard[] = indexed
-    .filter((item) => item.product.availableForSale && item.product.imageUrl)
+    .filter((item: { product: Product; index: number }) => item.product.availableForSale && item.product.imageUrl)
     .slice(0, 4)
-    .map((item) => ({
+    .map((item: { product: Product; index: number }) => ({
       cardIndex: item.index + 1,
       title: item.product.title,
       handle: item.product.handle,
