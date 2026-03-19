@@ -11,8 +11,7 @@ try {
 
 function fmtStat(n: number | undefined, suffix = '+') {
   if (!n) return null;
-  if (n >= 1000) return `${(n / 1000).toFixed(0)},000${suffix}`;
-  return `${n}${suffix}`;
+  return `${n.toLocaleString('en-US')}${suffix}`;
 }
 
 const stats = [
@@ -48,7 +47,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
   title="About Us — Sunny & Ranney"
   description="Meet the team behind Sunny & Ranney — a furniture store where 100% of profits fund life-changing room makeovers for children with special needs."
   lcpImage="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=500,q=80,format=auto"
-  lcpImageSrcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=400,q=75,format=auto 400w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=500,q=80,format=auto 500w"
+  lcpImageSrcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=400,q=75,format=auto 400w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=500,q=80,format=auto 500w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=800,q=80,format=auto 800w"
   lcpImageSizes="(max-width: 767px) 90vw, 40vw"
 >
 
@@ -74,10 +73,10 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
       <div class="ab-hero__media animate-fade-up delay-2">
         <img
           src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=500,q=80,format=auto"
-          srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=400,q=75,format=auto 400w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=500,q=80,format=auto 500w"
+          srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=400,q=75,format=auto 400w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=500,q=80,format=auto 500w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=800,q=80,format=auto 800w"
           sizes="(max-width: 767px) 90vw, 40vw"
           alt="Amari's room reveal — family celebrating a Sunshine on a Ranney Day makeover"
-          width="500" height="375"
+          width="800" height="600"
           loading="eager" decoding="async" fetchpriority="high"
         />
         <img
@@ -97,7 +96,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
   <section class="ab-stats" aria-label="Impact statistics">
     <div class="container ab-stats__inner">
       {stats.map((s) => (
-        <div class="ab-stats__item" role="group">
+        <div class="ab-stats__item" role="group" aria-label={s.label}>
           <span class="ab-stats__number">{s.value}</span>
           <span class="ab-stats__label">{s.label}</span>
         </div>
@@ -337,7 +336,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
   "@type": "Organization",
   "name": "Sunshine on a Ranney Day",
   "alternateName": "SOARD",
-  "url": "https://www.sunshineonarranneyday.org",
+  "url": "https://www.sunshineonaranneyday.com",
   "nonprofitStatus": "Nonprofit501c3",
   "description": "501(c)(3) nonprofit creating wheelchair-accessible bathrooms, dream bedrooms, and in-home therapy spaces for children with special needs in the greater Atlanta area.",
   "founder": [
@@ -681,9 +680,13 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
 
 <script>
   function initAbout() {
-    const openBtn = document.getElementById('ab-video-open');
+    const openBtn = document.getElementById('ab-video-open') as HTMLButtonElement | null;
     const player = document.getElementById('cf-player') as HTMLIFrameElement | null;
     const VIDEO_SRC = 'https://customer-cuav5h47lgfe96ql.cloudflarestream.com/7d7459064cd569cd7a3d806914f7aec7/iframe?autoplay=true&muted=false';
+
+    // Reset video state on re-visit (View Transitions)
+    if (player) { player.src = ''; player.hidden = true; }
+    if (openBtn) { openBtn.hidden = false; }
 
     openBtn?.addEventListener('click', () => {
       if (!player || !openBtn) return;

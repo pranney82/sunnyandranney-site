@@ -5,7 +5,7 @@
 <!-- Chat toggle button -->
 <button id="staci-toggle" aria-label="Chat with Staci" title="Chat with Staci">
   <span class="staci-badge" id="staci-badge" style="display:none;"></span>
-  <img id="staci-icon-chat" class="staci-toggle__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/nav" alt="Ask Staci" width="40" height="40" loading="lazy" />
+  <img id="staci-icon-chat" class="staci-toggle__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=120,h=120,fit=cover,format=auto" alt="Ask Staci" width="40" height="40" loading="lazy" />
   <svg id="staci-icon-close" class="staci-toggle__close" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
   </svg>
@@ -17,7 +17,7 @@
   <div class="staci-header">
     <div class="staci-header__info">
       <div class="staci-header__avatar-wrap">
-        <img class="staci-avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/nav" loading="lazy" alt="Staci" />
+        <img class="staci-avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=80,h=80,fit=cover,format=auto" loading="lazy" alt="Staci" width="32" height="32" />
         <span class="staci-header__online"></span>
       </div>
       <div>
@@ -41,7 +41,7 @@
 
   <div id="staci-messages" class="staci-messages">
     <div class="staci-msg staci-msg--bot staci-msg--entrance">
-      <img class="staci-msg__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/nav" loading="lazy" alt="Staci" />
+      <img class="staci-msg__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=60,h=60,fit=cover,format=auto" loading="lazy" alt="Staci" width="20" height="20" />
       <div class="staci-msg__bubble">Hi! I'm Staci, your shopping assistant. How can I help you today?</div>
     </div>
   </div>
@@ -773,7 +773,7 @@
   const STORAGE_VERSION = 'v2';
   const STORAGE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
   const MAX_STORED_MESSAGES = 50;
-  const AVATAR_URL = 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/nav';
+  const AVATAR_URL = 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=60,h=60,fit=cover,format=auto';
 
   let conversationHistory: { role: string; content: string }[] = [];
   let isSending = false;
@@ -947,7 +947,7 @@
     if (animate) msg.dataset.ts = String(Date.now());
     if (!animate) msg.style.animation = 'none';
     msg.innerHTML = `
-      <img class="staci-msg__avatar" src="${AVATAR_URL}" loading="lazy" alt="Staci" />
+      <img class="staci-msg__avatar" src="${AVATAR_URL}" loading="lazy" alt="Staci" width="20" height="20" />
       <div class="staci-msg__body">
         <div class="staci-msg__bubble">${renderMarkdown(text)}</div>
         ${animate ? '<time class="staci-msg__time">just now</time>' : ''}
@@ -972,6 +972,8 @@
     avatar.src = AVATAR_URL;
     avatar.alt = 'Staci';
     avatar.loading = 'lazy';
+    avatar.width = 20;
+    avatar.height = 20;
 
     const body = document.createElement('div');
     body.className = 'staci-msg__body';
@@ -1007,6 +1009,8 @@
     avatar.src = AVATAR_URL;
     avatar.alt = 'Staci';
     avatar.loading = 'lazy';
+    avatar.width = 20;
+    avatar.height = 20;
     msg.appendChild(avatar);
 
     const body = document.createElement('div');
@@ -1043,7 +1047,7 @@
     typing.className = 'staci-msg staci-msg--bot staci-typing';
     typing.id = 'staci-typing';
     typing.innerHTML = `
-      <img class="staci-msg__avatar" src="${AVATAR_URL}" loading="lazy" alt="Staci" />
+      <img class="staci-msg__avatar" src="${AVATAR_URL}" loading="lazy" alt="Staci" width="20" height="20" />
       <div class="staci-msg__body">
         <div class="staci-msg__bubble">
           <span class="staci-dot"></span>
