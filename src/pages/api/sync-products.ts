@@ -275,7 +275,7 @@ export const POST: APIRoute = async ({ request }) => {
     );
   } catch (err: any) {
     console.error('Product sync error:', err?.message);
-    return new Response(JSON.stringify({ error: 'Sync failed.' }), {
+    return new Response(JSON.stringify({ error: 'Sync failed.', detail: err?.message || String(err) }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

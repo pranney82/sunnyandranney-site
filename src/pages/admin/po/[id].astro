@@ -1,0 +1,527 @@
+---
+export const prerender = false;
+
+import AdminBase from '@/layouts/AdminBase.astro';
+import { getPurchaseOrder } from '@/lib/po-db';
+
+const { id } = Astro.params;
+const po = await getPurchaseOrder(id!);
+
+if (!po) {
+  return Astro.redirect('/admin/');
+}
+
+const isEditable = po.status === 'reviewing' || po.status === 'draft';
+const totalCost = po.items.reduce((sum, i) => sum + i.unit_cost * i.quantity, 0);
+const totalRetail = po.items.reduce((sum, i) => sum + (i.retail_price || 0) * i.quantity, 0);
+---
+
+<AdminBase title={`PO ${po.po_number || po.id.slice(0, 8)}`}>
+  <div class="page-header">
+    <div>
+      <h1>
+        {po.supplier_name || 'Purchase Order'}
+        {po.po_number && <span class="po-number">#{po.po_number}</span>}
+      </h1>
+      <p class="po-meta">
+        {po.pdf_filename} &middot; {new Date(po.created_at).toLocaleDateString()} &middot;
+        <span class={`badge badge-${po.status}`}>{po.status}</span>
+      </p>
+    </div>
+    <div class="header-actions">
+      <a href="/admin/" class="btn">Back</a>
+      {isEditable && (
+        <button id="approve-btn" class="btn btn-primary" disabled>Approve &amp; Push to Shopify</button>
+      )}
+    </div>
+  </div>
+
+  <div id="alert-container"></div>
+
+  <div class="summary-row">
+    <div class="summary-card card">
+      <div class="summary-label">Items</div>
+      <div class="summary-value">{po.items.length}</div>
+    </div>
+    <div class="summary-card card">
+      <div class="summary-label">Total Cost</div>
+      <div class="summary-value">${totalCost.toFixed(2)}</div>
+    </div>
+    <div class="summary-card card">
+      <div class="summary-label">Total Retail</div>
+      <div class="summary-value" id="total-retail">${totalRetail.toFixed(2)}</div>
+    </div>
+    <div class="summary-card card">
+      <div class="summary-label">Matched</div>
+      <div class="summary-value">{po.items.filter(i => i.match_status === 'matched').length} / {po.items.length}</div>
+    </div>
+  </div>
+
+  <div class="items-list">
+    {po.items.map((item, idx) => (
+      <div class="item-card card" data-item-id={item.id} data-match-status={item.match_status}>
+        <div class="item-header">
+          <span class="item-number">#{idx + 1}</span>
+          <span class={`badge badge-${item.match_status}`}>{item.match_status}</span>
+          {item.match_confidence > 0 && (
+            <span class="confidence">{Math.round(item.match_confidence * 100)}% match</span>
+          )}
+          {isEditable && (
+            <button class="skip-btn btn" data-action="toggle-skip" title="Skip this item">
+              {item.match_status === 'skipped' ? 'Include' : 'Skip'}
+            </button>
+          )}
+        </div>
+
+        <div class="item-body">
+          <div class="item-image">
+            {item.image_url ? (
+              <img src={item.image_url} alt={item.product_name} />
+            ) : (
+              <div class="no-image">No image</div>
+            )}
+            {isEditable && (
+              <div class="image-actions">
+                <label class="btn upload-btn">
+                  Upload
+                  <input type="file" accept="image/*" class="image-input" data-item-id={item.id} style="display:none" />
+                </label>
+              </div>
+            )}
+          </div>
+
+          <div class="item-fields">
+            <div class="field-row">
+              <div class="field">
+                <label>Product Name</label>
+                <input type="text" value={item.product_name} data-field="product_name" data-item-id={item.id} readonly={!isEditable} />
+              </div>
+              <div class="field field-sm">
+                <label>SKU</label>
+                <input type="text" value={item.sku} data-field="sku" data-item-id={item.id} readonly={!isEditable} />
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field field-sm">
+                <label>Qty</label>
+                <input type="number" value={item.quantity} min="1" data-field="quantity" data-item-id={item.id} readonly={!isEditable} />
+              </div>
+              <div class="field field-sm">
+                <label>Unit Cost</label>
+                <input type="number" value={item.unit_cost} step="0.01" min="0" data-field="unit_cost" data-item-id={item.id} readonly />
+              </div>
+              <div class="field field-sm">
+                <label>Retail Price</label>
+                <input type="number" value={item.retail_price || ''} step="0.01" min="0" placeholder="0.00" data-field="retail_price" data-item-id={item.id} readonly={!isEditable} />
+              </div>
+            </div>
+
+            {item.description && (
+              <div class="field">
+                <label>Description</label>
+                <textarea rows="2" data-field="description" data-item-id={item.id} readonly={!isEditable}>{item.description}</textarea>
+              </div>
+            )}
+
+            {item.shopify_product_id && (
+              <p class="shopify-link">
+                Shopify: {item.shopify_product_id.replace('gid://shopify/Product/', '')}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+
+  {isEditable && (
+    <div class="bottom-actions">
+      <button id="save-btn" class="btn">Save Changes</button>
+      <button id="approve-btn-bottom" class="btn btn-primary">Approve &amp; Push to Shopify</button>
+    </div>
+  )}
+
+  <div id="approve-modal" class="modal" style="display: none;">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content card">
+      <h2>Approve Purchase Order</h2>
+      <div id="approve-summary"></div>
+      <div id="approve-progress" style="display: none;">
+        <div class="spinner"></div>
+        <p id="approve-status">Processing...</p>
+      </div>
+      <div id="approve-results" style="display: none;"></div>
+      <div class="modal-actions">
+        <button id="approve-cancel" class="btn">Cancel</button>
+        <button id="approve-confirm" class="btn btn-primary">Confirm &amp; Push</button>
+      </div>
+    </div>
+  </div>
+</AdminBase>
+
+<style>
+  .po-number { color: var(--text-muted); font-weight: 400; font-size: 1.125rem; }
+  .po-meta { font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+  .header-actions { display: flex; gap: 0.5rem; }
+
+  .summary-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .summary-card { text-align: center; padding: 1rem; }
+  .summary-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); font-weight: 600; }
+  .summary-value { font-size: 1.5rem; font-weight: 700; margin-top: 0.25rem; }
+
+  .items-list { display: flex; flex-direction: column; gap: 1rem; }
+
+  .item-card { transition: opacity 0.2s; }
+  .item-card[data-match-status="skipped"] { opacity: 0.5; }
+
+  .item-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .item-number { font-weight: 700; color: var(--text-muted); font-size: 0.875rem; }
+  .confidence { font-size: 0.75rem; color: var(--text-muted); }
+  .skip-btn { margin-left: auto; font-size: 0.75rem; padding: 0.25rem 0.5rem; }
+
+  .item-body { display: flex; gap: 1.5rem; }
+
+  .item-image {
+    flex-shrink: 0;
+    width: 120px;
+  }
+
+  .item-image img {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+
+  .no-image {
+    width: 120px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .image-actions { margin-top: 0.5rem; }
+  .upload-btn { font-size: 0.75rem; padding: 0.25rem 0.5rem; width: 100%; justify-content: center; }
+
+  .item-fields { flex: 1; min-width: 0; }
+
+  .field-row { display: flex; gap: 0.75rem; margin-bottom: 0.75rem; }
+  .field { flex: 1; }
+  .field-sm { flex: 0 0 120px; }
+
+  .field input[readonly], .field textarea[readonly] {
+    background: var(--bg);
+    cursor: default;
+  }
+
+  .shopify-link { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+  .bottom-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Modal */
+  .modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  .modal-content {
+    position: relative;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .modal-content h2 { font-size: 1.25rem; margin-bottom: 1rem; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.5rem; }
+
+  #approve-summary p { font-size: 0.875rem; margin-bottom: 0.5rem; }
+  #approve-progress { display: flex; align-items: center; gap: 0.75rem; padding: 1rem 0; }
+  #approve-results { font-size: 0.875rem; }
+
+  @media (max-width: 640px) {
+    .item-body { flex-direction: column; }
+    .item-image { width: 100%; }
+    .item-image img, .no-image { width: 100%; height: 160px; }
+    .field-row { flex-direction: column; }
+    .field-sm { flex: 1; }
+  }
+</style>
+
+<script define:vars={{ poId: po.id, isEditable }}>
+  // Track pending changes
+  const pendingChanges = new Map();
+
+  if (isEditable) {
+    // Enable approve buttons
+    document.getElementById('approve-btn')?.removeAttribute('disabled');
+
+    // ─── Inline field editing ─────────────────────────
+    document.querySelectorAll('.item-fields input:not([readonly]), .item-fields textarea:not([readonly])').forEach(el => {
+      el.addEventListener('change', (e) => {
+        const input = e.target;
+        const itemId = input.dataset.itemId;
+        const field = input.dataset.field;
+        let value = input.value;
+
+        if (input.type === 'number') value = parseFloat(value) || 0;
+
+        if (!pendingChanges.has(itemId)) pendingChanges.set(itemId, {});
+        pendingChanges.get(itemId)[field] = value;
+      });
+    });
+
+    // ─── Skip toggle ─────────────────────────────────
+    document.querySelectorAll('[data-action="toggle-skip"]').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const card = btn.closest('.item-card');
+        const itemId = card.dataset.itemId;
+        const isSkipped = card.dataset.matchStatus === 'skipped';
+        const newStatus = isSkipped ? 'new' : 'skipped';
+
+        try {
+          const res = await fetch(`/api/admin/po/item/${itemId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ match_status: newStatus }),
+          });
+          if (res.ok) {
+            card.dataset.matchStatus = newStatus;
+            btn.textContent = newStatus === 'skipped' ? 'Include' : 'Skip';
+            const badge = card.querySelector('.badge');
+            if (badge) {
+              badge.className = `badge badge-${newStatus}`;
+              badge.textContent = newStatus;
+            }
+          }
+        } catch (err) {
+          console.error('Toggle skip error:', err);
+        }
+      });
+    });
+
+    // ─── Image upload ────────────────────────────────
+    document.querySelectorAll('.image-input').forEach(input => {
+      input.addEventListener('change', async (e) => {
+        const file = input.files?.[0];
+        if (!file) return;
+
+        const itemId = input.dataset.itemId;
+        const card = document.querySelector(`[data-item-id="${itemId}"]`);
+        const imgContainer = card?.querySelector('.item-image');
+
+        try {
+          const formData = new FormData();
+          formData.append('image', file);
+
+          const res = await fetch('/api/admin/po/upload-image', {
+            method: 'POST',
+            body: formData,
+          });
+
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error);
+
+          // Update the image display
+          const existingImg = imgContainer?.querySelector('img');
+          const noImage = imgContainer?.querySelector('.no-image');
+          if (existingImg) {
+            existingImg.src = data.url;
+          } else if (noImage) {
+            const img = document.createElement('img');
+            img.src = data.url;
+            img.alt = 'Product image';
+            noImage.replaceWith(img);
+          }
+
+          // Save image URL to the line item
+          await fetch(`/api/admin/po/item/${itemId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image_url: data.url, image_source: 'manual_upload' }),
+          });
+        } catch (err) {
+          alert('Image upload failed: ' + (err?.message || 'Unknown error'));
+        }
+      });
+    });
+
+    // ─── Save changes ────────────────────────────────
+    document.getElementById('save-btn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('save-btn');
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+
+      try {
+        for (const [itemId, changes] of pendingChanges) {
+          await fetch(`/api/admin/po/item/${itemId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(changes),
+          });
+        }
+        pendingChanges.clear();
+        showAlert('Changes saved.', 'success');
+      } catch (err) {
+        showAlert('Failed to save changes.', 'error');
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Save Changes';
+    });
+
+    // ─── Approve flow ────────────────────────────────
+    const modal = document.getElementById('approve-modal');
+    const approveCancel = document.getElementById('approve-cancel');
+    const approveConfirm = document.getElementById('approve-confirm');
+    const approveSummary = document.getElementById('approve-summary');
+    const approveProgress = document.getElementById('approve-progress');
+    const approveStatus = document.getElementById('approve-status');
+    const approveResults = document.getElementById('approve-results');
+
+    function showApproveModal() {
+      // Count items by status
+      const cards = document.querySelectorAll('.item-card');
+      let newCount = 0, matchedCount = 0, skippedCount = 0;
+      cards.forEach(card => {
+        const status = card.dataset.matchStatus;
+        if (status === 'new' || status === 'unmatched') newCount++;
+        else if (status === 'matched') matchedCount++;
+        else if (status === 'skipped') skippedCount++;
+      });
+
+      approveSummary.innerHTML = `
+        <p><strong>${newCount}</strong> new products will be created in Shopify</p>
+        <p><strong>${matchedCount}</strong> existing products will have inventory updated</p>
+        ${skippedCount > 0 ? `<p><strong>${skippedCount}</strong> items will be skipped</p>` : ''}
+      `;
+
+      approveProgress.style.display = 'none';
+      approveResults.style.display = 'none';
+      approveConfirm.style.display = '';
+      approveCancel.textContent = 'Cancel';
+      modal.style.display = 'flex';
+    }
+
+    document.getElementById('approve-btn')?.addEventListener('click', showApproveModal);
+    document.getElementById('approve-btn-bottom')?.addEventListener('click', showApproveModal);
+
+    approveCancel.addEventListener('click', () => {
+      modal.style.display = 'none';
+    });
+
+    modal.querySelector('.modal-backdrop')?.addEventListener('click', () => {
+      modal.style.display = 'none';
+    });
+
+    approveConfirm.addEventListener('click', async () => {
+      // Save pending changes first
+      for (const [itemId, changes] of pendingChanges) {
+        await fetch(`/api/admin/po/item/${itemId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(changes),
+        });
+      }
+      pendingChanges.clear();
+
+      approveConfirm.style.display = 'none';
+      approveProgress.style.display = 'flex';
+      approveSummary.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/admin/po/approve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ poId }),
+        });
+
+        const data = await res.json();
+        approveProgress.style.display = 'none';
+
+        if (!res.ok) {
+          approveResults.innerHTML = `<div class="alert alert-error">${data.error || 'Approval failed'}</div>`;
+          approveResults.style.display = 'block';
+          approveCancel.textContent = 'Close';
+          return;
+        }
+
+        // Show results
+        const successCount = data.results.filter(r => r.success).length;
+        const failCount = data.results.filter(r => !r.success).length;
+
+        let html = `<div class="alert ${failCount === 0 ? 'alert-success' : 'alert-error'}">`;
+        html += `<strong>${successCount}</strong> items processed successfully.`;
+        if (failCount > 0) html += ` <strong>${failCount}</strong> items failed.`;
+        html += '</div>';
+
+        if (failCount > 0) {
+          html += '<ul style="font-size:0.8125rem; margin-top:0.5rem;">';
+          data.results.filter(r => !r.success).forEach(r => {
+            html += `<li>${r.product_name}: ${r.error}</li>`;
+          });
+          html += '</ul>';
+        }
+
+        approveResults.innerHTML = html;
+        approveResults.style.display = 'block';
+        approveCancel.textContent = 'Done';
+        approveCancel.addEventListener('click', () => {
+          window.location.reload();
+        }, { once: true });
+
+      } catch (err) {
+        approveProgress.style.display = 'none';
+        approveResults.innerHTML = `<div class="alert alert-error">${err?.message || 'Network error'}</div>`;
+        approveResults.style.display = 'block';
+        approveCancel.textContent = 'Close';
+      }
+    });
+  }
+
+  function showAlert(msg, type) {
+    const container = document.getElementById('alert-container');
+    container.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+    setTimeout(() => container.innerHTML = '', 3000);
+  }
+</script>

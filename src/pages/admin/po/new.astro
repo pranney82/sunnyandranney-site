@@ -1,0 +1,169 @@
+---
+export const prerender = false;
+
+import AdminBase from '@/layouts/AdminBase.astro';
+---
+
+<AdminBase title="Upload Purchase Order">
+  <div class="page-header">
+    <h1>Upload Purchase Order</h1>
+    <a href="/admin/" class="btn">Back to List</a>
+  </div>
+
+  <div class="card upload-card">
+    <div id="upload-area" class="upload-area">
+      <div class="upload-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="12" y1="18" x2="12" y2="12"></line>
+          <line x1="9" y1="15" x2="12" y2="12"></line>
+          <line x1="15" y1="15" x2="12" y2="12"></line>
+        </svg>
+      </div>
+      <p class="upload-text">Drop a supplier PDF here or click to select</p>
+      <p class="upload-hint">Supports invoices and purchase orders up to 10 MB</p>
+      <input type="file" id="pdf-input" accept=".pdf,application/pdf" />
+    </div>
+
+    <div id="progress" class="progress" style="display: none;">
+      <div class="progress-spinner"><div class="spinner"></div></div>
+      <div>
+        <p id="progress-text" class="progress-text">Uploading and parsing PDF...</p>
+        <p id="progress-detail" class="progress-detail">This may take 10-20 seconds depending on the document size.</p>
+      </div>
+    </div>
+
+    <div id="error" class="alert alert-error" style="display: none;"></div>
+  </div>
+</AdminBase>
+
+<style>
+  .upload-card { max-width: 600px; margin: 0 auto; }
+
+  .upload-area {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .upload-area:hover, .upload-area.dragover {
+    border-color: var(--accent);
+    background: rgba(139, 111, 71, 0.03);
+  }
+
+  .upload-area input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .upload-icon { color: var(--text-muted); margin-bottom: 1rem; }
+
+  .upload-text {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+  }
+
+  .upload-hint {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+  }
+
+  .progress {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: rgba(139, 111, 71, 0.05);
+    border-radius: var(--radius);
+  }
+
+  .progress-spinner { flex-shrink: 0; }
+  .progress-spinner .spinner { width: 1.5rem; height: 1.5rem; }
+
+  .progress-text { font-weight: 500; margin-bottom: 0.25rem; }
+  .progress-detail { font-size: 0.8125rem; color: var(--text-muted); }
+</style>
+
+<script>
+  const uploadArea = document.getElementById('upload-area')!;
+  const fileInput = document.getElementById('pdf-input') as HTMLInputElement;
+  const progress = document.getElementById('progress')!;
+  const progressText = document.getElementById('progress-text')!;
+  const progressDetail = document.getElementById('progress-detail')!;
+  const errorEl = document.getElementById('error')!;
+
+  // Drag-and-drop visual feedback
+  uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.classList.add('dragover');
+  });
+
+  uploadArea.addEventListener('dragleave', () => {
+    uploadArea.classList.remove('dragover');
+  });
+
+  uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    const file = e.dataTransfer?.files[0];
+    if (file && file.type === 'application/pdf') {
+      handleFile(file);
+    } else {
+      showError('Please select a PDF file.');
+    }
+  });
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files?.[0];
+    if (file) handleFile(file);
+  });
+
+  function showError(msg: string) {
+    errorEl.textContent = msg;
+    errorEl.style.display = 'block';
+    progress.style.display = 'none';
+    uploadArea.style.display = '';
+  }
+
+  async function handleFile(file: File) {
+    errorEl.style.display = 'none';
+    uploadArea.style.display = 'none';
+    progress.style.display = 'flex';
+    progressText.textContent = `Uploading ${file.name}...`;
+    progressDetail.textContent = 'Parsing with AI — this may take 10-20 seconds.';
+
+    try {
+      const formData = new FormData();
+      formData.append('pdf', file);
+
+      const res = await fetch('/api/admin/po/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showError(data.error || 'Upload failed');
+        return;
+      }
+
+      progressText.textContent = `Found ${data.items} items from ${data.supplier}`;
+      progressDetail.textContent = 'Redirecting to review...';
+
+      // Redirect to review page
+      window.location.href = `/admin/po/${data.id}/`;
+
+    } catch (err: any) {
+      showError(err?.message || 'Upload failed. Please try again.');
+    }
+  }
+</script>

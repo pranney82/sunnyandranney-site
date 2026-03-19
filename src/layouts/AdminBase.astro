@@ -1,0 +1,251 @@
+---
+export const prerender = false;
+
+interface Props {
+  title?: string;
+}
+
+const { title = 'Admin' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} | Sunny & Ranney Admin</title>
+    <style is:inline>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      :root {
+        --bg: #FAF7F2;
+        --bg-card: #fff;
+        --text: #2d2926;
+        --text-muted: #6b6560;
+        --border: #e5e0db;
+        --accent: #8b6f47;
+        --accent-hover: #74593a;
+        --success: #2d8a4e;
+        --warning: #c4841d;
+        --danger: #c0392b;
+        --radius: 8px;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.5;
+        min-height: 100vh;
+      }
+
+      .admin-header {
+        background: var(--bg-card);
+        border-bottom: 1px solid var(--border);
+        padding: 1rem 0;
+      }
+
+      .admin-header-inner {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      .admin-logo {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--text);
+        text-decoration: none;
+      }
+
+      .admin-logo span { color: var(--text-muted); font-weight: 400; }
+
+      .admin-nav { display: flex; gap: 1.5rem; }
+
+      .admin-nav a {
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: color 0.15s;
+      }
+
+      .admin-nav a:hover, .admin-nav a[aria-current="page"] {
+        color: var(--accent);
+      }
+
+      .admin-container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem;
+      }
+
+      /* Shared utilities */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--bg-card);
+        color: var(--text);
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.15s;
+      }
+
+      .btn:hover { border-color: var(--accent); color: var(--accent); }
+
+      .btn-primary {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+
+      .btn-primary:hover {
+        background: var(--accent-hover);
+        border-color: var(--accent-hover);
+        color: #fff;
+      }
+
+      .btn-danger {
+        color: var(--danger);
+        border-color: var(--danger);
+      }
+
+      .btn-danger:hover {
+        background: var(--danger);
+        color: #fff;
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 0.2rem 0.6rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+      }
+
+      .badge-draft { background: #f0ebe6; color: var(--text-muted); }
+      .badge-reviewing { background: #fef3cd; color: var(--warning); }
+      .badge-approved { background: #d4edda; color: var(--success); }
+      .badge-completed { background: #cce5ff; color: #004085; }
+      .badge-failed { background: #f8d7da; color: var(--danger); }
+
+      .badge-matched { background: #d4edda; color: var(--success); }
+      .badge-unmatched { background: #fef3cd; color: var(--warning); }
+      .badge-new { background: #cce5ff; color: #004085; }
+      .badge-created { background: #d4edda; color: var(--success); }
+      .badge-skipped { background: #f0ebe6; color: var(--text-muted); }
+
+      input, select, textarea {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        font-size: 0.875rem;
+        font-family: inherit;
+        color: var(--text);
+        background: var(--bg-card);
+        width: 100%;
+      }
+
+      input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(139, 111, 71, 0.15);
+      }
+
+      label {
+        display: block;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-bottom: 0.25rem;
+      }
+
+      .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .page-header h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--text-muted);
+      }
+
+      .spinner {
+        display: inline-block;
+        width: 1rem;
+        height: 1rem;
+        border: 2px solid var(--border);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+      }
+
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      .alert {
+        padding: 0.75rem 1rem;
+        border-radius: var(--radius);
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+      }
+
+      .alert-error { background: #f8d7da; color: var(--danger); border: 1px solid #f5c6cb; }
+      .alert-success { background: #d4edda; color: var(--success); border: 1px solid #c3e6cb; }
+
+      @media (max-width: 640px) {
+        .admin-container { padding: 1rem; }
+        .page-header { flex-direction: column; align-items: flex-start; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="admin-header">
+      <div class="admin-header-inner">
+        <a href="/admin/" class="admin-logo">
+          Sunny & Ranney <span>Admin</span>
+        </a>
+        <nav class="admin-nav">
+          <a href="/admin/">Purchase Orders</a>
+          <a href="/" target="_blank">View Site</a>
+        </nav>
+      </div>
+    </header>
+    <div class="admin-container">
+      <slot />
+    </div>
+  </body>
+</html>

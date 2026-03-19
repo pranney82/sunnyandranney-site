@@ -50,8 +50,9 @@ try {
   if (heroCollection && heroCollection.products.length > 0) {
     heroProduct = heroCollection.products[0];
     // Use the product's first image as the hero image
-    if (heroProduct.images?.[0]?.url) {
-      heroImageBase = heroProduct.images[0].url;
+    const heroImg = heroProduct.images?.edges?.[0]?.node?.url || heroProduct.images?.[0]?.url;
+    if (heroImg) {
+      heroImageBase = heroImg;
     }
   }
   if (!heroProduct && heroSetting?.productHandle) {
@@ -1307,8 +1308,8 @@ function fmt(amount: number): string {
   }
 
   .product-card__badge--coming-soon {
-    background: var(--color-charcoal) !important;
-    color: var(--color-cream) !important;
+    background: #8B2252 !important;
+    color: #fff !important;
   }
 
   /* ─── Sale price styling ─────────────────── */

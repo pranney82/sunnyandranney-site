@@ -280,8 +280,8 @@ p {
 }
 
 .product-card__badge--coming-soon {
-  background: var(--color-charcoal);
-  color: var(--color-cream);
+  background: #8B2252;
+  color: #fff;
 }
 
 .product-card__info {
