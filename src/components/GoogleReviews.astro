@@ -74,6 +74,9 @@ const stars = renderStars(GOOGLE_RATING);
                   width="40"
                   height="40"
                   loading="lazy"
+                  data-initial={review.name.charAt(0)}
+                  data-color={AVATAR_COLORS[i % AVATAR_COLORS.length]}
+                  onerror="const d=document.createElement('div');d.className='review-card__avatar review-card__avatar--initials';d.style.backgroundColor=this.dataset.color;d.textContent=this.dataset.initial;this.replaceWith(d);"
                 />
               ) : (
                 <div class="review-card__avatar review-card__avatar--initials" style={`background-color: ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
@@ -156,13 +159,13 @@ const stars = renderStars(GOOGLE_RATING);
     font-size: 0.82rem;
     font-weight: 600;
     letter-spacing: 0.03em;
-    color: var(--color-slate);
+    color: var(--color-charcoal);
     text-decoration: none;
     transition: color 0.2s;
   }
 
   .reviews__google-badge:hover {
-    color: var(--color-charcoal);
+    color: #000;
   }
 
   .reviews__rating-block {
@@ -197,7 +200,7 @@ const stars = renderStars(GOOGLE_RATING);
 
   .reviews__count {
     font-size: 0.82rem;
-    color: var(--color-slate);
+    color: var(--color-charcoal);
   }
 
   /* ─── Review Cards Grid ───────────────── */
@@ -279,7 +282,6 @@ const stars = renderStars(GOOGLE_RATING);
   .review-card__time {
     font-size: 0.72rem;
     color: var(--color-slate);
-    opacity: 0.7;
   }
 
   .review-card__stars {
@@ -290,7 +292,7 @@ const stars = renderStars(GOOGLE_RATING);
   .review-card__text {
     font-size: 0.85rem;
     line-height: 1.65;
-    color: var(--color-slate);
+    color: var(--color-charcoal);
     display: -webkit-box;
     -webkit-line-clamp: 5;
     -webkit-box-orient: vertical;

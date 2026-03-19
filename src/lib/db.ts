@@ -1,29 +1,14 @@
 /**
- * D1 database helpers for settings and rate limiting.
+ * D1 database helpers for settings reads and rate limiting.
  *
  * Architecture:
  *  - D1 is the fast read layer (sub-ms edge reads)
- *  - GitHub Contents API is the source of truth (each admin save = git commit)
- *  - Admin writes go to BOTH D1 and GitHub simultaneously
+ *  - Settings are committed JSON files in src/content/settings/ (source of truth)
+ *  - D1 settings are seeded from those files and used by runtime API routes (chat)
  */
 import { env } from 'cloudflare:workers';
 
-const GITHUB_API = 'https://api.github.com';
-
-// Maps setting keys → file paths in the repo
-const SETTINGS_PATHS: Record<string, string> = {
-  'settings:hours': 'src/content/settings/hours.json',
-  'settings:collections': 'src/content/settings/collections.json',
-  'settings:specials': 'src/content/settings/specials.json',
-  'settings:contact': 'src/content/settings/contact.json',
-  'settings:email-signup': 'src/content/settings/email-signup.json',
-  'settings:hero': 'src/content/settings/hero.json',
-  'settings:kids': 'src/content/settings/kids.json',
-  'settings:team': 'src/content/settings/team.json',
-  'settings:staff-picks': 'src/content/settings/staff-picks.json',
-};
-
-// ─── Settings ────────────────────────────────────────────────
+// ─── Settings (read-only) ────────────────────────────────────
 
 /** Read a setting from D1 (fast, edge-local) */
 export async function getSetting<T = unknown>(key: string): Promise<T | null> {
@@ -52,93 +37,7 @@ export async function getAllSettings(): Promise<Record<string, unknown>> {
   return results;
 }
 
-/**
- * Save a setting to D1 AND commit to GitHub (dual write).
- * D1 is updated first for immediate consistency, then GitHub for persistence.
- */
-export async function saveSetting(
-  key: string,
-  value: unknown,
-): Promise<{ success: boolean; error?: string; warning?: string }> {
-  const json = JSON.stringify(value);
-
-  // 1. Write to D1 (fast, immediate)
-  try {
-    await env.DB.prepare(
-      `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now'))
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
-    ).bind(key, json).run();
-  } catch (err: any) {
-    console.error(`D1 write error (${key}):`, err);
-    return { success: false, error: 'Database write failed' };
-  }
-
-  // 2. Write to GitHub (source of truth, triggers rebuild)
-  const path = SETTINGS_PATHS[key];
-  if (path) {
-    try {
-      await commitToGitHub(path, value, `Update ${key.replace('settings:', '')} settings`);
-    } catch (err) {
-      console.error(`GitHub commit failed for ${key}:`, err);
-      return { success: true, warning: `Saved to database but failed to publish: ${err instanceof Error ? err.message : 'Unknown error'}` };
-    }
-  }
-
-  return { success: true };
-}
-
-// ─── Helpers ─────────────────────────────────────────────────
-
-function toBase64(str: string): string {
-  const bytes = new TextEncoder().encode(str);
-  let binary = '';
-  for (const b of bytes) binary += String.fromCharCode(b);
-  return btoa(binary);
-}
-
-// ─── GitHub write-through ────────────────────────────────────
-
-function githubHeaders() {
-  return {
-    Authorization: `token ${env.GITHUB_TOKEN}`,
-    Accept: 'application/vnd.github.v3+json',
-    'User-Agent': 'sunnyandranney-admin',
-    'Content-Type': 'application/json',
-  };
-}
-
-async function commitToGitHub(path: string, content: unknown, message: string) {
-  const repo = env.GITHUB_REPO;
-
-  // Get current file SHA (needed for updates)
-  let sha: string | undefined;
-  const existing = await fetch(`${GITHUB_API}/repos/${repo}/contents/${path}`, {
-    headers: githubHeaders(),
-  });
-  if (existing.ok) {
-    const data = await existing.json() as { sha: string };
-    sha = data.sha;
-  }
-
-  const body: Record<string, string> = {
-    message,
-    content: toBase64(JSON.stringify(content, null, 2)),
-  };
-  if (sha) body.sha = sha;
-
-  const res = await fetch(`${GITHUB_API}/repos/${repo}/contents/${path}`, {
-    method: 'PUT',
-    headers: githubHeaders(),
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`GitHub API ${res.status}: ${err}`);
-  }
-}
-
-// ─── Rate Limiting (D1-backed, persistent across instances) ──
+// ─── Rate Limiting (D1-backed, atomic, persistent across instances) ──
 
 export async function checkRateLimit(
   key: string,
@@ -146,6 +45,7 @@ export async function checkRateLimit(
   windowSeconds: number,
 ): Promise<boolean> {
   const now = Date.now();
+  const expiresAt = now + windowSeconds * 1000;
 
   try {
     // Clean expired entries occasionally (1 in 20 chance)
@@ -153,25 +53,17 @@ export async function checkRateLimit(
       await env.DB.prepare('DELETE FROM rate_limits WHERE expires_at < ?').bind(now).run();
     }
 
-    const row = await env.DB.prepare('SELECT count, expires_at FROM rate_limits WHERE key = ?')
-      .bind(key)
-      .first<{ count: number; expires_at: number }>();
+    // Atomic upsert: reset window if expired, otherwise increment
+    const row = await env.DB.prepare(
+      `INSERT INTO rate_limits (key, count, expires_at) VALUES (?, 1, ?)
+       ON CONFLICT(key) DO UPDATE SET
+         count = CASE WHEN expires_at < ? THEN 1 ELSE count + 1 END,
+         expires_at = CASE WHEN expires_at < ? THEN ? ELSE expires_at END
+       RETURNING count`
+    ).bind(key, expiresAt, now, now, expiresAt).first<{ count: number }>();
 
-    if (!row || now > row.expires_at) {
-      // New window
-      await env.DB.prepare(
-        `INSERT INTO rate_limits (key, count, expires_at) VALUES (?, 1, ?)
-         ON CONFLICT(key) DO UPDATE SET count = 1, expires_at = excluded.expires_at`
-      ).bind(key, now + windowSeconds * 1000).run();
-      return true;
-    }
-
-    if (row.count >= maxRequests) return false;
-
-    // Increment
-    await env.DB.prepare('UPDATE rate_limits SET count = count + 1 WHERE key = ?')
-      .bind(key).run();
-    return true;
+    if (!row) return true; // Shouldn't happen, but fail open
+    return row.count <= maxRequests;
   } catch (err) {
     console.error('Rate limit error:', err);
     return true; // Fail open

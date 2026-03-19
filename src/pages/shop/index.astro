@@ -78,8 +78,8 @@ const missionIdx = products.length >= 4
 
 // Preload the first product image as LCP candidate
 const lcpUrl = products[0]?.images?.edges[0]?.node?.url;
-const lcpImage = lcpUrl ? cfImage(lcpUrl, { width: 600 }) : undefined;
-const lcpImageSrcset = lcpUrl ? cfSrcset(lcpUrl, [200, 400, 600]) : undefined;
+const lcpImage = lcpUrl ? cfImage(lcpUrl, { width: 400 }) : undefined;
+const lcpImageSrcset = lcpUrl ? cfSrcset(lcpUrl, [200, 300, 400]) : undefined;
 const lcpImageSizes = SIZES.gridCard;
 
 // Price formatter — drops .00 on whole numbers ($800 not $800.00)
@@ -273,8 +273,8 @@ const itemListSchema = hasShopify ? {
                       {image ? (
                         <>
                           <img
-                            src={cfImage(image.url, { width: 600 })}
-                            srcset={cfSrcset(image.url, [200, 400, 600])}
+                            src={cfImage(image.url, { width: 400 })}
+                            srcset={cfSrcset(image.url, [200, 300, 400])}
                             sizes={SIZES.gridCard}
                             alt={image.altText || product.title}
                             width={image.width}
@@ -286,8 +286,8 @@ const itemListSchema = hasShopify ? {
                           />
                           {image2 && (
                             <img
-                              src={cfImage(image2.url, { width: 600 })}
-                              srcset={cfSrcset(image2.url, [200, 400, 600])}
+                              src={cfImage(image2.url, { width: 400 })}
+                              srcset={cfSrcset(image2.url, [200, 300, 400])}
                               sizes={SIZES.gridCard}
                               alt={image2.altText || `${product.title} - alternate view`}
                               width={image2.width}

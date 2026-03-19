@@ -73,6 +73,7 @@ const isShopPage = Astro.url.pathname.startsWith('/shop') || Astro.url.pathname.
     <!-- Preload critical fonts (eliminates FOIT, avoids render-blocking chain) -->
     <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/TheSeasons-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/TheSeasons-Bold.woff2" as="font" type="font/woff2" crossorigin />
 
     {/* Preload LCP image when provided by page — use raw HTML so imagesrcset/imagesizes aren't stripped */}
     {props.lcpImage && (
@@ -88,7 +89,7 @@ const isShopPage = Astro.url.pathname.startsWith('/shop') || Astro.url.pathname.
     <VisitStrip contact={contact} hours={footerHours} holidays={holidays} />
     <EmailCapture />
     <Footer contact={contact} />
-    <CartDrawer />
+    <CartDrawer transition:persist />
     <BackToTop />
 
     <StaciChat transition:persist />

@@ -270,11 +270,12 @@ const allSlides = [...adminSlides, ...defaultSlides];
     right: 0;
     z-index: 100;
     background: var(--color-cream);
-    transition: box-shadow 0.3s ease;
+    will-change: filter;
+    transition: filter 0.3s ease;
   }
 
   .nav--scrolled {
-    box-shadow: 0 4px 24px rgba(44, 44, 44, 0.08), 0 1px 3px rgba(44, 44, 44, 0.04);
+    filter: drop-shadow(0 4px 12px rgba(44, 44, 44, 0.08)) drop-shadow(0 1px 3px rgba(44, 44, 44, 0.04));
   }
 
   .nav--scrolled .nav__categories {
@@ -605,8 +606,9 @@ const allSlides = [...adminSlides, ...defaultSlides];
     line-height: 1;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--color-charcoal);
-    border: 1.5px solid var(--color-charcoal);
+    color: #fff;
+    background: #373A36;
+    border: 1.5px solid #373A36;
     padding: 0.45rem 0.9rem;
     border-radius: 2rem;
     white-space: nowrap;
@@ -650,8 +652,8 @@ const allSlides = [...adminSlides, ...defaultSlides];
   }
 
   .nav__mission-link--active {
-    background: var(--color-charcoal);
-    color: var(--color-cream);
+    background: #373A36;
+    color: #fff;
   }
 
   @media (min-width: 768px) {
@@ -821,12 +823,12 @@ const allSlides = [...adminSlides, ...defaultSlides];
 
   /* ─── Sale treatment ─────────────────────── */
   .nav__cat-link--sale {
-    color: #2d7a96;
+    color: #1a6580;
     font-weight: 600;
   }
 
   .nav__cat-link--sale:hover {
-    color: #1e5a6f;
+    color: #124a5e;
   }
 
   /* ─── Dividers between groups ────────────── */

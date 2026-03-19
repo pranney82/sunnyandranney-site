@@ -5,7 +5,7 @@
 <!-- Chat toggle button -->
 <button id="staci-toggle" aria-label="Chat with Staci" title="Chat with Staci">
   <span class="staci-badge" id="staci-badge" style="display:none;"></span>
-  <img id="staci-icon-chat" class="staci-toggle__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=120,h=120,fit=cover,format=auto" alt="Ask Staci" width="40" height="40" loading="lazy" />
+  <img id="staci-icon-chat" class="staci-toggle__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=180,h=180,fit=cover,format=auto" alt="Ask Staci" width="40" height="40" loading="lazy" />
   <svg id="staci-icon-close" class="staci-toggle__close" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
   </svg>
@@ -797,8 +797,10 @@
     html = html.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
 
     // Links: all open in new tab so chat stays open while browsing
+    // Only allow http(s) and relative URLs — block javascript: and data: schemes
     html = html.replace(/\[(.+?)\]\((.+?)\)/g, (_match, linkText, url) => {
-      return `<a href="${url}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
+      const safeUrl = /^(https?:\/\/|\/[^\/])/.test(url) ? url : '#';
+      return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
     });
 
     // Convert markdown lists to HTML lists

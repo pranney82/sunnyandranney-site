@@ -67,10 +67,8 @@ export async function fetchGooglePlaceData(): Promise<GooglePlaceData | null> {
 
     const reviews = (data.reviews ?? []).filter((r) => r.text?.text);
 
-    // Fetch avatars at build time, save to public/, serve from own CDN
-    const { writeFileSync, mkdirSync, existsSync } = await import('node:fs');
-    const avatarDir = 'public/reviews';
-    if (!existsSync(avatarDir)) mkdirSync(avatarDir, { recursive: true });
+    const cfAccountId = import.meta.env.CF_ACCOUNT_ID;
+    const cfImagesToken = import.meta.env.CF_IMAGES_TOKEN;
 
     const reviewsWithPhotos = await Promise.all(
       reviews.map(async (r, i) => {
@@ -78,15 +76,26 @@ export async function fetchGooglePlaceData(): Promise<GooglePlaceData | null> {
         const uri = r.authorAttribution?.photoUri;
         if (uri) {
           try {
-            // Request a small 80px version (retina for 40px display)
             const smallUri = uri.replace(/=s\d+/, '=s80');
             const imgRes = await fetch(smallUri);
             if (imgRes.ok) {
-              const ext = (imgRes.headers.get('content-type') ?? '').includes('png') ? 'png' : 'jpg';
-              const filename = `avatar-${i}.${ext}`;
               const buf = Buffer.from(await imgRes.arrayBuffer());
-              writeFileSync(`${avatarDir}/${filename}`, buf);
-              photoUrl = `/reviews/${filename}`;
+
+              // Upload to CF Images if credentials are available
+              if (cfAccountId && cfImagesToken) {
+                const form = new FormData();
+                form.append('file', new Blob([buf]), `review-avatar-${i}`);
+                form.append('id', `review-avatar-${i}`);
+                const cfRes = await fetch(
+                  `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/images/v1`,
+                  { method: 'POST', headers: { Authorization: `Bearer ${cfImagesToken}` }, body: form },
+                );
+                const cfBody = await cfRes.json() as { success: boolean; errors?: Array<{ code: number }> };
+                const alreadyExists = cfBody.errors?.some((e) => e.code === 5409);
+                if (cfBody.success || alreadyExists) {
+                  photoUrl = `https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/review-avatar-${i}/w=80,h=80,fit=cover,format=auto`;
+                }
+              }
             }
           } catch {
             // skip — will fall back to initials

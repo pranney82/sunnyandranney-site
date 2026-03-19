@@ -1,156 +1,205 @@
 /**
  * Build-time settings reader for static pages.
  *
- * Reads from local JSON files in src/content/settings/ that are committed
- * by the admin panel via GitHub API. Each commit triggers a CF Pages rebuild
- * so static pages pick up the new data.
+ * Reads from Astro Content Collections (src/content/settings/*.json).
+ * Each JSON file is committed to the repo — editing triggers a CF Pages rebuild
+ * so static pages always serve the latest data.
+ *
+ * Each getter validates its data against a Zod schema for type-safe access
+ * with clear build-time error messages on malformed files.
  */
+import { getEntry } from 'astro:content';
+import { z } from 'astro:content';
 
-// ─── Types ──────────────────────────────────────────────────
+// ─── Zod Schemas ────────────────────────────────────────────
 
-export interface StoreHours {
-  days: Array<{ day: string; open: string; close: string; closed: boolean }>;
-  holidays: Array<{
-    date: string;
-    label: string;
-    closed: boolean;
-    open: string;
-    close: string;
-  }>;
-  note: string;
-}
-
-export interface CollectionSetting {
-  handle: string;
-  enabled: boolean;
-  order: number;
-  showInNav?: boolean;
-  navLabel?: string;
-}
-
-export interface StoreSpecials {
-  promoCode: string;
-  promoDescription: string;
-  featuredHandle: string;
-  announcements: Array<{
-    id: string;
-    text: string;
-    link: string;
-    active: boolean;
-    type: 'banner' | 'promo' | 'info';
-  }>;
-}
-
-export interface ContactInfo {
-  address: string;
-  city: string;
-  state: string;
-  zip: string;
-  phone: string;
-  email: string;
-  instagramUrl: string;
-  facebookUrl: string;
-}
-
-export interface EmailSignupConfig {
-  constantContactListId: string;
-  constantContactListName: string;
-}
-
-export interface HeroSetting {
-  imageUrl: string;           // Shopify product image URL (or fallback CF Images URL)
-  productHandle: string;      // Shopify product handle for the hero card
-  collectionHandle?: string;  // Collection the product was picked from (admin state)
-}
-
-export interface KidStory {
-  name: string;
-  tag: string;
-  blurb: string;
-  imageUrl: string;        // CF Images base URL (no size params)
-}
-
-export interface KidsSetting {
-  heading: string;
-  subheading: string;
-  kids: KidStory[];
-}
-
-export interface StaffPicksSetting {
-  handles: string[];
-}
-
-export interface TeamMember {
-  name: string;
-  role: string;
-  desc: string;
-  imageUrl: string;        // CF Images base URL (no size params), empty for initials-only
-  initials: string;        // e.g. "ST" — shown when no imageUrl
-}
-
-export interface TeamSetting {
-  members: TeamMember[];
-}
-
-export interface ReviewItem {
-  name: string;
-  text: string;
-  rating: number;
-}
-
-export interface ReviewsSetting {
-  googleRating: number;
-  reviewCount: number;
-  featured: ReviewItem[];
-}
-
-// ─── Setting key → type map ─────────────────────────────────
-
-interface SettingsMap {
-  'hours': StoreHours;
-  'collections': CollectionSetting[];
-  'specials': StoreSpecials;
-  'contact': ContactInfo;
-  'email-signup': EmailSignupConfig;
-  'hero': HeroSetting;
-  'kids': KidsSetting;
-  'team': TeamSetting;
-  'staff-picks': StaffPicksSetting;
-  'reviews': ReviewsSetting;
-}
-
-// ─── Build-time reader ──────────────────────────────────────
-
-// Vite's glob import — statically analyzable so it works in CF Pages production builds.
-// Dynamic import(/* @vite-ignore */) is NOT bundled correctly in production.
-const _settingsFiles = import.meta.glob('/src/content/settings/*.json', {
-  eager: true,
-  import: 'default',
+const daySchema = z.object({
+  day: z.string(),
+  open: z.string(),
+  close: z.string(),
+  closed: z.boolean(),
 });
 
+const holidaySchema = z.object({
+  date: z.string(),
+  label: z.string(),
+  closed: z.boolean(),
+  open: z.string(),
+  close: z.string(),
+});
+
+const storeHoursSchema = z.object({
+  days: z.array(daySchema),
+  holidays: z.array(holidaySchema),
+  note: z.string(),
+});
+
+const collectionSettingSchema = z.object({
+  handle: z.string(),
+  enabled: z.boolean(),
+  order: z.number(),
+  showInNav: z.boolean().optional(),
+  navLabel: z.string().optional(),
+});
+
+const announcementSchema = z.object({
+  id: z.string(),
+  text: z.string(),
+  link: z.string(),
+  active: z.boolean(),
+  type: z.enum(['banner', 'promo', 'info']),
+});
+
+const storeSpecialsSchema = z.object({
+  promoCode: z.string(),
+  promoDescription: z.string(),
+  featuredHandle: z.string(),
+  announcements: z.array(announcementSchema),
+});
+
+const contactInfoSchema = z.object({
+  address: z.string(),
+  city: z.string(),
+  state: z.string(),
+  zip: z.string(),
+  phone: z.string(),
+  email: z.string(),
+  instagramUrl: z.string(),
+  facebookUrl: z.string(),
+});
+
+const emailSignupConfigSchema = z.object({
+  constantContactListId: z.string(),
+  constantContactListName: z.string(),
+});
+
+const heroSettingSchema = z.object({
+  imageUrl: z.string(),
+  productHandle: z.string(),
+  collectionHandle: z.string().optional(),
+});
+
+const kidStorySchema = z.object({
+  name: z.string(),
+  tag: z.string(),
+  blurb: z.string(),
+  imageUrl: z.string(),
+});
+
+const kidsSettingSchema = z.object({
+  heading: z.string(),
+  subheading: z.string(),
+  kids: z.array(kidStorySchema),
+});
+
+const staffPicksSettingSchema = z.object({
+  handles: z.array(z.string()),
+});
+
+const teamMemberSchema = z.object({
+  name: z.string(),
+  role: z.string(),
+  desc: z.string(),
+  imageUrl: z.string(),
+  initials: z.string(),
+});
+
+const teamSettingSchema = z.object({
+  members: z.array(teamMemberSchema),
+});
+
+const reviewItemSchema = z.object({
+  name: z.string(),
+  text: z.string(),
+  rating: z.number(),
+});
+
+const reviewsSettingSchema = z.object({
+  googleRating: z.number(),
+  reviewCount: z.number(),
+  featured: z.array(reviewItemSchema),
+});
+
+// ─── Exported Types (inferred from Zod) ─────────────────────
+
+export type StoreHours = z.infer<typeof storeHoursSchema>;
+export type CollectionSetting = z.infer<typeof collectionSettingSchema>;
+export type StoreSpecials = z.infer<typeof storeSpecialsSchema>;
+export type ContactInfo = z.infer<typeof contactInfoSchema>;
+export type EmailSignupConfig = z.infer<typeof emailSignupConfigSchema>;
+export type HeroSetting = z.infer<typeof heroSettingSchema>;
+export type KidStory = z.infer<typeof kidStorySchema>;
+export type KidsSetting = z.infer<typeof kidsSettingSchema>;
+export type StaffPicksSetting = z.infer<typeof staffPicksSettingSchema>;
+export type TeamMember = z.infer<typeof teamMemberSchema>;
+export type TeamSetting = z.infer<typeof teamSettingSchema>;
+export type ReviewItem = z.infer<typeof reviewItemSchema>;
+export type ReviewsSetting = z.infer<typeof reviewsSettingSchema>;
+
+// ─── Typed getters via Content Collections ──────────────────
+
 /**
- * Read a settings JSON file bundled at build time.
- * Returns null if the file doesn't exist (first deploy before any admin saves).
- *
- * Synchronous — all JSON is eagerly loaded via Vite glob at bundle time.
- * Callers may `await` this safely (await on a non-Promise resolves immediately).
+ * Read and validate a settings entry from the content collection.
+ * Returns null if the file doesn't exist or fails validation.
  */
-function getSetting<K extends keyof SettingsMap>(key: K): SettingsMap[K] | null {
-  const data = _settingsFiles[`/src/content/settings/${key}.json`];
-  return data !== undefined ? (data as SettingsMap[K]) : null;
+async function getSettingValidated<T>(
+  id: string,
+  schema: z.ZodType<T>,
+): Promise<T | null> {
+  try {
+    const entry = await getEntry('settings', id);
+    if (!entry) return null;
+    const result = schema.safeParse(entry.data);
+    if (!result.success) {
+      console.error(`[settings] Invalid ${id}.json:`, result.error.issues);
+      return null;
+    }
+    return result.data;
+  } catch (err) {
+    console.error(`[settings] Error reading ${id}:`, err);
+    return null;
+  }
 }
 
-// Named exports for discoverability — thin wrappers over getSetting
-export function getHoursStatic() { return getSetting('hours'); }
-export function getCollectionsStatic() { return getSetting('collections'); }
-export function getSpecialsStatic() { return getSetting('specials'); }
-export function getContactStatic() { return getSetting('contact'); }
-export function getEmailSignupStatic() { return getSetting('email-signup'); }
-export function getHeroStatic() { return getSetting('hero'); }
-export function getKidsStatic() { return getSetting('kids'); }
-export function getTeamStatic() { return getSetting('team'); }
-export function getStaffPicksStatic() { return getSetting('staff-picks'); }
-export function getReviewsStatic() { return getSetting('reviews'); }
+export function getHoursStatic() {
+  return getSettingValidated('hours', storeHoursSchema);
+}
+
+export function getCollectionsStatic() {
+  return getSettingValidated('collections', z.array(collectionSettingSchema));
+}
+
+export function getSpecialsStatic() {
+  return getSettingValidated('specials', storeSpecialsSchema);
+}
+
+export function getContactStatic() {
+  return getSettingValidated('contact', contactInfoSchema);
+}
+
+export function getEmailSignupStatic() {
+  return getSettingValidated('email-signup', emailSignupConfigSchema);
+}
+
+export function getHeroStatic() {
+  return getSettingValidated('hero', heroSettingSchema);
+}
+
+export function getKidsStatic() {
+  return getSettingValidated('kids', kidsSettingSchema);
+}
+
+export function getTeamStatic() {
+  return getSettingValidated('team', teamSettingSchema);
+}
+
+export function getStaffPicksStatic() {
+  return getSettingValidated('staff-picks', staffPicksSettingSchema);
+}
+
+export function getReviewsStatic() {
+  return getSettingValidated('reviews', reviewsSettingSchema);
+}
 
 // ─── Formatting helpers (shared by static pages + chatbot) ──
 

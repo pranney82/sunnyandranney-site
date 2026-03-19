@@ -13,6 +13,3 @@ index_name = "product-catalog"
 binding = "DB"
 database_name = "sunnyandranney-db"
 database_id = "a3fbfba9-569c-4dae-af1a-4a1f290963f7"
-
-[vars]
-GITHUB_REPO = "pranney82/sunnyandranney-site"
