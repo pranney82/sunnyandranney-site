@@ -91,7 +91,7 @@
 
   /* Layout */
   --max-width:   1280px;
-  --nav-height:  120px;
+  --nav-height:  140px;
 
   /* Transitions */
   --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
@@ -561,7 +561,7 @@ p {
 
 /* ─── Responsive ────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  :root { --nav-height: 120px; }
+  :root { --nav-height: 140px; }
   .section { padding: var(--space-xl) 0; }
   .section--large { padding: var(--space-2xl) 0; }
 }

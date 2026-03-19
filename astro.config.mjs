@@ -20,9 +20,9 @@ export default defineConfig({
     inlineStylesheets: 'always',
   },
 
-  // Prefetch links marked with data-astro-prefetch when they enter the viewport
+  // Prefetch on hover — avoids bandwidth competition with LCP on slow connections
   prefetch: {
-    defaultStrategy: 'viewport',
+    defaultStrategy: 'hover',
   },
 
 });

@@ -86,7 +86,7 @@ const { handle } = Astro.params;
 const { product, relatedProducts } = Astro.props;
 
 if (!product) {
-  return Astro.redirect('/shop');
+  return Astro.redirect('/shop/');
 }
 
 const images = product.images.edges.map((e: any) => e.node);
@@ -113,7 +113,7 @@ function fmt(amount: number): string {
   return amount % 1 === 0 ? `$${amount.toLocaleString()}` : `$${amount.toFixed(2)}`;
 }
 
-const productUrl = `https://sunnyandranney.com/shop/${product.handle}`;
+const productUrl = `https://sunnyandranney.com/shop/${product.handle}/`;
 
 // Full Product schema — drives Google Shopping rich results
 const productSchema = {
@@ -155,9 +155,9 @@ const breadcrumbSchema = {
   '@type': 'BreadcrumbList',
   itemListElement: [
     { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://sunnyandranney.com' },
-    { '@type': 'ListItem', position: 2, name: 'Shop', item: 'https://sunnyandranney.com/shop' },
+    { '@type': 'ListItem', position: 2, name: 'Shop', item: 'https://sunnyandranney.com/shop/' },
     ...(product.productType ? [
-      { '@type': 'ListItem', position: 3, name: product.productType.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '), item: `https://sunnyandranney.com/shop?type=${encodeURIComponent(product.productType)}` },
+      { '@type': 'ListItem', position: 3, name: product.productType.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '), item: `https://sunnyandranney.com/shop/?type=${encodeURIComponent(product.productType)}` },
       { '@type': 'ListItem', position: 4, name: product.title, item: productUrl },
     ] : [
       { '@type': 'ListItem', position: 3, name: product.title, item: productUrl },
@@ -181,9 +181,9 @@ const breadcrumbSchema = {
       <nav class="breadcrumbs" aria-label="Breadcrumb">
         <ol class="breadcrumbs__list">
           <li><a href="/">Home</a></li>
-          <li><a href="/shop">Shop</a></li>
+          <li><a href="/shop/">Shop</a></li>
           {product.productType && (
-            <li><a href={`/shop?type=${encodeURIComponent(product.productType)}`}>{product.productType.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')}</a></li>
+            <li><a href={`/shop/?type=${encodeURIComponent(product.productType)}`}>{product.productType.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')}</a></li>
           )}
           <li aria-current="page">{product.title}</li>
         </ol>
@@ -418,7 +418,7 @@ const breadcrumbSchema = {
             <span class="pdp-charity-note__icon"></span>
             <p>
               This purchase supports <strong>Sunshine on a Ranney Day</strong> —
-              100% of profits fund home makeovers for kids with special needs. <a href="/about" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Our&nbsp;mission&nbsp;→</a>
+              100% of profits fund home makeovers for kids with special needs. <a href="/about/" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Our&nbsp;mission&nbsp;→</a>
             </p>
           </div>
 
@@ -493,10 +493,10 @@ const breadcrumbSchema = {
                     data-image={rpImage?.url || ''}
                     data-handle={rp.handle}
                   />
-                  <a href={`/shop/${rp.handle}`} class="fbt-item__image">
+                  <a href={`/shop/${rp.handle}/`} class="fbt-item__image">
                     {rpImage && <img src={cfImage(rpImage.url, { width: 300 })} alt={rp.title} loading="lazy" />}
                   </a>
-                  <a href={`/shop/${rp.handle}`} class="fbt-item__name">{rp.title}</a>
+                  <a href={`/shop/${rp.handle}/`} class="fbt-item__name">{rp.title}</a>
                   <span class="fbt-item__price">{fmt(parseFloat(rpPrice.amount))}</span>
                 </div>
                 {!isLast && <span class="fbt-plus">+</span>}
@@ -525,7 +525,7 @@ const breadcrumbSchema = {
             const rpImage = rp.images.edges[0]?.node;
             const rpPrice = rp.priceRange.minVariantPrice;
             return (
-              <a href={`/shop/${rp.handle}`} class="related-card">
+              <a href={`/shop/${rp.handle}/`} class="related-card">
                 <div class="related-card__image">
                   {rpImage && (
                     <img
@@ -2378,7 +2378,7 @@ const breadcrumbSchema = {
       const frag = document.createDocumentFragment();
       items.slice(0, 8).forEach((item: any) => {
         const card = document.createElement('a');
-        card.href = `/shop/${encodeURIComponent(item.handle)}`;
+        card.href = `/shop/${encodeURIComponent(item.handle)}/`;
         card.className = 'recently-card';
 
         const imgWrap = document.createElement('div');

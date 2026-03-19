@@ -87,6 +87,24 @@ function fmt(amount: number): string {
   return amount % 1 === 0 ? `$${amount.toLocaleString()}` : `$${amount.toFixed(2)}`;
 }
 
+// Build quick-view + search data map (moved out of per-card data attributes to reduce HTML/DOM size)
+const productDataMap: Record<string, any> = {};
+for (const product of products) {
+  const allImages = product.images.edges.map((e: any) => e.node.url);
+  const allVariants = product.variants.edges.map((e: any) => ({
+    id: e.node.id,
+    title: e.node.title,
+    price: e.node.price.amount,
+    available: e.node.availableForSale,
+    image: e.node.image?.url || ''
+  }));
+  productDataMap[product.handle] = {
+    i: allImages,
+    v: allVariants,
+    d: product.description?.slice(0, 300) || '',
+  };
+}
+
 // ItemList structured data for SEO (top 1% shops have this)
 const itemListSchema = hasShopify ? {
   '@context': 'https://schema.org',
@@ -99,7 +117,7 @@ const itemListSchema = hasShopify ? {
     item: {
       '@type': 'Product',
       name: p.title,
-      url: `https://sunnyandranney.com/shop/${p.handle}`,
+      url: `https://sunnyandranney.com/shop/${p.handle}/`,
       image: p.images.edges[0]?.node?.url || '',
       offers: {
         '@type': 'Offer',
@@ -122,9 +140,10 @@ const itemListSchema = hasShopify ? {
   lcpImageSizes={lcpImageSizes}
 >
   {/* Collection titles + subcategories for client-side filtering */}
-  <script is:inline define:vars={{ collectionTitles, collectionSubcategories }}>
+  <script is:inline define:vars={{ collectionTitles, collectionSubcategories, productDataMap }}>
     window.__collectionTitles = collectionTitles;
     window.__collectionSubcategories = collectionSubcategories;
+    window.__productData = productDataMap;
   </script>
   {/* ItemList structured data for rich results */}
   {itemListSchema && (
@@ -136,9 +155,9 @@ const itemListSchema = hasShopify ? {
       <div class="shop-hero__row">
         <div class="shop-hero__text">
           <h1 class="shop-hero__title animate-fade-up" id="shop-title">The Collection</h1>
-          <a href="/shop" class="shop-hero__clear animate-fade-up delay-1" id="shop-clear-collection" style="display:none;">← All Products</a>
+          <a href="/shop/" class="shop-hero__clear animate-fade-up delay-1" id="shop-clear-collection" style="display:none;">← All Products</a>
         </div>
-        <a href="/about" class="shop-hero__mission animate-fade-up delay-1">
+        <a href="/about/" class="shop-hero__mission animate-fade-up delay-1">
           <img src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/soard-favicon/w=40,h=40,fit=cover,q=80,format=auto" alt="" aria-hidden="true" width="20" height="20" class="shop-hero__mission-icon" />
           <span>100% of profits fund kids' room makeovers</span>
           <span class="shop-hero__mission-arrow">→</span>
@@ -229,8 +248,6 @@ const itemListSchema = hasShopify ? {
               const compareAt = product.compareAtPriceRange?.minVariantPrice;
               const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.amount);
               const firstVariant = product.variants.edges[0]?.node;
-              const allImages = product.images.edges.map((e: any) => e.node);
-              const allVariants = product.variants.edges.map((e: any) => e.node);
 
               return (
                 <>
@@ -242,7 +259,7 @@ const itemListSchema = hasShopify ? {
                         Every purchase transforms a child's room. 100% of profits fund
                         <strong> Sunshine on a Ranney Day</strong> home makeovers.
                       </p>
-                      <a href="/about" class="grid-editorial__link">Learn about our mission</a>
+                      <a href="/about/" class="grid-editorial__link">Learn about our mission</a>
                     </div>
                   </div>
                 )}
@@ -254,7 +271,6 @@ const itemListSchema = hasShopify ? {
                   data-handle={product.handle}
                   data-tags={product.tags?.join(',').toLowerCase() || ''}
                   data-collections={(productCollections[product.handle] || []).join(',')}
-                  data-description={product.description?.toLowerCase().slice(0, 200) || ''}
                   data-created={product.createdAt || ''}
                   data-idx={idx}
                   style={idx >= 24 ? 'display:none;' : ''}
@@ -269,7 +285,7 @@ const itemListSchema = hasShopify ? {
                   </button>
 
                   <div class="product-card__image-container">
-                    <a href={`/shop/${product.handle}`} class="product-card__image" aria-hidden="true" tabindex="-1">
+                    <a href={`/shop/${product.handle}/`} class="product-card__image" aria-hidden="true" tabindex="-1">
                       {image ? (
                         <>
                           <img
@@ -310,15 +326,6 @@ const itemListSchema = hasShopify ? {
                         data-title={product.title}
                         data-price={price.amount}
                         data-compare-price={isOnSale ? compareAt.amount : ''}
-                        data-description={product.description?.slice(0, 300) || ''}
-                        data-images={JSON.stringify(allImages.map((img: any) => img.url))}
-                        data-variants={JSON.stringify(allVariants.map((v: any) => ({
-                          id: v.id,
-                          title: v.title,
-                          price: v.price.amount,
-                          available: v.availableForSale,
-                          image: v.image?.url || ''
-                        })))}
                         data-type={product.productType}
                         data-available={String(product.availableForSale)}
                       >Quick View</button>
@@ -326,7 +333,7 @@ const itemListSchema = hasShopify ? {
                   </div>
                   <div class="product-card__info">
                     <span class="product-card__type">{product.productType || '\u00A0'}</span>
-                    <a href={`/shop/${product.handle}`} class="product-card__title">{product.title}</a>
+                    <a href={`/shop/${product.handle}/`} class="product-card__title">{product.title}</a>
                     <div class="product-card__pricing">
                       <span class={`product-card__price${isOnSale ? ' product-card__price--sale' : ''}`}>
                         {fmt(parseFloat(price.amount))}
@@ -1236,6 +1243,7 @@ const itemListSchema = hasShopify ? {
     flex-direction: column;
     background: transparent;
     overflow: hidden;
+    contain: layout style paint;
   }
 
   /* Wishlist heart */
@@ -2033,7 +2041,7 @@ const itemListSchema = hasShopify ? {
     if (activeSale) params.set('sale', 'true');
     if (activeView !== 'grid') params.set('view', activeView);
     const qs = params.toString();
-    const url = qs ? `/shop?${qs}` : '/shop';
+    const url = qs ? `/shop/?${qs}` : '/shop/';
     window.history.replaceState({}, '', url);
   }
 
@@ -2341,7 +2349,8 @@ const itemListSchema = hasShopify ? {
       const category = card.getAttribute('data-category') || '';
       const title = (card.dataset.title || '').toLowerCase();
       const tags = card.dataset.tags || '';
-      const desc = card.dataset.description || '';
+      const handle = card.dataset.handle || '';
+      const desc = ((window as any).__productData?.[handle]?.d || '').toLowerCase().slice(0, 200);
 
       const cardPrice = parseFloat(card.dataset.price || '0');
       const collections = card.dataset.collections || '';
@@ -2735,7 +2744,7 @@ const itemListSchema = hasShopify ? {
     }
 
     qvSelectedVariant = variants[0] || null;
-    if (qvViewFull) qvViewFull.href = `/shop/${data.handle}`;
+    if (qvViewFull) qvViewFull.href = `/shop/${data.handle}/`;
 
     // Disable add if not available
     if (qvAdd) {
@@ -2926,13 +2935,20 @@ const itemListSchema = hasShopify ? {
     }, 1500);
   });
 
-  // Open quick view from card
+  // Open quick view from card — merge button dataset with pre-built product data
   grid?.addEventListener('click', (e) => {
     const btn = (e.target as Element)?.closest('.product-card__quick-view') as HTMLElement;
     if (!btn) return;
     e.preventDefault();
     e.stopPropagation();
-    openQuickView(btn.dataset);
+    const handle = btn.dataset.handle || '';
+    const extra = (window as any).__productData?.[handle] || {};
+    openQuickView({
+      ...btn.dataset,
+      images: JSON.stringify(extra.i || []),
+      variants: JSON.stringify(extra.v || []),
+      description: extra.d || '',
+    });
   });
 
   // ─── Staggered card entrance animation ────────

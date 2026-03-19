@@ -61,7 +61,7 @@ const isShopPage = Astro.url.pathname.startsWith('/shop') || Astro.url.pathname.
 
     <!-- Critical CSS — renders LCP banner text before external CSS loads -->
     <style is:inline>
-      .nav{position:fixed;top:0;left:0;right:0;z-index:100;background:#fff}
+      .nav{position:fixed;top:0;left:0;right:0;z-index:100;background:#FAF7F2}
       .nav__banner{background:#2C2C2C;color:#FAF7F2;font-size:.72rem;text-align:center;padding:.4rem 0;letter-spacing:.02em;max-height:40px;overflow:hidden}
       .nav__banner-slider{position:relative;height:1.3em;overflow:hidden}
       .nav__banner-slide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;white-space:nowrap}
@@ -69,23 +69,22 @@ const isShopPage = Astro.url.pathname.startsWith('/shop') || Astro.url.pathname.
       @media(max-width:767px){.nav__banner{font-size:.6rem}.nav__banner-slider{height:2.4em}.nav__banner-slide{white-space:normal;text-align:center;line-height:1.2;padding:0 .25rem}}
     </style>
 
-    <!-- View Transitions for SPA-like navigation -->
-    <ClientRouter />
-
-    <!-- Preconnect to external CDNs for faster images -->
-    {isShopPage && <link rel="preconnect" href="https://cdn.shopify.com" />}
-    {isShopPage && <link rel="dns-prefetch" href="https://cdn.shopify.com" />}
+    <!-- Preconnect to external CDNs — as early as possible for LCP -->
     <link rel="preconnect" href="https://imagedelivery.net" />
     <link rel="dns-prefetch" href="https://imagedelivery.net" />
-    <!-- Preload critical fonts (eliminates FOIT, avoids render-blocking chain) -->
-    <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/TheSeasons-Regular.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/TheSeasons-Bold.woff2" as="font" type="font/woff2" crossorigin />
+    {isShopPage && <link rel="preconnect" href="https://cdn.shopify.com" />}
+    {isShopPage && <link rel="dns-prefetch" href="https://cdn.shopify.com" />}
 
-    {/* Preload LCP image when provided by page — use raw HTML so imagesrcset/imagesizes aren't stripped */}
+    {/* Preload LCP image FIRST — before fonts so it wins the bandwidth race on slow connections */}
     {props.lcpImage && (
       <Fragment set:html={`<link rel="preload" href="${props.lcpImage}" as="image" fetchpriority="high"${props.lcpImageSrcset ? ` imagesrcset="${props.lcpImageSrcset}"` : ''}${props.lcpImageSizes ? ` imagesizes="${props.lcpImageSizes}"` : ''} />`} />
     )}
+
+    <!-- Preload body font only — display fonts use font-display:optional and gracefully degrade on slow connections -->
+    <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
+
+    <!-- View Transitions for SPA-like navigation -->
+    <ClientRouter />
   </head>
   <body>
     <a href="#main-content" class="skip-to-content">Skip to content</a>

@@ -162,11 +162,11 @@ const allSlides = [...adminSlides, ...defaultSlides];
         New
       </a>
       {roomCollections.map(col => (
-        <a href={`/shop?collection=${col.handle}`} data-astro-prefetch="hover" class="nav__cat-link">
+        <a href={`/shop/?collection=${col.handle}`} data-astro-prefetch="hover" class="nav__cat-link">
           {col.label}
         </a>
       ))}
-      <a href="/shop?sale=true" data-astro-prefetch="hover" class="nav__cat-link nav__cat-link--sale">Sale</a>
+      <a href="/shop/?sale=true" data-astro-prefetch="hover" class="nav__cat-link nav__cat-link--sale">Sale</a>
     </div>
   </nav>
 
@@ -209,15 +209,15 @@ const allSlides = [...adminSlides, ...defaultSlides];
     text-decoration-color: var(--color-gold);
   }
 
-  /* Smooth banner collapse on scroll — no position:absolute jump */
+  /* Smooth banner collapse on scroll — composited properties only */
   .nav__banner {
-    transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.2s ease;
+    transform-origin: top;
+    transition: transform 0.3s ease, opacity 0.2s ease;
     max-height: 40px;
     overflow: hidden;
   }
   .nav--scrolled .nav__banner {
-    max-height: 0;
-    padding: 0;
+    transform: scaleY(0);
     opacity: 0;
     pointer-events: none;
   }
@@ -270,12 +270,22 @@ const allSlides = [...adminSlides, ...defaultSlides];
     right: 0;
     z-index: 100;
     background: var(--color-cream);
-    will-change: filter;
-    transition: filter 0.3s ease;
   }
 
-  .nav--scrolled {
-    filter: drop-shadow(0 4px 12px rgba(44, 44, 44, 0.08)) drop-shadow(0 1px 3px rgba(44, 44, 44, 0.04));
+  /* Composited shadow via pseudo-element with opacity transition */
+  .nav::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    box-shadow: 0 4px 12px rgba(44, 44, 44, 0.08), 0 1px 3px rgba(44, 44, 44, 0.04);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .nav--scrolled::after {
+    opacity: 1;
   }
 
   .nav--scrolled .nav__categories {
@@ -294,7 +304,6 @@ const allSlides = [...adminSlides, ...defaultSlides];
     padding: 0 8px;
     height: 48px;
     border-bottom: 1px solid var(--color-cream-dark);
-    transition: border-color 0.3s ease;
   }
 
   .nav__mobile-header .nav__logo-img {
@@ -332,8 +341,7 @@ const allSlides = [...adminSlides, ...defaultSlides];
   .nav__mobile-topbar {
     display: block;
     background: var(--color-cream);
-    transition: max-height 0.25s ease, padding 0.25s ease, opacity 0.25s ease;
-    will-change: opacity, max-height;
+    transition: opacity 0.25s ease;
     /* Hidden by default — revealed when user taps search icon */
     max-height: 0;
     padding: 0 12px;
@@ -733,7 +741,6 @@ const allSlides = [...adminSlides, ...defaultSlides];
     transition: left 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
                 width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
                 opacity 0.15s ease;
-    will-change: left, width;
   }
 
   @media (max-width: 767px) {
@@ -959,7 +966,7 @@ const allSlides = [...adminSlides, ...defaultSlides];
     const frag = document.createDocumentFragment();
     matches.forEach((p) => {
       const link = document.createElement('a');
-      link.href = `/shop/${p.handle}`;
+      link.href = `/shop/${p.handle}/`;
       link.className = 'search-suggest__item';
       link.setAttribute('role', 'option');
 
@@ -1161,10 +1168,13 @@ const allSlides = [...adminSlides, ...defaultSlides];
     const suggestEl = document.getElementById('search-suggest');
     const mobileSuggestEl = document.getElementById('mobile-search-suggest');
 
-    // ── Nav height → CSS variable ───────────────
+    // ── Nav height → CSS variable (debounced to avoid CLS) ───────────────
     if (nav) {
+      let lastH = 0;
       const syncHeight = () => {
-        const h = nav.getBoundingClientRect().height;
+        const h = Math.round(nav.getBoundingClientRect().height);
+        if (h === lastH) return; // skip no-change updates
+        lastH = h;
         document.documentElement.style.setProperty('--nav-height', `${h}px`);
       };
       const ro = new ResizeObserver(syncHeight);

@@ -32,11 +32,7 @@
 /
   Cache-Control: public, max-age=300, stale-while-revalidate=3600
 
-/shop
-  Cache-Control: public, max-age=300, stale-while-revalidate=3600
-  Link: <https://cdn.shopify.com>; rel=preconnect
-
-/shop/index.html
+/shop/
   Cache-Control: public, max-age=300, stale-while-revalidate=3600
   Link: <https://cdn.shopify.com>; rel=preconnect
 

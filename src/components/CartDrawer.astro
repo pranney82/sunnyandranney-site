@@ -29,7 +29,7 @@
   <div class="cart-drawer__empty" id="cart-empty" style="display:none;">
     <svg class="cart-empty__icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.35;"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
     <p>Your cart is empty</p>
-    <a href="/shop" class="btn btn--primary" style="margin-top: 1rem;">Start Shopping</a>
+    <a href="/shop/" class="btn btn--primary" style="margin-top: 1rem;">Start Shopping</a>
   </div>
 
   <!-- Cart footer -->
@@ -624,7 +624,7 @@
     el.dataset.id = item.variantId;
 
     const safeHandle = encodeURIComponent(item.handle || '');
-    const link = `/shop/${safeHandle}`;
+    const link = `/shop/${safeHandle}/`;
 
     // Image
     const imgLink = document.createElement('a');

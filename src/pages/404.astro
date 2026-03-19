@@ -46,7 +46,7 @@ const gridProducts = featuredProducts.slice(1, 7);
       </h1>
       <div class="nf-hero__rule animate-fade-up delay-2" aria-hidden="true"></div>
       <div class="nf-hero__actions animate-fade-up delay-3">
-        <a href="/shop" class="btn btn--primary" data-astro-prefetch>Shop the Collection</a>
+        <a href="/shop/" class="btn btn--primary" data-astro-prefetch>Shop the Collection</a>
         <a href="/" class="nf-link" data-astro-prefetch>
           Return Home
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
@@ -59,7 +59,7 @@ const gridProducts = featuredProducts.slice(1, 7);
   {heroProduct && heroImg && (
     <section class="nf-feature">
       <div class="container nf-feature__inner">
-        <a href={`/shop/${heroProduct.handle}`} class="nf-feature__img-link animate-fade-up" data-astro-prefetch>
+        <a href={`/shop/${heroProduct.handle}/`} class="nf-feature__img-link animate-fade-up" data-astro-prefetch>
           <div class="nf-feature__img">
             <img
               src={cfImage(heroImg.url, { width: 900, height: 600 })}
@@ -75,7 +75,7 @@ const gridProducts = featuredProducts.slice(1, 7);
           {heroProduct.productType && (
             <span class="nf-feature__type">{heroProduct.productType}</span>
           )}
-          <a href={`/shop/${heroProduct.handle}`} class="nf-feature__title" data-astro-prefetch>{heroProduct.title}</a>
+          <a href={`/shop/${heroProduct.handle}/`} class="nf-feature__title" data-astro-prefetch>{heroProduct.title}</a>
           <span class="nf-feature__price">
             From ${parseFloat(heroProduct.priceRange.minVariantPrice.amount).toFixed(0)}
           </span>
@@ -100,7 +100,7 @@ const gridProducts = featuredProducts.slice(1, 7);
             const compare = product.compareAtPriceRange?.minVariantPrice;
             const onSale = compare && parseFloat(compare.amount) > parseFloat(price.amount);
             return (
-              <a href={`/shop/${product.handle}`} class={`nf-card reveal delay-${Math.min(idx + 1, 4)}`} data-astro-prefetch>
+              <a href={`/shop/${product.handle}/`} class={`nf-card reveal delay-${Math.min(idx + 1, 4)}`} data-astro-prefetch>
                 <div class="nf-card__img">
                   {img && (
                     <img
@@ -131,7 +131,7 @@ const gridProducts = featuredProducts.slice(1, 7);
         </div>
 
         <div class="nf-grid-cta reveal">
-          <a href="/shop" class="nf-browse" data-astro-prefetch>
+          <a href="/shop/" class="nf-browse" data-astro-prefetch>
             View All
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </a>
@@ -145,7 +145,7 @@ const gridProducts = featuredProducts.slice(1, 7);
     <div class="container nf-help__inner">
       <p class="nf-help__text">
         Looking for something specific?
-        <a href="/about" data-astro-prefetch>Visit our Roswell showroom</a>
+        <a href="/about/" data-astro-prefetch>Visit our Roswell showroom</a>
         or ask Staci — our AI concierge — in the chat below.
       </p>
     </div>

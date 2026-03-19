@@ -79,7 +79,7 @@ function fmt(amount: number): string {
         <h1 class="hero__title">Shop with<br/>a Purpose</h1>
         <p class="hero__sub">Curated furniture & home decor where every purchase transforms a child's room through <strong>Sunshine on a Ranney Day</strong>.</p>
         <div class="hero__actions">
-          <a href="/shop" class="btn btn--gold btn--hero" data-astro-prefetch="viewport">Shop &amp; Give Back</a>
+          <a href="/shop/" class="btn btn--gold btn--hero" data-astro-prefetch="viewport">Shop &amp; Give Back</a>
         </div>
         <div class="hero__trust">
           <span class="hero__trust-item">
@@ -116,7 +116,7 @@ function fmt(amount: number): string {
           const fpImg = fp.images.edges[0]?.node;
           const fpPrice = fp.priceRange.minVariantPrice;
           return (
-            <a href={`/shop/${fp.handle}`} class="hero__product-card" data-astro-prefetch>
+            <a href={`/shop/${fp.handle}/`} class="hero__product-card" data-astro-prefetch>
               {fpImg && (
                 <img
                   src={cfImage(fpImg.url, { width: 200 })}
@@ -177,7 +177,7 @@ function fmt(amount: number): string {
               : 0;
             const hasDiscount = comparePrice > price;
             return (
-              <a href={`/shop/${p.handle}`} class={`staff-pick-card reveal${idx > 0 ? ` delay-${Math.min(idx, 3)}` : ''}`} data-astro-prefetch>
+              <a href={`/shop/${p.handle}/`} class={`staff-pick-card reveal${idx > 0 ? ` delay-${Math.min(idx, 3)}` : ''}`} data-astro-prefetch>
                 <div class="staff-pick-card__img">
                   {img && (
                     <img
@@ -205,7 +205,7 @@ function fmt(amount: number): string {
           })}
         </div>
         <div class="staff-picks__footer reveal">
-          <a href="/shop" class="staff-picks__cta" data-astro-prefetch>
+          <a href="/shop/" class="staff-picks__cta" data-astro-prefetch>
             <span class="staff-picks__cta-text">Shop the Collection</span>
             <span class="staff-picks__cta-icon">
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 9h10m0 0-3.5-3.5M14 9l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -234,23 +234,23 @@ function fmt(amount: number): string {
             loading="lazy"
             decoding="async"
           />
-          <a href="/shop?collection=art-mirrors" class="shop-look__tag" style="top: 20%; left: 50%;" data-astro-prefetch>
+          <a href="/shop/?collection=art-mirrors" class="shop-look__tag" style="top: 20%; left: 50%;" data-astro-prefetch>
             <span class="shop-look__dot"></span>
             <span class="shop-look__label">Art & Mirrors</span>
           </a>
-          <a href="/shop?collection=living&type=Sofas" class="shop-look__tag" style="top: 45%; left: 10%;" data-astro-prefetch>
+          <a href="/shop/?collection=living&type=Sofas" class="shop-look__tag" style="top: 45%; left: 10%;" data-astro-prefetch>
             <span class="shop-look__dot"></span>
             <span class="shop-look__label">Sofas</span>
           </a>
-          <a href="/shop?collection=living&type=Accent+Chairs" class="shop-look__tag" style="top: 55%; left: 82%;" data-astro-prefetch>
+          <a href="/shop/?collection=living&type=Accent+Chairs" class="shop-look__tag" style="top: 55%; left: 82%;" data-astro-prefetch>
             <span class="shop-look__dot"></span>
             <span class="shop-look__label">Accent Chairs</span>
           </a>
-          <a href="/shop?collection=living&type=Coffee+Tables" class="shop-look__tag" style="top: 65%; left: 28%;" data-astro-prefetch>
+          <a href="/shop/?collection=living&type=Coffee+Tables" class="shop-look__tag" style="top: 65%; left: 28%;" data-astro-prefetch>
             <span class="shop-look__dot"></span>
             <span class="shop-look__label">Coffee Tables</span>
           </a>
-          <a href="/shop?collection=rugs-collection" class="shop-look__tag" style="top: 88%; left: 72%;" data-astro-prefetch>
+          <a href="/shop/?collection=rugs-collection" class="shop-look__tag" style="top: 88%; left: 72%;" data-astro-prefetch>
             <span class="shop-look__dot"></span>
             <span class="shop-look__label">Rugs</span>
           </a>
@@ -379,8 +379,8 @@ function fmt(amount: number): string {
         </div>
 
         <div class="mission__actions">
-          <a href="/shop" class="btn btn--gold mission__cta-primary" data-astro-prefetch>Shop &amp; Give Back</a>
-          <a href="/about" class="mission__cta-link" data-astro-prefetch>Read Our Full Story <span aria-hidden="true">&rarr;</span></a>
+          <a href="/shop/" class="btn btn--gold mission__cta-primary" data-astro-prefetch>Shop &amp; Give Back</a>
+          <a href="/about/" class="mission__cta-link" data-astro-prefetch>Read Our Full Story <span aria-hidden="true">&rarr;</span></a>
         </div>
       </div>
     </div>
@@ -2155,7 +2155,7 @@ function fmt(amount: number): string {
     }
 
     qvSelectedVariant = variants[0] || null;
-    if (qvViewFull) qvViewFull.href = `/shop/${data.handle}`;
+    if (qvViewFull) qvViewFull.href = `/shop/${data.handle}/`;
 
     if (qvAdd) {
       qvAdd.disabled = data.available === 'false';
