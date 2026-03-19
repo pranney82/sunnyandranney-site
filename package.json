@@ -7,7 +7,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "deploy:hours-sync": "wrangler deploy --config workers/hours-sync/wrangler.toml"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.0.0",

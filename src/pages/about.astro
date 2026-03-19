@@ -1,6 +1,7 @@
 ---
 import Base from '@/layouts/Base.astro';
-import { getKidsStatic, getTeamStatic } from '@/lib/settings';
+import { getKidsStatic, getTeamStatic, getReviewsStatic } from '@/lib/settings';
+import { fetchGooglePlaceData } from '@/lib/google-places';
 
 // Fetch live stats from SOARD at build time
 let soardStats: { roomMakeovers: number; childrenServed: number; livesImpacted: number; yearsGiving: number } | null = null;
@@ -8,6 +9,11 @@ try {
   const res = await fetch('https://soard-site.pages.dev/api/stats.json', { signal: AbortSignal.timeout(3000) });
   if (res.ok) soardStats = await res.json();
 } catch { /* use fallbacks */ }
+
+// Google rating (live API → saved fallback)
+const livePlace = await fetchGooglePlaceData();
+const savedReviews = await getReviewsStatic();
+const googleRating = livePlace?.rating ?? savedReviews?.googleRating ?? 5.0;
 
 function fmtStat(n: number | undefined, suffix = '+') {
   if (!n) return null;
@@ -55,14 +61,14 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
   <section class="ab-hero">
     <div class="container ab-hero__inner">
       <div class="ab-hero__text">
-        <span class="label animate-fade-up">About Us</span>
-        <h1 class="ab-hero__title animate-fade-up delay-1">
+        <span class="label">About Us</span>
+        <h1 class="ab-hero__title">
           Come In.<br/><span class="accent">Stay Awhile.</span>
         </h1>
-        <p class="ab-hero__sub animate-fade-up delay-2">
+        <p class="ab-hero__sub">
           We're a small team in Roswell, GA with one big belief: beautiful furniture should do more than fill a room — it should change a life.
         </p>
-        <div class="ab-hero__actions animate-fade-up delay-3">
+        <div class="ab-hero__actions">
           <a href="/shop" class="btn btn--gold" data-astro-prefetch>Shop & Give Back</a>
           <a href="#our-story" class="text-link">
             Our Story
@@ -70,7 +76,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
           </a>
         </div>
       </div>
-      <div class="ab-hero__media animate-fade-up delay-2">
+      <div class="ab-hero__media">
         <img
           src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=500,q=80,format=auto"
           srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=400,q=75,format=auto 400w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=500,q=80,format=auto 500w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=800,q=80,format=auto 800w"
@@ -382,7 +388,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
         <span class="ab-cta__dot" aria-hidden="true"></span>
         <span>{fmtStat(soardStats?.roomMakeovers) ?? '269+'} rooms built</span>
         <span class="ab-cta__dot" aria-hidden="true"></span>
-        <span>4.9★ on Google</span>
+        <span>{googleRating}★ on Google</span>
       </div>
     </div>
   </section>

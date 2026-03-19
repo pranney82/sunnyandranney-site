@@ -155,18 +155,18 @@ const allSlides = [...adminSlides, ...defaultSlides];
   <nav class="nav__categories" aria-label="Product categories">
     <div class="container nav__categories-inner">
       <span class="nav__cat-indicator" id="cat-indicator" aria-hidden="true"></span>
-      <a href="/shop" data-astro-prefetch class:list={['nav__cat-link', { 'nav__cat-link--active': currentPath === '/shop' || currentPath === '/shop/' }]}>
+      <a href="/shop" data-astro-prefetch="hover" class:list={['nav__cat-link', { 'nav__cat-link--active': currentPath === '/shop' || currentPath === '/shop/' }]}>
         All
       </a>
-      <a href="/shop?collection=new-arrivals" data-astro-prefetch class="nav__cat-link nav__cat-link--new">
+      <a href="/shop?collection=new-arrivals" data-astro-prefetch="hover" class="nav__cat-link nav__cat-link--new">
         New
       </a>
       {roomCollections.map(col => (
-        <a href={`/shop?collection=${col.handle}`} data-astro-prefetch class="nav__cat-link">
+        <a href={`/shop?collection=${col.handle}`} data-astro-prefetch="hover" class="nav__cat-link">
           {col.label}
         </a>
       ))}
-      <a href="/shop?sale=true" data-astro-prefetch class="nav__cat-link nav__cat-link--sale">Sale</a>
+      <a href="/shop?sale=true" data-astro-prefetch="hover" class="nav__cat-link nav__cat-link--sale">Sale</a>
     </div>
   </nav>
 

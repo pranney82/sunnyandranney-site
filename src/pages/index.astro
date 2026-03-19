@@ -3,7 +3,8 @@ import Base from '@/layouts/Base.astro';
 import GoogleReviews from '@/components/GoogleReviews.astro';
 import { getProducts, getCollectionByHandle, getProductByHandle } from '@/lib/shopify';
 import { cfImage, cfSrcset } from '@/lib/images';
-import { getHeroStatic } from '@/lib/settings';
+import { getHeroStatic, getReviewsStatic } from '@/lib/settings';
+import { fetchGooglePlaceData } from '@/lib/google-places';
 
 // Fetch live stats from SOARD at build time
 let soardStats: { roomMakeovers: number; yearsGiving: number } | null = null;
@@ -13,6 +14,11 @@ try {
 } catch { /* use fallbacks */ }
 const statRooms = soardStats?.roomMakeovers ?? 269;
 const statYears = soardStats?.yearsGiving ?? 14;
+
+// Google rating (live API → saved fallback)
+const livePlace = await fetchGooglePlaceData();
+const savedReviews = await getReviewsStatic();
+const googleRating = livePlace?.rating ?? savedReviews?.googleRating ?? 5.0;
 
 let products: any[] = [];
 let staffPickProducts: any[] = [];
@@ -69,13 +75,13 @@ function fmt(amount: number): string {
   <section class="hero">
     <div class="container hero__inner">
       <div class="hero__text">
-        <p class="hero__kicker animate-fade-up">Furniture with Heart</p>
-        <h1 class="hero__title animate-fade-up delay-1">Shop with<br/>a Purpose</h1>
-        <p class="hero__sub animate-fade-up delay-2">Curated furniture & home decor where every purchase transforms a child's room through <strong>Sunshine on a Ranney Day</strong>.</p>
-        <div class="hero__actions animate-fade-up delay-3">
+        <p class="hero__kicker">Furniture with Heart</p>
+        <h1 class="hero__title">Shop with<br/>a Purpose</h1>
+        <p class="hero__sub">Curated furniture & home decor where every purchase transforms a child's room through <strong>Sunshine on a Ranney Day</strong>.</p>
+        <div class="hero__actions">
           <a href="/shop" class="btn btn--gold btn--hero" data-astro-prefetch="viewport">Shop &amp; Give Back</a>
         </div>
-        <div class="hero__trust animate-fade-up delay-3">
+        <div class="hero__trust">
           <span class="hero__trust-item">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             Secure Checkout
@@ -83,7 +89,7 @@ function fmt(amount: number): string {
           <span class="hero__trust-sep"></span>
           <span class="hero__trust-item">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-            4.9 on Google
+            {googleRating} on Google
           </span>
           <span class="hero__trust-sep"></span>
           <span class="hero__trust-item">
@@ -92,7 +98,7 @@ function fmt(amount: number): string {
           </span>
         </div>
       </div>
-      <div class="hero__media animate-fade-up delay-2">
+      <div class="hero__media">
         <div class="hero__img-wrap">
           <img
             src={heroSrc}

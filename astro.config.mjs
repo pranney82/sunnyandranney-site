@@ -19,9 +19,8 @@ export default defineConfig({
     inlineStylesheets: 'always',
   },
 
-  // Prefetch ALL internal links when they enter the viewport — pages load before the click
+  // Prefetch links marked with data-astro-prefetch when they enter the viewport
   prefetch: {
-    prefetchAll: true,
     defaultStrategy: 'viewport',
   },
 

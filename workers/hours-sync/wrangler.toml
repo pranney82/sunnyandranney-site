@@ -1,0 +1,16 @@
+name = "hours-sync"
+main = "src/index.ts"
+compatibility_date = "2025-04-01"
+
+[triggers]
+crons = ["0 */6 * * *"]  # Every 6 hours
+
+[[d1_databases]]
+binding = "DB"
+database_name = "sunnyandranney-db"
+database_id = "a3fbfba9-569c-4dae-af1a-4a1f290963f7"
+
+[vars]
+# GOOGLE_PLACES_API_KEY and GOOGLE_PLACE_ID set via:
+# wrangler secret put GOOGLE_PLACES_API_KEY --config workers/hours-sync/wrangler.toml
+# wrangler secret put GOOGLE_PLACE_ID --config workers/hours-sync/wrangler.toml
