@@ -1,25 +1,28 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { syncGoogleHoursToD1 } from '@/lib/sync-hours';
+import collectionsConfig from '@/content/settings/collections.json';
 
 export const prerender = false;
 
-const PRODUCTS_QUERY = `
-  query ($cursor: String) {
-    products(first: 250, after: $cursor, sortKey: BEST_SELLING) {
-      pageInfo { hasNextPage endCursor }
-      edges {
-        node {
-          id
-          title
-          handle
-          description
-          productType
-          tags
-          availableForSale
-          priceRange { minVariantPrice { amount } }
-          compareAtPriceRange { minVariantPrice { amount } }
-          images(first: 1) { edges { node { url } } }
+const COLLECTION_PRODUCTS_QUERY = `
+  query ($handle: String!, $cursor: String) {
+    collection(handle: $handle) {
+      products(first: 250, after: $cursor) {
+        pageInfo { hasNextPage endCursor }
+        edges {
+          node {
+            id
+            title
+            handle
+            description
+            productType
+            tags
+            availableForSale
+            priceRange { minVariantPrice { amount } }
+            compareAtPriceRange { minVariantPrice { amount } }
+            images(first: 1) { edges { node { url } } }
+          }
         }
       }
     }
@@ -95,35 +98,51 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   try {
-    // 1. Fetch all products from Shopify
+    // 1. Fetch products only from enabled collections on the site
+    const enabledHandles = collectionsConfig
+      .filter((c: any) => c.enabled)
+      .map((c: any) => c.handle);
+
+    const seenHandles = new Set<string>();
     const allProducts: any[] = [];
-    let cursor: string | null = null;
-    let hasNextPage = true;
 
-    while (hasNextPage) {
-      const res = await fetch(`https://${domain}/api/2025-01/graphql.json`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Shopify-Storefront-Access-Token': token,
-        },
-        body: JSON.stringify({ query: PRODUCTS_QUERY, variables: { cursor } }),
-      });
+    for (const collectionHandle of enabledHandles) {
+      let cursor: string | null = null;
+      let hasNextPage = true;
 
-      const json: any = await res.json();
-      const data = json.data?.products;
-      if (!data) break;
+      while (hasNextPage) {
+        const res = await fetch(`https://${domain}/api/2025-01/graphql.json`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Shopify-Storefront-Access-Token': token,
+          },
+          body: JSON.stringify({
+            query: COLLECTION_PRODUCTS_QUERY,
+            variables: { handle: collectionHandle, cursor },
+          }),
+        });
 
-      for (const edge of data.edges) {
-        allProducts.push(edge.node);
+        const json: any = await res.json();
+        const data = json.data?.collection?.products;
+        if (!data) break;
+
+        for (const edge of data.edges) {
+          const node = edge.node;
+          // Deduplicate products that appear in multiple collections
+          if (!seenHandles.has(node.handle)) {
+            seenHandles.add(node.handle);
+            allProducts.push(node);
+          }
+        }
+
+        hasNextPage = data.pageInfo.hasNextPage;
+        cursor = data.pageInfo.endCursor;
       }
-
-      hasNextPage = data.pageInfo.hasNextPage;
-      cursor = data.pageInfo.endCursor;
     }
 
     if (!allProducts.length) {
-      return new Response(JSON.stringify({ error: 'No products found in Shopify.' }), {
+      return new Response(JSON.stringify({ error: 'No products found in enabled collections.' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -160,6 +179,27 @@ export const POST: APIRoute = async ({ request }) => {
 
       await vectorize.upsert(vectors);
       indexed += vectors.length;
+    }
+
+    // 4. Remove stale vectors for products no longer in enabled collections
+    // Query a broad vector to get all indexed IDs, then delete any not in seenHandles
+    const indexedIds = Array.from(seenHandles).map(h => h.slice(0, 64));
+    const indexedIdSet = new Set(indexedIds);
+
+    // Use a zero vector to retrieve existing entries (Vectorize returns closest matches)
+    // We fetch a large topK to cover the full catalog
+    try {
+      const zeroVector = new Array(768).fill(0); // bge-base-en-v1.5 is 768-dim
+      const existing = await vectorize.query(zeroVector, { topK: 1000, returnMetadata: 'none' });
+      const staleIds = (existing.matches || [])
+        .map((m: any) => m.id)
+        .filter((id: string) => !indexedIdSet.has(id));
+
+      if (staleIds.length) {
+        await vectorize.deleteByIds(staleIds);
+      }
+    } catch {
+      // Non-critical — stale vectors will just score low in searches
     }
 
     // Sync Google hours → D1 so Staci always has current hours
