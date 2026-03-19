@@ -1,22 +1,28 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import { getSetting, checkRateLimit } from '@/lib/db';
+import { getSetting, checkRateLimit, getSession, upsertSession, cleanExpiredSessions } from '@/lib/db';
 
 export const prerender = false;
 
 // ─── Constants ──────────────────────────────────────────────
 const MAX_HISTORY = 20;
 const MAX_INPUT_LENGTH = 500;
-const MAX_TOKENS = 1024;
+const MAX_TOKENS = 2048;
 const JSON_HEADERS = { 'Content-Type': 'application/json' } as const;
 const RATE_LIMIT_WINDOW = 60;
 const RATE_LIMIT_MAX = 20;
+const ANTHROPIC_MODEL = 'claude-sonnet-4-20250514';
+const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
+const SESSION_SUMMARY_THRESHOLD = 30;
+const SESSION_TRUNCATE_TO = 10;
 
 // ─── Types ───────────────────────────────────────────────────
 interface Product {
   title: string;
   handle: string;
   productType: string;
+  description?: string;
+  tags?: string;
   availableForSale: boolean;
   price: string;
   compareAtPrice: string;
@@ -25,6 +31,7 @@ interface Product {
 
 /** Subset of Product sent to the frontend for product cards */
 interface ProductCard {
+  cardIndex: number;
   title: string;
   handle: string;
   price: string;
@@ -75,7 +82,7 @@ const BASE_SYSTEM_PROMPT = `You are Staci, the AI shopping assistant for **Sunny
 - Warm and helpful. Be concise but give complete answers — never cut off useful information. Use **bold** for key info.
 - Keep paragraphs short (2-3 sentences max). Use line breaks between distinct points for readability.
 - Use bullet lists for 3+ items — they're easier to scan than dense paragraphs.
-- When recommending products, include the name, price, and link formatted as [Product Name](/shop/handle).
+- When recommending products, reference them by their number (e.g. "Check out **#1** and **#3** below") so customers can find them in the product cards shown below your message. Also include the name, price, and link formatted as [Product Name](/shop/handle).
 - If a product is SOLD OUT, let the customer know and suggest similar items.
 - If asked about something not in the provided products, say inventory changes often and suggest they visit in person or browse /shop.
 - Never invent products that aren't in the provided context.
@@ -148,7 +155,7 @@ function formatSpecialsForPrompt(specials: StoreSpecials): string {
   return parts.join('\n');
 }
 
-async function buildSystemPrompt(pageContext?: PageContext): Promise<string> {
+async function buildSystemPrompt(pageContext?: PageContext, sessionSummary?: string): Promise<string> {
   let basePrompt: string;
 
   if (_promptCache && Date.now() - _promptCache.ts < PROMPT_CACHE_TTL_MS) {
@@ -175,6 +182,10 @@ async function buildSystemPrompt(pageContext?: PageContext): Promise<string> {
     basePrompt = prompt;
   }
 
+  if (sessionSummary) {
+    basePrompt += `\n\n## Previous Conversation Summary\nThis customer has chatted with you before. Here's a summary of your earlier conversation:\n${sessionSummary}`;
+  }
+
   if (pageContext?.url) {
     const titleNote = pageContext.title ? ` — "${pageContext.title}"` : '';
     basePrompt += `\n\n## Customer's Current Page\nThe customer is currently browsing: ${pageContext.url}${titleNote}\nUse this context to give more relevant suggestions.`;
@@ -185,22 +196,31 @@ async function buildSystemPrompt(pageContext?: PageContext): Promise<string> {
 
 // ─── Helpers ─────────────────────────────────────────────────
 
-function formatProductForLLM(meta: Product): string {
+function formatProductForLLM(meta: Product, index: number): string {
   const price = parseFloat(meta.price).toFixed(2);
   const compareAt = parseFloat(meta.compareAtPrice || '0');
   const onSale = compareAt > parseFloat(price);
-  return [
-    `**${meta.title}**`,
+  const parts = [
+    `**#${index + 1} ${meta.title}**`,
     `$${price}${onSale ? ` (was $${compareAt.toFixed(2)})` : ''}`,
     meta.productType ? `Category: ${meta.productType}` : '',
+    meta.description || '',
+    meta.tags ? `Tags: ${meta.tags}` : '',
     !meta.availableForSale ? 'SOLD OUT' : '',
     `[View](/shop/${meta.handle})`,
-  ].filter(Boolean).join(' | ');
+  ];
+  return parts.filter(Boolean).join(' | ');
 }
 
 function getSearchQuery(messages: ChatMessage[]): string {
   const userMessages = messages.filter(m => m.role === 'user');
-  return userMessages.slice(-2).map(m => m.content).join(' ');
+  const query = userMessages.slice(-2).map(m => m.content).join(' ');
+  // Query expansion: for short queries, add last assistant message for context
+  if (query.length < 20) {
+    const lastAssistant = [...messages].reverse().find(m => m.role === 'assistant');
+    if (lastAssistant) return query + ' ' + lastAssistant.content.slice(0, 100);
+  }
+  return query;
 }
 
 // ─── RAG ─────────────────────────────────────────────────────
@@ -210,7 +230,7 @@ interface SearchResult {
   cards: ProductCard[];
 }
 
-async function searchProducts(ai: any, vectorize: any, query: string, topK = 15): Promise<SearchResult> {
+async function searchProducts(ai: any, vectorize: any, query: string, topK = 10): Promise<SearchResult> {
   const embeddingResult = await ai.run('@cf/baai/bge-base-en-v1.5', { text: [query] });
   const queryVector = embeddingResult.data?.[0];
   if (!queryVector) return { llmContext: 'No products found.', cards: [] };
@@ -218,31 +238,168 @@ async function searchProducts(ai: any, vectorize: any, query: string, topK = 15)
   const results = await vectorize.query(queryVector, { topK, returnMetadata: 'all' });
   if (!results.matches?.length) return { llmContext: 'No matching products found.', cards: [] };
 
+  // Filter against the valid product handles stored in D1 by sync-products.
+  // Also apply a similarity score threshold to remove noise.
+  let validHandles: Set<string> | null = null;
+  try {
+    const row = await getSetting<string[]>('settings:valid_product_handles');
+    if (row) validHandles = new Set(row);
+  } catch { /* fall through — skip filter if D1 is unavailable */ }
+
   const products = results.matches
-    .filter((m: any) => m.metadata)
+    .filter((m: any) => m.metadata && m.score >= 0.35 && (!validHandles || validHandles.has(m.id)))
     .map((m: any) => m.metadata as Product);
 
-  const llmContext = products.map(formatProductForLLM).join('\n');
+  const llmContext = products.map((p, i) => formatProductForLLM(p, i)).join('\n');
 
-  // Top 4 available products with images for rich cards
-  const cards: ProductCard[] = products
-    .filter((p: Product) => p.availableForSale && p.imageUrl)
+  // Top 4 available products with images for rich cards — track original index
+  const indexed = products.map((p: Product, i: number) => ({ product: p, index: i }));
+  const cards: ProductCard[] = indexed
+    .filter((item) => item.product.availableForSale && item.product.imageUrl)
     .slice(0, 4)
-    .map((p: Product) => ({
-      title: p.title,
-      handle: p.handle,
-      price: parseFloat(p.price).toFixed(2),
-      compareAtPrice: parseFloat(p.compareAtPrice || '0').toFixed(2),
-      availableForSale: p.availableForSale,
-      imageUrl: p.imageUrl || '',
+    .map((item) => ({
+      cardIndex: item.index + 1,
+      title: item.product.title,
+      handle: item.product.handle,
+      price: parseFloat(item.product.price).toFixed(2),
+      compareAtPrice: parseFloat(item.product.compareAtPrice || '0').toFixed(2),
+      availableForSale: item.product.availableForSale,
+      imageUrl: item.product.imageUrl || '',
     }));
 
   return { llmContext, cards };
 }
 
+// ─── Anthropic streaming adapter ─────────────────────────────
+// Transforms Anthropic SSE events into the format the frontend expects:
+// data: {"response":"token"}\n\n
+
+function createAnthropicStream(
+  anthropicBody: ReadableStream,
+  productCards: ProductCard[],
+): ReadableStream {
+  const encoder = new TextEncoder();
+  const productsEvent = productCards.length
+    ? `data: ${JSON.stringify({ products: productCards })}\n\n`
+    : '';
+
+  return new ReadableStream({
+    async start(controller) {
+      if (productsEvent) controller.enqueue(encoder.encode(productsEvent));
+
+      const reader = anthropicBody.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const data = line.slice(6).trim();
+          if (!data || data === '[DONE]') continue;
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
+              controller.enqueue(encoder.encode(
+                `data: ${JSON.stringify({ response: parsed.delta.text })}\n\n`
+              ));
+            }
+          } catch { /* skip malformed chunks */ }
+        }
+      }
+
+      controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+      controller.close();
+    },
+  });
+}
+
+// ─── Workers AI streaming adapter (passthrough + products) ───
+
+function createWorkersAIStream(
+  eventStream: ReadableStream,
+  productCards: ProductCard[],
+): ReadableStream {
+  const encoder = new TextEncoder();
+  const productsEvent = productCards.length
+    ? `data: ${JSON.stringify({ products: productCards })}\n\n`
+    : '';
+
+  return new ReadableStream({
+    async start(controller) {
+      if (productsEvent) controller.enqueue(encoder.encode(productsEvent));
+      const reader = eventStream.getReader();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        controller.enqueue(value);
+      }
+      controller.close();
+    },
+  });
+}
+
+// ─── Session summary generation ──────────────────────────────
+
+async function generateSummary(
+  messages: ChatMessage[],
+  useAnthropic: boolean,
+): Promise<string> {
+  const summaryPrompt = 'Summarize this customer conversation in 2-3 sentences. Focus on what products they were interested in, any preferences mentioned, and where the conversation left off.';
+  const conversationText = messages
+    .map(m => `${m.role}: ${m.content}`)
+    .join('\n')
+    .slice(0, 3000);
+
+  try {
+    if (useAnthropic && env.ANTHROPIC_API_KEY) {
+      const res = await fetch(ANTHROPIC_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: ANTHROPIC_MODEL,
+          max_tokens: 200,
+          system: summaryPrompt,
+          messages: [{ role: 'user', content: conversationText }],
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json() as any;
+        return data.content?.[0]?.text || '';
+      }
+    } else {
+      const result = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
+        messages: [
+          { role: 'system', content: summaryPrompt },
+          { role: 'user', content: conversationText },
+        ],
+        max_tokens: 200,
+      }) as { response?: string };
+      return result.response || '';
+    }
+  } catch (err) {
+    console.error('Summary generation error:', err);
+  }
+  return '';
+}
+
 // ─── API handler ──────────────────────────────────────────────
 export const POST: APIRoute = async ({ request }) => {
   try {
+    // Probabilistic session cleanup (1 in 100)
+    if (Math.random() < 0.01) {
+      cleanExpiredSessions().catch(() => {});
+    }
+
     const ip = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || 'unknown';
     const allowed = await checkRateLimit(`chat:${ip}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW);
     if (!allowed) {
@@ -252,8 +409,13 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    const body = await request.json() as { messages?: ChatMessage[]; stream?: boolean; pageContext?: PageContext };
-    const { messages, stream = false, pageContext } = body;
+    const body = await request.json() as {
+      messages?: ChatMessage[];
+      stream?: boolean;
+      pageContext?: PageContext;
+      sessionId?: string;
+    };
+    const { messages, stream = false, pageContext, sessionId } = body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: 'Messages array required' }), {
@@ -272,57 +434,95 @@ export const POST: APIRoute = async ({ request }) => {
 
     const ai = env.AI;
     const vectorize = env.VECTORIZE;
+    const useAnthropic = !!env.ANTHROPIC_API_KEY;
 
-    if (!ai) {
+    if (!ai && !useAnthropic) {
       return new Response(JSON.stringify({ error: 'AI service unavailable.' }), { status: 503, headers: JSON_HEADERS });
     }
 
     const trimmedMessages: ChatMessage[] = messages.slice(-MAX_HISTORY);
 
+    // ─── Load session summary from D1 ──────────────────────
+    let sessionSummary = '';
+    if (sessionId) {
+      try {
+        const session = await getSession(sessionId);
+        if (session?.summary) sessionSummary = session.summary;
+      } catch { /* ignore — session is a bonus, not critical */ }
+    }
+
+    // ─── RAG search ────────────────────────────────────────
     let productContext = '';
     let productCards: ProductCard[] = [];
-    if (vectorize) {
+    if (vectorize && ai) {
       const query = getSearchQuery(trimmedMessages);
       const result = await searchProducts(ai, vectorize, query);
       productContext = result.llmContext;
       productCards = result.cards;
     }
 
-    const systemPrompt = await buildSystemPrompt(pageContext);
+    const systemPrompt = await buildSystemPrompt(pageContext, sessionSummary);
     const fullSystem = systemPrompt + (productContext ? `\n\n## Relevant Products From Our Shop\n${productContext}` : '');
 
-    const llmMessages = [
-      { role: 'system', content: fullSystem },
-      ...trimmedMessages,
-    ];
-
+    // ─── Streaming response ────────────────────────────────
     if (stream) {
-      const eventStream = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
-        messages: llmMessages,
-        max_tokens: MAX_TOKENS,
-        stream: true,
-      }) as ReadableStream;
+      let combinedStream: ReadableStream;
 
-      // Prepend a products SSE event before the LLM stream
-      const encoder = new TextEncoder();
-      const productsEvent = productCards.length
-        ? `data: ${JSON.stringify({ products: productCards })}\n\n`
-        : '';
+      if (useAnthropic) {
+        // Anthropic Messages API
+        const anthropicRes = await fetch(ANTHROPIC_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': env.ANTHROPIC_API_KEY!,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: ANTHROPIC_MODEL,
+            max_tokens: MAX_TOKENS,
+            system: fullSystem,
+            messages: trimmedMessages.map(m => ({
+              role: m.role as 'user' | 'assistant',
+              content: m.content,
+            })),
+            stream: true,
+          }),
+        });
 
-      const combined = new ReadableStream({
-        async start(controller) {
-          if (productsEvent) controller.enqueue(encoder.encode(productsEvent));
-          const reader = eventStream.getReader();
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            controller.enqueue(value);
+        if (!anthropicRes.ok || !anthropicRes.body) {
+          // Fallback to Workers AI on Anthropic failure
+          if (ai) {
+            const eventStream = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
+              messages: [{ role: 'system', content: fullSystem }, ...trimmedMessages],
+              max_tokens: MAX_TOKENS,
+              stream: true,
+            }) as ReadableStream;
+            combinedStream = createWorkersAIStream(eventStream, productCards);
+          } else {
+            throw new Error('Both Anthropic and Workers AI unavailable');
           }
-          controller.close();
-        },
-      });
+        } else {
+          combinedStream = createAnthropicStream(anthropicRes.body, productCards);
+        }
+      } else {
+        // Workers AI
+        const eventStream = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
+          messages: [{ role: 'system', content: fullSystem }, ...trimmedMessages],
+          max_tokens: MAX_TOKENS,
+          stream: true,
+        }) as ReadableStream;
+        combinedStream = createWorkersAIStream(eventStream, productCards);
+      }
 
-      return new Response(combined, {
+      // Save session to D1 in the background (don't block response)
+      if (sessionId) {
+        const sessionMessages = [...trimmedMessages];
+        // We don't have the assistant reply yet (it's streaming), so save what we have.
+        // The next request will include the assistant reply in the messages array.
+        saveSessionBackground(sessionId, sessionMessages, useAnthropic);
+      }
+
+      return new Response(combinedStream, {
         headers: {
           'Content-Type': 'text/event-stream',
           'Cache-Control': 'no-cache',
@@ -331,12 +531,54 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    const response = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
-      messages: llmMessages,
-      max_tokens: MAX_TOKENS,
-    }) as { response?: string };
+    // ─── Non-streaming response ────────────────────────────
+    let reply = '';
 
-    return new Response(JSON.stringify({ reply: response.response, products: productCards }), { headers: JSON_HEADERS });
+    if (useAnthropic) {
+      const anthropicRes = await fetch(ANTHROPIC_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': env.ANTHROPIC_API_KEY!,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: ANTHROPIC_MODEL,
+          max_tokens: MAX_TOKENS,
+          system: fullSystem,
+          messages: trimmedMessages.map(m => ({
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+          })),
+        }),
+      });
+
+      if (anthropicRes.ok) {
+        const data = await anthropicRes.json() as any;
+        reply = data.content?.[0]?.text || '';
+      } else if (ai) {
+        // Fallback
+        const result = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
+          messages: [{ role: 'system', content: fullSystem }, ...trimmedMessages],
+          max_tokens: MAX_TOKENS,
+        }) as { response?: string };
+        reply = result.response || '';
+      }
+    } else {
+      const result = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
+        messages: [{ role: 'system', content: fullSystem }, ...trimmedMessages],
+        max_tokens: MAX_TOKENS,
+      }) as { response?: string };
+      reply = result.response || '';
+    }
+
+    // Save session
+    if (sessionId) {
+      const sessionMessages = [...trimmedMessages, { role: 'assistant', content: reply }];
+      saveSessionBackground(sessionId, sessionMessages, useAnthropic);
+    }
+
+    return new Response(JSON.stringify({ reply, products: productCards }), { headers: JSON_HEADERS });
 
   } catch (err: any) {
     console.error('Chat API error:', err?.message);
@@ -346,3 +588,27 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 };
+
+// ─── Background session persistence ──────────────────────────
+// Fire-and-forget: saves messages to D1, generates summary if needed.
+
+function saveSessionBackground(
+  sessionId: string,
+  messages: ChatMessage[],
+  useAnthropic: boolean,
+): void {
+  (async () => {
+    try {
+      // If conversation is long, generate a summary and truncate
+      if (messages.length > SESSION_SUMMARY_THRESHOLD) {
+        const summary = await generateSummary(messages, useAnthropic);
+        const truncated = messages.slice(-SESSION_TRUNCATE_TO);
+        await upsertSession(sessionId, truncated, summary);
+      } else {
+        await upsertSession(sessionId, messages);
+      }
+    } catch (err) {
+      console.error('Background session save error:', err);
+    }
+  })();
+}

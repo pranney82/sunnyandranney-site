@@ -6,7 +6,7 @@
 <button id="staci-toggle" aria-label="Chat with Staci" title="Chat with Staci">
   <span class="staci-badge" id="staci-badge" style="display:none;"></span>
   <img id="staci-icon-chat" class="staci-toggle__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=96,h=96,fit=cover,format=auto" alt="" width="40" height="40" loading="lazy" />
-  <svg id="staci-icon-close" class="staci-toggle__close" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+  <svg id="staci-icon-close" class="staci-toggle__close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
   </svg>
   <span class="staci-toggle__label" id="staci-toggle-label">Ask Staci</span>
@@ -17,7 +17,7 @@
   <div class="staci-header">
     <div class="staci-header__info">
       <div class="staci-header__avatar-wrap">
-        <img class="staci-avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=96,h=96,fit=cover,format=auto" loading="lazy" alt="Staci" width="32" height="32" />
+        <img class="staci-avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=96,h=96,fit=cover,format=auto" loading="lazy" alt="Staci" width="34" height="34" />
         <span class="staci-header__online"></span>
       </div>
       <div>
@@ -25,14 +25,14 @@
         <span class="staci-status">AI Shopping Assistant</span>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:0.25rem;">
-      <button class="staci-header__reset" id="staci-header-reset" aria-label="Clear conversation" title="Clear conversation">
+    <div style="display:flex;align-items:center;gap:0.15rem;">
+      <button class="staci-header__btn" id="staci-header-reset" aria-label="Clear conversation" title="New conversation">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/>
+          <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
         </svg>
       </button>
-      <button class="staci-header__close" id="staci-header-close" aria-label="Close chat">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <button class="staci-header__btn staci-header__btn--close" id="staci-header-close" aria-label="Close chat">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
         </svg>
       </button>
@@ -41,13 +41,13 @@
 
   <div id="staci-messages" class="staci-messages" role="log" aria-live="polite">
     <div class="staci-welcome" id="staci-welcome">
-      <img class="staci-welcome__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=128,h=128,fit=cover,format=auto" alt="Staci" width="52" height="52" />
+      <img class="staci-welcome__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=128,h=128,fit=cover,format=auto" alt="Staci" width="56" height="56" />
       <p class="staci-welcome__name">Hi, I'm Staci</p>
-      <p class="staci-welcome__sub">Your personal shopping assistant at Sunny&nbsp;&amp;&nbsp;Ranney. Ask me about products, hours, or anything else!</p>
+      <p class="staci-welcome__sub">Your personal shopping assistant.<br>How can I help you today?</p>
       <div class="staci-welcome__chips">
         <button class="staci-chip" data-msg="What's new in the shop?">What's new?</button>
-        <button class="staci-chip" data-msg="What are your store hours and location?">Store hours</button>
-        <button class="staci-chip" data-msg="What is your return policy?">Returns</button>
+        <button class="staci-chip" data-msg="What are your store hours and location?">Hours & location</button>
+        <button class="staci-chip" data-msg="What is your return policy?">Return policy</button>
         <button class="staci-chip" data-msg="Tell me about Sunny & Ranney's mission">Your mission</button>
       </div>
     </div>
@@ -61,7 +61,7 @@
     <div class="staci-input__wrap">
       <textarea
         id="staci-input"
-        placeholder="Ask Staci anything..."
+        placeholder="Ask me anything..."
         autocomplete="off"
         maxlength="500"
         aria-label="Type a message"
@@ -71,13 +71,17 @@
     </div>
     <button type="submit" id="staci-send" class="staci-input__send" aria-label="Send message">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        <path d="M22 2 11 13"/><path d="M22 2 15 22 11 13 2 9 22 2"/>
       </svg>
     </button>
   </form>
 
   <div class="staci-footer">
-    Staci knows a lot, but feel free to <a href="tel:6788885140">call</a> or <a href="mailto:info@sunnyandranney.com">email</a> us anytime.
+    <span class="staci-footer__powered">Powered by AI</span>
+    <span class="staci-footer__sep">&middot;</span>
+    <a href="tel:6788885140">Call us</a>
+    <span class="staci-footer__sep">&middot;</span>
+    <a href="mailto:info@sunnyandranney.com">Email</a>
   </div>
 </div>
 
@@ -85,68 +89,69 @@
   /* ─── Toggle Button ──────────────────────────────────────── */
   #staci-toggle {
     position: fixed;
-    bottom: 1.5rem;
-    right: 1.5rem;
+    bottom: 1.25rem;
+    right: 1.25rem;
     z-index: 9999;
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    padding: 0.4rem 1rem 0.4rem 0.4rem;
+    gap: 0.55rem;
+    padding: 0.35rem 0.9rem 0.35rem 0.35rem;
     border-radius: 100px;
     background: var(--color-charcoal);
     color: var(--color-gold);
     box-shadow:
-      0 4px 24px rgba(44, 44, 44, 0.28),
-      0 1px 4px rgba(44, 44, 44, 0.12);
+      0 4px 20px rgba(44, 44, 44, 0.25),
+      0 0 0 1px rgba(255, 255, 255, 0.05) inset;
     transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
     cursor: pointer;
     border: none;
   }
 
   #staci-toggle:hover {
-    transform: scale(1.04);
+    transform: translateY(-2px);
     box-shadow:
-      0 8px 36px rgba(44, 44, 44, 0.35),
-      0 2px 8px rgba(44, 44, 44, 0.15);
+      0 8px 32px rgba(44, 44, 44, 0.3),
+      0 0 0 1px rgba(255, 255, 255, 0.08) inset;
   }
 
   .staci-toggle__avatar {
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid var(--color-gold);
+    border: 2px solid rgba(255, 212, 0, 0.5);
     flex-shrink: 0;
     transition: opacity 0.2s;
   }
 
   .staci-badge {
     position: absolute;
-    top: 2px;
-    right: 2px;
-    width: 11px;
-    height: 11px;
+    top: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
     background: #EF4444;
     border-radius: 50%;
-    border: 2px solid var(--color-charcoal);
+    border: 2.5px solid var(--color-charcoal);
     pointer-events: none;
     animation: staciBadgePulse 2s ease-in-out infinite;
   }
 
   @keyframes staciBadgePulse {
     0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.3); }
+    50% { transform: scale(1.25); }
   }
 
   .staci-toggle__close {
     flex-shrink: 0;
+    margin: 0 0.15rem;
   }
 
   .staci-toggle__label {
     font-family: var(--font-body);
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     font-weight: 600;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.03em;
     color: var(--color-cream);
     white-space: nowrap;
   }
@@ -154,26 +159,25 @@
   /* ─── Chat Panel ─────────────────────────────────────────── */
   #staci-panel {
     position: fixed;
-    bottom: 5.5rem;
-    right: 1.5rem;
+    bottom: 5rem;
+    right: 1.25rem;
     z-index: 9998;
     width: 400px;
-    max-height: 600px;
+    max-height: 620px;
     background: var(--color-warm-white);
-    border-radius: 20px;
-    border: 1px solid var(--color-cream-dark);
+    border-radius: 16px;
+    border: 1px solid rgba(44, 44, 44, 0.08);
     box-shadow:
-      0 24px 80px rgba(44, 44, 44, 0.14),
-      0 8px 24px rgba(44, 44, 44, 0.08),
-      0 2px 6px rgba(44, 44, 44, 0.04);
+      0 24px 80px rgba(44, 44, 44, 0.18),
+      0 8px 24px rgba(44, 44, 44, 0.08);
     display: flex;
     flex-direction: column;
     opacity: 0;
-    transform: translateY(16px) scale(0.96);
+    transform: translateY(12px) scale(0.97);
     pointer-events: none;
     transition:
       opacity 0.25s ease-out,
-      transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); /* spring overshoot */
+      transform 0.4s cubic-bezier(0.34, 1.4, 0.64, 1);
     overflow: hidden;
   }
 
@@ -183,29 +187,27 @@
     pointer-events: auto;
   }
 
-  /* Closing uses a faster, no-overshoot curve */
   #staci-panel[aria-hidden="true"] {
     transition:
-      opacity 0.2s ease-in,
-      transform 0.25s var(--ease-out);
+      opacity 0.18s ease-in,
+      transform 0.22s var(--ease-out);
   }
 
   /* ─── Header ─────────────────────────────────────────────── */
   .staci-header {
-    padding: 0.9rem 1rem;
+    padding: 0.75rem 0.75rem 0.75rem 1rem;
     background: var(--color-charcoal);
     color: var(--color-cream);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-radius: 20px 20px 0 0;
     flex-shrink: 0;
   }
 
   .staci-header__info {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.65rem;
   }
 
   .staci-header__avatar-wrap {
@@ -215,77 +217,62 @@
 
   .staci-header__online {
     position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 10px;
-    height: 10px;
+    bottom: -1px;
+    right: -1px;
+    width: 11px;
+    height: 11px;
     background: #34D399;
     border-radius: 50%;
-    border: 2px solid var(--color-charcoal);
+    border: 2.5px solid var(--color-charcoal);
   }
 
   .staci-header__info strong {
     font-family: var(--font-display);
-    font-size: 1.05rem;
+    font-size: 1rem;
     display: block;
-    line-height: 1.2;
+    line-height: 1.15;
   }
 
   .staci-status {
-    font-size: 0.65rem;
-    letter-spacing: 0.08em;
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--color-gold);
     font-weight: 600;
   }
 
   .staci-avatar {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
-    border: 1.5px solid rgba(255, 212, 0, 0.4);
+    border: 2px solid rgba(255, 212, 0, 0.35);
   }
 
-  .staci-header__reset {
-    padding: 0.4rem;
+  .staci-header__btn {
+    padding: 0.35rem;
     color: var(--color-stone);
     transition: color 0.2s, background 0.2s;
     border: none;
     background: none;
     cursor: pointer;
-    border-radius: 50%;
-    min-width: 36px;
-    min-height: 36px;
+    border-radius: 8px;
+    min-width: 34px;
+    min-height: 34px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
-  .staci-header__reset:hover {
-    color: #FCA5A5;
-    background: rgba(255, 255, 255, 0.08);
-  }
-
-  .staci-header__close {
-    padding: 0.4rem;
-    color: var(--color-stone);
-    transition: color 0.2s, background 0.2s;
-    border: none;
-    background: none;
-    cursor: pointer;
-    border-radius: 50%;
-    min-width: 44px;
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .staci-header__close:hover {
+  .staci-header__btn:hover {
     color: var(--color-cream);
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .staci-header__btn--close {
+    min-width: 38px;
+    min-height: 38px;
   }
 
   /* ─── Welcome Card ────────────────────────────────────────── */
@@ -294,69 +281,67 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
-    padding: 1.5rem 1rem 0.5rem;
+    padding: 2rem 1.25rem 1rem;
     animation: staciWelcomeIn 0.5s var(--ease-out) both;
   }
 
   @keyframes staciWelcomeIn {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
   }
 
   .staci-welcome__avatar {
-    position: relative;
-    width: 56px;
-    height: 56px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     object-fit: cover;
     border: 2.5px solid var(--color-gold-soft);
-    box-shadow: 0 2px 12px rgba(255, 212, 0, 0.15), 0 1px 4px rgba(44, 44, 44, 0.08);
-    margin-bottom: 0.7rem;
+    box-shadow: 0 4px 16px rgba(255, 212, 0, 0.12), 0 2px 6px rgba(44, 44, 44, 0.06);
+    margin-bottom: 0.85rem;
   }
 
   .staci-welcome__name {
     font-family: var(--font-display);
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     font-weight: 400;
     color: var(--color-charcoal);
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.3rem;
   }
 
   .staci-welcome__sub {
-    font-size: 0.8rem;
-    line-height: 1.5;
+    font-size: 0.82rem;
+    line-height: 1.55;
     color: var(--color-stone);
-    max-width: 280px;
-    margin-bottom: 1rem;
+    max-width: 260px;
+    margin-bottom: 1.25rem;
   }
 
   .staci-welcome__chips {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 0.4rem;
+    gap: 0.35rem;
   }
 
   .staci-welcome__chips .staci-chip {
     animation: staciPillIn 0.3s var(--ease-out) both;
-    min-height: 36px;
-    font-size: 0.76rem;
+    font-size: 0.78rem;
   }
 
-  .staci-welcome__chips .staci-chip:nth-child(1) { animation-delay: 0.1s; }
-  .staci-welcome__chips .staci-chip:nth-child(2) { animation-delay: 0.16s; }
-  .staci-welcome__chips .staci-chip:nth-child(3) { animation-delay: 0.22s; }
-  .staci-welcome__chips .staci-chip:nth-child(4) { animation-delay: 0.28s; }
+  .staci-welcome__chips .staci-chip:nth-child(1) { animation-delay: 0.08s; }
+  .staci-welcome__chips .staci-chip:nth-child(2) { animation-delay: 0.14s; }
+  .staci-welcome__chips .staci-chip:nth-child(3) { animation-delay: 0.20s; }
+  .staci-welcome__chips .staci-chip:nth-child(4) { animation-delay: 0.26s; }
 
   /* ─── Messages ───────────────────────────────────────────── */
   .staci-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 1.1rem 1rem 0.75rem;
+    padding: 1rem 0.85rem 0.6rem;
     display: flex;
     flex-direction: column;
-    gap: 0.9rem;
-    max-height: 360px;
+    gap: 0.75rem;
+    max-height: 380px;
     min-height: 120px;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
@@ -369,35 +354,30 @@
     scrollbar-color: var(--color-cream-dark) transparent;
   }
 
-  .staci-messages::-webkit-scrollbar {
-    width: 4px;
-  }
-
+  .staci-messages::-webkit-scrollbar { width: 4px; }
   .staci-messages::-webkit-scrollbar-thumb {
     background: transparent;
     border-radius: 4px;
-    transition: background 0.2s;
   }
-
   .staci-messages:hover::-webkit-scrollbar-thumb {
     background: var(--color-cream-dark);
   }
 
   .staci-msg {
     display: flex;
-    gap: 0.55rem;
+    gap: 0.5rem;
     align-items: flex-start;
-    animation: staciMsgIn 0.35s var(--ease-out) both;
+    animation: staciMsgIn 0.3s var(--ease-out) both;
   }
 
   .staci-msg--user {
     flex-direction: row-reverse;
-    animation: staciUserMsgIn 0.3s var(--ease-out) both;
+    animation: staciUserMsgIn 0.25s var(--ease-out) both;
   }
 
   .staci-msg__avatar {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
@@ -406,7 +386,7 @@
 
   .staci-msg--bot > .staci-msg__avatar {
     border: 1.5px solid var(--color-gold-soft);
-    box-shadow: 0 1px 4px rgba(44, 44, 44, 0.1);
+    box-shadow: 0 1px 3px rgba(44, 44, 44, 0.08);
   }
 
   span.staci-msg__avatar {
@@ -423,15 +403,15 @@
   .staci-msg__body {
     display: flex;
     flex-direction: column;
-    gap: 0.2rem;
-    max-width: 80%;
+    gap: 0.15rem;
+    max-width: 82%;
     min-width: 0;
   }
 
   .staci-msg__bubble {
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-    line-height: 1.65;
+    padding: 0.7rem 0.9rem;
+    font-size: 0.85rem;
+    line-height: 1.6;
     letter-spacing: 0.005em;
     color: var(--color-charcoal);
     word-break: break-word;
@@ -451,17 +431,14 @@
   .staci-msg--bot .staci-msg__bubble :global(a:hover) {
     color: var(--color-charcoal);
   }
-  .staci-msg--bot .staci-msg__bubble :global(a:active) {
-    opacity: 0.7;
-  }
   .staci-msg--bot .staci-msg__bubble :global(ul),
   .staci-msg--bot .staci-msg__bubble :global(ol) {
-    margin: 0.5rem 0 0.6rem;
-    padding-left: 1.2rem;
+    margin: 0.4rem 0 0.5rem;
+    padding-left: 1.1rem;
   }
   .staci-msg--bot .staci-msg__bubble :global(li) {
-    margin: 0.35rem 0;
-    line-height: 1.55;
+    margin: 0.3rem 0;
+    line-height: 1.5;
   }
   .staci-msg--bot .staci-msg__bubble :global(li::marker) {
     color: var(--color-stone);
@@ -469,36 +446,32 @@
   .staci-msg--bot .staci-msg__bubble :global(code) {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 0.82em;
-    background: rgba(44, 44, 44, 0.06);
-    padding: 0.15em 0.35em;
+    background: rgba(44, 44, 44, 0.05);
+    padding: 0.12em 0.3em;
     border-radius: 4px;
   }
-  .staci-msg--bot .staci-msg__bubble :global(p) {
-    margin: 0;
-  }
-  .staci-msg--bot .staci-msg__bubble :global(p + p) {
-    margin-top: 0.55rem;
-  }
+  .staci-msg--bot .staci-msg__bubble :global(p) { margin: 0; }
+  .staci-msg--bot .staci-msg__bubble :global(p + p) { margin-top: 0.5rem; }
 
   .staci-msg--bot .staci-msg__bubble {
-    background: var(--color-cream);
-    border-radius: 6px 16px 16px 16px;
-    box-shadow: 0 1px 4px rgba(44, 44, 44, 0.06);
+    background: white;
+    border-radius: 4px 14px 14px 14px;
+    border: 1px solid rgba(44, 44, 44, 0.06);
+    box-shadow: 0 1px 3px rgba(44, 44, 44, 0.04);
   }
 
   .staci-msg--user .staci-msg__bubble {
     background: var(--color-charcoal);
     color: var(--color-cream);
-    border-radius: 16px 6px 16px 16px;
-    box-shadow: 0 1px 4px rgba(44, 44, 44, 0.1);
+    border-radius: 14px 4px 14px 14px;
   }
 
-  /* Typing indicator — shimmer bar */
+  /* Typing indicator */
   .staci-typing .staci-msg__bubble {
     display: flex;
     gap: 0.5rem;
     align-items: center;
-    padding: 0.75rem 1rem;
+    padding: 0.7rem 0.9rem;
   }
 
   .staci-shimmer {
@@ -541,13 +514,12 @@
   }
 
   @keyframes staciUserMsgIn {
-    from { opacity: 0; transform: translateX(12px); }
+    from { opacity: 0; transform: translateX(10px); }
     to { opacity: 1; transform: translateX(0); }
   }
 
-  /* Streaming bubble replaces typing — no slide, just crossfade */
   .staci-msg--bot.staci-msg--stream-start {
-    animation: staciBotFadeIn 0.25s ease-out both;
+    animation: staciBotFadeIn 0.2s ease-out both;
   }
 
   @keyframes staciBotFadeIn {
@@ -556,7 +528,7 @@
   }
 
   @keyframes staciPillIn {
-    from { opacity: 0; transform: translateY(4px) scale(0.95); }
+    from { opacity: 0; transform: translateY(4px) scale(0.96); }
     to { opacity: 1; transform: translateY(0) scale(1); }
   }
 
@@ -566,24 +538,23 @@
   }
 
   .staci-streaming::after {
-    content: '▎';
+    content: '\25CE';
     display: inline-block;
-    animation: staciCursor 0.8s steps(1) infinite;
+    animation: staciCursor 0.9s steps(1) infinite;
     color: var(--color-gold);
-    margin-left: 2px;
-    font-size: 0.95em;
+    margin-left: 3px;
+    font-size: 0.85em;
     vertical-align: text-bottom;
     line-height: 1;
     transition: opacity 0.3s ease-out;
   }
 
-  /* Fade out cursor when stream ends */
   .staci-streaming--done::after {
     opacity: 0;
     animation: none;
   }
 
-  /* Error message with retry */
+  /* Error message */
   .staci-msg--error .staci-msg__bubble {
     background: #FEF2F2;
     border: 1px solid #FECACA;
@@ -593,7 +564,7 @@
   .staci-retry {
     display: inline-flex;
     align-items: center;
-    margin-top: 0.35rem;
+    margin-top: 0.3rem;
     font-size: 0.78rem;
     font-weight: 600;
     color: var(--color-cyan);
@@ -607,36 +578,28 @@
     transition: color 0.15s;
   }
 
-  .staci-retry:hover {
-    color: var(--color-charcoal);
-  }
+  .staci-retry:hover { color: var(--color-charcoal); }
 
   .staci-msg__time {
-    font-size: 0.6rem;
+    font-size: 0.58rem;
     color: var(--color-stone);
     opacity: 0;
-    padding: 0 0.3rem;
+    padding: 0 0.25rem;
     line-height: 1;
     transition: opacity 0.2s;
   }
 
-  .staci-msg:hover .staci-msg__time {
-    opacity: 0.55;
-  }
+  .staci-msg:hover .staci-msg__time { opacity: 0.5; }
+  .staci-msg--user .staci-msg__time { text-align: right; }
 
-  .staci-msg--user .staci-msg__time {
-    text-align: right;
-  }
-
-  /* Delivered indicator on user messages */
   .staci-msg--user .staci-msg__delivered {
     display: flex;
     align-items: center;
     justify-content: flex-end;
     gap: 0.2rem;
-    font-size: 0.58rem;
+    font-size: 0.56rem;
     color: var(--color-stone);
-    padding-right: 0.3rem;
+    padding-right: 0.25rem;
     opacity: 0;
     animation: staciFadeIn 0.3s 0.4s ease-out forwards;
   }
@@ -648,61 +611,67 @@
     flex-shrink: 0;
   }
 
-  @keyframes staciFadeIn {
-    to { opacity: 0.5; }
-  }
+  @keyframes staciFadeIn { to { opacity: 0.5; } }
 
-  /* Time separator between message groups */
   .staci-time-sep {
     text-align: center;
-    font-size: 0.6rem;
+    font-size: 0.58rem;
     color: var(--color-stone);
-    opacity: 0.6;
-    padding: 0.3rem 0;
+    opacity: 0.55;
+    padding: 0.25rem 0;
     letter-spacing: 0.03em;
   }
 
-  /* ─── Product Cards ───────────────────────────────────────── */
+  /* ─── Product Cards (2-col grid) ────────────────────────── */
   .staci-products {
-    display: flex;
-    gap: 0.6rem;
-    padding: 0.15rem 1rem 0.5rem 2.35rem;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-    animation: staciMsgIn 0.35s var(--ease-out) both;
-    scroll-snap-type: x proximity;
-    scroll-padding-left: 2.35rem;
-  }
-
-  .staci-products::-webkit-scrollbar {
-    display: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    padding: 0.25rem 0.85rem 0.5rem 2.6rem;
+    animation: staciMsgIn 0.3s var(--ease-out) both;
   }
 
   .staci-product-card {
-    flex: 0 0 140px;
     background: white;
-    border-radius: 12px;
+    border-radius: 10px;
     overflow: hidden;
     text-decoration: none;
     color: var(--color-charcoal);
-    border: 1px solid var(--color-cream-dark);
-    box-shadow: 0 1px 3px rgba(44, 44, 44, 0.04);
+    border: 1px solid rgba(44, 44, 44, 0.06);
+    box-shadow: 0 1px 4px rgba(44, 44, 44, 0.04);
     transition: transform 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out);
     display: flex;
     flex-direction: column;
-    scroll-snap-align: start;
     position: relative;
-    animation: staciCardIn 0.35s var(--ease-out) both;
+    animation: staciCardIn 0.3s var(--ease-out) both;
   }
 
-  .staci-product-card:nth-child(2) { animation-delay: 0.07s; }
-  .staci-product-card:nth-child(3) { animation-delay: 0.14s; }
-  .staci-product-card:nth-child(4) { animation-delay: 0.21s; }
+  .staci-product-card:nth-child(2) { animation-delay: 0.06s; }
+  .staci-product-card:nth-child(3) { animation-delay: 0.12s; }
+  .staci-product-card:nth-child(4) { animation-delay: 0.18s; }
 
   @keyframes staciCardIn {
-    from { opacity: 0; transform: translateY(8px) scale(0.95); }
+    from { opacity: 0; transform: translateY(6px) scale(0.97); }
     to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .staci-product-card__number {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 22px;
+    height: 22px;
+    background: var(--color-charcoal);
+    color: var(--color-cream);
+    font-family: var(--font-body);
+    font-size: 0.65rem;
+    font-weight: 700;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
   }
 
   .staci-product-card__badge {
@@ -712,7 +681,7 @@
     background: #EF4444;
     color: white;
     font-family: var(--font-body);
-    font-size: 0.6rem;
+    font-size: 0.58rem;
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -720,21 +689,21 @@
     border-radius: 4px;
     line-height: 1.2;
     z-index: 1;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
   }
 
   .staci-product-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 14px rgba(44, 44, 44, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(44, 44, 44, 0.1);
   }
 
   .staci-product-card:active {
-    transform: scale(0.97);
+    transform: scale(0.98);
   }
 
   .staci-product-card__img {
     width: 100%;
-    height: 100px;
+    aspect-ratio: 1;
     object-fit: cover;
     display: block;
     background:
@@ -755,18 +724,17 @@
   }
 
   .staci-product-card__info {
-    padding: 0.5rem 0.6rem;
+    padding: 0.45rem 0.55rem 0.5rem;
     display: flex;
     flex-direction: column;
-    gap: 0.2rem;
-    min-height: 0;
+    gap: 0.15rem;
   }
 
   .staci-product-card__title {
     font-family: var(--font-body);
-    font-size: 0.74rem;
+    font-size: 0.72rem;
     font-weight: 600;
-    line-height: 1.35;
+    line-height: 1.3;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -775,7 +743,7 @@
 
   .staci-product-card__price {
     font-family: var(--font-body);
-    font-size: 0.76rem;
+    font-size: 0.74rem;
     font-weight: 700;
     color: var(--color-charcoal);
   }
@@ -783,39 +751,39 @@
   .staci-product-card__price s {
     color: var(--color-stone);
     font-weight: 400;
-    font-size: 0.68rem;
+    font-size: 0.66rem;
   }
 
   /* ─── Inline Suggestion Pills ─────────────────────────────── */
   .staci-suggestions {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem;
-    padding: 0.35rem 1rem 0.25rem 2.35rem;
+    gap: 0.35rem;
+    padding: 0.3rem 0.85rem 0.2rem 2.6rem;
   }
 
   .staci-suggestion-pill {
-    padding: 0.42rem 0.9rem;
+    padding: 0.38rem 0.8rem;
     font-family: var(--font-body);
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     font-weight: 500;
     color: var(--color-slate);
     background: white;
-    border: 1px solid var(--color-cream-dark);
+    border: 1px solid rgba(44, 44, 44, 0.08);
     border-radius: 100px;
     cursor: pointer;
-    transition: background 0.2s var(--ease-out), border-color 0.2s var(--ease-out), color 0.2s var(--ease-out), transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+    transition: all 0.2s var(--ease-out);
     white-space: nowrap;
-    min-height: 32px;
+    min-height: 30px;
     display: inline-flex;
     align-items: center;
-    gap: 0.3rem;
-    animation: staciPillIn 0.35s var(--ease-out) both;
+    gap: 0.25rem;
+    animation: staciPillIn 0.3s var(--ease-out) both;
   }
 
-  .staci-suggestion-pill:nth-child(1) { animation-delay: 0.15s; }
-  .staci-suggestion-pill:nth-child(2) { animation-delay: 0.25s; }
-  .staci-suggestion-pill:nth-child(3) { animation-delay: 0.35s; }
+  .staci-suggestion-pill:nth-child(1) { animation-delay: 0.12s; }
+  .staci-suggestion-pill:nth-child(2) { animation-delay: 0.2s; }
+  .staci-suggestion-pill:nth-child(3) { animation-delay: 0.28s; }
 
   .staci-suggestion-pill::before {
     content: '';
@@ -832,38 +800,36 @@
     border-color: var(--color-gold);
     color: var(--color-charcoal);
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(255, 212, 0, 0.15);
+    box-shadow: 0 2px 8px rgba(255, 212, 0, 0.12);
   }
 
-  .staci-suggestion-pill:active {
-    transform: scale(0.97);
-  }
+  .staci-suggestion-pill:active { transform: scale(0.97); }
 
   /* ─── Quick Reply Chips ────────────────────────────────────── */
   .staci-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem;
-    padding: 0.5rem 1rem 0.75rem;
+    gap: 0.35rem;
+    padding: 0.4rem 0.85rem 0.6rem;
     flex-shrink: 0;
   }
 
   .staci-chip {
-    padding: 0.4rem 0.85rem;
+    padding: 0.38rem 0.8rem;
     font-family: var(--font-body);
     font-size: 0.78rem;
     font-weight: 500;
     color: var(--color-slate);
     background: white;
-    border: 1px solid var(--color-cream-dark);
+    border: 1px solid rgba(44, 44, 44, 0.08);
     border-radius: 100px;
     cursor: pointer;
-    transition: background 0.2s var(--ease-out), border-color 0.2s var(--ease-out), color 0.2s var(--ease-out), transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+    transition: all 0.2s var(--ease-out);
     white-space: nowrap;
-    min-height: 44px;
+    min-height: 36px;
     display: inline-flex;
     align-items: center;
-    gap: 0.3rem;
+    gap: 0.25rem;
   }
 
   .staci-chip::before {
@@ -881,18 +847,16 @@
     border-color: var(--color-gold);
     color: var(--color-charcoal);
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(255, 212, 0, 0.15);
+    box-shadow: 0 2px 8px rgba(255, 212, 0, 0.12);
   }
 
-  .staci-chip:active {
-    transform: scale(0.97);
-  }
+  .staci-chip:active { transform: scale(0.97); }
 
   /* ─── Input ──────────────────────────────────────────────── */
   .staci-input {
     display: flex;
     align-items: flex-end;
-    border-top: 1px solid var(--color-cream-dark);
+    border-top: 1px solid rgba(44, 44, 44, 0.06);
     padding: 0;
     gap: 0;
     flex-shrink: 0;
@@ -906,27 +870,25 @@
   }
 
   .staci-char-count {
-    font-size: 0.65rem;
+    font-size: 0.62rem;
     color: var(--color-stone);
     text-align: right;
-    padding: 0 1rem 0.35rem;
+    padding: 0 0.85rem 0.3rem;
     display: none;
   }
 
-  .staci-char-count.staci-char-count--warn {
-    color: #EF4444;
-  }
+  .staci-char-count.staci-char-count--warn { color: #EF4444; }
 
   .staci-input textarea {
     flex: 1;
-    padding: 0.85rem 1rem;
+    padding: 0.8rem 0.85rem;
     border: none;
     outline: none;
     font-family: var(--font-body);
-    font-size: 0.9375rem;
+    font-size: 0.9rem;
     background: transparent;
     color: var(--color-charcoal);
-    min-height: 48px;
+    min-height: 46px;
     resize: none;
     overflow-x: hidden;
     overflow-y: auto;
@@ -934,19 +896,17 @@
     line-height: 1.5;
   }
 
-  .staci-input textarea::placeholder {
-    color: var(--color-stone);
-  }
+  .staci-input textarea::placeholder { color: var(--color-stone); }
 
   .staci-input__send {
-    padding: 0.6rem;
-    margin-right: 0.55rem;
-    margin-bottom: 0.45rem;
-    color: var(--color-charcoal);
-    background: var(--color-gold);
-    border-radius: 50%;
-    width: 38px;
-    height: 38px;
+    padding: 0.5rem;
+    margin-right: 0.5rem;
+    margin-bottom: 0.4rem;
+    color: white;
+    background: var(--color-charcoal);
+    border-radius: 10px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -957,16 +917,15 @@
   }
 
   .staci-input__send:hover {
-    background: var(--color-charcoal);
-    transform: scale(1.08);
+    background: var(--color-gold);
+    color: var(--color-charcoal);
+    transform: scale(1.05);
   }
 
-  .staci-input__send:hover svg {
-    stroke: var(--color-gold);
-  }
+  .staci-input__send:hover svg { stroke: var(--color-charcoal); }
 
   .staci-input__send:disabled {
-    opacity: 0.3;
+    opacity: 0.25;
     cursor: not-allowed;
     transform: none;
     background: var(--color-cream-dark);
@@ -984,26 +943,36 @@
 
   /* ─── Footer ─────────────────────────────────────────────── */
   .staci-footer {
-    padding: 0.45rem 1rem;
-    font-size: 0.62rem;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.6rem;
     color: var(--color-stone);
     text-align: center;
-    border-top: 1px solid var(--color-cream-dark);
-    background: var(--color-cream);
-    border-radius: 0 0 20px 20px;
+    border-top: 1px solid rgba(44, 44, 44, 0.04);
+    background: var(--color-warm-white);
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+  }
+
+  .staci-footer__powered {
+    opacity: 0.6;
+  }
+
+  .staci-footer__sep {
+    opacity: 0.3;
+    font-size: 0.5rem;
   }
 
   .staci-footer a {
     color: var(--color-stone);
-    text-decoration: underline;
-    text-underline-offset: 2px;
+    text-decoration: none;
+    font-weight: 500;
     transition: color 0.15s;
   }
 
-  .staci-footer a:hover {
-    color: var(--color-charcoal);
-  }
+  .staci-footer a:hover { color: var(--color-charcoal); }
 
   /* ─── Mobile ─────────────────────────────────────────────── */
   @media (max-width: 480px) {
@@ -1020,14 +989,10 @@
       z-index: 10000;
       padding-top: env(safe-area-inset-top);
       padding-bottom: env(safe-area-inset-bottom);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      background: rgba(253, 252, 250, 0.97);
     }
 
     .staci-header {
-      border-radius: 0;
-      padding-top: calc(0.9rem + env(safe-area-inset-top));
+      padding-top: calc(0.75rem + env(safe-area-inset-top));
     }
 
     .staci-messages {
@@ -1037,62 +1002,50 @@
     }
 
     .staci-footer {
-      border-radius: 0;
-      padding-bottom: calc(0.45rem + env(safe-area-inset-bottom));
+      padding-bottom: calc(0.4rem + env(safe-area-inset-bottom));
     }
 
     #staci-toggle {
-      padding: 0.3rem;
-      bottom: calc(1rem + env(safe-area-inset-bottom));
-      right: 1rem;
+      padding: 0.25rem;
+      bottom: calc(0.85rem + env(safe-area-inset-bottom));
+      right: 0.85rem;
     }
 
-    .staci-toggle__label {
-      display: none;
-    }
+    .staci-toggle__label { display: none; }
 
     .staci-toggle__avatar {
-      width: 52px;
-      height: 52px;
+      width: 48px;
+      height: 48px;
     }
 
-    .staci-chips {
-      padding: 0.4rem 0.75rem 0.6rem;
-      overflow-x: auto;
-      flex-wrap: nowrap;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-    }
-
-    .staci-chips::-webkit-scrollbar {
-      display: none;
-    }
-
-    .staci-chip {
-      font-size: 0.78rem;
-      padding: 0.4rem 0.85rem;
-      flex-shrink: 0;
+    .staci-products {
+      padding-left: 0.85rem;
+      padding-right: 0.85rem;
     }
 
     .staci-suggestions {
-      padding-left: 1rem;
+      padding-left: 0.85rem;
       overflow-x: auto;
       flex-wrap: nowrap;
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
     }
 
-    .staci-suggestions::-webkit-scrollbar {
-      display: none;
+    .staci-suggestions::-webkit-scrollbar { display: none; }
+    .staci-suggestion-pill { flex-shrink: 0; }
+
+    .staci-chips {
+      padding: 0.35rem 0.65rem 0.5rem;
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
     }
 
-    .staci-suggestion-pill {
-      flex-shrink: 0;
-    }
+    .staci-chips::-webkit-scrollbar { display: none; }
+    .staci-chip { flex-shrink: 0; }
 
-    .staci-input textarea {
-      font-size: 1rem;
-    }
+    .staci-input textarea { font-size: 1rem; }
   }
 
   /* Landscape phones */
@@ -1110,20 +1063,9 @@
       z-index: 10000;
     }
 
-    .staci-header {
-      border-radius: 0;
-      padding: 0.5rem 1rem;
-    }
-
-    .staci-messages {
-      flex: 1;
-      max-height: none;
-      min-height: 0;
-    }
-
-    .staci-footer {
-      border-radius: 0;
-    }
+    .staci-header { padding: 0.5rem 0.85rem; }
+    .staci-messages { flex: 1; max-height: none; min-height: 0; }
+    .staci-footer { border-radius: 0; }
   }
 
   /* ─── Reduced Motion ────────────────────────────────────── */
@@ -1147,13 +1089,8 @@
       transition: none !important;
     }
 
-    .staci-messages {
-      scroll-behavior: auto;
-    }
-
-    .staci-msg__delivered {
-      opacity: 0.5 !important;
-    }
+    .staci-messages { scroll-behavior: auto; }
+    .staci-msg__delivered { opacity: 0.5 !important; }
   }
 
   /* ─── Focus Visible ─────────────────────────────────────── */
@@ -1164,8 +1101,7 @@
     box-shadow: 0 0 0 4px rgba(255, 212, 0, 0.2);
   }
 
-  .staci-header__close:focus-visible,
-  .staci-header__reset:focus-visible {
+  .staci-header__btn:focus-visible {
     outline: 2px solid var(--color-gold);
     outline-offset: 1px;
   }
@@ -1192,957 +1128,18 @@
 </style>
 
 <script>
-  const STORAGE_KEY = 'staci_chat_history';
-  const STORAGE_PANEL_KEY = 'staci_panel_open';
-  const STORAGE_VERSION = 'v2';
-  const STORAGE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-  const MAX_STORED_MESSAGES = 50;
-  const AVATAR_URL = 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=60,h=60,fit=cover,format=auto';
-
-  let conversationHistory: { role: string; content: string }[] = [];
-  let isSending = false;
-  let _streamRAF = 0;
-
-  // ─── Helpers ─────────────────────────────────────────────
-
-  function escapeHtml(str: string) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+  /* Lazy bootstrap — defers the 16 KB chat bundle download until after LCP.
+     Returning users with an open panel get it immediately; everyone else waits for idle. */
+  const _load = () => import('../lib/staci-chat-init');
+  if (localStorage.getItem('staci_panel_open') === 'true') {
+    _load();
+  } else {
+    ('requestIdleCallback' in window)
+      ? requestIdleCallback(() => _load(), { timeout: 3000 })
+      : setTimeout(_load, 50);
   }
-
-  /** Escape a string for use inside an HTML attribute (href, src) */
-  function escapeAttr(str: string) {
-    return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  }
-
-  /** Shared inline markdown transforms: code, bold, italic, links, lists */
-  function applyInlineMarkdown(html: string): string {
-    // Inline code: `text`
-    html = html.replace(/`([^`]+?)`/g, '<code>$1</code>');
-    // Bold: **text**
-    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    // Italic: *text* (but not inside links/bold)
-    html = html.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
-
-    // Links: all open in new tab so chat stays open while browsing
-    // Only allow http(s) and relative URLs — block javascript: and data: schemes
-    html = html.replace(/\[(.+?)\]\((.+?)\)/g, (_match, linkText, url) => {
-      const safeUrl = /^(https?:\/\/|\/[^\/])/.test(url) ? url : '#';
-      return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
-    });
-
-    return html;
-  }
-
-  /** Convert markdown list blocks to HTML <ul>/<ol> */
-  function applyListMarkdown(html: string): string {
-    // Process unordered lists (lines starting with - or *)
-    html = html.replace(/((?:^|\n)(?:[*\-] .+(?:\n|$))+)/g, (block) => {
-      const items = block.trim().split('\n').map(line =>
-        `<li>${line.replace(/^[*\-]\s+/, '')}</li>`
-      ).join('');
-      return `<ul>${items}</ul>`;
-    });
-
-    // Process ordered lists (lines starting with 1. 2. etc)
-    html = html.replace(/((?:^|\n)(?:\d+\.\s+.+(?:\n|$))+)/g, (block) => {
-      const items = block.trim().split('\n').map(line =>
-        `<li>${line.replace(/^\d+\.\s+/, '')}</li>`
-      ).join('');
-      return `<ol>${items}</ol>`;
-    });
-
-    return html;
-  }
-
-  /** Markdown → HTML with paragraph wrapping on double newlines */
-  function renderMarkdown(text: string): string {
-    let html = escapeHtml(text);
-
-    // Split on double newlines FIRST (before list processing eats them)
-    const blocks = html.split(/\n{2,}/);
-
-    if (blocks.length > 1) {
-      html = blocks
-        .map(b => b.trim())
-        .filter(b => b.length > 0)
-        .map(b => {
-          b = applyInlineMarkdown(b);
-          b = applyListMarkdown(b);
-          // If block became a list, don't wrap in <p>
-          const stripped = b.trim();
-          if (stripped.startsWith('<ul>') || stripped.startsWith('<ol>')) return stripped;
-          // Convert remaining single newlines to <br>
-          return `<p>${stripped.replace(/\n/g, '<br>')}</p>`;
-        })
-        .join('');
-    } else {
-      html = applyInlineMarkdown(html);
-      html = applyListMarkdown(html);
-      html = html.replace(/\n/g, '<br>');
-    }
-
-    // Clean up stray <br> adjacent to lists
-    html = html.replace(/<br><(ul|ol)>/g, '<$1>');
-    html = html.replace(/<\/(ul|ol)><br>/g, '</$1>');
-    html = html.replace(/<p><br>/g, '<p>');
-    html = html.replace(/<br><\/p>/g, '</p>');
-
-    return html;
-  }
-
-  /** Streaming-safe markdown: no paragraph wrapping (avoids reflow mid-stream),
-   *  strip trailing incomplete markers to prevent flicker */
-  function renderStreamingMarkdown(text: string): string {
-    const cleaned = text.replace(/\*+$/, '').replace(/`$/, '').replace(/\[$/, '').replace(/\]\([^)]*$/, '');
-    let html = escapeHtml(cleaned);
-
-    html = applyInlineMarkdown(html);
-    html = applyListMarkdown(html);
-
-    // All newlines → <br> (no paragraph wrapping during streaming to avoid reflow)
-    html = html.replace(/\n/g, '<br>');
-    html = html.replace(/<br><(ul|ol)>/g, '<$1>');
-    html = html.replace(/<\/(ul|ol)><br>/g, '</$1>');
-
-    return html;
-  }
-
-  // ─── Session Storage ───────────────────────────────────────
-
-  function saveSession() {
-    try {
-      const data = {
-        v: STORAGE_VERSION,
-        messages: conversationHistory.slice(-MAX_STORED_MESSAGES),
-        expires: Date.now() + STORAGE_TTL_MS,
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch { /* quota exceeded — ignore */ }
-  }
-
-  function loadSession(): { role: string; content: string }[] {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return [];
-      const data = JSON.parse(raw);
-      // Version mismatch or expired — clear
-      if (data.v !== STORAGE_VERSION) { localStorage.removeItem(STORAGE_KEY); return []; }
-      if (data.expires && Date.now() > data.expires) { localStorage.removeItem(STORAGE_KEY); return []; }
-      return data.messages || [];
-    } catch {
-      return [];
-    }
-  }
-
-  function restoreSession() {
-    const saved = loadSession();
-    if (saved.length) {
-      conversationHistory = saved;
-      const messagesEl = document.getElementById('staci-messages');
-      if (messagesEl) {
-        messagesEl.innerHTML = '';
-        saved.forEach(msg => {
-          if (msg.role === 'user') addUserBubble(msg.content, false);
-          else addBotBubble(msg.content, false);
-        });
-        if (saved.length > 0) hideChips();
-      }
-    }
-
-    // Re-open panel if it was open before navigation
-    if (localStorage.getItem(STORAGE_PANEL_KEY) === 'true') {
-      openPanel();
-    }
-  }
-
-  // ─── Send Lock ──────────────────────────────────────────────
-
-  function lockSend() {
-    isSending = true;
-    const btn = document.getElementById('staci-send') as HTMLButtonElement | null;
-    const input = document.getElementById('staci-input') as HTMLTextAreaElement | null;
-    if (btn) btn.disabled = true;
-    if (input) input.disabled = true;
-  }
-
-  function unlockSend() {
-    isSending = false;
-    const btn = document.getElementById('staci-send') as HTMLButtonElement | null;
-    const input = document.getElementById('staci-input') as HTMLTextAreaElement | null;
-    if (input) {
-      input.disabled = false;
-      input.focus();
-      if (btn) btn.disabled = input.value.trim().length === 0;
-    }
-  }
-
-  // ─── Unread Badge ──────────────────────────────────────────
-
-  function showBadge() {
-    const badge = document.getElementById('staci-badge');
-    if (badge) badge.style.display = 'block';
-  }
-
-  function hideBadge() {
-    const badge = document.getElementById('staci-badge');
-    if (badge) badge.style.display = 'none';
-  }
-
-  // ─── Welcome Card ──────────────────────────────────────────
-
-  function welcomeCardHTML(): string {
-    return `<div class="staci-welcome" id="staci-welcome">
-      <img class="staci-welcome__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=128,h=128,fit=cover,format=auto" alt="Staci" width="52" height="52" />
-      <p class="staci-welcome__name">Hi, I'm Staci</p>
-      <p class="staci-welcome__sub">Your personal shopping assistant at Sunny&nbsp;&amp;&nbsp;Ranney. Ask me about products, hours, or anything else!</p>
-      <div class="staci-welcome__chips">
-        <button class="staci-chip" data-msg="What's new in the shop?">What's new?</button>
-        <button class="staci-chip" data-msg="What are your store hours and location?">Store hours</button>
-        <button class="staci-chip" data-msg="What is your return policy?">Returns</button>
-        <button class="staci-chip" data-msg="Tell me about Sunny &amp; Ranney's mission">Your mission</button>
-      </div>
-    </div>`;
-  }
-
-  // ─── DOM Manipulation ─────────────────────────────────────
-
-  let _lastMsgTs = 0;
-  const TIME_GAP_MS = 2 * 60 * 1000; // 2 minutes
-
-  let _isStreaming = false;
-
-  function scrollToBottom() {
-    const messagesEl = document.getElementById('staci-messages');
-    if (!messagesEl) return;
-    // During streaming, use instant scroll to avoid jank from competing smooth scrolls
-    if (_isStreaming) {
-      messagesEl.style.scrollBehavior = 'auto';
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-      messagesEl.style.scrollBehavior = '';
-    } else {
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-  }
-
-  /** Insert a time separator if enough time has elapsed since the last message */
-  function maybeAddTimeSep(messagesEl: HTMLElement, animate: boolean) {
-    const now = Date.now();
-    if (_lastMsgTs && (now - _lastMsgTs > TIME_GAP_MS)) {
-      const sep = document.createElement('div');
-      sep.className = 'staci-time-sep';
-      if (!animate) sep.style.animation = 'none';
-      sep.textContent = timeAgo(_lastMsgTs);
-      messagesEl.appendChild(sep);
-    }
-    _lastMsgTs = now;
-  }
-
-  function addUserBubble(text: string, animate = true) {
-    const messagesEl = document.getElementById('staci-messages');
-    if (!messagesEl) return;
-    if (animate) maybeAddTimeSep(messagesEl, animate);
-    const msg = document.createElement('div');
-    msg.className = `staci-msg staci-msg--user`;
-    if (animate) msg.dataset.ts = String(Date.now());
-    if (!animate) msg.style.animation = 'none';
-    msg.innerHTML = `
-      <span class="staci-msg__avatar"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0 2c-3.33 0-10 1.67-10 5v2h20v-2c0-3.33-6.67-5-10-5z"/></svg></span>
-      <div class="staci-msg__body">
-        <div class="staci-msg__bubble">${escapeHtml(text)}</div>
-        ${animate ? '<span class="staci-msg__delivered"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Sent</span>' : ''}
-        <time class="staci-msg__time">just now</time>
-      </div>
-    `;
-    messagesEl.appendChild(msg);
-    scrollToBottom();
-  }
-
-  function addBotBubble(text: string, animate = true): HTMLElement {
-    const messagesEl = document.getElementById('staci-messages');
-    const msg = document.createElement('div');
-    msg.className = `staci-msg staci-msg--bot`;
-    if (animate) msg.dataset.ts = String(Date.now());
-    if (!animate) msg.style.animation = 'none';
-    msg.innerHTML = `
-      <img class="staci-msg__avatar" src="${AVATAR_URL}" loading="lazy" alt="Staci" width="24" height="24" />
-      <div class="staci-msg__body">
-        <div class="staci-msg__bubble">${renderMarkdown(text)}</div>
-        <time class="staci-msg__time">just now</time>
-      </div>
-    `;
-    if (messagesEl) {
-      messagesEl.appendChild(msg);
-      scrollToBottom();
-    }
-    return msg;
-  }
-
-  /** Create a bot bubble for streaming — returns the bubble element to update */
-  function addStreamingBubble(): { container: HTMLElement; bubble: HTMLElement } {
-    const messagesEl = document.getElementById('staci-messages');
-    const msg = document.createElement('div');
-    msg.className = 'staci-msg staci-msg--bot staci-msg--stream-start';
-    msg.dataset.ts = String(Date.now());
-
-    const avatar = document.createElement('img');
-    avatar.className = 'staci-msg__avatar';
-    avatar.src = AVATAR_URL;
-    avatar.alt = 'Staci';
-    avatar.loading = 'lazy';
-    avatar.width = 24;
-    avatar.height = 24;
-
-    const body = document.createElement('div');
-    body.className = 'staci-msg__body';
-
-    const bubble = document.createElement('div');
-    bubble.className = 'staci-msg__bubble staci-streaming';
-
-    const time = document.createElement('time');
-    time.className = 'staci-msg__time';
-    time.textContent = 'just now';
-
-    body.appendChild(bubble);
-    body.appendChild(time);
-    msg.appendChild(avatar);
-    msg.appendChild(body);
-
-    if (messagesEl) {
-      messagesEl.appendChild(msg);
-      scrollToBottom();
-    }
-    return { container: msg, bubble };
-  }
-
-  function addErrorBubble(errorText: string, retryFn: () => void) {
-    const messagesEl = document.getElementById('staci-messages');
-    if (!messagesEl) return;
-    const msg = document.createElement('div');
-    msg.className = 'staci-msg staci-msg--bot staci-msg--error';
-    msg.dataset.ts = String(Date.now());
-
-    const avatar = document.createElement('img');
-    avatar.className = 'staci-msg__avatar';
-    avatar.src = AVATAR_URL;
-    avatar.alt = 'Staci';
-    avatar.loading = 'lazy';
-    avatar.width = 24;
-    avatar.height = 24;
-    msg.appendChild(avatar);
-
-    const body = document.createElement('div');
-    body.className = 'staci-msg__body';
-
-    const bubble = document.createElement('div');
-    bubble.className = 'staci-msg__bubble';
-    bubble.textContent = errorText + ' ';
-    const retry = document.createElement('button');
-    retry.className = 'staci-retry';
-    retry.textContent = 'Try again';
-    retry.addEventListener('click', () => {
-      msg.remove();
-      retryFn();
-    });
-    bubble.appendChild(retry);
-
-    const time = document.createElement('time');
-    time.className = 'staci-msg__time';
-    time.textContent = 'just now';
-
-    body.appendChild(bubble);
-    body.appendChild(time);
-    msg.appendChild(body);
-
-    messagesEl.appendChild(msg);
-    scrollToBottom();
-  }
-
-  function showTyping() {
-    const messagesEl = document.getElementById('staci-messages');
-    if (!messagesEl) return;
-    const typing = document.createElement('div');
-    typing.className = 'staci-msg staci-msg--bot staci-typing';
-    typing.id = 'staci-typing';
-    typing.innerHTML = `
-      <img class="staci-msg__avatar" src="${AVATAR_URL}" loading="lazy" alt="Staci" width="24" height="24" />
-      <div class="staci-msg__body">
-        <div class="staci-msg__bubble">
-          <span class="staci-shimmer">
-            <span class="staci-dot"></span>
-            <span class="staci-dot"></span>
-            <span class="staci-dot"></span>
-          </span>
-          <span class="staci-typing__label">Staci is thinking</span>
-        </div>
-      </div>
-    `;
-    messagesEl.appendChild(typing);
-    scrollToBottom();
-  }
-
-  function removeTyping() {
-    document.getElementById('staci-typing')?.remove();
-  }
-
-  function hideChips() {
-    const chips = document.getElementById('staci-chips');
-    if (chips) chips.style.display = 'none';
-    // Remove welcome card and inline suggestion pills
-    const welcome = document.getElementById('staci-welcome');
-    if (welcome) welcome.remove();
-    document.querySelectorAll('.staci-suggestions').forEach(el => el.remove());
-  }
-
-  function showChips() {
-    const chips = document.getElementById('staci-chips');
-    if (chips) chips.style.display = '';
-  }
-
-  /** Parse "?>" follow-up suggestions from bot response and return cleaned text + suggestions.
-   *  Also detects question-style follow-ups the LLM writes as plain text at the end of a message. */
-  function parseSuggestions(text: string): { clean: string; suggestions: string[] } {
-    const lines = text.split('\n');
-    const suggestions: string[] = [];
-    const cleanLines: string[] = [];
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed.startsWith('?>')) {
-        const q = trimmed.slice(2).trim();
-        if (q) suggestions.push(q);
-      } else {
-        cleanLines.push(line);
-      }
-    }
-
-    // If no ?>-prefixed suggestions found, try to detect trailing question lines.
-    // The LLM sometimes outputs follow-ups as plain questions on the last line(s).
-    if (suggestions.length === 0) {
-      // Pattern 1: single line with multiple short questions separated by spaces
-      // e.g. "What's location?  Need directions?  Open today?"
-      // Also handles single-space separation: "What's location? Need directions? Open today?"
-      const lastNonBlank = cleanLines.slice().reverse().find(l => l.trim().length > 0);
-      if (lastNonBlank) {
-        // First try double-space split
-        let multiQ = lastNonBlank.trim().split(/\s{2,}/).filter(s => s.endsWith('?') && s.length <= 50);
-        // If that didn't work, try splitting on "? " to catch single-space separated questions
-        if (multiQ.length < 2) {
-          const parts = lastNonBlank.trim().split(/\?\s+/);
-          multiQ = parts.map((p, i) => i < parts.length - 1 ? p.trim() + '?' : p.trim())
-            .filter(s => s.endsWith('?') && s.length <= 50 && s.length >= 5);
-        }
-        if (multiQ.length >= 2) {
-          suggestions.push(...multiQ);
-          // Remove that line from clean output
-          const idx = cleanLines.lastIndexOf(lastNonBlank);
-          if (idx !== -1) cleanLines.splice(idx, 1);
-        }
-      }
-
-      // Pattern 2: consecutive trailing lines that are each a short question
-      // e.g. "- What's your budget?\n- Need directions?\n- Open today?"
-      if (suggestions.length === 0) {
-        const trailing: string[] = [];
-        for (let i = cleanLines.length - 1; i >= 0; i--) {
-          const t = cleanLines[i].trim();
-          if (!t) continue; // skip blank lines
-          // Match lines like "What's new?", "- What's new?", "• What's new?"
-          const stripped = t.replace(/^[-•*]\s*/, '').replace(/^\d+[.)]\s*/, '');
-          if (stripped.endsWith('?') && stripped.length <= 50 && stripped.length >= 8) {
-            trailing.unshift(stripped);
-          } else {
-            break;
-          }
-        }
-        if (trailing.length >= 2) {
-          suggestions.push(...trailing);
-          // Remove those trailing question lines from clean output
-          let removed = 0;
-          for (let i = cleanLines.length - 1; i >= 0 && removed < trailing.length; i--) {
-            const t = cleanLines[i].trim();
-            if (!t) continue;
-            cleanLines.splice(i, 1);
-            removed++;
-          }
-        }
-      }
-    }
-
-    // Remove trailing blank lines from clean text
-    const clean = cleanLines.join('\n').replace(/\n+$/, '');
-    return { clean, suggestions: suggestions.slice(0, 3) };
-  }
-
-  /** Render follow-up suggestions as inline pills below the last bot message */
-  function updateChips(suggestions: string[]) {
-    if (suggestions.length === 0) return;
-
-    // Remove any existing inline suggestions
-    document.querySelectorAll('.staci-suggestions').forEach(el => el.remove());
-
-    const messagesEl = document.getElementById('staci-messages');
-    if (!messagesEl) return;
-
-    const row = document.createElement('div');
-    row.className = 'staci-suggestions';
-
-    for (const text of suggestions) {
-      const btn = document.createElement('button');
-      btn.className = 'staci-suggestion-pill';
-      btn.dataset.msg = text;
-      btn.textContent = text;
-      row.appendChild(btn);
-    }
-
-    messagesEl.appendChild(row);
-    scrollToBottom();
-
-    // Also update the bottom chips bar as a fallback
-    const chipsEl = document.getElementById('staci-chips');
-    if (chipsEl) {
-      chipsEl.innerHTML = '';
-      for (const text of suggestions) {
-        const btn = document.createElement('button');
-        btn.className = 'staci-chip';
-        btn.dataset.msg = text;
-        btn.textContent = text;
-        chipsEl.appendChild(btn);
-      }
-      chipsEl.style.display = '';
-    }
-  }
-
-  // ─── Reset Conversation ────────────────────────────────────
-
-  function resetConversation() {
-    if (isSending) return;
-    conversationHistory = [];
-    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
-
-    const messagesEl = document.getElementById('staci-messages');
-    if (messagesEl) {
-      messagesEl.innerHTML = '';
-      messagesEl.insertAdjacentHTML('beforeend', welcomeCardHTML());
-    }
-    // Hide bottom chips — welcome card has its own
-    const chips = document.getElementById('staci-chips');
-    if (chips) chips.style.display = 'none';
-
-    const input = document.getElementById('staci-input') as HTMLTextAreaElement | null;
-    const charCount = document.getElementById('staci-char-count');
-    if (input) { input.value = ''; input.style.height = 'auto'; input.focus(); }
-    if (charCount) { charCount.textContent = ''; charCount.style.display = 'none'; }
-  }
-
-  // ─── Chat Toggle ──────────────────────────────────────────
-
-  function openPanel() {
-    const panel = document.getElementById('staci-panel');
-    const iconChat = document.getElementById('staci-icon-chat');
-    const iconClose = document.getElementById('staci-icon-close');
-    const label = document.getElementById('staci-toggle-label');
-    const input = document.getElementById('staci-input') as HTMLTextAreaElement | null;
-    if (!panel) return;
-
-    panel.setAttribute('aria-hidden', 'false');
-    panel.removeAttribute('inert');
-    if (iconChat) iconChat.style.display = 'none';
-    if (iconClose) iconClose.style.display = 'block';
-    if (label) label.style.display = 'none';
-    hideBadge();
-    try { localStorage.setItem(STORAGE_PANEL_KEY, 'true'); } catch { /* ignore */ }
-
-    // Focus input after transition
-    setTimeout(() => { if (input && !isSending) input.focus(); }, 300);
-  }
-
-  function closePanel() {
-    const panel = document.getElementById('staci-panel');
-    const iconChat = document.getElementById('staci-icon-chat');
-    const iconClose = document.getElementById('staci-icon-close');
-    const label = document.getElementById('staci-toggle-label');
-    if (!panel) return;
-
-    panel.setAttribute('aria-hidden', 'true');
-    panel.setAttribute('inert', '');
-    if (iconChat) iconChat.style.display = 'block';
-    if (iconClose) iconClose.style.display = 'none';
-    if (label) label.style.display = '';
-    try { localStorage.removeItem(STORAGE_PANEL_KEY); } catch { /* ignore */ }
-  }
-
-  function isPanelOpen() {
-    return document.getElementById('staci-panel')?.getAttribute('aria-hidden') === 'false';
-  }
-
-  // ─── Product Card Types ─────────────────────────────────────
-
-  interface ProductCard {
-    title: string;
-    handle: string;
-    price: string;
-    compareAtPrice: string;
-    availableForSale: boolean;
-    imageUrl: string;
-  }
-
-  /** Render product cards below a message bubble */
-  function renderProductCards(cards: ProductCard[], container: HTMLElement) {
-    if (!cards.length) return;
-    const messagesEl = document.getElementById('staci-messages');
-    if (!messagesEl) return;
-
-    const row = document.createElement('div');
-    row.className = 'staci-products';
-
-    for (const card of cards) {
-      const onSale = parseFloat(card.compareAtPrice) > parseFloat(card.price);
-      // Shopify CDN resize for small thumbnails
-      const imgSrc = card.imageUrl.includes('cdn.shopify.com')
-        ? `${card.imageUrl}&width=200&height=200&crop=center`
-        : card.imageUrl;
-
-      const a = document.createElement('a');
-      a.className = 'staci-product-card';
-      a.href = `/shop/${encodeURIComponent(card.handle)}/`;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      a.innerHTML = `
-        ${onSale ? '<span class="staci-product-card__badge">Sale</span>' : ''}
-        <img class="staci-product-card__img" src="${escapeAttr(imgSrc)}" alt="${escapeHtml(card.title)}" loading="lazy" />
-        <div class="staci-product-card__info">
-          <span class="staci-product-card__title">${escapeHtml(card.title)}</span>
-          <span class="staci-product-card__price">${onSale ? `<s>$${escapeHtml(card.compareAtPrice)}</s> ` : ''}$${escapeHtml(card.price)}</span>
-        </div>
-      `;
-      row.appendChild(a);
-    }
-
-    // Stop shimmer when images load or fail
-    row.querySelectorAll<HTMLImageElement>('.staci-product-card__img').forEach(img => {
-      const markLoaded = () => img.classList.add('staci-loaded');
-      if (img.complete) markLoaded();
-      else {
-        img.addEventListener('load', markLoaded, { once: true });
-        img.addEventListener('error', markLoaded, { once: true });
-      }
-    });
-
-    // Insert after the container (the bot message div)
-    container.after(row);
-    scrollToBottom();
-  }
-
-  // ─── SSE Stream Reader ──────────────────────────────────────
-
-  interface StreamResult {
-    text: string;
-    products: ProductCard[];
-  }
-
-  async function readStream(response: Response, bubble: HTMLElement): Promise<StreamResult> {
-    const reader = response.body!.getReader();
-    const decoder = new TextDecoder();
-    let fullText = '';
-    let buffer = '';
-    let products: ProductCard[] = [];
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-
-      // Parse SSE events from buffer
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || ''; // Keep incomplete line in buffer
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6).trim();
-        if (data === '[DONE]') continue;
-
-        try {
-          const parsed = JSON.parse(data);
-
-          // Check for products event (sent before LLM tokens)
-          if (parsed.products) {
-            products = parsed.products;
-            continue;
-          }
-
-          const token = parsed.response || '';
-          if (token) {
-            fullText += token;
-            cancelAnimationFrame(_streamRAF);
-            _streamRAF = requestAnimationFrame(() => {
-              bubble.innerHTML = renderStreamingMarkdown(fullText);
-              scrollToBottom();
-            });
-          }
-        } catch {
-          // Skip malformed chunks
-        }
-      }
-    }
-
-    // Gracefully fade out the streaming cursor, then render final markdown
-    bubble.classList.add('staci-streaming--done');
-    await new Promise(r => setTimeout(r, 300));
-    bubble.classList.remove('staci-streaming', 'staci-streaming--done');
-    bubble.innerHTML = renderMarkdown(fullText);
-    return { text: fullText, products };
-  }
-
-  // ─── Send Message ─────────────────────────────────────────
-
-  async function sendMessage(text: string) {
-    if (isSending) return;
-
-    hideChips();
-    addUserBubble(text);
-    conversationHistory.push({ role: 'user', content: text });
-    saveSession();
-    lockSend();
-
-    showTyping();
-
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: conversationHistory.slice(-20),
-          stream: true,
-          pageContext: { url: window.location.href, title: document.title },
-        }),
-      });
-
-      removeTyping();
-
-      if (!res.ok) {
-        // Handle rate limiting specifically
-        if (res.status === 429) {
-          const data = await res.json().catch(() => ({}));
-          addErrorBubble(
-            (data as any).error || 'Too many messages — please wait a moment.',
-            () => sendMessage(text)
-          );
-          // Remove user message from history since we'll retry
-          conversationHistory.pop();
-          saveSession();
-          unlockSend();
-          return;
-        }
-        throw new Error('Request failed');
-      }
-
-      const contentType = res.headers.get('content-type') || '';
-
-      if (contentType.includes('text/event-stream') && res.body) {
-        // ─── Streaming response ─────────────────────────────
-        const { container, bubble } = addStreamingBubble();
-        _isStreaming = true;
-        const streamResult = await readStream(res, bubble);
-        _isStreaming = false;
-        container.classList.remove('staci-msg--stream-start');
-        const reply = streamResult.text || "Sorry, I couldn't process that. Please try again.";
-
-        // Parse out follow-up suggestions and re-render clean text
-        const { clean, suggestions } = parseSuggestions(reply);
-        bubble.innerHTML = renderMarkdown(clean);
-
-        conversationHistory.push({ role: 'assistant', content: clean });
-        saveSession();
-
-        // Render product cards below the message
-        if (streamResult.products.length) renderProductCards(streamResult.products, container);
-
-        if (suggestions.length) updateChips(suggestions);
-      } else {
-        // ─── Non-streaming fallback ─────────────────────────
-        const data = await res.json();
-        const rawReply = data.reply || "Sorry, I couldn't process that. Please try again.";
-
-        const { clean, suggestions } = parseSuggestions(rawReply);
-
-        conversationHistory.push({ role: 'assistant', content: clean });
-        saveSession();
-        const msgEl = addBotBubble(clean);
-
-        // Render product cards below the message
-        if (data.products?.length) renderProductCards(data.products, msgEl);
-
-        if (suggestions.length) updateChips(suggestions);
-      }
-
-      // Show badge if panel was closed while response arrived
-      if (!isPanelOpen()) showBadge();
-
-      unlockSend();
-    } catch {
-      _isStreaming = false;
-      removeTyping();
-      // Remove any partial streaming bubble left by a mid-stream error
-      const partialBubble = document.querySelector('.staci-msg--stream-start');
-      if (partialBubble) partialBubble.remove();
-      unlockSend();
-      // Save the text we tried to send for retry
-      const failedText = text;
-      // Remove the user message that failed
-      conversationHistory.pop();
-      saveSession();
-      addErrorBubble("Sorry, I couldn't connect.", () => sendMessage(failedText));
-    }
-  }
-
-  // ─── Shared submit handler (avoids form submit event entirely) ──
-
-  function handleFormSubmit() {
-    if (isSending) return;
-    const textarea = document.getElementById('staci-input') as HTMLTextAreaElement | null;
-    if (!textarea) return;
-    const text = textarea.value.trim();
-    if (!text) return;
-    textarea.value = '';
-    textarea.style.height = 'auto';
-    updateCharCount('');
-    setSendEnabled(textarea);
-    sendMessage(text);
-  }
-
-  // ─── Event Listeners (delegation for View Transitions) ────
-
-  // Toggle button
-  document.addEventListener('click', (e) => {
-    const toggle = (e.target as Element).closest('#staci-toggle');
-    if (!toggle) return;
-    if (isPanelOpen()) closePanel();
-    else openPanel();
-  });
-
-  // Escape closes; Tab traps focus inside panel; Enter in textarea submits
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && isPanelOpen()) { closePanel(); return; }
-
-    // Focus trap
-    if (e.key === 'Tab' && isPanelOpen()) {
-      const panel = document.getElementById('staci-panel');
-      if (!panel) return;
-      const focusable = Array.from(panel.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), textarea:not([disabled]), a[href]'
-      ));
-      if (focusable.length < 2) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (e.shiftKey) {
-        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
-      } else {
-        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
-      }
-      return;
-    }
-
-    // Enter in textarea submits (Shift+Enter = newline)
-    // Calls handleFormSubmit() directly — never dispatches a submit event,
-    // so Astro's ClientRouter cannot intercept it as a page navigation.
-    if (e.key === 'Enter' && !e.shiftKey && (e.target as Element).id === 'staci-input') {
-      e.preventDefault();
-      handleFormSubmit();
-    }
-  });
-
-  // Header close button
-  document.addEventListener('click', (e) => {
-    if ((e.target as Element).closest('#staci-header-close')) {
-      closePanel();
-    }
-  });
-
-  // Header reset button
-  document.addEventListener('click', (e) => {
-    if ((e.target as Element).closest('#staci-header-reset')) {
-      resetConversation();
-    }
-  });
-
-  // Quick reply chips & inline suggestion pills
-  document.addEventListener('click', (e) => {
-    const chip = (e.target as Element).closest('.staci-chip, .staci-suggestion-pill') as HTMLElement | null;
-    if (!chip || isSending) return;
-    const msg = chip.dataset.msg;
-    if (msg) sendMessage(msg);
-  });
-
-  // Block native form submission entirely — prevents Astro ClientRouter
-  // from intercepting it as a navigation. Use capture phase so we run
-  // before any other submit listeners (including Astro's).
-  document.addEventListener('submit', (e) => {
-    const form = (e.target as Element).closest('#staci-form');
-    if (!form) return;
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    handleFormSubmit();
-  }, true);
-
-  // Character counter
-  function updateCharCount(value: string) {
-    const charCount = document.getElementById('staci-char-count');
-    if (!charCount) return;
-    const len = value.length;
-    const max = 500;
-    if (len > 400) {
-      charCount.textContent = `${len}/${max}`;
-      charCount.style.display = 'block';
-      charCount.classList.toggle('staci-char-count--warn', len >= 480);
-    } else {
-      charCount.textContent = '';
-      charCount.style.display = 'none';
-      charCount.classList.remove('staci-char-count--warn');
-    }
-  }
-
-  function setSendEnabled(textarea: HTMLTextAreaElement) {
-    const btn = document.getElementById('staci-send') as HTMLButtonElement | null;
-    if (btn) btn.disabled = textarea.value.trim().length === 0;
-  }
-
-  document.addEventListener('input', (e) => {
-    if ((e.target as Element).id === 'staci-input') {
-      const ta = e.target as HTMLTextAreaElement;
-      ta.style.height = 'auto';
-      ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
-      updateCharCount(ta.value);
-      setSendEnabled(ta);
-    }
-  });
-
-  // ─── Timestamps ───────────────────────────────────────────
-
-  function timeAgo(ts: number): string {
-    const sec = Math.floor((Date.now() - ts) / 1000);
-    if (sec < 60) return 'just now';
-    const min = Math.floor(sec / 60);
-    if (min < 60) return `${min}m ago`;
-    const hr = Math.floor(min / 60);
-    return `${hr}h ago`;
-  }
-
-  function updateTimestamps() {
-    document.querySelectorAll<HTMLElement>('.staci-msg[data-ts]').forEach(msg => {
-      const ts = parseInt(msg.dataset.ts || '0', 10);
-      const timeEl = msg.querySelector<HTMLElement>('.staci-msg__time');
-      if (timeEl && ts) timeEl.textContent = timeAgo(ts);
-    });
-  }
-
-  // ─── Init ─────────────────────────────────────────────────
-  restoreSession();
-  setInterval(updateTimestamps, 30_000);
-
-  // Send button starts disabled (textarea is empty)
-  const _sendBtn = document.getElementById('staci-send') as HTMLButtonElement | null;
-  if (_sendBtn) _sendBtn.disabled = true;
 </script>
+
+<!-- Full chat logic extracted to src/lib/staci-chat-init.ts for code-splitting.
+     The bootstrap above dynamically imports it after browser idle. -->
+

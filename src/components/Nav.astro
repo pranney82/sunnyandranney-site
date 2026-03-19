@@ -1,11 +1,6 @@
 ---
 import { getCollectionsStatic } from '@/lib/settings';
 
-interface Props {
-  announcements?: Array<{ text: string; link?: string; type: string }>;
-}
-
-const { announcements = [] } = Astro.props;
 const currentPath = Astro.url.pathname;
 
 const collectionSettings = await getCollectionsStatic();
@@ -21,33 +16,9 @@ const roomCollections = [
   { handle: 'art-mirrors', label: 'Art & Mirrors' },
   { handle: 'rugs-collection', label: 'Rugs' },
 ];
-
-// Default slides + any admin-configured announcements
-const defaultSlides = [
-  { text: '100% of profits support&nbsp;<strong>Sunshine on a Ranney Day</strong>&nbsp;—&nbsp;Our Story', link: '/about/' },
-  { text: 'LOCAL PICKUP ONLY — Shop Now', link: '/shop/' },
-  { text: 'Visit our Roswell showroom — Tue–Sat, 10am–6pm', link: '/about/' },
-];
-const adminSlides = announcements.map(a =>
-  ({ text: a.link ? `${a.text} — Learn More` : a.text, link: a.link || '' })
-);
-const allSlides = [...adminSlides, ...defaultSlides];
 ---
 
 <header class:list={['nav', { 'nav--shop-active': currentPath.startsWith('/shop') }]} id="main-nav" transition:persist="main-nav" transition:animate="none">
-  <!-- Top banner -->
-  <div class="nav__banner" role="status" aria-live="polite">
-    <div class="container nav__banner-inner">
-      <div class="nav__banner-slider" id="banner-slider">
-        {allSlides.map((slide, i) => (
-          slide.link
-            ? <a href={slide.link} class:list={['nav__banner-slide', { 'nav__banner-slide--active': i === 0 }]} set:html={slide.text} />
-            : <span class:list={['nav__banner-slide', { 'nav__banner-slide--active': i === 0 }]} set:html={slide.text} />
-        ))}
-      </div>
-    </div>
-  </div>
-
   <!-- Mobile header: logo + cart -->
   <div class="nav__mobile-header">
     <a href="/" class="nav__logo" aria-label="Sunny & Ranney Home">
@@ -184,82 +155,6 @@ const allSlides = [...adminSlides, ...defaultSlides];
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
-  }
-
-  /* ─── Banner ───────────────────────────── */
-  .nav__banner {
-    background: var(--color-charcoal);
-    color: var(--color-cream);
-    font-size: 0.72rem;
-    text-align: center;
-    padding: 0.4rem 0;
-    letter-spacing: 0.02em;
-  }
-
-  .nav__banner strong { color: var(--color-gold); }
-
-  a.nav__banner-slide {
-    text-decoration: none;
-    color: inherit;
-    cursor: pointer;
-  }
-
-  a.nav__banner-slide:hover {
-    text-decoration: underline;
-    text-decoration-color: var(--color-gold);
-  }
-
-  /* Smooth banner collapse on scroll — composited properties only */
-  .nav__banner {
-    transform-origin: top;
-    transition: transform 0.3s ease, opacity 0.2s ease;
-    max-height: 40px;
-    overflow: hidden;
-  }
-  .nav--scrolled .nav__banner {
-    transform: scaleY(0);
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  @media (min-width: 768px) {
-    .nav__banner {
-      font-size: 0.82rem;
-      padding: 0.5rem 0;
-    }
-  }
-
-  .nav__banner-slider { position: relative; height: 1.3em; overflow: hidden; }
-
-  .nav__banner-slide {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transform: translateY(100%);
-    transition: opacity 0.5s, transform 0.5s;
-    white-space: nowrap;
-  }
-
-  @media (max-width: 767px) {
-    .nav__banner {
-      font-size: 0.6rem;
-      max-height: 56px; /* taller than desktop — accommodates 2-line mobile text */
-    }
-    .nav__banner-slider { height: 2.4em; }
-    .nav__banner-slide {
-      white-space: normal;
-      text-align: center;
-      line-height: 1.2;
-      padding: 0 0.25rem;
-    }
-  }
-
-  .nav__banner-slide--active {
-    opacity: 1;
-    transform: translateY(0);
   }
 
   /* ─── Main Nav ─────────────────────────── */
@@ -1245,26 +1140,8 @@ const allSlides = [...adminSlides, ...defaultSlides];
     if (searchInput && suggestEl) setupTypeahead(searchInput, suggestEl, signal);
     if (mobileTopbarSearch && mobileSuggestEl) setupTypeahead(mobileTopbarSearch, mobileSuggestEl, signal);
 
-    // ── Banner rotation ─────────────────────────
-    let bannerInterval: ReturnType<typeof setInterval> | undefined;
-    function startBanner() {
-      const bannerSlider = document.getElementById('banner-slider');
-      if (!bannerSlider) return;
-      const slides = bannerSlider.querySelectorAll('.nav__banner-slide');
-      let currentSlide = 0;
-      if (slides.length > 1) {
-        bannerInterval = setInterval(() => {
-          slides[currentSlide].classList.remove('nav__banner-slide--active');
-          currentSlide = (currentSlide + 1) % slides.length;
-          slides[currentSlide].classList.add('nav__banner-slide--active');
-        }, 8000);
-      }
-    }
-    const scheduleIdle = window.requestIdleCallback || ((cb: () => void) => setTimeout(cb, 200));
-    scheduleIdle(startBanner);
-    signal.addEventListener('abort', () => { if (bannerInterval) clearInterval(bannerInterval); });
-
     // ── Sync mobile cart badge ──────────────────
+    const scheduleIdle = window.requestIdleCallback || ((cb: () => void) => setTimeout(cb, 200));
     function syncMobileCartBadge() {
       const headerCount = document.getElementById('cart-count');
       const mobileCount = document.getElementById('mobile-cart-count');

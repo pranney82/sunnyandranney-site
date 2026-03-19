@@ -34,7 +34,7 @@ function buildEmbeddingText(node: any): string {
   return [
     node.title,
     node.productType,
-    node.description?.slice(0, 200),
+    node.description?.slice(0, 500),
     ...(node.tags || []),
   ].filter(Boolean).join('. ');
 }
@@ -170,6 +170,8 @@ export const POST: APIRoute = async ({ request }) => {
           title: node.title,
           handle: node.handle,
           productType: node.productType || '',
+          description: node.description?.slice(0, 300) || '',
+          tags: (node.tags || []).join(', '),
           availableForSale: node.availableForSale,
           price: node.priceRange.minVariantPrice.amount,
           compareAtPrice: node.compareAtPriceRange?.minVariantPrice?.amount || '0',
@@ -181,26 +183,33 @@ export const POST: APIRoute = async ({ request }) => {
       indexed += vectors.length;
     }
 
-    // 4. Remove stale vectors for products no longer in enabled collections
-    // Query a broad vector to get all indexed IDs, then delete any not in seenHandles
-    const indexedIds = Array.from(seenHandles).map(h => h.slice(0, 64));
-    const indexedIdSet = new Set(indexedIds);
+    // 4. Remove stale vectors for products no longer in enabled collections.
+    // Compare against the previous sync's handle list stored in D1 — this is
+    // deterministic and doesn't rely on querying vectors (which was unreliable).
+    const currentIds = Array.from(seenHandles).map(h => h.slice(0, 64));
+    const currentIdSet = new Set(currentIds);
 
-    // Use a zero vector to retrieve existing entries (Vectorize returns closest matches)
-    // We fetch a large topK to cover the full catalog
     try {
-      const zeroVector = new Array(768).fill(0); // bge-base-en-v1.5 is 768-dim
-      const existing = await vectorize.query(zeroVector, { topK: 1000, returnMetadata: 'none' });
-      const staleIds = (existing.matches || [])
-        .map((m: any) => m.id)
-        .filter((id: string) => !indexedIdSet.has(id));
+      const prevRow = await env.DB.prepare(
+        "SELECT value FROM settings WHERE key = 'settings:valid_product_handles'"
+      ).first<{ value: string }>();
+      const prevIds: string[] = prevRow ? JSON.parse(prevRow.value) : [];
+      const staleIds = prevIds.filter(id => !currentIdSet.has(id));
 
       if (staleIds.length) {
-        await vectorize.deleteByIds(staleIds);
+        // Vectorize deleteByIds accepts max 1000 at a time
+        for (let i = 0; i < staleIds.length; i += 1000) {
+          await vectorize.deleteByIds(staleIds.slice(i, i + 1000));
+        }
       }
     } catch {
       // Non-critical — stale vectors will just score low in searches
     }
+
+    // Persist the current valid handles so the next sync can diff against them
+    await env.DB.prepare(
+      "INSERT INTO settings (key, value, updated_at) VALUES ('settings:valid_product_handles', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at"
+    ).bind(JSON.stringify(currentIds)).run();
 
     // Sync Google hours → D1 so Staci always has current hours
     const googleApiKey = env.GOOGLE_PLACES_API_KEY;

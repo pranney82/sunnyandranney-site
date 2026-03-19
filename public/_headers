@@ -1,11 +1,11 @@
 # ═══ Cloudflare Pages Headers ═══
 
-# Early Hints — Cloudflare caches these Link headers and sends them as 103
-# responses on subsequent requests, before the full HTML even arrives
+# Early Hints — Cloudflare sends these as 103 responses before the HTML arrives.
+# Preconnect to CDN origins so DNS+TCP+TLS completes while the HTML downloads.
+# Do NOT preload fonts here — the 107 KB download steals bandwidth from the LCP image on slow connections.
 /*
-  Link: </fonts/DMSans-Variable.woff2>; rel=preload; as=font; type=font/woff2; crossorigin
-  Link: </fonts/TheSeasons-Regular.woff2>; rel=preload; as=font; type=font/woff2; crossorigin
-  Link: </fonts/TheSeasons-Bold.woff2>; rel=preload; as=font; type=font/woff2; crossorigin
+  Link: <https://cdn.shopify.com>; rel=preconnect
+  Link: <https://imagedelivery.net>; rel=preconnect
 
 # Hashed build assets — cache forever (Astro adds content hash to filenames)
 /_astro/*

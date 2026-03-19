@@ -52,8 +52,8 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
 <Base
   title="About Us — Sunny & Ranney"
   description="Meet the team behind Sunny & Ranney — a furniture store where 100% of profits fund life-changing room makeovers for children with special needs."
-  lcpImage="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=500,q=70,format=auto"
-  lcpImageSrcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=400,q=65,format=auto 400w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=500,q=70,format=auto 500w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=800,q=70,format=auto 800w"
+  lcpImage="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=500,q=55,format=auto"
+  lcpImageSrcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=400,q=50,format=auto 400w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=500,q=55,format=auto 500w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=800,q=55,format=auto 800w"
   lcpImageSizes="(max-width: 767px) 90vw, 40vw"
 >
 
@@ -78,8 +78,8 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
       </div>
       <div class="ab-hero__media">
         <img
-          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=500,q=70,format=auto"
-          srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=400,q=65,format=auto 400w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=500,q=70,format=auto 500w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=800,q=70,format=auto 800w"
+          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=500,q=55,format=auto"
+          srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=400,q=50,format=auto 400w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=500,q=55,format=auto 500w, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/kids/amari/photo-07/w=800,q=55,format=auto 800w"
           sizes="(max-width: 767px) 90vw, 40vw"
           alt="Amari's room reveal — family celebrating a Sunshine on a Ranney Day makeover"
           width="800" height="600"
@@ -1132,33 +1132,6 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
       mo.observe(mosaic);
     }
 
-    // Animate counter on scroll
-    document.querySelectorAll('.ab-kids__counter-num, .ab-proof__number').forEach((el) => {
-      const raw = el.textContent?.trim() ?? '';
-      const match = raw.match(/^([\d,]+)/);
-      if (!match) return;
-      const target = parseInt(match[1].replace(/,/g, ''), 10);
-      const suffix = raw.slice(match[1].length); // e.g. "+"
-      const htmlEl = el as HTMLElement;
-      let animated = false;
-
-      const co = new IntersectionObserver(([e]) => {
-        if (!e.isIntersecting || animated) return;
-        animated = true;
-        co.disconnect();
-        const dur = 1200;
-        const start = performance.now();
-        function tick(now: number) {
-          const t = Math.min((now - start) / dur, 1);
-          const ease = 1 - Math.pow(1 - t, 3); // ease-out cubic
-          const val = Math.round(ease * target);
-          htmlEl.textContent = val.toLocaleString('en-US') + suffix;
-          if (t < 1) requestAnimationFrame(tick);
-        }
-        requestAnimationFrame(tick);
-      }, { threshold: 0.5 });
-      co.observe(htmlEl);
-    });
 
   }
   initAbout();

@@ -18,7 +18,6 @@ const [hours, specials, contact, reviewsSetting, liveReviews] = await Promise.al
 ]);
 const footerHours = hours ? formatHoursShort(hours) : null;
 const holidays = hours?.holidays ?? [];
-const announcements = specials?.announcements?.filter(a => a.active) ?? [];
 
 // AggregateRating: prefer live Google data, fall back to saved reviews
 const ratingValue = liveReviews?.rating ?? reviewsSetting?.googleRating;
@@ -59,36 +58,36 @@ const isShopPage = Astro.url.pathname.startsWith('/shop') || Astro.url.pathname.
     <meta name="theme-color" content="#FAF7F2" />
     <SEO {...props} rating={rating} />
 
-    <!-- Critical CSS — renders LCP banner text before external CSS loads -->
+    <!-- Critical CSS — nav position before external CSS loads -->
     <style is:inline>
       .nav{position:fixed;top:0;left:0;right:0;z-index:100;background:#FAF7F2}
-      .nav__banner{background:#2C2C2C;color:#FAF7F2;font-size:.72rem;text-align:center;padding:.4rem 0;letter-spacing:.02em;max-height:40px;overflow:hidden}
-      .nav__banner-slider{position:relative;height:1.3em;overflow:hidden}
-      .nav__banner-slide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;white-space:nowrap}
-      .nav__banner-slide--active{opacity:1;transform:translateY(0)}
-      @media(max-width:767px){.nav__banner{font-size:.6rem}.nav__banner-slider{height:2.4em}.nav__banner-slide{white-space:normal;text-align:center;line-height:1.2;padding:0 .25rem}}
     </style>
 
     <!-- Preconnect to external CDNs — as early as possible for LCP -->
     <link rel="preconnect" href="https://imagedelivery.net" />
     <link rel="dns-prefetch" href="https://imagedelivery.net" />
-    {isShopPage && <link rel="preconnect" href="https://cdn.shopify.com" />}
-    {isShopPage && <link rel="dns-prefetch" href="https://cdn.shopify.com" />}
+    <link rel="preconnect" href="https://cdn.shopify.com" />
+    <link rel="dns-prefetch" href="https://cdn.shopify.com" />
 
     {/* Preload LCP image FIRST — before fonts so it wins the bandwidth race on slow connections */}
     {props.lcpImage && (
       <Fragment set:html={`<link rel="preload" href="${props.lcpImage}" as="image" fetchpriority="high"${props.lcpImageSrcset ? ` imagesrcset="${props.lcpImageSrcset}"` : ''}${props.lcpImageSizes ? ` imagesizes="${props.lcpImageSizes}"` : ''} />`} />
     )}
 
-    <!-- Preload body font only — display fonts use font-display:optional and gracefully degrade on slow connections -->
-    <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- Body font uses font-display:optional — loads from cache on repeat visits, falls back to Arial on first visit.
+         NOT preloaded: the 59 KB download competes with the LCP image for bandwidth on slow connections. -->
+
+    <!-- Display font (The Seasons) — loaded at lowest priority so it doesn't compete with LCP image.
+         media="print" defers the download; onload swaps to all once available. -->
+    <link rel="stylesheet" href="/fonts/display.css" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="/fonts/display.css" /></noscript>
 
     <!-- View Transitions for SPA-like navigation -->
     <ClientRouter />
   </head>
   <body>
     <a href="#main-content" class="skip-to-content">Skip to content</a>
-    <Nav announcements={announcements} />
+    <Nav />
     <main id="main-content" style={`margin-top: var(--nav-height);`} transition:animate="fade">
       <slot />
     </main>

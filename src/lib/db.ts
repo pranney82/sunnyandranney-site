@@ -37,6 +37,61 @@ export async function getAllSettings(): Promise<Record<string, unknown>> {
   return results;
 }
 
+// ─── Chat Sessions (cross-session memory) ──────────────────────────
+
+interface ChatSession {
+  messages: Array<{ role: string; content: string }>;
+  summary: string;
+}
+
+/** Load a chat session from D1 */
+export async function getSession(sessionId: string): Promise<ChatSession | null> {
+  try {
+    const row = await env.DB.prepare(
+      'SELECT messages, summary FROM chat_sessions WHERE session_id = ?'
+    ).bind(sessionId).first<{ messages: string; summary: string }>();
+    if (!row) return null;
+    return {
+      messages: JSON.parse(row.messages),
+      summary: row.summary || '',
+    };
+  } catch (err) {
+    console.error('Session read error:', err);
+    return null;
+  }
+}
+
+/** Create or update a chat session in D1 */
+export async function upsertSession(
+  sessionId: string,
+  messages: Array<{ role: string; content: string }>,
+  summary?: string,
+): Promise<void> {
+  try {
+    await env.DB.prepare(
+      `INSERT INTO chat_sessions (session_id, messages, summary, updated_at)
+       VALUES (?, ?, ?, datetime('now'))
+       ON CONFLICT(session_id) DO UPDATE SET
+         messages = excluded.messages,
+         summary = COALESCE(excluded.summary, chat_sessions.summary),
+         updated_at = excluded.updated_at`
+    ).bind(sessionId, JSON.stringify(messages), summary ?? '').run();
+  } catch (err) {
+    console.error('Session upsert error:', err);
+  }
+}
+
+/** Probabilistic cleanup of expired sessions (call on ~1% of requests) */
+export async function cleanExpiredSessions(ttlDays = 30): Promise<void> {
+  try {
+    await env.DB.prepare(
+      `DELETE FROM chat_sessions WHERE updated_at < datetime('now', ?)`
+    ).bind(`-${ttlDays} days`).run();
+  } catch (err) {
+    console.error('Session cleanup error:', err);
+  }
+}
+
 // ─── Rate Limiting (D1-backed, atomic, persistent across instances) ──
 
 export async function checkRateLimit(

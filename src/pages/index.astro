@@ -30,7 +30,7 @@ const HERO_DEFAULT_IMAGE = 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/abo
 const heroImageBase = heroSetting?.imageUrl?.trim().replace(/\/$/, '') || HERO_DEFAULT_IMAGE;
 const HERO_QUALITY = 70;
 const heroSrc = cfImage(heroImageBase, { width: 480, height: 600, quality: HERO_QUALITY });
-const heroSrcset = cfSrcset(heroImageBase, [280, 480, 640], HERO_QUALITY);
+const heroSrcset = cfSrcset(heroImageBase, [280, 480], HERO_QUALITY);
 const HERO_SIZES = '(max-width: 767px) 280px, (max-width: 1023px) 400px, 440px';
 
 let heroProduct: any = null;

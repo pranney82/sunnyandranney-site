@@ -1,0 +1,28 @@
+/* Deferred font faces — loaded at lowest priority via media="print" trick
+   so they don't compete with the LCP image on initial load.
+   font-display:optional means text renders with fallback if these aren't cached. */
+
+/* The Seasons — premium display font */
+@font-face {
+  font-family: 'The Seasons';
+  src: url('/fonts/TheSeasons-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: optional;
+}
+@font-face {
+  font-family: 'The Seasons';
+  src: url('/fonts/TheSeasons-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: optional;
+}
+
+/* DM Sans italic — rarely needed on first paint */
+@font-face {
+  font-family: 'DM Sans';
+  src: url('/fonts/DMSans-Italic-Variable.woff2') format('woff2');
+  font-weight: 300 600;
+  font-style: italic;
+  font-display: optional;
+}

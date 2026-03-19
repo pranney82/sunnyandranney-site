@@ -1,75 +1,13 @@
 ---
 import Base from '@/layouts/Base.astro';
 import { cfImage, cfSrcset, SIZES } from '@/lib/images';
-import type { CollectionSetting } from '@/lib/settings';
-import { getCollectionsStatic } from '@/lib/settings';
+import { fetchShopData, buildProductDataMap } from '@/lib/shop-data';
 
 // Fully static — rebuilt via deploy hook when products/settings change
 export const prerender = true;
 
 // Fetch ALL products from enabled collections at build time
-let products: any[] = [];
-let hasShopify = false;
-
-// Track which collections each product belongs to (handle → collection handles)
-const productCollections: Record<string, string[]> = {};
-// Track collection handle → title for the hero
-const collectionTitles: Record<string, string> = {};
-
-try {
-  const shopify = await import('@/lib/shopify');
-  const collectionSettings = await getCollectionsStatic();
-  const enabledHandles = collectionSettings
-    ?.filter(c => c.enabled)
-    .sort((a, b) => a.order - b.order)
-    .map(c => c.handle) ?? [];
-
-  if (enabledHandles.length > 0) {
-    const results = await Promise.all(
-      enabledHandles.map(handle => shopify.getCollectionByHandle(handle, 100))
-    );
-
-    const seen = new Set<string>();
-    for (const collection of results) {
-      if (!collection) continue;
-      collectionTitles[collection.handle] = collection.title;
-      for (const product of collection.products) {
-        if (!productCollections[product.handle]) {
-          productCollections[product.handle] = [];
-        }
-        productCollections[product.handle].push(collection.handle);
-        if (!seen.has(product.id)) {
-          seen.add(product.id);
-          products.push(product);
-        }
-      }
-    }
-  }
-
-  hasShopify = products.length > 0;
-} catch (e) {
-  console.error('[shop] Shopify fetch failed:', e instanceof Error ? e.message : e);
-  console.error('[shop] Token present:', !!import.meta.env.PUBLIC_SHOPIFY_STOREFRONT_TOKEN);
-  console.error('[shop] Domain:', import.meta.env.PUBLIC_SHOPIFY_STORE_DOMAIN || '(missing, using default)');
-}
-
-// Build subcategory map: collection handle → unique category names from product taxonomy
-const collectionSubcategories: Record<string, string[]> = {};
-for (const product of products) {
-  const catName = product.category?.name;
-  if (!catName || catName === 'Uncategorized') continue;
-  const colHandles = productCollections[product.handle] || [];
-  for (const handle of colHandles) {
-    if (!collectionSubcategories[handle]) collectionSubcategories[handle] = [];
-    if (!collectionSubcategories[handle].includes(catName)) {
-      collectionSubcategories[handle].push(catName);
-    }
-  }
-}
-// Sort subcategories alphabetically
-for (const handle of Object.keys(collectionSubcategories)) {
-  collectionSubcategories[handle].sort();
-}
+const { products, hasShopify, productCollections, collectionTitles, collectionSubcategories } = await fetchShopData();
 
 // Random position for mission card (build-time, between index 3 and 20)
 const missionIdx = products.length >= 4
@@ -85,24 +23,6 @@ const lcpImageSizes = SIZES.gridCard;
 // Price formatter — drops .00 on whole numbers ($800 not $800.00)
 function fmt(amount: number): string {
   return amount % 1 === 0 ? `$${amount.toLocaleString()}` : `$${amount.toFixed(2)}`;
-}
-
-// Build quick-view + search data map (moved out of per-card data attributes to reduce HTML/DOM size)
-const productDataMap: Record<string, any> = {};
-for (const product of products) {
-  const allImages = product.images.edges.map((e: any) => e.node.url);
-  const allVariants = product.variants.edges.map((e: any) => ({
-    id: e.node.id,
-    title: e.node.title,
-    price: e.node.price.amount,
-    available: e.node.availableForSale,
-    image: e.node.image?.url || ''
-  }));
-  productDataMap[product.handle] = {
-    i: allImages,
-    v: allVariants,
-    d: product.description?.slice(0, 300) || '',
-  };
 }
 
 // ItemList structured data for SEO (top 1% shops have this)
@@ -139,12 +59,6 @@ const itemListSchema = hasShopify ? {
   lcpImageSrcset={lcpImageSrcset}
   lcpImageSizes={lcpImageSizes}
 >
-  {/* Collection titles + subcategories for client-side filtering */}
-  <script is:inline define:vars={{ collectionTitles, collectionSubcategories, productDataMap }}>
-    window.__collectionTitles = collectionTitles;
-    window.__collectionSubcategories = collectionSubcategories;
-    window.__productData = productDataMap;
-  </script>
   {/* ItemList structured data for rich results */}
   {itemListSchema && (
     <script type="application/ld+json" set:html={JSON.stringify(itemListSchema)} />
@@ -273,8 +187,8 @@ const itemListSchema = hasShopify ? {
                   data-collections={(productCollections[product.handle] || []).join(',')}
                   data-created={product.createdAt || ''}
                   data-idx={idx}
-                  style={idx >= 24 ? 'display:none;' : ''}
-                  data-page={Math.floor(idx / 24)}
+                  style={idx >= 12 ? 'display:none;' : ''}
+                  data-page={Math.floor(idx / 12)}
                 >
                   {!product.availableForSale && <span class="product-card__badge product-card__badge--sold">Sold Out</span>}
                   {product.availableForSale && isOnSale && <span class="product-card__badge">Sale</span>}
@@ -295,7 +209,7 @@ const itemListSchema = hasShopify ? {
                             alt={image.altText || product.title}
                             width={image.width}
                             height={image.height}
-                            loading={idx < 4 ? 'eager' : 'lazy'}
+                            loading={idx < 2 ? 'eager' : 'lazy'}
                             fetchpriority={idx === 0 ? 'high' : undefined}
                             decoding={idx === 0 ? 'sync' : 'async'}
                             class="product-card__img-primary"
@@ -413,6 +327,44 @@ const itemListSchema = hasShopify ? {
       )}
     </div>
   </section>
+
+  {/* Collection titles/subcategories are small — inline them.
+       Product data (~100 KB) is loaded from a separate static JSON file to reduce HTML payload. */}
+  <script is:inline define:vars={{ collectionTitles, collectionSubcategories }}>
+    window.__collectionTitles = collectionTitles;
+    window.__collectionSubcategories = collectionSubcategories;
+  </script>
+  <script is:inline>
+    // Lazy-load product data (images, variants, descriptions) from external JSON.
+    // Keeps ~18 KiB (gzipped) out of the initial HTML for faster FCP/LCP.
+    (function() {
+      var _pd;
+      var _loading;
+      function load() {
+        if (_pd) return Promise.resolve(_pd);
+        if (_loading) return _loading;
+        _loading = fetch('/shop/data.json').then(function(r) { return r.json(); }).then(function(d) {
+          _pd = d.productDataMap;
+          window.__productData = _pd;
+          return _pd;
+        });
+        return _loading;
+      }
+      // Start prefetch after first paint
+      if (typeof requestIdleCallback !== 'undefined') {
+        requestIdleCallback(load);
+      } else {
+        setTimeout(load, 200);
+      }
+      // Expose a getter that waits for the data
+      Object.defineProperty(window, '__productData', {
+        configurable: true,
+        get: function() { return _pd; },
+        set: function(v) { _pd = v; }
+      });
+      window.__productDataReady = load;
+    })();
+  </script>
 
   <!-- ═══ QUICK VIEW MODAL ═══ -->
   <div class="qv-overlay" id="qv-overlay" aria-hidden="true"></div>
@@ -1101,8 +1053,8 @@ const itemListSchema = hasShopify ? {
   /* ─── Grid / List views ───────────────── */
   .shop-grid-section {
     min-height: 400px;
-    content-visibility: auto;
-    contain-intrinsic-size: auto 2000px;
+    /* content-visibility:auto removed — it can delay LCP when the grid is near the fold boundary,
+       causing the browser to skip rendering the first product image until scroll. */
     /* Override .section's 6rem top padding — products should start close to the toolbar */
     padding-top: var(--space-md) !important;
   }
@@ -2027,7 +1979,7 @@ const itemListSchema = hasShopify ? {
   let priceMax = Infinity;
   let activeView = 'grid';
   let visiblePage = 0;
-  const PAGE_SIZE = 24;
+  const PAGE_SIZE = 12;
 
   // ─── URL sync — encode all filter state ──────
   function syncURL() {
@@ -2936,12 +2888,14 @@ const itemListSchema = hasShopify ? {
   });
 
   // Open quick view from card — merge button dataset with pre-built product data
-  grid?.addEventListener('click', (e) => {
+  grid?.addEventListener('click', async (e) => {
     const btn = (e.target as Element)?.closest('.product-card__quick-view') as HTMLElement;
     if (!btn) return;
     e.preventDefault();
     e.stopPropagation();
     const handle = btn.dataset.handle || '';
+    // Ensure product data JSON has loaded (usually already cached)
+    if ((window as any).__productDataReady) await (window as any).__productDataReady();
     const extra = (window as any).__productData?.[handle] || {};
     openQuickView({
       ...btn.dataset,

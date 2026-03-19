@@ -10,5 +10,6 @@ declare namespace Cloudflare {
     CC_API_TOKEN?: string;
     GOOGLE_PLACES_API_KEY?: string;
     GOOGLE_PLACE_ID?: string;
+    ANTHROPIC_API_KEY: string;
   }
 }
