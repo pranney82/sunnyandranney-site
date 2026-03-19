@@ -5,6 +5,7 @@ import sitemap from '@astrojs/sitemap';
 export default defineConfig({
   site: 'https://sunnyandranney.com',
   output: 'static',
+  trailingSlash: 'always',
   adapter: cloudflare(),
   server: { port: 4322 },
   integrations: [

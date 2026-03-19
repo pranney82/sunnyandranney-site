@@ -197,7 +197,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
             aria-label="Play video: Peter and Holly share why they started Sunny & Ranney"
           >
             <img
-              src="https://customer-cuav5h47lgfe96ql.cloudflarestream.com/7d7459064cd569cd7a3d806914f7aec7/thumbnails/thumbnail.jpg?height=900"
+              src="https://customer-cuav5h47lgfe96ql.cloudflarestream.com/7d7459064cd569cd7a3d806914f7aec7/thumbnails/thumbnail.jpg?height=600"
               alt="Peter and Holly Ranney — founders of Sunny & Ranney"
               width="338" height="600" loading="lazy" decoding="async"
               style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"
@@ -423,7 +423,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
   .ab-hero__inner { display: grid; gap: var(--space-xl); align-items: center; }
   @media (min-width: 768px) { .ab-hero__inner { grid-template-columns: 1fr 1.1fr; gap: var(--space-2xl); } }
   .ab-hero__text { padding: var(--space-lg) 0; }
-  .ab-hero__text .label { color: var(--color-cyan); }
+  .ab-hero__text .label { color: #3B7A94; }
   .ab-hero__title { font-size: clamp(2.8rem, 6vw, 4.5rem); margin: var(--space-sm) 0 var(--space-md); line-height: 0.95; letter-spacing: -0.03em; }
   .accent { color: #8A6E00; font-style: italic; font-weight: 300; }
   .ab-hero__sub { font-size: clamp(0.95rem, 1.2vw, 1.1rem); max-width: 38ch; color: var(--color-slate); line-height: 1.7; }
@@ -456,13 +456,13 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
   .ab-proof__stats { display: flex; justify-content: center; gap: clamp(2rem, 5vw, 4rem); flex-wrap: wrap; width: 100%; }
   .ab-proof__stat { text-align: center; min-width: 110px; }
   .ab-proof__number { font-family: var(--font-display); font-size: clamp(2.2rem, 4.5vw, 3rem); font-weight: 600; color: white; line-height: 1; }
-  .ab-proof__label { display: block; font-size: 0.7rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.6); margin-top: 0.4rem; }
+  .ab-proof__label { display: block; font-size: 0.7rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.85); margin-top: 0.4rem; }
   .ab-proof__divider { width: 80px; height: 1px; background: rgba(255,255,255,0.2); margin: clamp(1.5rem, 3vh, 2.5rem) 0; }
   .ab-proof__press { display: flex; align-items: center; gap: clamp(1.5rem, 3vw, 2.5rem); flex-wrap: wrap; justify-content: center; }
-  .ab-proof__press-label { font-size: 0.6rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.4); white-space: nowrap; }
+  .ab-proof__press-label { font-size: 0.6rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.75); white-space: nowrap; }
   .ab-proof__logos { display: flex; align-items: center; gap: clamp(1.5rem, 3vw, 2.5rem); flex-wrap: wrap; justify-content: center; }
-  .ab-proof__logo { color: rgba(255,255,255,0.5); transition: color 0.3s; display: flex; align-items: center; }
-  .ab-proof__logo:hover { color: rgba(255,255,255,0.85); }
+  .ab-proof__logo { color: rgba(255,255,255,0.75); transition: color 0.3s; display: flex; align-items: center; }
+  .ab-proof__logo:hover { color: rgba(255,255,255,0.95); }
   @media (max-width: 567px) {
     .ab-proof__press { flex-direction: column; gap: var(--space-sm); }
     .ab-proof__logos { gap: var(--space-lg); }

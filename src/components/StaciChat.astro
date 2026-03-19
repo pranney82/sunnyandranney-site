@@ -17,7 +17,7 @@
   <div class="staci-header">
     <div class="staci-header__info">
       <div class="staci-header__avatar-wrap">
-        <img class="staci-avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=80,h=80,fit=cover,format=auto" loading="lazy" alt="Staci" width="32" height="32" />
+        <img class="staci-avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=96,h=96,fit=cover,format=auto" loading="lazy" alt="Staci" width="32" height="32" />
         <span class="staci-header__online"></span>
       </div>
       <div>
@@ -40,18 +40,21 @@
   </div>
 
   <div id="staci-messages" class="staci-messages">
-    <div class="staci-msg staci-msg--bot staci-msg--entrance">
-      <img class="staci-msg__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=60,h=60,fit=cover,format=auto" loading="lazy" alt="Staci" width="20" height="20" />
-      <div class="staci-msg__bubble">Hi! I'm Staci, your shopping assistant. How can I help you today?</div>
+    <div class="staci-welcome" id="staci-welcome">
+      <img class="staci-welcome__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=128,h=128,fit=cover,format=auto" alt="Staci" width="52" height="52" />
+      <p class="staci-welcome__name">Hi, I'm Staci</p>
+      <p class="staci-welcome__sub">Your personal shopping assistant at Sunny&nbsp;&amp;&nbsp;Ranney. Ask me about products, hours, or anything else!</p>
+      <div class="staci-welcome__chips">
+        <button class="staci-chip" data-msg="What's new in the shop?">What's new?</button>
+        <button class="staci-chip" data-msg="What are your store hours and location?">Store hours</button>
+        <button class="staci-chip" data-msg="What is your return policy?">Returns</button>
+        <button class="staci-chip" data-msg="Tell me about Sunny & Ranney's mission">Your mission</button>
+      </div>
     </div>
   </div>
 
-  <!-- Quick reply chips -->
-  <div class="staci-chips" id="staci-chips">
-    <button class="staci-chip" data-msg="What's new in the shop?">What's new?</button>
-    <button class="staci-chip" data-msg="What are your store hours and location?">Store hours</button>
-    <button class="staci-chip" data-msg="What is your return policy?">Returns</button>
-    <button class="staci-chip" data-msg="Tell me about Sunny & Ranney's mission">Your mission</button>
+  <!-- Quick reply chips (hidden when welcome card is visible, shown after first exchange) -->
+  <div class="staci-chips" id="staci-chips" style="display:none;">
   </div>
 
   <form id="staci-form" class="staci-input">
@@ -270,6 +273,65 @@
     background: rgba(255, 255, 255, 0.08);
   }
 
+  /* ─── Welcome Card ────────────────────────────────────────── */
+  .staci-welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 1.5rem 1rem 0.5rem;
+    animation: staciWelcomeIn 0.5s var(--ease-out) both;
+  }
+
+  @keyframes staciWelcomeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .staci-welcome__avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--color-gold-soft);
+    box-shadow: 0 2px 12px rgba(255, 212, 0, 0.15), 0 1px 4px rgba(44, 44, 44, 0.08);
+    margin-bottom: 0.6rem;
+  }
+
+  .staci-welcome__name {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 400;
+    color: var(--color-charcoal);
+    margin-bottom: 0.25rem;
+  }
+
+  .staci-welcome__sub {
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--color-stone);
+    max-width: 280px;
+    margin-bottom: 1rem;
+  }
+
+  .staci-welcome__chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.4rem;
+  }
+
+  .staci-welcome__chips .staci-chip {
+    animation: staciPillIn 0.3s var(--ease-out) both;
+    min-height: 36px;
+    font-size: 0.76rem;
+  }
+
+  .staci-welcome__chips .staci-chip:nth-child(1) { animation-delay: 0.1s; }
+  .staci-welcome__chips .staci-chip:nth-child(2) { animation-delay: 0.16s; }
+  .staci-welcome__chips .staci-chip:nth-child(3) { animation-delay: 0.22s; }
+  .staci-welcome__chips .staci-chip:nth-child(4) { animation-delay: 0.28s; }
+
   /* ─── Messages ───────────────────────────────────────────── */
   .staci-messages {
     flex: 1;
@@ -478,13 +540,28 @@
   .staci-msg__time {
     font-size: 0.6rem;
     color: var(--color-stone);
-    opacity: 0.5;
+    opacity: 0;
     padding: 0 0.3rem;
     line-height: 1;
+    transition: opacity 0.2s;
+  }
+
+  .staci-msg:hover .staci-msg__time {
+    opacity: 0.55;
   }
 
   .staci-msg--user .staci-msg__time {
     text-align: right;
+  }
+
+  /* Time separator between message groups */
+  .staci-time-sep {
+    text-align: center;
+    font-size: 0.6rem;
+    color: var(--color-stone);
+    opacity: 0.6;
+    padding: 0.3rem 0;
+    letter-spacing: 0.03em;
   }
 
   /* ─── Product Cards ───────────────────────────────────────── */
@@ -727,7 +804,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s var(--ease-out);
+    transition: background 0.2s var(--ease-out), transform 0.2s var(--ease-out);
     cursor: pointer;
     border: none;
     flex-shrink: 0;
@@ -995,7 +1072,6 @@
       const messagesEl = document.getElementById('staci-messages');
       if (messagesEl) {
         messagesEl.innerHTML = '';
-        addBotBubble('Hi! I\'m Staci, your shopping assistant. How can I help you today?', false);
         saved.forEach(msg => {
           if (msg.role === 'user') addUserBubble(msg.content, false);
           else addBotBubble(msg.content, false);
@@ -1043,16 +1119,49 @@
     if (badge) badge.style.display = 'none';
   }
 
+  // ─── Welcome Card ──────────────────────────────────────────
+
+  function welcomeCardHTML(): string {
+    return `<div class="staci-welcome" id="staci-welcome">
+      <img class="staci-welcome__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=128,h=128,fit=cover,format=auto" alt="Staci" width="52" height="52" />
+      <p class="staci-welcome__name">Hi, I'm Staci</p>
+      <p class="staci-welcome__sub">Your personal shopping assistant at Sunny&nbsp;&amp;&nbsp;Ranney. Ask me about products, hours, or anything else!</p>
+      <div class="staci-welcome__chips">
+        <button class="staci-chip" data-msg="What's new in the shop?">What's new?</button>
+        <button class="staci-chip" data-msg="What are your store hours and location?">Store hours</button>
+        <button class="staci-chip" data-msg="What is your return policy?">Returns</button>
+        <button class="staci-chip" data-msg="Tell me about Sunny &amp; Ranney's mission">Your mission</button>
+      </div>
+    </div>`;
+  }
+
   // ─── DOM Manipulation ─────────────────────────────────────
+
+  let _lastMsgTs = 0;
+  const TIME_GAP_MS = 2 * 60 * 1000; // 2 minutes
 
   function scrollToBottom() {
     const messagesEl = document.getElementById('staci-messages');
     if (messagesEl) messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 
+  /** Insert a time separator if enough time has elapsed since the last message */
+  function maybeAddTimeSep(messagesEl: HTMLElement, animate: boolean) {
+    const now = Date.now();
+    if (_lastMsgTs && (now - _lastMsgTs > TIME_GAP_MS)) {
+      const sep = document.createElement('div');
+      sep.className = 'staci-time-sep';
+      if (!animate) sep.style.animation = 'none';
+      sep.textContent = timeAgo(_lastMsgTs);
+      messagesEl.appendChild(sep);
+    }
+    _lastMsgTs = now;
+  }
+
   function addUserBubble(text: string, animate = true) {
     const messagesEl = document.getElementById('staci-messages');
     if (!messagesEl) return;
+    if (animate) maybeAddTimeSep(messagesEl, animate);
     const msg = document.createElement('div');
     msg.className = `staci-msg staci-msg--user`;
     if (animate) msg.dataset.ts = String(Date.now());
@@ -1061,7 +1170,7 @@
       <span class="staci-msg__avatar"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0 2c-3.33 0-10 1.67-10 5v2h20v-2c0-3.33-6.67-5-10-5z"/></svg></span>
       <div class="staci-msg__body">
         <div class="staci-msg__bubble">${escapeHtml(text)}</div>
-        ${animate ? '<time class="staci-msg__time">just now</time>' : ''}
+        <time class="staci-msg__time">just now</time>
       </div>
     `;
     messagesEl.appendChild(msg);
@@ -1075,10 +1184,10 @@
     if (animate) msg.dataset.ts = String(Date.now());
     if (!animate) msg.style.animation = 'none';
     msg.innerHTML = `
-      <img class="staci-msg__avatar" src="${AVATAR_URL}" loading="lazy" alt="Staci" width="20" height="20" />
+      <img class="staci-msg__avatar" src="${AVATAR_URL}" loading="lazy" alt="Staci" width="24" height="24" />
       <div class="staci-msg__body">
         <div class="staci-msg__bubble">${renderMarkdown(text)}</div>
-        ${animate ? '<time class="staci-msg__time">just now</time>' : ''}
+        <time class="staci-msg__time">just now</time>
       </div>
     `;
     if (messagesEl) {
@@ -1100,8 +1209,8 @@
     avatar.src = AVATAR_URL;
     avatar.alt = 'Staci';
     avatar.loading = 'lazy';
-    avatar.width = 20;
-    avatar.height = 20;
+    avatar.width = 24;
+    avatar.height = 24;
 
     const body = document.createElement('div');
     body.className = 'staci-msg__body';
@@ -1137,8 +1246,8 @@
     avatar.src = AVATAR_URL;
     avatar.alt = 'Staci';
     avatar.loading = 'lazy';
-    avatar.width = 20;
-    avatar.height = 20;
+    avatar.width = 24;
+    avatar.height = 24;
     msg.appendChild(avatar);
 
     const body = document.createElement('div');
@@ -1175,7 +1284,7 @@
     typing.className = 'staci-msg staci-msg--bot staci-typing';
     typing.id = 'staci-typing';
     typing.innerHTML = `
-      <img class="staci-msg__avatar" src="${AVATAR_URL}" loading="lazy" alt="Staci" width="20" height="20" />
+      <img class="staci-msg__avatar" src="${AVATAR_URL}" loading="lazy" alt="Staci" width="24" height="24" />
       <div class="staci-msg__body">
         <div class="staci-msg__bubble">
           <span class="staci-dot"></span>
@@ -1195,7 +1304,9 @@
   function hideChips() {
     const chips = document.getElementById('staci-chips');
     if (chips) chips.style.display = 'none';
-    // Remove inline suggestion pills
+    // Remove welcome card and inline suggestion pills
+    const welcome = document.getElementById('staci-welcome');
+    if (welcome) welcome.remove();
     document.querySelectorAll('.staci-suggestions').forEach(el => el.remove());
   }
 
@@ -1328,9 +1439,11 @@
     const messagesEl = document.getElementById('staci-messages');
     if (messagesEl) {
       messagesEl.innerHTML = '';
-      addBotBubble('Hi! I\'m Staci, your shopping assistant. How can I help you today?', true);
+      messagesEl.insertAdjacentHTML('beforeend', welcomeCardHTML());
     }
-    showChips();
+    // Hide bottom chips — welcome card has its own
+    const chips = document.getElementById('staci-chips');
+    if (chips) chips.style.display = 'none';
 
     const input = document.getElementById('staci-input') as HTMLTextAreaElement | null;
     const charCount = document.getElementById('staci-char-count');
