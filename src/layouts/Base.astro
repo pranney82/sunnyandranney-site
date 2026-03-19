@@ -7,7 +7,6 @@ import EmailCapture from '@/components/EmailCapture.astro';
 import CartDrawer from '@/components/CartDrawer.astro';
 
 import StaciChat from '@/components/StaciChat.astro';
-import BackToTop from '@/components/BackToTop.astro';
 import SEO from '@/components/SEO.astro';
 import { getHoursStatic, getSpecialsStatic, getContactStatic, getReviewsStatic, formatHoursShort, type StoreHours } from '@/lib/settings';
 import { fetchGooglePlaceData } from '@/lib/google-places';
@@ -98,7 +97,6 @@ const isShopPage = Astro.url.pathname.startsWith('/shop') || Astro.url.pathname.
     <EmailCapture />
     <Footer contact={contact} />
     <CartDrawer transition:persist />
-    <BackToTop />
 
     <StaciChat transition:persist />
 

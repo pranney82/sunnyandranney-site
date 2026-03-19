@@ -220,9 +220,11 @@ export async function fetchGooglePlaceData(): Promise<GooglePlaceData | null> {
     const reviewsWithPhotos = await Promise.all(
       reviews.map(async (r, i) => {
         let photoUrl = '';
-        const uri = r.authorAttribution?.photoUri;
+        let uri = r.authorAttribution?.photoUri;
         if (uri) {
           try {
+            // Ensure absolute URL (Google may return protocol-relative URIs)
+            if (uri.startsWith('//')) uri = `https:${uri}`;
             const smallUri = uri.replace(/=s\d+/, '=s80');
             const imgRes = await fetch(smallUri);
             if (imgRes.ok) {
@@ -242,6 +244,11 @@ export async function fetchGooglePlaceData(): Promise<GooglePlaceData | null> {
                 if (cfBody.success || alreadyExists) {
                   photoUrl = `https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/review-avatar-${i}/w=80,h=80,fit=cover,format=auto`;
                 }
+              }
+
+              // Fall back to direct Google photo URL if CF Images unavailable
+              if (!photoUrl) {
+                photoUrl = smallUri;
               }
             }
           } catch {
