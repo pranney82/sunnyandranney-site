@@ -28,7 +28,7 @@ let hasShopify = false;
 const heroSetting = await getHeroStatic();
 const HERO_DEFAULT_IMAGE = 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/sunny-ranney-storefront';
 const heroImageBase = heroSetting?.imageUrl?.trim().replace(/\/$/, '') || HERO_DEFAULT_IMAGE;
-const HERO_QUALITY = 70;
+const HERO_QUALITY = 55;
 const heroSrc = cfImage(heroImageBase, { width: 480, height: 600, quality: HERO_QUALITY });
 const heroSrcset = cfSrcset(heroImageBase, [280, 480], HERO_QUALITY);
 const HERO_SIZES = '(max-width: 767px) 280px, (max-width: 1023px) 400px, 440px';
@@ -79,7 +79,7 @@ function fmt(amount: number): string {
         <h1 class="hero__title">Shop with<br/>a Purpose</h1>
         <p class="hero__sub">Curated furniture & home decor where every purchase transforms a child's room through <strong>Sunshine on a Ranney Day</strong>.</p>
         <div class="hero__actions">
-          <a href="/shop/" class="btn btn--gold btn--hero" data-astro-prefetch="viewport">Shop &amp; Give Back</a>
+          <a href="/shop/" class="btn btn--gold btn--hero" data-astro-prefetch>Shop &amp; Give Back</a>
         </div>
         <div class="hero__trust">
           <span class="hero__trust-item">
@@ -108,6 +108,7 @@ function fmt(amount: number): string {
             width="480"
             height="600"
             fetchpriority="high"
+            decoding="async"
           />
         </div>
         <div class="hero__accent" aria-hidden="true"></div>
@@ -994,6 +995,7 @@ function fmt(amount: number): string {
     transform: translate(-50%, -50%);
     min-width: 48px;
     min-height: 48px;
+    padding: 10px;
   }
 
   .shop-look__dot {
@@ -1781,6 +1783,7 @@ function fmt(amount: number): string {
     text-transform: uppercase;
     color: var(--color-charcoal);
     transition: gap 0.4s var(--ease-out), color 0.3s;
+    min-height: 48px;
   }
 
   .services__link svg {
@@ -1963,6 +1966,9 @@ function fmt(amount: number): string {
     color: var(--color-charcoal);
     letter-spacing: 0.02em;
     transition: color 0.2s;
+    min-height: 48px;
+    display: inline-flex;
+    align-items: center;
   }
 
   .mission__cta-link span {

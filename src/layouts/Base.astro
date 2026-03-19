@@ -60,14 +60,18 @@ const isShopPage = Astro.url.pathname.startsWith('/shop') || Astro.url.pathname.
 
     <!-- Critical CSS — nav position before external CSS loads -->
     <style is:inline>
-      .nav{position:fixed;top:0;left:0;right:0;z-index:100;background:#FAF7F2}
+      .nav{position:fixed;top:0;left:0;right:0;z-index:100;background:#FAF7F2;will-change:transform}
     </style>
 
     <!-- Preconnect to external CDNs — as early as possible for LCP -->
     <link rel="preconnect" href="https://imagedelivery.net" />
     <link rel="dns-prefetch" href="https://imagedelivery.net" />
-    <link rel="preconnect" href="https://cdn.shopify.com" />
-    <link rel="dns-prefetch" href="https://cdn.shopify.com" />
+    {isShopPage && (
+      <Fragment>
+        <link rel="preconnect" href="https://cdn.shopify.com" />
+        <link rel="dns-prefetch" href="https://cdn.shopify.com" />
+      </Fragment>
+    )}
 
     {/* Preload LCP image FIRST — before fonts so it wins the bandwidth race on slow connections */}
     {props.lcpImage && (
@@ -88,6 +92,10 @@ const isShopPage = Astro.url.pathname.startsWith('/shop') || Astro.url.pathname.
   <body>
     <a href="#main-content" class="skip-to-content">Skip to content</a>
     <Nav />
+    {/* Measure nav height BEFORE first paint to prevent CLS from --nav-height mismatch */}
+    <script is:inline>
+      (function(){var n=document.getElementById('main-nav');if(n){var h=n.offsetHeight;if(h>0)document.documentElement.style.setProperty('--nav-height',h+'px')}})();
+    </script>
     <main id="main-content" style={`margin-top: var(--nav-height);`} transition:animate="fade">
       <slot />
     </main>

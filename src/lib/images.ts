@@ -19,13 +19,14 @@ interface ImageOptions {
 export function cfImage(url: string, opts: ImageOptions = {}): string {
   if (!url) return url;
 
-  const { width, height, quality = 80 } = opts;
+  const { width, height, quality = 70 } = opts;
 
   if (url.includes('cdn.shopify.com')) {
     const params = new URLSearchParams();
     if (width) params.set('width', String(width));
     if (height) params.set('height', String(height));
     if (width || height) params.set('crop', 'center');
+    params.set('quality', String(quality));
     params.set('format', 'webp');
     const sep = url.includes('?') ? '&' : '?';
     return `${url}${sep}${params.toString()}`;

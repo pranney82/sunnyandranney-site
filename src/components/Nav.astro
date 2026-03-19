@@ -165,6 +165,7 @@ const roomCollections = [
     right: 0;
     z-index: 100;
     background: var(--color-cream);
+    will-change: transform;
   }
 
   /* Composited shadow via pseudo-element with opacity transition */
@@ -512,11 +513,12 @@ const roomCollections = [
     color: var(--color-charcoal, #373A36);
     background: transparent;
     border: 1.5px solid var(--color-charcoal, #373A36);
-    padding: 0.45rem 0.9rem;
+    padding: 0.75rem 0.9rem;
     border-radius: 2rem;
     white-space: nowrap;
     transition: background 0.2s, color 0.2s, border-color 0.2s;
     text-decoration: none;
+    min-height: 44px;
   }
 
   .nav__mission-pig {
@@ -676,7 +678,10 @@ const roomCollections = [
     position: relative;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 3px;
+    min-width: 48px;
+    min-height: 48px;
   }
 
   @media (max-width: 767px) {
@@ -693,6 +698,7 @@ const roomCollections = [
     .nav__cat-link {
       padding: 1.05rem 1.35rem;
       min-height: 48px;
+      min-width: 48px;
     }
   }
 

@@ -71,7 +71,7 @@ const itemListSchema = hasShopify ? {
           <h1 class="shop-hero__title animate-fade-up" id="shop-title">The Collection</h1>
           <a href="/shop/" class="shop-hero__clear animate-fade-up delay-1" id="shop-clear-collection" style="display:none;">← All Products</a>
         </div>
-        <a href="/about/" class="shop-hero__mission animate-fade-up delay-1">
+        <a href="/about/" class="shop-hero__mission">
           <img src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/soard-favicon/w=40,h=40,fit=cover,q=80,format=auto" alt="" aria-hidden="true" width="20" height="20" class="shop-hero__mission-icon" />
           <span>100% of profits fund kids' room makeovers</span>
           <span class="shop-hero__mission-arrow">→</span>
@@ -90,7 +90,7 @@ const itemListSchema = hasShopify ? {
           </div>
         </div>
         <div class="toolbar__actions">
-          <span class="toolbar__count" id="product-count"></span>
+          <span class="toolbar__count" id="product-count">{products.length} product{products.length !== 1 ? 's' : ''}</span>
           <button class="toolbar__filter-toggle" id="filter-toggle" aria-expanded="false" aria-controls="filter-panel" aria-label="Filter and sort products">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
               <line x1="1" y1="4" x2="15" y2="4"/><line x1="3" y1="8" x2="13" y2="8"/><line x1="5" y1="12" x2="11" y2="12"/>
@@ -564,6 +564,7 @@ const itemListSchema = hasShopify ? {
     font-size: 0.65rem;
     color: var(--color-charcoal-70);
     white-space: nowrap;
+    min-width: 4ch;
   }
   .filter-toggle__text { display: none; }
 
@@ -616,8 +617,8 @@ const itemListSchema = hasShopify ? {
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     font-family: var(--font-body);
     font-size: 0.75rem;
     font-weight: 600;
@@ -1201,11 +1202,11 @@ const itemListSchema = hasShopify ? {
   /* Wishlist heart */
   .product-card__wishlist {
     position: absolute;
-    top: 0.65rem;
-    right: 0.65rem;
+    top: 0.45rem;
+    right: 0.45rem;
     z-index: 3;
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
     background: rgba(255,255,255,0.85);
     backdrop-filter: blur(6px);
     border-radius: 50%;
@@ -1382,6 +1383,7 @@ const itemListSchema = hasShopify ? {
     margin: 0.1rem 0 0.15rem;
     min-height: calc(2 * 0.92rem * 1.35); /* exactly 2 lines reserved */
     transition: color 0.2s;
+    padding: 0.15rem 0;
   }
 
   .product-card__title:hover {
@@ -1440,6 +1442,7 @@ const itemListSchema = hasShopify ? {
     margin-top: 0.35rem;
     width: 100%;
     box-sizing: border-box;
+    min-height: 44px;
   }
 
   .product-card__add-btn-placeholder {
