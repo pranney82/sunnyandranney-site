@@ -187,8 +187,8 @@ function fmt(amount: number): string {
                       alt={p.title}
                       width="600"
                       height="720"
-                      loading={idx < 3 ? 'eager' : 'lazy'}
-                      decoding={idx < 3 ? 'sync' : 'async'}
+                      loading="lazy"
+                      decoding="async"
                     />
                   )}
                   {hasDiscount && <span class="staff-pick-card__sale">Sale</span>}
@@ -992,6 +992,8 @@ function fmt(amount: number): string {
     text-decoration: none;
     z-index: 1;
     transform: translate(-50%, -50%);
+    min-width: 48px;
+    min-height: 48px;
   }
 
   .shop-look__dot {

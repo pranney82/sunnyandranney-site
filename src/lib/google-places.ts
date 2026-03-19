@@ -31,155 +31,16 @@ export interface GooglePlaceHours {
 let _cache: GooglePlaceData | null | undefined;
 let _hoursCache: GooglePlaceHours | null | undefined;
 
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
+// Unified fetch — single API call for both reviews + hours
+let _unifiedPromise: Promise<void> | null = null;
 
-/**
- * Fetch store hours from Google Places API (New) at build time.
- * Uses `currentOpeningHours` which includes holiday/special overrides,
- * falling back to `regularOpeningHours` for the base weekly schedule.
- */
-export async function fetchGoogleHours(): Promise<GooglePlaceHours | null> {
-  if (_hoursCache !== undefined) return _hoursCache;
-
+async function fetchUnified(): Promise<void> {
   const apiKey = import.meta.env.GOOGLE_PLACES_API_KEY;
   const placeId = import.meta.env.GOOGLE_PLACE_ID;
-
-  if (!apiKey || !placeId) {
-    _hoursCache = null;
-    return null;
-  }
-
-  try {
-    const res = await fetch(
-      `https://places.googleapis.com/v1/places/${placeId}`,
-      {
-        headers: {
-          'X-Goog-Api-Key': apiKey,
-          'X-Goog-FieldMask': 'regularOpeningHours,currentOpeningHours',
-        },
-      },
-    );
-
-    if (!res.ok) {
-      console.warn(`[google-hours] API returned ${res.status}`);
-      _hoursCache = null;
-      return null;
-    }
-
-    const data = await res.json() as {
-      regularOpeningHours?: GoogleOpeningHours;
-      currentOpeningHours?: GoogleOpeningHours;
-    };
-
-    // currentOpeningHours includes holiday overrides; regularOpeningHours is the base
-    const current = data.currentOpeningHours;
-    const regular = data.regularOpeningHours;
-
-    if (!regular?.periods?.length) {
-      console.warn('[google-hours] No opening hours data returned');
-      _hoursCache = null;
-      return null;
-    }
-
-    // Build weekly schedule from regular hours
-    const dayMap = new Map<number, { open: string; close: string }>();
-    for (const period of regular.periods) {
-      const dayNum = period.open.day;
-      const openTime = padTime(period.open.hour, period.open.minute);
-      const closeTime = period.close
-        ? padTime(period.close.hour, period.close.minute)
-        : '23:59';
-      dayMap.set(dayNum, { open: openTime, close: closeTime });
-    }
-
-    // Output days Monday–Sunday (shift Sunday to end)
-    const orderedDays = [1, 2, 3, 4, 5, 6, 0];
-    const days = orderedDays.map(dayNum => {
-      const times = dayMap.get(dayNum);
-      return {
-        day: DAY_NAMES[dayNum],
-        open: times?.open ?? '00:00',
-        close: times?.close ?? '00:00',
-        closed: !times,
-      };
-    });
-
-    // Detect holiday/special hours from currentOpeningHours.
-    // specialDays lists dates with exceptional hours (e.g. Christmas).
-    // Match each against currentOpeningHours.periods by calendar date to
-    // find actual hours; if no period matches, the store is closed that day.
-    const holidays: GooglePlaceHours['holidays'] = [];
-    if (current?.specialDays) {
-      for (const special of current.specialDays) {
-        if (!special.date) continue;
-        const dateStr = `${special.date.year}-${String(special.date.month).padStart(2, '0')}-${String(special.date.day).padStart(2, '0')}`;
-        const d = new Date(dateStr + 'T12:00:00');
-        const label = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-
-        // Match by specific calendar date, not day-of-week
-        const matchingPeriod = current.periods?.find(p =>
-          p.open.date &&
-          p.open.date.year === special.date!.year &&
-          p.open.date.month === special.date!.month &&
-          p.open.date.day === special.date!.day
-        );
-
-        if (matchingPeriod) {
-          holidays.push({
-            date: dateStr,
-            label,
-            closed: false,
-            open: padTime(matchingPeriod.open.hour, matchingPeriod.open.minute),
-            close: matchingPeriod.close
-              ? padTime(matchingPeriod.close.hour, matchingPeriod.close.minute)
-              : '23:59',
-          });
-        } else {
-          // No period for this date → store is closed
-          holidays.push({ date: dateStr, label, closed: true, open: '00:00', close: '00:00' });
-        }
-      }
-    }
-
-    _hoursCache = { days, holidays, note: '' };
-    console.log('[google-hours] Fetched live store hours from Google Places API');
-    return _hoursCache;
-  } catch (err) {
-    console.warn('[google-hours] Fetch failed:', err);
-    _hoursCache = null;
-    return null;
-  }
-}
-
-interface GoogleDate {
-  year: number;
-  month: number;
-  day: number;
-}
-
-interface GoogleOpeningHours {
-  periods?: Array<{
-    open: { date?: GoogleDate; day: number; hour: number; minute: number };
-    close?: { date?: GoogleDate; day: number; hour: number; minute: number };
-  }>;
-  specialDays?: Array<{
-    date?: GoogleDate;
-  }>;
-}
-
-function padTime(hour: number, minute: number): string {
-  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-}
-
-export async function fetchGooglePlaceData(): Promise<GooglePlaceData | null> {
-  if (_cache !== undefined) return _cache;
-
-  const apiKey = import.meta.env.GOOGLE_PLACES_API_KEY;
-  const placeId = import.meta.env.GOOGLE_PLACE_ID;
-
   if (!apiKey || !placeId) {
     _cache = null;
-    return null;
+    _hoursCache = null;
+    return;
   }
 
   try {
@@ -188,92 +49,125 @@ export async function fetchGooglePlaceData(): Promise<GooglePlaceData | null> {
       {
         headers: {
           'X-Goog-Api-Key': apiKey,
-          'X-Goog-FieldMask': 'rating,userRatingCount,reviews',
+          'X-Goog-FieldMask': 'rating,userRatingCount,reviews,regularOpeningHours,currentOpeningHours',
         },
       },
     );
 
     if (!res.ok) {
-      console.warn(`Google Places API returned ${res.status}`);
-      return null;
+      console.warn(`[google-places] API returned ${res.status}`);
+      _cache = null;
+      _hoursCache = null;
+      return;
     }
 
-    const data = await res.json() as {
-      rating?: number;
-      userRatingCount?: number;
-      reviews?: Array<{
-        authorAttribution?: {
-          displayName?: string;
-          photoUri?: string;
-        };
-        text?: { text?: string };
-        rating?: number;
-        relativePublishTimeDescription?: string;
-      }>;
-    };
+    const data = await res.json() as any;
 
-    const reviews = (data.reviews ?? []).filter((r) => r.text?.text);
+    // Parse hours
+    const regular = data.regularOpeningHours;
+    const current = data.currentOpeningHours;
+    if (regular?.periods?.length) {
+      const dayMap = new Map<number, { open: string; close: string }>();
+      for (const period of regular.periods) {
+        dayMap.set(period.open.day, {
+          open: padTime(period.open.hour, period.open.minute),
+          close: period.close ? padTime(period.close.hour, period.close.minute) : '23:59',
+        });
+      }
+      const orderedDays = [1, 2, 3, 4, 5, 6, 0];
+      const days = orderedDays.map(dayNum => {
+        const times = dayMap.get(dayNum);
+        return { day: DAY_NAMES[dayNum], open: times?.open ?? '00:00', close: times?.close ?? '00:00', closed: !times };
+      });
+      const holidays: GooglePlaceHours['holidays'] = [];
+      if (current?.specialDays) {
+        for (const special of current.specialDays) {
+          if (!special.date) continue;
+          const dateStr = `${special.date.year}-${String(special.date.month).padStart(2, '0')}-${String(special.date.day).padStart(2, '0')}`;
+          const d = new Date(dateStr + 'T12:00:00');
+          const label = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+          const matchingPeriod = current.periods?.find((p: any) =>
+            p.open.date && p.open.date.year === special.date!.year && p.open.date.month === special.date!.month && p.open.date.day === special.date!.day
+          );
+          if (matchingPeriod) {
+            holidays.push({ date: dateStr, label, closed: false, open: padTime(matchingPeriod.open.hour, matchingPeriod.open.minute), close: matchingPeriod.close ? padTime(matchingPeriod.close.hour, matchingPeriod.close.minute) : '23:59' });
+          } else {
+            holidays.push({ date: dateStr, label, closed: true, open: '00:00', close: '00:00' });
+          }
+        }
+      }
+      _hoursCache = { days, holidays, note: '' };
+      console.log('[google-places] Fetched live hours');
+    } else {
+      _hoursCache = null;
+    }
 
+    // Parse reviews
+    const reviews = (data.reviews ?? []).filter((r: any) => r.text?.text);
     const cfAccountId = import.meta.env.CF_ACCOUNT_ID;
     const cfImagesToken = import.meta.env.CF_IMAGES_TOKEN;
-
     const reviewsWithPhotos = await Promise.all(
-      reviews.map(async (r, i) => {
+      reviews.map(async (r: any, i: number) => {
         let photoUrl = '';
         let uri = r.authorAttribution?.photoUri;
         if (uri) {
           try {
-            // Ensure absolute URL (Google may return protocol-relative URIs)
             if (uri.startsWith('//')) uri = `https:${uri}`;
             const smallUri = uri.replace(/=s\d+/, '=s80');
             const imgRes = await fetch(smallUri);
             if (imgRes.ok) {
               const buf = Buffer.from(await imgRes.arrayBuffer());
-
-              // Upload to CF Images if credentials are available
               if (cfAccountId && cfImagesToken) {
                 const form = new FormData();
                 form.append('file', new Blob([buf]), `review-avatar-${i}`);
                 form.append('id', `review-avatar-${i}`);
-                const cfRes = await fetch(
-                  `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/images/v1`,
-                  { method: 'POST', headers: { Authorization: `Bearer ${cfImagesToken}` }, body: form },
-                );
+                const cfRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/images/v1`, { method: 'POST', headers: { Authorization: `Bearer ${cfImagesToken}` }, body: form });
                 const cfBody = await cfRes.json() as { success: boolean; errors?: Array<{ code: number }> };
-                const alreadyExists = cfBody.errors?.some((e) => e.code === 5409);
-                if (cfBody.success || alreadyExists) {
+                if (cfBody.success || cfBody.errors?.some((e) => e.code === 5409)) {
                   photoUrl = `https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/review-avatar-${i}/w=80,h=80,fit=cover,format=auto`;
                 }
               }
-
-              // Fall back to direct Google photo URL if CF Images unavailable
-              if (!photoUrl) {
-                photoUrl = smallUri;
-              }
+              if (!photoUrl) photoUrl = smallUri;
             }
-          } catch {
-            // skip — will fall back to initials
-          }
+          } catch { /* skip — will fall back to initials */ }
         }
-        return {
-          name: r.authorAttribution?.displayName ?? 'Anonymous',
-          text: r.text!.text!,
-          rating: r.rating ?? 5,
-          photoUrl,
-          timeAgo: r.relativePublishTimeDescription ?? '',
-        };
+        return { name: r.authorAttribution?.displayName ?? 'Anonymous', text: r.text!.text!, rating: r.rating ?? 5, photoUrl, timeAgo: r.relativePublishTimeDescription ?? '' };
       }),
     );
-
-    _cache = {
-      rating: data.rating ?? 5.0,
-      reviewCount: data.userRatingCount ?? 0,
-      reviews: reviewsWithPhotos,
-    };
-    return _cache;
+    _cache = { rating: data.rating ?? 5.0, reviewCount: data.userRatingCount ?? 0, reviews: reviewsWithPhotos };
+    console.log('[google-places] Fetched live reviews');
   } catch (err) {
-    console.warn('Google Places API fetch failed:', err);
+    console.warn('[google-places] Fetch failed:', err);
     _cache = null;
-    return null;
+    _hoursCache = null;
   }
+}
+
+function ensureUnifiedFetch(): Promise<void> {
+  if (!_unifiedPromise) _unifiedPromise = fetchUnified();
+  return _unifiedPromise;
+}
+
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
+
+function padTime(hour: number, minute: number): string {
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
+/**
+ * Fetch store hours from Google Places API (New) at build time.
+ * Uses the unified fetch so only one API call is made per build.
+ */
+export async function fetchGoogleHours(): Promise<GooglePlaceHours | null> {
+  await ensureUnifiedFetch();
+  return _hoursCache ?? null;
+}
+
+/**
+ * Fetch reviews + rating from Google Places API (New) at build time.
+ * Uses the unified fetch so only one API call is made per build.
+ */
+export async function fetchGooglePlaceData(): Promise<GooglePlaceData | null> {
+  await ensureUnifiedFetch();
+  return _cache ?? null;
 }

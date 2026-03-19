@@ -38,6 +38,24 @@
   font-display: optional;
 }
 
+/* Metric-matched fallbacks — prevent CLS when custom fonts swap in */
+@font-face {
+  font-family: 'DM Sans Fallback';
+  src: local('Arial');
+  size-adjust: 104.7%;
+  ascent-override: 94.8%;
+  descent-override: 29.6%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'The Seasons Fallback';
+  src: local('Georgia');
+  size-adjust: 107%;
+  ascent-override: 88%;
+  descent-override: 23%;
+  line-gap-override: 0%;
+}
+
 /* ─── Custom Properties ─────────────────────────────────────── */
 :root {
   /* Palette — warm ivory + deep charcoal + sunshine yellow + cyan */
@@ -59,8 +77,8 @@
   --color-terracotta:  #B87355;
 
   /* Typography */
-  --font-display: 'The Seasons', 'Georgia', serif;
-  --font-body:    'DM Sans', 'Helvetica Neue', sans-serif;
+  --font-display: 'The Seasons', 'The Seasons Fallback', 'Georgia', serif;
+  --font-body:    'DM Sans', 'DM Sans Fallback', 'Helvetica Neue', sans-serif;
 
   /* Spacing scale */
   --space-xs:  0.5rem;
