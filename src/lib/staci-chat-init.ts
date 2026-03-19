@@ -291,7 +291,7 @@ function addBotBubble(text: string, animate = true): HTMLElement {
   if (animate) msg.dataset.ts = String(Date.now());
   if (!animate) msg.style.animation = 'none';
   msg.innerHTML = `
-    <img class="staci-msg__avatar" src="${AVATAR_URL}" loading="lazy" alt="Staci" width="26" height="26" />
+    <img class="staci-msg__avatar" src="${AVATAR_URL}" loading="lazy" alt="Staci" width="30" height="30" />
     <div class="staci-msg__body">
       <div class="staci-msg__bubble">${renderMarkdown(text)}</div>
       <time class="staci-msg__time">just now</time>
@@ -384,6 +384,16 @@ function addErrorBubble(errorText: string, retryFn: () => void) {
   scrollToBottom();
 }
 
+function getTypingLabel(): string {
+  const lastUser = conversationHistory.slice().reverse().find(m => m.role === 'user');
+  if (!lastUser) return 'Staci is thinking...';
+  const text = lastUser.content.toLowerCase();
+  if (/table|chair|sofa|couch|bed|desk|rug|lamp|mirror|art/.test(text)) return 'Searching our catalog...';
+  if (/hour|open|close|location|address|direction/.test(text)) return 'Looking that up...';
+  if (/return|refund|exchange|policy/.test(text)) return 'Checking our policies...';
+  return 'Staci is thinking...';
+}
+
 function showTyping() {
   const messagesEl = document.getElementById('staci-messages');
   if (!messagesEl) return;
@@ -391,15 +401,14 @@ function showTyping() {
   typing.className = 'staci-msg staci-msg--bot staci-typing';
   typing.id = 'staci-typing';
   typing.innerHTML = `
-    <img class="staci-msg__avatar" src="${AVATAR_URL}" loading="lazy" alt="Staci" width="26" height="26" />
+    <img class="staci-msg__avatar" src="${AVATAR_URL}" loading="lazy" alt="Staci" width="30" height="30" />
     <div class="staci-msg__body">
       <div class="staci-msg__bubble">
         <span class="staci-shimmer">
-          <span class="staci-dot"></span>
-          <span class="staci-dot"></span>
-          <span class="staci-dot"></span>
+          <span class="staci-shimmer-bar"></span>
+          <span class="staci-shimmer-bar"></span>
         </span>
-        <span class="staci-typing__label">Staci is thinking</span>
+        <span class="staci-typing__label">${getTypingLabel()}</span>
       </div>
     </div>
   `;
@@ -960,6 +969,47 @@ function updateTimestamps() {
   });
 }
 
+// ─── Proactive Greeting Bubble ───────────────────────────
+const GREETING_SHOWN_KEY = 'staci_greeting_shown';
+
+function getPageGreeting(): string {
+  const path = window.location.pathname.toLowerCase();
+  if (path.startsWith('/shop/') && path !== '/shop/' && path !== '/shop') {
+    return 'Have questions about this piece? I can help!';
+  }
+  if (path === '/shop' || path === '/shop/') {
+    return 'Looking for something specific? I can search for you!';
+  }
+  if (path.includes('about') || path.includes('mission')) {
+    return 'Want to learn how your purchase changes lives?';
+  }
+  return 'Hi! Need help finding something?';
+}
+
+function showGreeting() {
+  const el = document.getElementById('staci-greeting');
+  const textEl = document.getElementById('staci-greeting-text');
+  if (!el || !textEl) return;
+  textEl.textContent = getPageGreeting();
+  el.style.display = 'block';
+  el.setAttribute('aria-hidden', 'false');
+}
+
+function dismissGreeting() {
+  const el = document.getElementById('staci-greeting');
+  if (!el) return;
+  el.classList.add('staci-greeting--out');
+  setTimeout(() => { el.style.display = 'none'; }, 300);
+  try { sessionStorage.setItem(GREETING_SHOWN_KEY, 'true'); } catch {}
+}
+
+// Greeting interactions
+document.addEventListener('click', (e) => {
+  const el = e.target as Element;
+  if (el.closest('#staci-greeting-close')) { dismissGreeting(); return; }
+  if (el.closest('#staci-greeting')) { dismissGreeting(); openPanel(); }
+});
+
 // ─── Init ─────────────────────────────────────────────────
 restoreSession();
 setInterval(updateTimestamps, 30_000);
@@ -967,3 +1017,16 @@ setInterval(updateTimestamps, 30_000);
 // Send button starts disabled (textarea is empty)
 const _sendBtn = document.getElementById('staci-send') as HTMLButtonElement | null;
 if (_sendBtn) _sendBtn.disabled = true;
+
+// Show proactive greeting after 5s for first-time visitors (no existing session, panel not open)
+if (!conversationHistory.length && !isPanelOpen() && !sessionStorage.getItem(GREETING_SHOWN_KEY)) {
+  setTimeout(() => {
+    if (!isPanelOpen()) showGreeting();
+  }, 5000);
+}
+
+// Dismiss greeting whenever the toggle is clicked (panel opening)
+const _toggleEl = document.getElementById('staci-toggle');
+if (_toggleEl) {
+  _toggleEl.addEventListener('click', dismissGreeting);
+}

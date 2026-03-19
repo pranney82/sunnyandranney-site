@@ -2,6 +2,12 @@
 /* Staci — AI shopping assistant chat widget (Cloudflare Workers AI, streaming) */
 ---
 
+<!-- Proactive greeting bubble — shown after delay on first visit -->
+<div id="staci-greeting" class="staci-greeting" style="display:none;" aria-hidden="true">
+  <button class="staci-greeting__close" id="staci-greeting-close" aria-label="Dismiss">&times;</button>
+  <p id="staci-greeting-text">Hi! Need help finding something?</p>
+</div>
+
 <!-- Chat toggle button -->
 <button id="staci-toggle" aria-label="Chat with Staci" title="Chat with Staci">
   <span class="staci-badge" id="staci-badge" style="display:none;"></span>
@@ -77,15 +83,75 @@
   </form>
 
   <div class="staci-footer">
-    <span class="staci-footer__powered">Powered by AI</span>
+    <a href="tel:6788885140">678.888.5140</a>
     <span class="staci-footer__sep">&middot;</span>
-    <a href="tel:6788885140">Call us</a>
-    <span class="staci-footer__sep">&middot;</span>
-    <a href="mailto:info@sunnyandranney.com">Email</a>
+    <a href="mailto:info@sunnyandranney.com">info@sunnyandranney.com</a>
   </div>
 </div>
 
 <style>
+  /* ─── Proactive Greeting Bubble ────────────────────────────── */
+  .staci-greeting {
+    position: fixed;
+    bottom: 5rem;
+    right: 1.25rem;
+    z-index: 9997;
+    background: white;
+    color: var(--color-charcoal);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    padding: 0.7rem 2rem 0.7rem 0.9rem;
+    border-radius: 14px 14px 4px 14px;
+    box-shadow:
+      0 8px 30px rgba(44, 44, 44, 0.15),
+      0 2px 8px rgba(44, 44, 44, 0.06);
+    max-width: 240px;
+    opacity: 0;
+    transform: translateY(8px) scale(0.95);
+    animation: staciGreetIn 0.5s 0.1s var(--ease-out) forwards;
+    pointer-events: auto;
+  }
+
+  .staci-greeting p { margin: 0; }
+
+  .staci-greeting__close {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: none;
+    color: var(--color-stone);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, background 0.15s;
+    padding: 0;
+  }
+
+  .staci-greeting__close:hover {
+    color: var(--color-charcoal);
+    background: rgba(44, 44, 44, 0.06);
+  }
+
+  @keyframes staciGreetIn {
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .staci-greeting--out {
+    animation: staciGreetOut 0.25s var(--ease-out) forwards !important;
+  }
+
+  @keyframes staciGreetOut {
+    to { opacity: 0; transform: translateY(4px) scale(0.97); }
+  }
+
   /* ─── Toggle Button ──────────────────────────────────────── */
   #staci-toggle {
     position: fixed;
@@ -102,9 +168,17 @@
     box-shadow:
       0 4px 20px rgba(44, 44, 44, 0.25),
       0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-    transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
+    transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out), opacity 0.3s;
     cursor: pointer;
     border: none;
+    /* Entrance animation — slides up on first load */
+    opacity: 0;
+    animation: staciToggleIn 0.6s 0.8s var(--ease-out) forwards;
+  }
+
+  @keyframes staciToggleIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
   }
 
   #staci-toggle:hover {
@@ -375,18 +449,30 @@
     animation: staciUserMsgIn 0.25s var(--ease-out) both;
   }
 
+  /* Message grouping — hide avatar on consecutive same-role messages */
+  .staci-msg--bot + .staci-msg--bot > .staci-msg__avatar,
+  .staci-msg--bot + .staci-products + .staci-msg--bot > .staci-msg__avatar,
+  .staci-msg--bot + .staci-suggestions + .staci-msg--bot > .staci-msg__avatar {
+    visibility: hidden;
+  }
+  .staci-msg--bot + .staci-msg--bot,
+  .staci-msg--bot + .staci-products + .staci-msg--bot,
+  .staci-msg--bot + .staci-suggestions + .staci-msg--bot {
+    margin-top: -0.35rem;
+  }
+
   .staci-msg__avatar {
-    width: 26px;
-    height: 26px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
-    margin-top: 2px;
+    margin-top: 1px;
   }
 
   .staci-msg--bot > .staci-msg__avatar {
     border: 1.5px solid var(--color-gold-soft);
-    box-shadow: 0 1px 3px rgba(44, 44, 44, 0.08);
+    box-shadow: 0 1px 4px rgba(44, 44, 44, 0.08);
   }
 
   span.staci-msg__avatar {
@@ -404,14 +490,14 @@
     display: flex;
     flex-direction: column;
     gap: 0.15rem;
-    max-width: 82%;
+    max-width: 85%;
     min-width: 0;
   }
 
   .staci-msg__bubble {
-    padding: 0.7rem 0.9rem;
-    font-size: 0.85rem;
-    line-height: 1.6;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    line-height: 1.65;
     letter-spacing: 0.005em;
     color: var(--color-charcoal);
     word-break: break-word;
@@ -419,29 +505,36 @@
   }
 
   /* Rich text in bot bubbles */
-  .staci-msg--bot .staci-msg__bubble :global(strong) { font-weight: 600; }
+  .staci-msg--bot .staci-msg__bubble :global(strong) {
+    font-weight: 700;
+    color: var(--color-charcoal);
+  }
   .staci-msg--bot .staci-msg__bubble :global(a) {
     color: var(--color-cyan);
-    text-decoration: underline;
-    text-underline-offset: 2px;
-    text-decoration-thickness: 1px;
-    font-weight: 500;
-    transition: color 0.15s;
+    text-decoration: none;
+    font-weight: 600;
+    background: rgba(75, 149, 180, 0.08);
+    padding: 0.05em 0.3em;
+    border-radius: 4px;
+    transition: background 0.15s, color 0.15s;
   }
   .staci-msg--bot .staci-msg__bubble :global(a:hover) {
+    background: rgba(75, 149, 180, 0.16);
     color: var(--color-charcoal);
   }
   .staci-msg--bot .staci-msg__bubble :global(ul),
   .staci-msg--bot .staci-msg__bubble :global(ol) {
-    margin: 0.4rem 0 0.5rem;
-    padding-left: 1.1rem;
+    margin: 0.5rem 0 0.6rem;
+    padding-left: 1.15rem;
   }
   .staci-msg--bot .staci-msg__bubble :global(li) {
-    margin: 0.3rem 0;
-    line-height: 1.5;
+    margin: 0.35rem 0;
+    line-height: 1.55;
+    padding-left: 0.2rem;
   }
   .staci-msg--bot .staci-msg__bubble :global(li::marker) {
-    color: var(--color-stone);
+    color: var(--color-gold);
+    font-weight: 700;
   }
   .staci-msg--bot .staci-msg__bubble :global(code) {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -451,61 +544,59 @@
     border-radius: 4px;
   }
   .staci-msg--bot .staci-msg__bubble :global(p) { margin: 0; }
-  .staci-msg--bot .staci-msg__bubble :global(p + p) { margin-top: 0.5rem; }
+  .staci-msg--bot .staci-msg__bubble :global(p + p) { margin-top: 0.55rem; }
 
   .staci-msg--bot .staci-msg__bubble {
-    background: white;
-    border-radius: 4px 14px 14px 14px;
-    border: 1px solid rgba(44, 44, 44, 0.06);
-    box-shadow: 0 1px 3px rgba(44, 44, 44, 0.04);
+    background: var(--color-cream);
+    border-radius: 4px 16px 16px 16px;
+    box-shadow: 0 1px 2px rgba(44, 44, 44, 0.04);
   }
 
   .staci-msg--user .staci-msg__bubble {
     background: var(--color-charcoal);
     color: var(--color-cream);
-    border-radius: 14px 4px 14px 14px;
+    border-radius: 16px 4px 16px 16px;
   }
 
-  /* Typing indicator */
+  /* Typing indicator — shimmer bar */
   .staci-typing .staci-msg__bubble {
     display: flex;
-    gap: 0.5rem;
-    align-items: center;
+    flex-direction: column;
+    gap: 0.4rem;
     padding: 0.7rem 0.9rem;
+    min-width: 140px;
   }
 
   .staci-shimmer {
     display: flex;
-    gap: 4px;
-    align-items: center;
+    flex-direction: column;
+    gap: 5px;
+    width: 100%;
   }
 
-  .staci-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--color-stone);
-    animation: staciBounce 1.2s infinite ease-in-out both;
+  .staci-shimmer-bar {
+    height: 8px;
+    border-radius: 4px;
+    background:
+      linear-gradient(90deg, var(--color-cream-dark) 25%, var(--color-cream) 50%, var(--color-cream-dark) 75%)
+      var(--color-cream-dark);
+    background-size: 200% 100%;
+    animation: staciShimmerSlide 1.5s ease-in-out infinite;
   }
 
-  .staci-dot:nth-child(2) { animation-delay: 0.15s; }
-  .staci-dot:nth-child(3) { animation-delay: 0.3s; }
+  .staci-shimmer-bar:nth-child(1) { width: 85%; }
+  .staci-shimmer-bar:nth-child(2) { width: 60%; animation-delay: 0.15s; }
 
-  @keyframes staciBounce {
-    0%, 80%, 100% { transform: translateY(0); opacity: 0.3; }
-    40% { transform: translateY(-4px); opacity: 1; }
+  @keyframes staciShimmerSlide {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
   }
 
   .staci-typing__label {
-    font-size: 0.68rem;
+    font-size: 0.65rem;
     color: var(--color-stone);
     letter-spacing: 0.02em;
-    animation: staciTypingFade 2s ease-in-out infinite;
-  }
-
-  @keyframes staciTypingFade {
-    0%, 100% { opacity: 0.5; }
-    50% { opacity: 0.8; }
+    margin-top: 0.1rem;
   }
 
   @keyframes staciMsgIn {
@@ -622,16 +713,23 @@
     letter-spacing: 0.03em;
   }
 
-  /* ─── Product Cards (2-col grid) ────────────────────────── */
+  /* ─── Product Cards (horizontal carousel) ─────────────────── */
   .staci-products {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
+    display: flex;
+    gap: 0.55rem;
     padding: 0.25rem 0.85rem 0.5rem 2.6rem;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scroll-padding-left: 2.6rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
     animation: staciMsgIn 0.3s var(--ease-out) both;
   }
 
+  .staci-products::-webkit-scrollbar { display: none; }
+
   .staci-product-card {
+    flex: 0 0 155px;
     background: white;
     border-radius: 10px;
     overflow: hidden;
@@ -643,6 +741,7 @@
     display: flex;
     flex-direction: column;
     position: relative;
+    scroll-snap-align: start;
     animation: staciCardIn 0.3s var(--ease-out) both;
   }
 
@@ -903,33 +1002,37 @@
     margin-right: 0.5rem;
     margin-bottom: 0.4rem;
     color: white;
-    background: var(--color-charcoal);
+    background: var(--color-cream-dark);
     border-radius: 10px;
     width: 36px;
     height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s var(--ease-out), transform 0.2s var(--ease-out);
+    transition: background 0.25s var(--ease-out), transform 0.25s var(--ease-out), color 0.25s, opacity 0.25s;
     cursor: pointer;
     border: none;
     flex-shrink: 0;
+    opacity: 0.4;
   }
 
-  .staci-input__send:hover {
+  /* Active state — textarea has content */
+  .staci-input__send:not(:disabled) {
+    background: var(--color-charcoal);
+    opacity: 1;
+  }
+
+  .staci-input__send:not(:disabled):hover {
     background: var(--color-gold);
     color: var(--color-charcoal);
-    transform: scale(1.05);
+    transform: scale(1.08);
   }
 
-  .staci-input__send:hover svg { stroke: var(--color-charcoal); }
+  .staci-input__send:not(:disabled):hover svg { stroke: var(--color-charcoal); }
 
   .staci-input__send:disabled {
-    opacity: 0.25;
-    cursor: not-allowed;
+    cursor: default;
     transform: none;
-    background: var(--color-cream-dark);
-    color: var(--color-stone);
   }
 
   .staci-input__send svg {
@@ -938,13 +1041,13 @@
   }
 
   .staci-input__send:not(:disabled):active svg {
-    transform: translate(2px, -2px) scale(0.9);
+    transform: translate(2px, -2px) scale(0.85);
   }
 
   /* ─── Footer ─────────────────────────────────────────────── */
   .staci-footer {
-    padding: 0.4rem 0.85rem;
-    font-size: 0.6rem;
+    padding: 0.3rem 0.85rem;
+    font-size: 0.58rem;
     color: var(--color-stone);
     text-align: center;
     border-top: 1px solid rgba(44, 44, 44, 0.04);
@@ -953,22 +1056,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.4rem;
-  }
-
-  .staci-footer__powered {
+    gap: 0.35rem;
     opacity: 0.6;
   }
 
   .staci-footer__sep {
     opacity: 0.3;
-    font-size: 0.5rem;
+    font-size: 0.45rem;
   }
 
   .staci-footer a {
     color: var(--color-stone);
     text-decoration: none;
-    font-weight: 500;
     transition: color 0.15s;
   }
 
@@ -1021,6 +1120,12 @@
     .staci-products {
       padding-left: 0.85rem;
       padding-right: 0.85rem;
+    }
+
+    .staci-greeting {
+      bottom: calc(4.5rem + env(safe-area-inset-bottom));
+      right: 0.85rem;
+      max-width: 200px;
     }
 
     .staci-suggestions {
@@ -1083,6 +1188,8 @@
     .staci-dot,
     .staci-typing__label,
     .staci-badge,
+    .staci-greeting,
+    .staci-shimmer-bar,
     .staci-streaming::after,
     .staci-msg__delivered {
       animation: none !important;
