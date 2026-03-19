@@ -455,10 +455,14 @@ export const POST: APIRoute = async ({ request }) => {
     let productContext = '';
     let productCards: ProductCard[] = [];
     if (vectorize && ai) {
-      const query = getSearchQuery(trimmedMessages);
-      const result = await searchProducts(ai, vectorize, query);
-      productContext = result.llmContext;
-      productCards = result.cards;
+      try {
+        const query = getSearchQuery(trimmedMessages);
+        const result = await searchProducts(ai, vectorize, query);
+        productContext = result.llmContext;
+        productCards = result.cards;
+      } catch (err: any) {
+        console.error('RAG search failed (continuing without products):', err?.message);
+      }
     }
 
     const systemPrompt = await buildSystemPrompt(pageContext, sessionSummary);
