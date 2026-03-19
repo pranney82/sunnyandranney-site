@@ -279,6 +279,11 @@ p {
   z-index: 2;
 }
 
+.product-card__badge--coming-soon {
+  background: var(--color-charcoal);
+  color: var(--color-cream);
+}
+
 .product-card__info {
   padding: 0.75rem 0.15rem 0;
   flex: 1;

@@ -107,6 +107,7 @@ const firstVariant = variants[0];
 const stockQty = firstVariant?.quantityAvailable;
 const isLowStock = stockQty !== null && stockQty > 0 && stockQty <= 5;
 const isSoldOut = !product.availableForSale;
+const isComingSoon = product.tags?.some((t: string) => t.toLowerCase() === 'coming soon');
 
 // Price formatter — drops .00 on whole numbers ($800 not $800.00)
 function fmt(amount: number): string {
@@ -344,12 +345,12 @@ const breadcrumbSchema = {
               data-product-handle={product.handle}
               data-variant-title={variants[0]?.title || ''}
               data-variant-qty={firstVariant?.quantityAvailable ?? ''}
-              disabled={!product.availableForSale}
+              disabled={!product.availableForSale || isComingSoon}
             >
-              {product.availableForSale ? 'Add to Cart' : 'Sold Out'}
+              {isComingSoon ? 'Coming Soon' : product.availableForSale ? 'Add to Cart' : 'Sold Out'}
             </button>
 
-            {product.availableForSale && (
+            {product.availableForSale && !isComingSoon && (
               <button
                 class="btn btn--primary pdp-buy-now"
                 id="buy-now"
@@ -582,8 +583,8 @@ const breadcrumbSchema = {
       <span class="sticky-bar__title">{product.title}</span>
       <span class="sticky-bar__price" id="sticky-price">{fmt(parseFloat(price.amount))}</span>
     </div>
-    <button class="btn btn--gold sticky-bar__btn" id="sticky-add" disabled={!product.availableForSale}>
-      {product.availableForSale ? 'Add to Cart' : 'Sold Out'}
+    <button class="btn btn--gold sticky-bar__btn" id="sticky-add" disabled={!product.availableForSale || isComingSoon}>
+      {isComingSoon ? 'Coming Soon' : product.availableForSale ? 'Add to Cart' : 'Sold Out'}
     </button>
   </div>
 
@@ -613,9 +614,9 @@ const breadcrumbSchema = {
         <button
           class="btn btn--gold sticky-header__atc"
           id="sticky-header-add"
-          disabled={!product.availableForSale}
+          disabled={!product.availableForSale || isComingSoon}
         >
-          {product.availableForSale ? 'Add to Cart' : 'Sold Out'}
+          {isComingSoon ? 'Coming Soon' : product.availableForSale ? 'Add to Cart' : 'Sold Out'}
         </button>
       </div>
     </div>

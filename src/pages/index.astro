@@ -1306,6 +1306,11 @@ function fmt(amount: number): string {
     color: #fff;
   }
 
+  .product-card__badge--coming-soon {
+    background: var(--color-charcoal) !important;
+    color: var(--color-cream) !important;
+  }
+
   /* ─── Sale price styling ─────────────────── */
   .product-card__price--sale {
     color: #c0392b;
@@ -2173,9 +2178,10 @@ function fmt(amount: number): string {
     qvSelectedVariant = variants[0] || null;
     if (qvViewFull) qvViewFull.href = `/shop/${data.handle}/`;
 
+    const comingSoon = (data.tags || '').toLowerCase().includes('coming soon');
     if (qvAdd) {
-      qvAdd.disabled = data.available === 'false';
-      qvAdd.textContent = data.available === 'false' ? 'Sold Out' : 'Add to Cart';
+      qvAdd.disabled = data.available === 'false' || comingSoon;
+      qvAdd.textContent = comingSoon ? 'Coming Soon' : data.available === 'false' ? 'Sold Out' : 'Add to Cart';
     }
 
     qvDismissGeneration++;

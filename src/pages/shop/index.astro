@@ -161,6 +161,7 @@ const itemListSchema = hasShopify ? {
               const price = product.priceRange.minVariantPrice;
               const compareAt = product.compareAtPriceRange?.minVariantPrice;
               const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.amount);
+              const isComingSoon = product.tags?.some((t: string) => t.toLowerCase() === 'coming soon');
               const firstVariant = product.variants.edges[0]?.node;
 
               return (
@@ -190,8 +191,9 @@ const itemListSchema = hasShopify ? {
                   style={idx >= 12 ? 'display:none;' : ''}
                   data-page={Math.floor(idx / 12)}
                 >
-                  {!product.availableForSale && <span class="product-card__badge product-card__badge--sold">Sold Out</span>}
-                  {product.availableForSale && isOnSale && <span class="product-card__badge">Sale</span>}
+                  {!product.availableForSale && !isComingSoon && <span class="product-card__badge product-card__badge--sold">Sold Out</span>}
+                  {isComingSoon && <span class="product-card__badge product-card__badge--coming-soon">Coming Soon</span>}
+                  {product.availableForSale && !isComingSoon && isOnSale && <span class="product-card__badge">Sale</span>}
 
                   {/* Wishlist heart */}
                   <button class="product-card__wishlist" data-handle={product.handle} aria-label="Add to wishlist">
@@ -242,6 +244,7 @@ const itemListSchema = hasShopify ? {
                         data-compare-price={isOnSale ? compareAt.amount : ''}
                         data-type={product.productType}
                         data-available={String(product.availableForSale)}
+                        data-coming-soon={String(!!isComingSoon)}
                       >Quick View</button>
                     </div>
                   </div>
@@ -1431,6 +1434,11 @@ const itemListSchema = hasShopify ? {
   }
 
   .product-card__badge--sold {
+    background: var(--color-charcoal) !important;
+    color: var(--color-cream) !important;
+  }
+
+  .product-card__badge--coming-soon {
     background: var(--color-charcoal) !important;
     color: var(--color-cream) !important;
   }
@@ -2701,10 +2709,11 @@ const itemListSchema = hasShopify ? {
     qvSelectedVariant = variants[0] || null;
     if (qvViewFull) qvViewFull.href = `/shop/${data.handle}/`;
 
-    // Disable add if not available
+    // Disable add if not available or coming soon
+    const comingSoon = data.comingSoon === 'true';
     if (qvAdd) {
-      qvAdd.disabled = data.available === 'false';
-      qvAdd.textContent = data.available === 'false' ? 'Sold Out' : 'Add to Cart';
+      qvAdd.disabled = data.available === 'false' || comingSoon;
+      qvAdd.textContent = comingSoon ? 'Coming Soon' : data.available === 'false' ? 'Sold Out' : 'Add to Cart';
     }
 
     // Cancel any in-flight swipe-dismiss cleanup
