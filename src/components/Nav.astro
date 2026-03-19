@@ -24,9 +24,9 @@ const roomCollections = [
 
 // Default slides + any admin-configured announcements
 const defaultSlides = [
-  { text: '100% of profits support&nbsp;<strong>Sunshine on a Ranney Day</strong>&nbsp;—&nbsp;Our Story', link: '/about' },
-  { text: 'LOCAL PICKUP ONLY — Shop Now', link: '/shop' },
-  { text: 'Visit our Roswell showroom — Tue–Sat, 10am–6pm', link: '/about' },
+  { text: '100% of profits support&nbsp;<strong>Sunshine on a Ranney Day</strong>&nbsp;—&nbsp;Our Story', link: '/about/' },
+  { text: 'LOCAL PICKUP ONLY — Shop Now', link: '/shop/' },
+  { text: 'Visit our Roswell showroom — Tue–Sat, 10am–6pm', link: '/about/' },
 ];
 const adminSlides = announcements.map(a =>
   ({ text: a.link ? `${a.text} — Learn More` : a.text, link: a.link || '' })
@@ -61,7 +61,7 @@ const allSlides = [...adminSlides, ...defaultSlides];
       />
     </a>
     <div class="nav__mobile-actions">
-      <a href="/about" class:list={['nav__mission-link nav__mission-link--mobile', { 'nav__mission-link--active': currentPath === '/about' || currentPath === '/about/' }]}>
+      <a href="/about/" class:list={['nav__mission-link nav__mission-link--mobile', { 'nav__mission-link--active': currentPath === '/about' || currentPath === '/about/' }]}>
         Mission
         <img src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/soard-favicon/w=40,h=40,fit=cover,q=80,format=auto" alt="" class="nav__mission-pig" width="20" height="20" loading="lazy" aria-hidden="true" />
       </a>
@@ -135,7 +135,7 @@ const allSlides = [...adminSlides, ...defaultSlides];
       </div>
 
       <div class="nav__actions">
-        <a href="/about" data-astro-prefetch class:list={['nav__mission-link', { 'nav__mission-link--active': currentPath === '/about' || currentPath === '/about/' }]}>
+        <a href="/about/" data-astro-prefetch class:list={['nav__mission-link', { 'nav__mission-link--active': currentPath === '/about' || currentPath === '/about/' }]}>
           Mission
           <img src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/soard-favicon/w=40,h=40,fit=cover,q=80,format=auto" alt="" class="nav__mission-pig" width="20" height="20" loading="lazy" aria-hidden="true" />
         </a>
@@ -155,10 +155,10 @@ const allSlides = [...adminSlides, ...defaultSlides];
   <nav class="nav__categories" aria-label="Product categories">
     <div class="container nav__categories-inner">
       <span class="nav__cat-indicator" id="cat-indicator" aria-hidden="true"></span>
-      <a href="/shop" data-astro-prefetch="hover" class:list={['nav__cat-link', { 'nav__cat-link--active': currentPath === '/shop' || currentPath === '/shop/' }]}>
+      <a href="/shop/" data-astro-prefetch="hover" class:list={['nav__cat-link', { 'nav__cat-link--active': currentPath === '/shop' || currentPath === '/shop/' }]}>
         All
       </a>
-      <a href="/shop?collection=new-arrivals" data-astro-prefetch="hover" class="nav__cat-link nav__cat-link--new">
+      <a href="/shop/?collection=new-arrivals" data-astro-prefetch="hover" class="nav__cat-link nav__cat-link--new">
         New
       </a>
       {roomCollections.map(col => (
