@@ -15,11 +15,25 @@
       "initials": ""
     },
     {
-      "name": "Staci",
-      "role": "AI Shopping Assistant",
-      "desc": "Our tireless digital team member — always ready to help you find the perfect piece, 24/7.",
+      "name": "Kate",
+      "role": "Team Member",
+      "desc": "Brings warmth and expertise to every interaction — helping customers find exactly what they're looking for.",
       "imageUrl": "",
-      "initials": "ST"
+      "initials": "KT"
+    },
+    {
+      "name": "Greg",
+      "role": "Chief Greeter",
+      "desc": "The first friendly face you see when you walk in — Greg makes sure every customer feels right at home.",
+      "imageUrl": "https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/team/greg-ranney",
+      "initials": ""
+    },
+    {
+      "name": "Tucker",
+      "role": "Backup Cashier",
+      "desc": "The youngest member of the Ranney crew — always ready to jump behind the register and lend a hand at the store.",
+      "imageUrl": "https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/team/tucker-ranney",
+      "initials": ""
     }
   ]
 }

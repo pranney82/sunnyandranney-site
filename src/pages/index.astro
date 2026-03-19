@@ -3,7 +3,7 @@ import Base from '@/layouts/Base.astro';
 import GoogleReviews from '@/components/GoogleReviews.astro';
 import { getProducts, getCollectionByHandle, getProductByHandle } from '@/lib/shopify';
 import { cfImage, cfSrcset } from '@/lib/images';
-import { getHeroStatic, getStaffPicksStatic } from '@/lib/settings';
+import { getHeroStatic } from '@/lib/settings';
 
 // Fetch live stats from SOARD at build time
 let soardStats: { roomMakeovers: number; yearsGiving: number } | null = null;
@@ -49,14 +49,10 @@ try {
     heroProduct = products[0];
   }
 
-  // Load staff picks — admin-curated product handles
-  const staffPicksSetting = await getStaffPicksStatic();
-  const staffPickHandles = staffPicksSetting?.handles ?? [];
-  if (staffPickHandles.length > 0) {
-    const pickResults = await Promise.all(
-      staffPickHandles.map(h => getProductByHandle(h))
-    );
-    staffPickProducts = pickResults.filter(Boolean);
+  // Load staff picks from Shopify "staff-picks" manual collection
+  const staffPicksCollection = await getCollectionByHandle('staff-picks', 8);
+  if (staffPicksCollection && staffPicksCollection.products.length > 0) {
+    staffPickProducts = staffPicksCollection.products;
   }
 } catch (e) {
   console.log('Shopify API not configured.');
@@ -163,10 +159,10 @@ function fmt(amount: number): string {
     <section class="staff-picks section">
       <div class="container">
         <div class="staff-picks__header reveal">
-          <p class="staff-picks__kicker">Curated for You</p>
-          <h2 class="section-title">What We're Loving</h2>
+          <p class="staff-picks__kicker"><span class="staff-picks__kicker-line"></span>Staff Picks<span class="staff-picks__kicker-line"></span></p>
+          <h2 class="staff-picks__title">What We're Loving</h2>
         </div>
-        <div class="staff-picks__grid">
+        <div class={`staff-picks__grid staff-picks__grid--${Math.min(staffPickProducts.length, 6)}`}>
           {staffPickProducts.map((p: any, idx: number) => {
             const img = p.images.edges[0]?.node;
             const price = parseFloat(p.priceRange.minVariantPrice.amount);
@@ -179,12 +175,12 @@ function fmt(amount: number): string {
                 <div class="staff-pick-card__img">
                   {img && (
                     <img
-                      src={cfImage(img.url, { width: 600, height: 600 })}
+                      src={cfImage(img.url, { width: 600, height: 720 })}
                       srcset={cfSrcset(img.url, [300, 600])}
                       sizes="(max-width: 480px) 45vw, (max-width: 768px) 30vw, 260px"
                       alt={p.title}
                       width="600"
-                      height="600"
+                      height="720"
                       loading={idx < 3 ? 'eager' : 'lazy'}
                       decoding={idx < 3 ? 'sync' : 'async'}
                     />
@@ -192,7 +188,6 @@ function fmt(amount: number): string {
                   {hasDiscount && <span class="staff-pick-card__sale">Sale</span>}
                 </div>
                 <div class="staff-pick-card__info">
-                  <span class="staff-pick-card__type">{p.productType || 'Furniture'}</span>
                   <h3 class="staff-pick-card__name">{p.title}</h3>
                   <div class="staff-pick-card__pricing">
                     <span class="staff-pick-card__price">{fmt(price)}</span>
@@ -204,7 +199,12 @@ function fmt(amount: number): string {
           })}
         </div>
         <div class="staff-picks__footer reveal">
-          <a href="/shop" class="btn btn--outline" data-astro-prefetch>View All Products</a>
+          <a href="/shop" class="staff-picks__cta" data-astro-prefetch>
+            <span class="staff-picks__cta-text">Shop the Collection</span>
+            <span class="staff-picks__cta-icon">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 9h10m0 0-3.5-3.5M14 9l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </a>
         </div>
       </div>
     </section>
@@ -749,60 +749,109 @@ function fmt(amount: number): string {
 
   /* ─── Staff Picks ────────────────────── */
   .staff-picks {
-    padding-top: clamp(3rem, 6vh, 5rem);
-    padding-bottom: clamp(3rem, 6vh, 5rem);
+    padding-top: clamp(4rem, 8vh, 6rem);
+    padding-bottom: clamp(4rem, 8vh, 6rem);
   }
 
   .staff-picks__header {
     text-align: center;
-    margin-bottom: clamp(2rem, 4vh, 3rem);
+    margin-bottom: clamp(2.5rem, 5vh, 3.5rem);
   }
 
   .staff-picks__kicker {
-    font-size: 0.7rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 1rem;
+    font-family: var(--font-body);
+    font-size: 0.72rem;
     font-weight: 600;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: var(--color-gold);
-    margin: 0 0 var(--space-sm);
+    color: var(--color-charcoal);
+    margin: 0 0 1.2rem;
   }
 
+  .staff-picks__kicker-line {
+    display: inline-block;
+    width: 2rem;
+    height: 1px;
+    background: var(--color-cyan);
+    opacity: 0.5;
+  }
+
+  .staff-picks__title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+
+  /* ── Adaptive grid: works for 3–6 items ── */
   .staff-picks__grid {
     display: grid;
+    gap: clamp(1.25rem, 2.5vw, 1.75rem);
     grid-template-columns: repeat(3, 1fr);
-    gap: clamp(1rem, 2vw, 1.5rem);
+  }
+
+  .staff-picks__grid--4 {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 52rem;
+    margin-inline: auto;
+  }
+
+  .staff-picks__grid--5,
+  .staff-picks__grid--6 {
+    grid-template-columns: repeat(3, 1fr);
   }
 
   @media (max-width: 767px) {
     .staff-picks__grid {
       grid-template-columns: repeat(2, 1fr);
     }
-  }
-
-  @media (min-width: 1024px) {
-    .staff-picks__grid {
-      grid-template-columns: repeat(3, 1fr);
+    .staff-picks__grid--4 {
+      max-width: none;
     }
   }
 
+  @media (min-width: 1024px) {
+    .staff-picks__grid--4 {
+      grid-template-columns: repeat(4, 1fr);
+      max-width: none;
+    }
+  }
+
+  /* ── Card ── */
   .staff-pick-card {
     text-decoration: none;
     color: var(--color-charcoal);
-    display: block;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.03);
+    transition: transform 0.4s var(--ease-out), box-shadow 0.4s var(--ease-out);
+  }
+
+  .staff-pick-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
   }
 
   .staff-pick-card__img {
     position: relative;
-    border-radius: 12px;
     overflow: hidden;
-    background: var(--color-cream-dark);
-    aspect-ratio: 1;
+    background: #f7f5f2;
+    aspect-ratio: 4 / 5;
   }
 
   .staff-pick-card__img img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center;
     transition: transform 0.6s var(--ease-out);
   }
 
@@ -814,40 +863,36 @@ function fmt(amount: number): string {
     position: absolute;
     top: 0.75rem;
     left: 0.75rem;
-    background: var(--color-gold);
-    color: var(--color-charcoal);
-    font-size: 0.68rem;
+    background: var(--color-charcoal);
+    color: #fff;
+    font-size: 0.62rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    padding: 0.25rem 0.6rem;
-    border-radius: 4px;
+    padding: 0.3rem 0.6rem;
+    border-radius: 3px;
   }
 
   .staff-pick-card__info {
-    padding: 0.85rem 0.25rem 0;
-  }
-
-  .staff-pick-card__type {
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--color-stone);
-    display: block;
-    margin-bottom: 0.2rem;
+    padding: 1rem 1.1rem 1.15rem;
   }
 
   .staff-pick-card__name {
-    font-family: var(--font-display);
-    font-size: clamp(0.95rem, 1.2vw, 1.08rem);
-    font-weight: 400;
-    line-height: 1.35;
-    margin: 0 0 0.3rem;
+    font-family: var(--font-body);
+    font-size: clamp(0.92rem, 1.1vw, 1rem);
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--color-charcoal);
+    margin: 0 0 0.5rem;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    transition: color 0.3s;
+  }
+
+  .staff-pick-card:hover .staff-pick-card__name {
+    color: var(--color-cyan);
   }
 
   .staff-pick-card__pricing {
@@ -857,20 +902,65 @@ function fmt(amount: number): string {
   }
 
   .staff-pick-card__price {
-    font-size: 0.92rem;
-    font-weight: 600;
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    font-weight: 700;
     color: var(--color-charcoal);
   }
 
   .staff-pick-card__compare {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
+    font-weight: 500;
     color: var(--color-stone);
     text-decoration: line-through;
   }
 
+  /* ── CTA ── */
   .staff-picks__footer {
     text-align: center;
-    margin-top: clamp(2rem, 4vh, 3rem);
+    margin-top: clamp(2.5rem, 5vh, 3.5rem);
+  }
+
+  .staff-picks__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    background: var(--color-cyan);
+    color: #fff;
+    text-decoration: none;
+    border-radius: 100px;
+    overflow: hidden;
+    transition: transform 0.35s var(--ease-out), box-shadow 0.35s;
+  }
+
+  .staff-picks__cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .staff-picks__cta-text {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.9rem 1.4rem 0.9rem 1.8rem;
+  }
+
+  .staff-picks__cta-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    margin: 0.25rem 0.3rem 0.25rem 0;
+    transition: background 0.3s, transform 0.3s var(--ease-out);
+  }
+
+  .staff-picks__cta:hover .staff-picks__cta-icon {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateX(2px);
   }
 
   /* ─── Shop the Look (hotspots) ──────────── */

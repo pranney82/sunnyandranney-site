@@ -12,6 +12,10 @@ interface Props {
     image: string;
     availability: boolean;
   };
+  rating?: {
+    value: number;
+    count: number;
+  };
 }
 
 const {
@@ -21,6 +25,7 @@ const {
   url = Astro.url.href,
   type = 'website',
   product,
+  rating,
 } = Astro.props;
 
 const siteName = 'Sunny & Ranney';
@@ -68,6 +73,14 @@ const localBusinessSchema = {
     'https://www.facebook.com/sunnyandranney/',
   ],
   priceRange: '$$',
+  ...(rating && {
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: rating.value,
+      bestRating: 5,
+      ratingCount: rating.count,
+    },
+  }),
   parentOrganization: {
     '@type': 'NonprofitOrganization',
     name: 'Sunshine on a Ranney Day',

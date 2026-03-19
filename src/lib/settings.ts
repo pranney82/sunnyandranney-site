@@ -10,6 +10,7 @@
  */
 import { getEntry } from 'astro:content';
 import { z } from 'astro:content';
+import { fetchGoogleHours } from '@/lib/google-places';
 
 // ─── Zod Schemas ────────────────────────────────────────────
 
@@ -92,10 +93,6 @@ const kidsSettingSchema = z.object({
   kids: z.array(kidStorySchema),
 });
 
-const staffPicksSettingSchema = z.object({
-  handles: z.array(z.string()),
-});
-
 const teamMemberSchema = z.object({
   name: z.string(),
   role: z.string(),
@@ -130,7 +127,6 @@ export type EmailSignupConfig = z.infer<typeof emailSignupConfigSchema>;
 export type HeroSetting = z.infer<typeof heroSettingSchema>;
 export type KidStory = z.infer<typeof kidStorySchema>;
 export type KidsSetting = z.infer<typeof kidsSettingSchema>;
-export type StaffPicksSetting = z.infer<typeof staffPicksSettingSchema>;
 export type TeamMember = z.infer<typeof teamMemberSchema>;
 export type TeamSetting = z.infer<typeof teamSettingSchema>;
 export type ReviewItem = z.infer<typeof reviewItemSchema>;
@@ -161,7 +157,15 @@ async function getSettingValidated<T>(
   }
 }
 
-export function getHoursStatic() {
+export async function getHoursStatic(): Promise<StoreHours | null> {
+  // Try Google Places API first (live hours including holiday overrides)
+  const googleHours = await fetchGoogleHours();
+  if (googleHours) {
+    const result = storeHoursSchema.safeParse(googleHours);
+    if (result.success) return result.data;
+    console.warn('[settings] Google hours failed validation, falling back to hours.json');
+  }
+  // Fall back to committed hours.json
   return getSettingValidated('hours', storeHoursSchema);
 }
 
@@ -191,10 +195,6 @@ export function getKidsStatic() {
 
 export function getTeamStatic() {
   return getSettingValidated('team', teamSettingSchema);
-}
-
-export function getStaffPicksStatic() {
-  return getSettingValidated('staff-picks', staffPicksSettingSchema);
 }
 
 export function getReviewsStatic() {

@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
+import { syncGoogleHoursToD1 } from '@/lib/sync-hours';
 
 export const prerender = false;
 
@@ -156,6 +157,14 @@ export const POST: APIRoute = async ({ request }) => {
       indexed += vectors.length;
     }
 
+    // Sync Google hours → D1 so Staci always has current hours
+    const googleApiKey = (env as any).GOOGLE_PLACES_API_KEY;
+    const googlePlaceId = (env as any).GOOGLE_PLACE_ID;
+    let hoursSynced = false;
+    if (googleApiKey && googlePlaceId) {
+      hoursSynced = await syncGoogleHoursToD1(env.DB, googleApiKey, googlePlaceId);
+    }
+
     // Trigger CF Pages rebuild with 10-minute debounce
     let rebuilt = false;
     const deployHookUrl = (env as any).CF_DEPLOY_HOOK_URL;
@@ -187,7 +196,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, indexed, total: allProducts.length, rebuilt }),
+      JSON.stringify({ success: true, indexed, total: allProducts.length, rebuilt, hoursSynced }),
       { headers: { 'Content-Type': 'application/json' } }
     );
   } catch (err: any) {

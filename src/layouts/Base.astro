@@ -9,14 +9,22 @@ import CartDrawer from '@/components/CartDrawer.astro';
 import StaciChat from '@/components/StaciChat.astro';
 import BackToTop from '@/components/BackToTop.astro';
 import SEO from '@/components/SEO.astro';
-import { getHoursStatic, getSpecialsStatic, getContactStatic, formatHoursShort, type StoreHours } from '@/lib/settings';
+import { getHoursStatic, getSpecialsStatic, getContactStatic, getReviewsStatic, formatHoursShort, type StoreHours } from '@/lib/settings';
+import { fetchGooglePlaceData } from '@/lib/google-places';
 import '@/styles/global.css';
 
 // Load admin settings at build time (committed JSON files)
-const [hours, specials, contact] = await Promise.all([getHoursStatic(), getSpecialsStatic(), getContactStatic()]);
+const [hours, specials, contact, reviewsSetting, liveReviews] = await Promise.all([
+  getHoursStatic(), getSpecialsStatic(), getContactStatic(), getReviewsStatic(), fetchGooglePlaceData(),
+]);
 const footerHours = hours ? formatHoursShort(hours) : null;
 const holidays = hours?.holidays ?? [];
 const announcements = specials?.announcements?.filter(a => a.active) ?? [];
+
+// AggregateRating: prefer live Google data, fall back to saved reviews
+const ratingValue = liveReviews?.rating ?? reviewsSetting?.googleRating;
+const ratingCount = liveReviews?.reviewCount ?? reviewsSetting?.reviewCount;
+const rating = ratingValue && ratingCount ? { value: ratingValue, count: ratingCount } : undefined;
 
 interface Props {
   title?: string;
@@ -50,7 +58,7 @@ const isShopPage = Astro.url.pathname.startsWith('/shop') || Astro.url.pathname.
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#FAF7F2" />
-    <SEO {...props} />
+    <SEO {...props} rating={rating} />
 
     <!-- Critical CSS — renders LCP banner text before external CSS loads -->
     <style is:inline>
