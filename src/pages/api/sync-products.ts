@@ -210,6 +210,26 @@ export const POST: APIRoute = async ({ request }) => {
       hoursSynced = await syncGoogleHoursToD1(env.DB, googleApiKey, googlePlaceId);
     }
 
+    // Sync specials + contact → D1 so Staci knows about promos/announcements
+    const settingsSynced: string[] = [];
+    const origin = new URL(request.url).origin;
+    for (const name of ['specials', 'contact'] as const) {
+      try {
+        const res = await fetch(`${origin}/_settings/${name}.json`, {
+          signal: AbortSignal.timeout(5000),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          await env.DB.prepare(
+            "INSERT INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at"
+          ).bind(`settings:${name}`, JSON.stringify(data)).run();
+          settingsSynced.push(name);
+        }
+      } catch {
+        // Non-critical — settings will sync on next manual trigger
+      }
+    }
+
     // Trigger CF Pages rebuild with 10-minute debounce
     let rebuilt = false;
     const deployHookUrl = env.CF_DEPLOY_HOOK_URL;
@@ -241,7 +261,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, indexed, total: allProducts.length, rebuilt, hoursSynced }),
+      JSON.stringify({ success: true, indexed, total: allProducts.length, rebuilt, hoursSynced, settingsSynced }),
       { headers: { 'Content-Type': 'application/json' } }
     );
   } catch (err: any) {

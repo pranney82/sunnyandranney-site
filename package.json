@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro build && node scripts/copy-settings.js",
     "preview": "astro preview",
     "astro": "astro",
     "deploy:hours-sync": "wrangler deploy --config workers/hours-sync/wrangler.toml"

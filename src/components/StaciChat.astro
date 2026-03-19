@@ -39,7 +39,7 @@
     </div>
   </div>
 
-  <div id="staci-messages" class="staci-messages">
+  <div id="staci-messages" class="staci-messages" role="log" aria-live="polite">
     <div class="staci-welcome" id="staci-welcome">
       <img class="staci-welcome__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=128,h=128,fit=cover,format=auto" alt="Staci" width="52" height="52" />
       <p class="staci-welcome__name">Hi, I'm Staci</p>
@@ -357,10 +357,10 @@
   .staci-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 1.1rem 1rem 0.6rem;
+    padding: 1.1rem 1rem 0.75rem;
     display: flex;
     flex-direction: column;
-    gap: 0.85rem;
+    gap: 0.9rem;
     max-height: 360px;
     min-height: 120px;
     scroll-behavior: smooth;
@@ -397,6 +397,7 @@
 
   .staci-msg--user {
     flex-direction: row-reverse;
+    animation: staciUserMsgIn 0.3s var(--ease-out) both;
   }
 
   .staci-msg__avatar {
@@ -433,9 +434,10 @@
   }
 
   .staci-msg__bubble {
-    padding: 0.7rem 0.95rem;
+    padding: 0.75rem 1rem;
     font-size: 0.875rem;
-    line-height: 1.6;
+    line-height: 1.65;
+    letter-spacing: 0.005em;
     color: var(--color-charcoal);
     word-break: break-word;
     overflow-wrap: anywhere;
@@ -447,6 +449,8 @@
     color: var(--color-cyan);
     text-decoration: underline;
     text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
+    font-weight: 500;
     transition: color 0.15s;
   }
   .staci-msg--bot .staci-msg__bubble :global(a:hover) {
@@ -457,28 +461,41 @@
   }
   .staci-msg--bot .staci-msg__bubble :global(ul),
   .staci-msg--bot .staci-msg__bubble :global(ol) {
-    margin: 0.4rem 0;
-    padding-left: 1.15rem;
+    margin: 0.5rem 0 0.6rem;
+    padding-left: 1.2rem;
   }
   .staci-msg--bot .staci-msg__bubble :global(li) {
-    margin: 0.3rem 0;
-    line-height: 1.5;
+    margin: 0.35rem 0;
+    line-height: 1.55;
   }
   .staci-msg--bot .staci-msg__bubble :global(li::marker) {
     color: var(--color-stone);
   }
+  .staci-msg--bot .staci-msg__bubble :global(code) {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.82em;
+    background: rgba(44, 44, 44, 0.06);
+    padding: 0.15em 0.35em;
+    border-radius: 4px;
+  }
+  .staci-msg--bot .staci-msg__bubble :global(p) {
+    margin: 0;
+  }
+  .staci-msg--bot .staci-msg__bubble :global(p + p) {
+    margin-top: 0.55rem;
+  }
 
   .staci-msg--bot .staci-msg__bubble {
     background: var(--color-cream);
-    border-radius: 4px 16px 16px 16px;
-    box-shadow: 0 1px 3px rgba(44, 44, 44, 0.06);
+    border-radius: 6px 16px 16px 16px;
+    box-shadow: 0 1px 4px rgba(44, 44, 44, 0.06);
   }
 
   .staci-msg--user .staci-msg__bubble {
     background: var(--color-charcoal);
     color: var(--color-cream);
-    border-radius: 16px 4px 16px 16px;
-    box-shadow: 0 1px 3px rgba(44, 44, 44, 0.1);
+    border-radius: 16px 6px 16px 16px;
+    box-shadow: 0 1px 4px rgba(44, 44, 44, 0.1);
   }
 
   /* Typing indicator — shimmer bar */
@@ -528,6 +545,21 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
+  @keyframes staciUserMsgIn {
+    from { opacity: 0; transform: translateX(12px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* Streaming bubble replaces typing — no slide, just crossfade */
+  .staci-msg--bot.staci-msg--stream-start {
+    animation: staciBotFadeIn 0.25s ease-out both;
+  }
+
+  @keyframes staciBotFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
   @keyframes staciPillIn {
     from { opacity: 0; transform: translateY(4px) scale(0.95); }
     to { opacity: 1; transform: translateY(0) scale(1); }
@@ -535,17 +567,25 @@
 
   @keyframes staciCursor {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
+    50% { opacity: 0.15; }
   }
 
   .staci-streaming::after {
-    content: '▋';
+    content: '▎';
     display: inline-block;
-    animation: staciCursor 0.7s step-end infinite;
-    color: var(--color-stone);
-    margin-left: 1px;
-    font-size: 0.8em;
-    vertical-align: baseline;
+    animation: staciCursor 0.8s steps(1) infinite;
+    color: var(--color-gold);
+    margin-left: 2px;
+    font-size: 0.95em;
+    vertical-align: text-bottom;
+    line-height: 1;
+    transition: opacity 0.3s ease-out;
+  }
+
+  /* Fade out cursor when stream ends */
+  .staci-streaming--done::after {
+    opacity: 0;
+    animation: none;
   }
 
   /* Error message with retry */
@@ -593,6 +633,30 @@
     text-align: right;
   }
 
+  /* Delivered indicator on user messages */
+  .staci-msg--user .staci-msg__delivered {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.2rem;
+    font-size: 0.58rem;
+    color: var(--color-stone);
+    padding-right: 0.3rem;
+    opacity: 0;
+    animation: staciFadeIn 0.3s 0.4s ease-out forwards;
+  }
+
+  .staci-msg--user .staci-msg__delivered svg {
+    width: 10px;
+    height: 10px;
+    stroke: var(--color-stone);
+    flex-shrink: 0;
+  }
+
+  @keyframes staciFadeIn {
+    to { opacity: 0.5; }
+  }
+
   /* Time separator between message groups */
   .staci-time-sep {
     text-align: center;
@@ -606,8 +670,8 @@
   /* ─── Product Cards ───────────────────────────────────────── */
   .staci-products {
     display: flex;
-    gap: 0.5rem;
-    padding: 0.2rem 1rem 0.5rem 2.35rem;
+    gap: 0.6rem;
+    padding: 0.15rem 1rem 0.5rem 2.35rem;
     overflow-x: auto;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
@@ -621,22 +685,52 @@
   }
 
   .staci-product-card {
-    flex: 0 0 130px;
+    flex: 0 0 140px;
     background: white;
     border-radius: 12px;
     overflow: hidden;
     text-decoration: none;
     color: var(--color-charcoal);
     border: 1px solid var(--color-cream-dark);
+    box-shadow: 0 1px 3px rgba(44, 44, 44, 0.04);
     transition: transform 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out);
     display: flex;
     flex-direction: column;
     scroll-snap-align: start;
+    position: relative;
+    animation: staciCardIn 0.35s var(--ease-out) both;
+  }
+
+  .staci-product-card:nth-child(2) { animation-delay: 0.07s; }
+  .staci-product-card:nth-child(3) { animation-delay: 0.14s; }
+  .staci-product-card:nth-child(4) { animation-delay: 0.21s; }
+
+  @keyframes staciCardIn {
+    from { opacity: 0; transform: translateY(8px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .staci-product-card__badge {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    background: #EF4444;
+    color: white;
+    font-family: var(--font-body);
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    line-height: 1.2;
+    z-index: 1;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
   }
 
   .staci-product-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(44, 44, 44, 0.1);
+    box-shadow: 0 4px 14px rgba(44, 44, 44, 0.1);
   }
 
   .staci-product-card:active {
@@ -655,7 +749,7 @@
     animation: staciImgShimmer 1.5s ease-in-out infinite;
   }
 
-  .staci-product-card__img[complete] {
+  .staci-product-card__img.staci-loaded {
     animation: none;
     background: var(--color-cream-dark);
   }
@@ -666,18 +760,18 @@
   }
 
   .staci-product-card__info {
-    padding: 0.45rem 0.55rem;
+    padding: 0.5rem 0.6rem;
     display: flex;
     flex-direction: column;
-    gap: 0.15rem;
+    gap: 0.2rem;
     min-height: 0;
   }
 
   .staci-product-card__title {
     font-family: var(--font-body);
-    font-size: 0.7rem;
+    font-size: 0.74rem;
     font-weight: 600;
-    line-height: 1.3;
+    line-height: 1.35;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -686,7 +780,7 @@
 
   .staci-product-card__price {
     font-family: var(--font-body);
-    font-size: 0.72rem;
+    font-size: 0.76rem;
     font-weight: 700;
     color: var(--color-charcoal);
   }
@@ -694,7 +788,7 @@
   .staci-product-card__price s {
     color: var(--color-stone);
     font-weight: 400;
-    font-size: 0.65rem;
+    font-size: 0.68rem;
   }
 
   /* ─── Inline Suggestion Pills ─────────────────────────────── */
@@ -702,30 +796,31 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem;
-    padding: 0.25rem 1rem 0.15rem 2.35rem;
+    padding: 0.35rem 1rem 0.25rem 2.35rem;
   }
 
   .staci-suggestion-pill {
-    padding: 0.35rem 0.85rem;
+    padding: 0.42rem 0.9rem;
     font-family: var(--font-body);
-    font-size: 0.76rem;
+    font-size: 0.78rem;
     font-weight: 500;
     color: var(--color-slate);
     background: white;
     border: 1px solid var(--color-cream-dark);
     border-radius: 100px;
     cursor: pointer;
-    transition: all 0.2s var(--ease-out);
+    transition: background 0.2s var(--ease-out), border-color 0.2s var(--ease-out), color 0.2s var(--ease-out), transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
     white-space: nowrap;
-    min-height: 30px;
+    min-height: 32px;
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
-    animation: staciPillIn 0.3s var(--ease-out) both;
+    animation: staciPillIn 0.35s var(--ease-out) both;
   }
 
-  .staci-suggestion-pill:nth-child(2) { animation-delay: 0.06s; }
-  .staci-suggestion-pill:nth-child(3) { animation-delay: 0.12s; }
+  .staci-suggestion-pill:nth-child(1) { animation-delay: 0.15s; }
+  .staci-suggestion-pill:nth-child(2) { animation-delay: 0.25s; }
+  .staci-suggestion-pill:nth-child(3) { animation-delay: 0.35s; }
 
   .staci-suggestion-pill::before {
     content: '';
@@ -768,7 +863,7 @@
     border: 1px solid var(--color-cream-dark);
     border-radius: 100px;
     cursor: pointer;
-    transition: all 0.2s var(--ease-out);
+    transition: background 0.2s var(--ease-out), border-color 0.2s var(--ease-out), color 0.2s var(--ease-out), transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
     white-space: nowrap;
     min-height: 44px;
     display: inline-flex;
@@ -1035,6 +1130,70 @@
       border-radius: 0;
     }
   }
+
+  /* ─── Reduced Motion ────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    #staci-toggle,
+    #staci-panel,
+    .staci-msg,
+    .staci-msg--user,
+    .staci-msg--bot,
+    .staci-welcome,
+    .staci-welcome__avatar,
+    .staci-product-card,
+    .staci-suggestion-pill,
+    .staci-chip,
+    .staci-dot,
+    .staci-typing__label,
+    .staci-badge,
+    .staci-streaming::after,
+    .staci-msg__delivered {
+      animation: none !important;
+      transition: none !important;
+    }
+
+    .staci-messages {
+      scroll-behavior: auto;
+    }
+
+    .staci-msg__delivered {
+      opacity: 0.5 !important;
+    }
+  }
+
+  /* ─── Focus Visible ─────────────────────────────────────── */
+  .staci-chip:focus-visible,
+  .staci-suggestion-pill:focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(255, 212, 0, 0.2);
+  }
+
+  .staci-header__close:focus-visible,
+  .staci-header__reset:focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 1px;
+  }
+
+  .staci-input__send:focus-visible {
+    outline: 2px solid var(--color-charcoal);
+    outline-offset: 2px;
+  }
+
+  .staci-product-card:focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 2px;
+  }
+
+  #staci-toggle:focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 3px;
+  }
+
+  .staci-retry:focus-visible {
+    outline: 2px solid var(--color-cyan);
+    outline-offset: 2px;
+  }
 </style>
 
 <script>
@@ -1057,10 +1216,15 @@
     return div.innerHTML;
   }
 
-  /** Markdown → HTML: bold, italic, links (all open in new tab to preserve chat), unordered & ordered lists */
-  function renderMarkdown(text: string): string {
-    let html = escapeHtml(text);
+  /** Escape a string for use inside an HTML attribute (href, src) */
+  function escapeAttr(str: string) {
+    return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
 
+  /** Shared inline markdown transforms: code, bold, italic, links, lists */
+  function applyInlineMarkdown(html: string): string {
+    // Inline code: `text`
+    html = html.replace(/`([^`]+?)`/g, '<code>$1</code>');
     // Bold: **text**
     html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     // Italic: *text* (but not inside links/bold)
@@ -1073,7 +1237,11 @@
       return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
     });
 
-    // Convert markdown lists to HTML lists
+    return html;
+  }
+
+  /** Convert markdown list blocks to HTML <ul>/<ol> */
+  function applyListMarkdown(html: string): string {
     // Process unordered lists (lines starting with - or *)
     html = html.replace(/((?:^|\n)(?:[*\-] .+(?:\n|$))+)/g, (block) => {
       const items = block.trim().split('\n').map(line =>
@@ -1090,19 +1258,60 @@
       return `<ol>${items}</ol>`;
     });
 
-    // Line breaks (but not inside lists — already handled)
-    html = html.replace(/\n/g, '<br>');
-    // Clean up stray <br> inside lists
+    return html;
+  }
+
+  /** Markdown → HTML with paragraph wrapping on double newlines */
+  function renderMarkdown(text: string): string {
+    let html = escapeHtml(text);
+
+    // Split on double newlines FIRST (before list processing eats them)
+    const blocks = html.split(/\n{2,}/);
+
+    if (blocks.length > 1) {
+      html = blocks
+        .map(b => b.trim())
+        .filter(b => b.length > 0)
+        .map(b => {
+          b = applyInlineMarkdown(b);
+          b = applyListMarkdown(b);
+          // If block became a list, don't wrap in <p>
+          const stripped = b.trim();
+          if (stripped.startsWith('<ul>') || stripped.startsWith('<ol>')) return stripped;
+          // Convert remaining single newlines to <br>
+          return `<p>${stripped.replace(/\n/g, '<br>')}</p>`;
+        })
+        .join('');
+    } else {
+      html = applyInlineMarkdown(html);
+      html = applyListMarkdown(html);
+      html = html.replace(/\n/g, '<br>');
+    }
+
+    // Clean up stray <br> adjacent to lists
     html = html.replace(/<br><(ul|ol)>/g, '<$1>');
     html = html.replace(/<\/(ul|ol)><br>/g, '</$1>');
+    html = html.replace(/<p><br>/g, '<p>');
+    html = html.replace(/<br><\/p>/g, '</p>');
 
     return html;
   }
 
-  /** Streaming-safe markdown: strip trailing incomplete bold/italic markers to prevent flicker */
+  /** Streaming-safe markdown: no paragraph wrapping (avoids reflow mid-stream),
+   *  strip trailing incomplete markers to prevent flicker */
   function renderStreamingMarkdown(text: string): string {
-    const cleaned = text.replace(/\*+$/, '');
-    return renderMarkdown(cleaned);
+    const cleaned = text.replace(/\*+$/, '').replace(/`$/, '').replace(/\[$/, '').replace(/\]\([^)]*$/, '');
+    let html = escapeHtml(cleaned);
+
+    html = applyInlineMarkdown(html);
+    html = applyListMarkdown(html);
+
+    // All newlines → <br> (no paragraph wrapping during streaming to avoid reflow)
+    html = html.replace(/\n/g, '<br>');
+    html = html.replace(/<br><(ul|ol)>/g, '<$1>');
+    html = html.replace(/<\/(ul|ol)><br>/g, '</$1>');
+
+    return html;
   }
 
   // ─── Session Storage ───────────────────────────────────────
@@ -1207,9 +1416,19 @@
   let _lastMsgTs = 0;
   const TIME_GAP_MS = 2 * 60 * 1000; // 2 minutes
 
+  let _isStreaming = false;
+
   function scrollToBottom() {
     const messagesEl = document.getElementById('staci-messages');
-    if (messagesEl) messagesEl.scrollTop = messagesEl.scrollHeight;
+    if (!messagesEl) return;
+    // During streaming, use instant scroll to avoid jank from competing smooth scrolls
+    if (_isStreaming) {
+      messagesEl.style.scrollBehavior = 'auto';
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      messagesEl.style.scrollBehavior = '';
+    } else {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
   }
 
   /** Insert a time separator if enough time has elapsed since the last message */
@@ -1237,6 +1456,7 @@
       <span class="staci-msg__avatar"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0 2c-3.33 0-10 1.67-10 5v2h20v-2c0-3.33-6.67-5-10-5z"/></svg></span>
       <div class="staci-msg__body">
         <div class="staci-msg__bubble">${escapeHtml(text)}</div>
+        ${animate ? '<span class="staci-msg__delivered"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Sent</span>' : ''}
         <time class="staci-msg__time">just now</time>
       </div>
     `;
@@ -1268,7 +1488,7 @@
   function addStreamingBubble(): { container: HTMLElement; bubble: HTMLElement } {
     const messagesEl = document.getElementById('staci-messages');
     const msg = document.createElement('div');
-    msg.className = 'staci-msg staci-msg--bot';
+    msg.className = 'staci-msg staci-msg--bot staci-msg--stream-start';
     msg.dataset.ts = String(Date.now());
 
     const avatar = document.createElement('img');
@@ -1591,18 +1811,29 @@
 
       const a = document.createElement('a');
       a.className = 'staci-product-card';
-      a.href = `/shop/${card.handle}`;
+      a.href = `/shop/${encodeURIComponent(card.handle)}`;
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
       a.innerHTML = `
-        <img class="staci-product-card__img" src="${imgSrc}" alt="${escapeHtml(card.title)}" loading="lazy" />
+        ${onSale ? '<span class="staci-product-card__badge">Sale</span>' : ''}
+        <img class="staci-product-card__img" src="${escapeAttr(imgSrc)}" alt="${escapeHtml(card.title)}" loading="lazy" />
         <div class="staci-product-card__info">
           <span class="staci-product-card__title">${escapeHtml(card.title)}</span>
-          <span class="staci-product-card__price">${onSale ? `<s>$${card.compareAtPrice}</s> ` : ''}$${card.price}</span>
+          <span class="staci-product-card__price">${onSale ? `<s>$${escapeHtml(card.compareAtPrice)}</s> ` : ''}$${escapeHtml(card.price)}</span>
         </div>
       `;
       row.appendChild(a);
     }
+
+    // Stop shimmer when images load or fail
+    row.querySelectorAll<HTMLImageElement>('.staci-product-card__img').forEach(img => {
+      const markLoaded = () => img.classList.add('staci-loaded');
+      if (img.complete) markLoaded();
+      else {
+        img.addEventListener('load', markLoaded, { once: true });
+        img.addEventListener('error', markLoaded, { once: true });
+      }
+    });
 
     // Insert after the container (the bot message div)
     container.after(row);
@@ -1662,8 +1893,10 @@
       }
     }
 
-    // Final render with full markdown — remove streaming cursor
-    bubble.classList.remove('staci-streaming');
+    // Gracefully fade out the streaming cursor, then render final markdown
+    bubble.classList.add('staci-streaming--done');
+    await new Promise(r => setTimeout(r, 300));
+    bubble.classList.remove('staci-streaming', 'staci-streaming--done');
     bubble.innerHTML = renderMarkdown(fullText);
     return { text: fullText, products };
   }
@@ -1716,7 +1949,10 @@
       if (contentType.includes('text/event-stream') && res.body) {
         // ─── Streaming response ─────────────────────────────
         const { container, bubble } = addStreamingBubble();
+        _isStreaming = true;
         const streamResult = await readStream(res, bubble);
+        _isStreaming = false;
+        container.classList.remove('staci-msg--stream-start');
         const reply = streamResult.text || "Sorry, I couldn't process that. Please try again.";
 
         // Parse out follow-up suggestions and re-render clean text
@@ -1752,7 +1988,11 @@
 
       unlockSend();
     } catch {
+      _isStreaming = false;
       removeTyping();
+      // Remove any partial streaming bubble left by a mid-stream error
+      const partialBubble = document.querySelector('.staci-msg--stream-start');
+      if (partialBubble) partialBubble.remove();
       unlockSend();
       // Save the text we tried to send for retry
       const failedText = text;
