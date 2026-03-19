@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { getSetting, checkRateLimit } from '@/lib/db';
 import type { EmailSignupConfig } from '@/lib/settings';
 
@@ -25,9 +26,11 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     });
   }
 
+  // API key from env var (secret), list ID from D1 settings
+  const apiKey = env.CC_API_TOKEN;
   const config = await getSetting<EmailSignupConfig>('settings:email-signup');
 
-  if (!config?.constantContactApiKey || !config?.constantContactListId) {
+  if (!apiKey || !config?.constantContactListId) {
     return new Response(JSON.stringify({ error: 'Email signup is not configured yet' }), {
       status: 503,
       headers: JSON_HEADERS,
@@ -38,7 +41,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     const res = await fetch('https://api.cc.email/v3/contacts/sign_up_form', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${config.constantContactApiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },

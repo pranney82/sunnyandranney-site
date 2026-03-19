@@ -47,36 +47,41 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 
-  // Auth: accept either Shopify HMAC signature or manual x-sync-secret header
-  const syncSecret = (env as any).SYNC_SECRET || '';
-  if (syncSecret) {
-    const shopifyHmac = request.headers.get('x-shopify-hmac-sha256');
-    const manualSecret = request.headers.get('x-sync-secret');
+  // Auth: require SYNC_SECRET — accept either Shopify HMAC signature or manual header
+  const syncSecret = env.SYNC_SECRET;
+  if (!syncSecret) {
+    return new Response(JSON.stringify({ error: 'Sync not configured.' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
-    if (shopifyHmac) {
-      // Verify Shopify webhook HMAC-SHA256 signature
-      const body = await request.clone().text();
-      const key = await crypto.subtle.importKey(
-        'raw',
-        new TextEncoder().encode(syncSecret),
-        { name: 'HMAC', hash: 'SHA-256' },
-        false,
-        ['sign'],
-      );
-      const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(body));
-      const computed = btoa(String.fromCharCode(...new Uint8Array(sig)));
-      if (computed !== shopifyHmac) {
-        return new Response(JSON.stringify({ error: 'Invalid signature' }), {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-    } else if (manualSecret !== syncSecret) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+  const shopifyHmac = request.headers.get('x-shopify-hmac-sha256');
+  const manualSecret = request.headers.get('x-sync-secret');
+
+  if (shopifyHmac) {
+    // Verify Shopify webhook HMAC-SHA256 signature
+    const body = await request.clone().text();
+    const key = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(syncSecret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign'],
+    );
+    const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(body));
+    const computed = btoa(String.fromCharCode(...new Uint8Array(sig)));
+    if (computed !== shopifyHmac) {
+      return new Response(JSON.stringify({ error: 'Invalid signature' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
       });
     }
+  } else if (manualSecret !== syncSecret) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   const domain = env.PUBLIC_SHOPIFY_STORE_DOMAIN || 'sunnyandranney.myshopify.com';
@@ -158,8 +163,8 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Sync Google hours → D1 so Staci always has current hours
-    const googleApiKey = (env as any).GOOGLE_PLACES_API_KEY;
-    const googlePlaceId = (env as any).GOOGLE_PLACE_ID;
+    const googleApiKey = env.GOOGLE_PLACES_API_KEY;
+    const googlePlaceId = env.GOOGLE_PLACE_ID;
     let hoursSynced = false;
     if (googleApiKey && googlePlaceId) {
       hoursSynced = await syncGoogleHoursToD1(env.DB, googleApiKey, googlePlaceId);
@@ -167,7 +172,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Trigger CF Pages rebuild with 10-minute debounce
     let rebuilt = false;
-    const deployHookUrl = (env as any).CF_DEPLOY_HOOK_URL;
+    const deployHookUrl = env.CF_DEPLOY_HOOK_URL;
     const DEBOUNCE_MS = 10 * 60 * 1000; // 10 minutes
 
     if (deployHookUrl) {

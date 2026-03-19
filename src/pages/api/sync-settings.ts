@@ -14,19 +14,24 @@ const JSON_HEADERS = { 'Content-Type': 'application/json' } as const;
  * allows manual triggering when only hours need updating.
  */
 export const POST: APIRoute = async ({ request }) => {
-  const syncSecret = (env as any).SYNC_SECRET || '';
-  if (syncSecret) {
-    const provided = request.headers.get('x-sync-secret');
-    if (provided !== syncSecret) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: JSON_HEADERS,
-      });
-    }
+  const syncSecret = env.SYNC_SECRET;
+  if (!syncSecret) {
+    return new Response(JSON.stringify({ error: 'Sync not configured.' }), {
+      status: 403,
+      headers: JSON_HEADERS,
+    });
   }
 
-  const apiKey = (env as any).GOOGLE_PLACES_API_KEY;
-  const placeId = (env as any).GOOGLE_PLACE_ID;
+  const provided = request.headers.get('x-sync-secret');
+  if (provided !== syncSecret) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: JSON_HEADERS,
+    });
+  }
+
+  const apiKey = env.GOOGLE_PLACES_API_KEY;
+  const placeId = env.GOOGLE_PLACE_ID;
 
   if (!apiKey || !placeId) {
     return new Response(JSON.stringify({ error: 'GOOGLE_PLACES_API_KEY and GOOGLE_PLACE_ID required' }), {
