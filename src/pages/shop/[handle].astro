@@ -2415,12 +2415,12 @@ const breadcrumbSchema = {
     }
   }
   // ─── Back in Stock badge (runtime check) ───
-  const pdpHandle = window.location.pathname.split('/shop/')[1]?.replace(/\/$/, '');
-  if (pdpHandle) {
+  const bisHandle = window.location.pathname.split('/shop/')[1]?.replace(/\/$/, '');
+  if (bisHandle) {
     fetch('/api/back-in-stock')
       .then(r => r.ok ? r.json() : [])
       .then((handles: string[]) => {
-        if (handles.includes(pdpHandle)) {
+        if (handles.includes(bisHandle)) {
           // Show back-in-stock badge, hide new/sale badges
           const bisEl = document.getElementById('pdp-back-in-stock-badge');
           if (bisEl) bisEl.style.display = '';
