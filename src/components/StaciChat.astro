@@ -47,14 +47,16 @@
 
   <div id="staci-messages" class="staci-messages" role="log" aria-live="polite">
     <div class="staci-welcome" id="staci-welcome">
-      <img class="staci-welcome__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=128,h=128,fit=cover,format=auto" alt="Staci" width="56" height="56" />
-      <p class="staci-welcome__name">Hi, I'm Staci</p>
-      <p class="staci-welcome__sub">Your personal shopping assistant.<br>How can I help you today?</p>
+      <div class="staci-welcome__top">
+        <img class="staci-welcome__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=128,h=128,fit=cover,format=auto" alt="Staci" width="56" height="56" />
+        <p class="staci-welcome__name">Hi, I'm Staci</p>
+        <p class="staci-welcome__sub">Your personal shopping assistant.<br>How can I help you today?</p>
+      </div>
       <div class="staci-welcome__chips">
-        <button class="staci-chip" data-msg="What's new in the shop?">What's new?</button>
-        <button class="staci-chip" data-msg="What are your store hours and location?">Hours & location</button>
-        <button class="staci-chip" data-msg="What is your return policy?">Return policy</button>
-        <button class="staci-chip" data-msg="Tell me about Sunny & Ranney's mission">Your mission</button>
+        <button class="staci-chip" data-msg="What's new in the shop?"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>What's new?</button>
+        <button class="staci-chip" data-msg="What are your store hours and location?"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Hours & location</button>
+        <button class="staci-chip" data-msg="What is your return policy?"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>Return policy</button>
+        <button class="staci-chip" data-msg="Tell me about Sunny & Ranney's mission"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Your mission</button>
       </div>
     </div>
   </div>
@@ -76,8 +78,8 @@
       <span class="staci-char-count" id="staci-char-count"></span>
     </div>
     <button type="submit" id="staci-send" class="staci-input__send" aria-label="Send message">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M22 2 11 13"/><path d="M22 2 15 22 11 13 2 9 22 2"/>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
       </svg>
     </button>
   </form>
@@ -236,14 +238,15 @@
     bottom: 5rem;
     right: 1.25rem;
     z-index: 9998;
-    width: 400px;
-    max-height: 620px;
+    width: 420px;
+    height: min(640px, calc(100vh - 7rem));
     background: var(--color-warm-white);
-    border-radius: 16px;
-    border: 1px solid rgba(44, 44, 44, 0.08);
+    border-radius: 20px;
+    border: 1px solid rgba(44, 44, 44, 0.06);
     box-shadow:
-      0 24px 80px rgba(44, 44, 44, 0.18),
-      0 8px 24px rgba(44, 44, 44, 0.08);
+      0 24px 80px rgba(44, 44, 44, 0.2),
+      0 8px 24px rgba(44, 44, 44, 0.1),
+      0 0 0 1px rgba(44, 44, 44, 0.04);
     display: flex;
     flex-direction: column;
     opacity: 0;
@@ -269,13 +272,24 @@
 
   /* ─── Header ─────────────────────────────────────────────── */
   .staci-header {
-    padding: 0.75rem 0.75rem 0.75rem 1rem;
-    background: var(--color-charcoal);
+    padding: 0.85rem 0.75rem 0.85rem 1rem;
+    background: linear-gradient(135deg, var(--color-charcoal) 0%, #1a1a1a 100%);
     color: var(--color-cream);
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-shrink: 0;
+    position: relative;
+  }
+
+  .staci-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 212, 0, 0.15), transparent);
   }
 
   .staci-header__info {
@@ -298,6 +312,12 @@
     background: #34D399;
     border-radius: 50%;
     border: 2.5px solid var(--color-charcoal);
+    animation: staciOnlinePulse 3s ease-in-out infinite;
+  }
+
+  @keyframes staciOnlinePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.4); }
+    50% { box-shadow: 0 0 0 3px rgba(52, 211, 153, 0); }
   }
 
   .staci-header__info strong {
@@ -316,8 +336,8 @@
   }
 
   .staci-avatar {
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
@@ -326,7 +346,7 @@
 
   .staci-header__btn {
     padding: 0.35rem;
-    color: var(--color-stone);
+    color: rgba(255, 255, 255, 0.5);
     transition: color 0.2s, background 0.2s;
     border: none;
     background: none;
@@ -353,10 +373,20 @@
   .staci-welcome {
     display: flex;
     flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    animation: staciWelcomeIn 0.5s var(--ease-out) both;
+  }
+
+  .staci-welcome__top {
+    display: flex;
+    flex-direction: column;
     align-items: center;
     text-align: center;
-    padding: 2rem 1.25rem 1rem;
-    animation: staciWelcomeIn 0.5s var(--ease-out) both;
+    flex: 1;
+    justify-content: center;
+    padding: 1.5rem 1.25rem 1rem;
+    min-height: 0;
   }
 
   @keyframes staciWelcomeIn {
@@ -365,41 +395,102 @@
   }
 
   .staci-welcome__avatar {
-    width: 60px;
-    height: 60px;
+    width: 68px;
+    height: 68px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2.5px solid var(--color-gold-soft);
-    box-shadow: 0 4px 16px rgba(255, 212, 0, 0.12), 0 2px 6px rgba(44, 44, 44, 0.06);
-    margin-bottom: 0.85rem;
+    border: 3px solid var(--color-gold-soft);
+    box-shadow:
+      0 0 0 4px rgba(255, 212, 0, 0.08),
+      0 4px 16px rgba(255, 212, 0, 0.12),
+      0 2px 6px rgba(44, 44, 44, 0.06);
+    margin-bottom: 1rem;
+    animation: staciAvatarGlow 4s ease-in-out infinite;
+  }
+
+  @keyframes staciAvatarGlow {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(255, 212, 0, 0.08), 0 4px 16px rgba(255, 212, 0, 0.12), 0 2px 6px rgba(44, 44, 44, 0.06); }
+    50% { box-shadow: 0 0 0 6px rgba(255, 212, 0, 0.12), 0 4px 24px rgba(255, 212, 0, 0.18), 0 2px 6px rgba(44, 44, 44, 0.06); }
   }
 
   .staci-welcome__name {
     font-family: var(--font-display);
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     font-weight: 400;
     color: var(--color-charcoal);
     margin-bottom: 0.3rem;
   }
 
   .staci-welcome__sub {
-    font-size: 0.82rem;
+    font-size: 0.85rem;
     line-height: 1.55;
     color: var(--color-stone);
-    max-width: 260px;
-    margin-bottom: 1.25rem;
+    max-width: 280px;
+    margin-bottom: 0;
   }
 
   .staci-welcome__chips {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.35rem;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0.75rem 1rem 1rem;
+    flex-shrink: 0;
   }
 
   .staci-welcome__chips .staci-chip {
     animation: staciPillIn 0.3s var(--ease-out) both;
-    font-size: 0.78rem;
+    font-size: 0.82rem;
+    width: 100%;
+    justify-content: flex-start;
+    border-radius: 12px;
+    padding: 0.65rem 0.9rem;
+    min-height: 44px;
+    background: white;
+    border: 1px solid rgba(44, 44, 44, 0.06);
+    box-shadow: 0 1px 3px rgba(44, 44, 44, 0.04);
+    transition: all 0.2s var(--ease-out);
+    position: relative;
+    padding-right: 2rem;
+    white-space: normal;
+    text-align: left;
+  }
+
+  .staci-welcome__chips .staci-chip::after {
+    content: '';
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    border-right: 1.5px solid var(--color-stone);
+    border-bottom: 1.5px solid var(--color-stone);
+    transform: translateY(-50%) rotate(-45deg);
+    opacity: 0.4;
+    transition: opacity 0.2s, transform 0.2s, right 0.2s;
+  }
+
+  .staci-welcome__chips .staci-chip:hover::after {
+    opacity: 0.7;
+    right: 0.6rem;
+  }
+
+  .staci-welcome__chips .staci-chip:hover {
+    background: var(--color-gold-soft);
+    border-color: rgba(255, 212, 0, 0.4);
+    box-shadow: 0 2px 8px rgba(255, 212, 0, 0.12);
+    transform: translateY(-1px);
+  }
+
+  .staci-welcome__chips .staci-chip:active {
+    transform: translateY(0) scale(0.99);
+    box-shadow: 0 1px 2px rgba(44, 44, 44, 0.06);
+  }
+
+  .staci-welcome__chips .staci-chip svg {
+    flex-shrink: 0;
+    color: var(--color-gold);
+    opacity: 0.75;
   }
 
   .staci-welcome__chips .staci-chip:nth-child(1) { animation-delay: 0.08s; }
@@ -415,8 +506,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    max-height: 380px;
-    min-height: 120px;
+    min-height: 0;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
@@ -548,14 +638,15 @@
 
   .staci-msg--bot .staci-msg__bubble {
     background: var(--color-cream);
-    border-radius: 4px 16px 16px 16px;
-    box-shadow: 0 1px 2px rgba(44, 44, 44, 0.04);
+    border-radius: 4px 18px 18px 18px;
+    box-shadow: 0 1px 3px rgba(44, 44, 44, 0.05);
   }
 
   .staci-msg--user .staci-msg__bubble {
     background: var(--color-charcoal);
     color: var(--color-cream);
-    border-radius: 16px 4px 16px 16px;
+    border-radius: 18px 4px 18px 18px;
+    box-shadow: 0 1px 3px rgba(44, 44, 44, 0.08);
   }
 
   /* Typing indicator — shimmer bar */
@@ -731,12 +822,12 @@
   .staci-product-card {
     flex: 0 0 155px;
     background: white;
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
     text-decoration: none;
     color: var(--color-charcoal);
     border: 1px solid rgba(44, 44, 44, 0.06);
-    box-shadow: 0 1px 4px rgba(44, 44, 44, 0.04);
+    box-shadow: 0 2px 8px rgba(44, 44, 44, 0.06);
     transition: transform 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out);
     display: flex;
     flex-direction: column;
@@ -887,19 +978,24 @@
   .staci-suggestion-pill::before {
     content: '';
     display: inline-block;
-    width: 4px;
-    height: 4px;
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
     background: var(--color-gold);
     flex-shrink: 0;
+    opacity: 0.7;
   }
 
   .staci-suggestion-pill:hover {
     background: var(--color-gold-soft);
-    border-color: var(--color-gold);
+    border-color: rgba(255, 212, 0, 0.4);
     color: var(--color-charcoal);
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(255, 212, 0, 0.12);
+  }
+
+  .staci-suggestion-pill:hover::before {
+    opacity: 1;
   }
 
   .staci-suggestion-pill:active { transform: scale(0.97); }
@@ -928,17 +1024,7 @@
     min-height: 36px;
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
-  }
-
-  .staci-chip::before {
-    content: '';
-    display: inline-block;
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: var(--color-gold);
-    flex-shrink: 0;
+    gap: 0.45rem;
   }
 
   .staci-chip:hover {
@@ -956,7 +1042,7 @@
     display: flex;
     align-items: flex-end;
     border-top: 1px solid rgba(44, 44, 44, 0.06);
-    padding: 0;
+    padding: 0.35rem 0.5rem 0.35rem 0;
     gap: 0;
     flex-shrink: 0;
     background: white;
@@ -972,7 +1058,7 @@
     font-size: 0.62rem;
     color: var(--color-stone);
     text-align: right;
-    padding: 0 0.85rem 0.3rem;
+    padding: 0 0.85rem 0.2rem;
     display: none;
   }
 
@@ -980,14 +1066,14 @@
 
   .staci-input textarea {
     flex: 1;
-    padding: 0.8rem 0.85rem;
+    padding: 0.6rem 0.85rem;
     border: none;
     outline: none;
     font-family: var(--font-body);
     font-size: 0.9rem;
     background: transparent;
     color: var(--color-charcoal);
-    min-height: 46px;
+    min-height: 44px;
     resize: none;
     overflow-x: hidden;
     overflow-y: auto;
@@ -995,15 +1081,22 @@
     line-height: 1.5;
   }
 
-  .staci-input textarea::placeholder { color: var(--color-stone); }
+  .staci-input textarea::placeholder {
+    color: var(--color-stone);
+    opacity: 0.7;
+  }
+
+  .staci-input:focus-within {
+    border-top-color: rgba(255, 212, 0, 0.3);
+    background: rgba(255, 255, 255, 1);
+  }
 
   .staci-input__send {
     padding: 0.5rem;
-    margin-right: 0.5rem;
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.15rem;
     color: white;
     background: var(--color-cream-dark);
-    border-radius: 10px;
+    border-radius: 50%;
     width: 36px;
     height: 36px;
     display: flex;
@@ -1013,7 +1106,7 @@
     cursor: pointer;
     border: none;
     flex-shrink: 0;
-    opacity: 0.4;
+    opacity: 0.35;
   }
 
   /* Active state — textarea has content */
@@ -1041,23 +1134,29 @@
   }
 
   .staci-input__send:not(:disabled):active svg {
-    transform: translate(2px, -2px) scale(0.85);
+    transform: translateY(-2px) scale(0.9);
   }
 
   /* ─── Footer ─────────────────────────────────────────────── */
   .staci-footer {
-    padding: 0.3rem 0.85rem;
-    font-size: 0.58rem;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.56rem;
     color: var(--color-stone);
     text-align: center;
-    border-top: 1px solid rgba(44, 44, 44, 0.04);
+    border-top: none;
     background: var(--color-warm-white);
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.35rem;
-    opacity: 0.6;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  #staci-panel:hover .staci-footer,
+  #staci-panel:focus-within .staci-footer {
+    opacity: 0.5;
   }
 
   .staci-footer__sep {
@@ -1082,7 +1181,7 @@
       right: 0;
       bottom: 0;
       width: 100%;
-      max-height: 100%;
+      height: 100%;
       border-radius: 0;
       border: none;
       z-index: 10000;
@@ -1096,8 +1195,21 @@
 
     .staci-messages {
       flex: 1;
-      max-height: none;
       min-height: 0;
+    }
+
+    .staci-welcome__top {
+      padding: 1.25rem 1.25rem 0.75rem;
+    }
+
+    .staci-welcome__chips {
+      padding: 0.5rem 0.85rem 0.75rem;
+    }
+
+    .staci-welcome__chips .staci-chip {
+      padding: 0.7rem 0.9rem;
+      font-size: 0.85rem;
+      min-height: 48px;
     }
 
     .staci-footer {
@@ -1151,6 +1263,14 @@
     .staci-chip { flex-shrink: 0; }
 
     .staci-input textarea { font-size: 1rem; }
+
+    .staci-input {
+      padding: 0.4rem 0.5rem 0.4rem 0;
+    }
+
+    .staci-footer {
+      opacity: 0.4;
+    }
   }
 
   /* Landscape phones */
@@ -1181,7 +1301,9 @@
     .staci-msg--user,
     .staci-msg--bot,
     .staci-welcome,
+    .staci-welcome__top,
     .staci-welcome__avatar,
+    .staci-header__online,
     .staci-product-card,
     .staci-suggestion-pill,
     .staci-chip,

@@ -356,6 +356,48 @@ export async function attachProductMedia(
   }
 }
 
+// ─── Product Tags ────────────────────────────────────────────
+
+export async function addTagsToProduct(productId: string, tags: string[]): Promise<void> {
+  const gql = `
+    mutation tagsAdd($id: ID!, $tags: [String!]!) {
+      tagsAdd(id: $id, tags: $tags) {
+        userErrors { field message }
+      }
+    }
+  `;
+
+  const data = await adminFetch<{
+    tagsAdd: { userErrors: Array<{ field: string; message: string }> };
+  }>(gql, { id: productId, tags });
+
+  if (data.tagsAdd.userErrors.length > 0) {
+    throw new Error(
+      `Tags add failed: ${data.tagsAdd.userErrors.map(e => e.message).join(', ')}`
+    );
+  }
+}
+
+export async function removeTagsFromProduct(productId: string, tags: string[]): Promise<void> {
+  const gql = `
+    mutation tagsRemove($id: ID!, $tags: [String!]!) {
+      tagsRemove(id: $id, tags: $tags) {
+        userErrors { field message }
+      }
+    }
+  `;
+
+  const data = await adminFetch<{
+    tagsRemove: { userErrors: Array<{ field: string; message: string }> };
+  }>(gql, { id: productId, tags });
+
+  if (data.tagsRemove.userErrors.length > 0) {
+    throw new Error(
+      `Tags remove failed: ${data.tagsRemove.userErrors.map(e => e.message).join(', ')}`
+    );
+  }
+}
+
 // ─── Inventory ───────────────────────────────────────────────
 
 let cachedLocationId: string | null = null;

@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { syncGoogleHoursToD1 } from '@/lib/sync-hours';
+import { addTagsToProduct, removeTagsFromProduct } from '@/lib/shopify-admin';
 import collectionsConfig from '@/content/settings/collections.json';
 
 export const prerender = false;
@@ -148,6 +149,62 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
+    // 1b. Auto-tag new arrivals & back-in-stock products
+    let tagged = { newArrivals: 0, backInStock: 0 };
+    try {
+      // Load previous product state: { handle: availableForSale }
+      const prevStateRow = await env.DB.prepare(
+        "SELECT value FROM settings WHERE key = 'settings:product_availability'"
+      ).first<{ value: string }>();
+      const prevState: Record<string, boolean> = prevStateRow
+        ? JSON.parse(prevStateRow.value)
+        : {};
+
+      const taggingPromises: Promise<void>[] = [];
+
+      for (const node of allProducts) {
+        const wasKnown = node.handle in prevState;
+        const wasAvailable = prevState[node.handle];
+
+        if (!wasKnown) {
+          // Brand-new product — tag as "New Arrival"
+          taggingPromises.push(
+            addTagsToProduct(node.id, ['New Arrival'])
+              .then(() => { tagged.newArrivals++; })
+              .catch(err => console.error(`Failed to tag new arrival ${node.handle}:`, err))
+          );
+        } else if (!wasAvailable && node.availableForSale) {
+          // Was out of stock, now available — tag as "Back in Stock"
+          // Also remove "New Arrival" if it was previously tagged
+          taggingPromises.push(
+            addTagsToProduct(node.id, ['Back in Stock'])
+              .then(() => removeTagsFromProduct(node.id, ['New Arrival']).catch(() => {}))
+              .then(() => { tagged.backInStock++; })
+              .catch(err => console.error(`Failed to tag back in stock ${node.handle}:`, err))
+          );
+        } else if (wasAvailable && node.availableForSale && prevState[node.handle] !== undefined) {
+          // Product was and still is available — remove "Back in Stock" tag if enough time has passed
+          // (keep it for one sync cycle, clean up on the next)
+        }
+      }
+
+      if (taggingPromises.length) {
+        await Promise.all(taggingPromises);
+      }
+
+      // Persist current availability state for next sync
+      const currentState: Record<string, boolean> = {};
+      for (const node of allProducts) {
+        currentState[node.handle] = node.availableForSale;
+      }
+      await env.DB.prepare(
+        "INSERT INTO settings (key, value, updated_at) VALUES ('settings:product_availability', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at"
+      ).bind(JSON.stringify(currentState)).run();
+    } catch (err) {
+      console.error('Auto-tagging error:', err);
+      // Non-critical — continue with sync even if tagging fails
+    }
+
     // 2. Generate embeddings in batches (Workers AI supports batch input)
     const BATCH_SIZE = 100;
     let indexed = 0;
@@ -239,10 +296,17 @@ export const POST: APIRoute = async ({ request }) => {
       }
     }
 
-    // Trigger CF Pages rebuild with 10-minute debounce
+    // Record last sync time so the cron worker can trigger a deploy
+    // if no more webhooks come (catches the "edit then stop" case).
     let rebuilt = false;
     const deployHookUrl = env.CF_DEPLOY_HOOK_URL;
-    const DEBOUNCE_MS = 10 * 60 * 1000; // 10 minutes
+    const DEBOUNCE_MS = 30 * 60 * 1000; // 30 minutes
+
+    try {
+      await env.DB.prepare(
+        "INSERT INTO settings (key, value, updated_at) VALUES ('last_sync', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at"
+      ).bind(String(Date.now())).run();
+    } catch {}
 
     if (deployHookUrl) {
       try {
@@ -270,12 +334,12 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, indexed, total: allProducts.length, rebuilt, hoursSynced, settingsSynced }),
+      JSON.stringify({ success: true, indexed, total: allProducts.length, tagged, rebuilt, hoursSynced, settingsSynced }),
       { headers: { 'Content-Type': 'application/json' } }
     );
   } catch (err: any) {
     console.error('Product sync error:', err?.message);
-    return new Response(JSON.stringify({ error: 'Sync failed.', detail: err?.message || String(err) }), {
+    return new Response(JSON.stringify({ error: 'Sync failed.' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

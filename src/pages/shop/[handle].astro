@@ -108,6 +108,8 @@ const stockQty = firstVariant?.quantityAvailable;
 const isLowStock = stockQty !== null && stockQty > 0 && stockQty <= 5;
 const isSoldOut = !product.availableForSale;
 const isComingSoon = product.tags?.some((t: string) => t.toLowerCase() === 'coming soon');
+const isNewArrival = product.tags?.some((t: string) => t.toLowerCase() === 'new arrival');
+const isBackInStock = product.tags?.some((t: string) => t.toLowerCase() === 'back in stock');
 
 // Price formatter — drops .00 on whole numbers ($800 not $800.00)
 function fmt(amount: number): string {
@@ -209,7 +211,9 @@ const breadcrumbSchema = {
             ) : (
               <div class="pdp-gallery__placeholder">No Image</div>
             )}
-            {isOnSale && <span class="product-card__badge">Sale</span>}
+            {isBackInStock && <span class="product-card__badge product-card__badge--back-in-stock">Back in Stock</span>}
+            {!isBackInStock && isNewArrival && <span class="product-card__badge product-card__badge--new">New Arrival</span>}
+            {!isNewArrival && !isBackInStock && isOnSale && <span class="product-card__badge">Sale</span>}
 
             {/* Zoom hint */}
             <div class="pdp-zoom-hint" id="zoom-hint">

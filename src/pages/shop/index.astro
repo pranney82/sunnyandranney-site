@@ -162,6 +162,8 @@ const itemListSchema = hasShopify ? {
               const compareAt = product.compareAtPriceRange?.minVariantPrice;
               const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.amount);
               const isComingSoon = product.tags?.some((t: string) => t.toLowerCase() === 'coming soon');
+              const isNewArrival = product.tags?.some((t: string) => t.toLowerCase() === 'new arrival');
+              const isBackInStock = product.tags?.some((t: string) => t.toLowerCase() === 'back in stock');
               const firstVariant = product.variants.edges[0]?.node;
 
               return (
@@ -193,7 +195,9 @@ const itemListSchema = hasShopify ? {
                 >
                   {!product.availableForSale && !isComingSoon && <span class="product-card__badge product-card__badge--sold">Sold Out</span>}
                   {isComingSoon && <span class="product-card__badge product-card__badge--coming-soon">Coming Soon</span>}
-                  {product.availableForSale && !isComingSoon && isOnSale && <span class="product-card__badge">Sale</span>}
+                  {product.availableForSale && !isComingSoon && isBackInStock && <span class="product-card__badge product-card__badge--back-in-stock">Back in Stock</span>}
+                  {product.availableForSale && !isComingSoon && !isBackInStock && isNewArrival && <span class="product-card__badge product-card__badge--new">New Arrival</span>}
+                  {product.availableForSale && !isComingSoon && !isNewArrival && !isBackInStock && isOnSale && <span class="product-card__badge">Sale</span>}
 
                   {/* Wishlist heart */}
                   <button class="product-card__wishlist" data-handle={product.handle} aria-label="Add to wishlist">
@@ -1082,7 +1086,7 @@ const itemListSchema = hasShopify ? {
   .product-card__image {
     display: block;
     position: relative;
-    aspect-ratio: 3 / 4;
+    aspect-ratio: 1 / 1;
     overflow: hidden;
     border-radius: 0;
   }
@@ -1093,7 +1097,7 @@ const itemListSchema = hasShopify ? {
   }
 
   #shop-grid.view-list .product-card__image {
-    aspect-ratio: 1;
+    aspect-ratio: 1 / 1;
     max-width: 220px;
     flex-shrink: 0;
   }
@@ -1443,6 +1447,16 @@ const itemListSchema = hasShopify ? {
     color: #fff !important;
   }
 
+  .product-card__badge--new {
+    background: var(--color-cyan, #2a7d8c) !important;
+    color: #fff !important;
+  }
+
+  .product-card__badge--back-in-stock {
+    background: #2e7d32 !important;
+    color: #fff !important;
+  }
+
   .product-card__add-btn,
   .product-card__add-btn-placeholder {
     padding: 0.55rem 1rem;
@@ -1632,7 +1646,7 @@ const itemListSchema = hasShopify ? {
 
   .qv-gallery {
     background: var(--color-cream-dark);
-    aspect-ratio: 3 / 4;
+    aspect-ratio: 1 / 1;
     max-height: 40vh;
     position: relative;
     overflow: hidden;

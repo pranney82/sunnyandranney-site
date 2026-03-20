@@ -7,6 +7,7 @@ interface Env {
   DB: D1Database;
   GOOGLE_PLACES_API_KEY: string;
   GOOGLE_PLACE_ID: string;
+  CF_DEPLOY_HOOK_URL?: string;
 }
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
@@ -104,6 +105,31 @@ async function syncHours(db: D1Database, apiKey: string, placeId: string): Promi
   return true;
 }
 
+/** If products were synced but no deploy followed, trigger one now. */
+async function deployIfPending(db: D1Database, hookUrl: string): Promise<void> {
+  try {
+    const [syncRow, rebuildRow] = await Promise.all([
+      db.prepare("SELECT value FROM settings WHERE key = 'last_sync'").first<{ value: string }>(),
+      db.prepare("SELECT value FROM settings WHERE key = 'last_rebuild'").first<{ value: string }>(),
+    ]);
+
+    const lastSync = syncRow ? Number(syncRow.value) : 0;
+    const lastRebuild = rebuildRow ? Number(rebuildRow.value) : 0;
+
+    if (lastSync > lastRebuild) {
+      const res = await fetch(hookUrl, { method: 'POST' });
+      if (res.ok) {
+        await db.prepare(
+          "INSERT INTO settings (key, value, updated_at) VALUES ('last_rebuild', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at"
+        ).bind(String(Date.now())).run();
+        console.log('[hours-sync] Triggered pending deploy');
+      }
+    }
+  } catch (err) {
+    console.error('[hours-sync] Deploy check failed:', err);
+  }
+}
+
 export default {
   async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
     if (!env.GOOGLE_PLACES_API_KEY || !env.GOOGLE_PLACE_ID) {
@@ -111,6 +137,10 @@ export default {
       return;
     }
     ctx.waitUntil(syncHours(env.DB, env.GOOGLE_PLACES_API_KEY, env.GOOGLE_PLACE_ID));
+
+    if (env.CF_DEPLOY_HOOK_URL) {
+      ctx.waitUntil(deployIfPending(env.DB, env.CF_DEPLOY_HOOK_URL));
+    }
   },
 
   async fetch(request: Request, env: Env): Promise<Response> {

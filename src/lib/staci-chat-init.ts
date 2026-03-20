@@ -219,14 +219,16 @@ function hideBadge() {
 
 function welcomeCardHTML(): string {
   return `<div class="staci-welcome" id="staci-welcome">
-    <img class="staci-welcome__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=128,h=128,fit=cover,format=auto" alt="Staci" width="56" height="56" />
-    <p class="staci-welcome__name">Hi, I'm Staci</p>
-    <p class="staci-welcome__sub">Your personal shopping assistant.<br>How can I help you today?</p>
+    <div class="staci-welcome__top">
+      <img class="staci-welcome__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=128,h=128,fit=cover,format=auto" alt="Staci" width="56" height="56" />
+      <p class="staci-welcome__name">Hi, I'm Staci</p>
+      <p class="staci-welcome__sub">Your personal shopping assistant.<br>How can I help you today?</p>
+    </div>
     <div class="staci-welcome__chips">
-      <button class="staci-chip" data-msg="What's new in the shop?">What's new?</button>
-      <button class="staci-chip" data-msg="What are your store hours and location?">Hours &amp; location</button>
-      <button class="staci-chip" data-msg="What is your return policy?">Return policy</button>
-      <button class="staci-chip" data-msg="Tell me about Sunny &amp; Ranney's mission">Your mission</button>
+      <button class="staci-chip" data-msg="What's new in the shop?"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>What's new?</button>
+      <button class="staci-chip" data-msg="What are your store hours and location?"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Hours &amp; location</button>
+      <button class="staci-chip" data-msg="What is your return policy?"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>Return policy</button>
+      <button class="staci-chip" data-msg="Tell me about Sunny &amp; Ranney's mission"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Your mission</button>
     </div>
   </div>`;
 }
@@ -753,6 +755,7 @@ async function sendMessage(text: string) {
         pageContext: { url: window.location.href, title: document.title },
         sessionId: getSessionId(),
       }),
+      signal: AbortSignal.timeout(30_000),
     });
 
     removeTyping();
