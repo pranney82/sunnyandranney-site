@@ -108,8 +108,7 @@ const stockQty = firstVariant?.quantityAvailable;
 const isLowStock = stockQty !== null && stockQty > 0 && stockQty <= 5;
 const isSoldOut = !product.availableForSale;
 const isComingSoon = product.tags?.some((t: string) => t.toLowerCase() === 'coming soon');
-const isNewArrival = product.tags?.some((t: string) => t.toLowerCase() === 'new arrival');
-const isBackInStock = product.tags?.some((t: string) => t.toLowerCase() === 'back in stock');
+const isNewArrival = product.createdAt && (Date.now() - new Date(product.createdAt).getTime()) < 30 * 24 * 60 * 60 * 1000;
 
 // Price formatter — drops .00 on whole numbers ($800 not $800.00)
 function fmt(amount: number): string {
@@ -211,9 +210,9 @@ const breadcrumbSchema = {
             ) : (
               <div class="pdp-gallery__placeholder">No Image</div>
             )}
-            {isBackInStock && <span class="product-card__badge product-card__badge--back-in-stock">Back in Stock</span>}
-            {!isBackInStock && isNewArrival && <span class="product-card__badge product-card__badge--new">New Arrival</span>}
-            {!isNewArrival && !isBackInStock && isOnSale && <span class="product-card__badge">Sale</span>}
+            <span class="product-card__badge product-card__badge--back-in-stock" id="pdp-back-in-stock-badge" style="display:none">Back in Stock</span>
+            {isNewArrival && <span class="product-card__badge product-card__badge--new" id="pdp-new-badge">New</span>}
+            {!isNewArrival && isOnSale && <span class="product-card__badge" id="pdp-sale-badge">Sale</span>}
 
             {/* Zoom hint */}
             <div class="pdp-zoom-hint" id="zoom-hint">
@@ -2415,5 +2414,24 @@ const breadcrumbSchema = {
       recentScroll.replaceChildren(frag);
     }
   }
+  // ─── Back in Stock badge (runtime check) ───
+  const pdpHandle = window.location.pathname.split('/shop/')[1]?.replace(/\/$/, '');
+  if (pdpHandle) {
+    fetch('/api/back-in-stock')
+      .then(r => r.ok ? r.json() : [])
+      .then((handles: string[]) => {
+        if (handles.includes(pdpHandle)) {
+          // Show back-in-stock badge, hide new/sale badges
+          const bisEl = document.getElementById('pdp-back-in-stock-badge');
+          if (bisEl) bisEl.style.display = '';
+          const newEl = document.getElementById('pdp-new-badge');
+          if (newEl) newEl.remove();
+          const saleEl = document.getElementById('pdp-sale-badge');
+          if (saleEl) saleEl.remove();
+        }
+      })
+      .catch(() => {});
+  }
+
   }); // end astro:page-load
 </script>

@@ -109,6 +109,8 @@ const itemListSchema = hasShopify ? {
       <!-- Panel: top-down dropdown -->
       <div class="toolbar__panel" id="filter-panel" hidden>
         <div class="toolbar__panel-inner">
+          <!-- Product count (mobile only, hidden on desktop) -->
+          <div class="toolbar__panel-count" id="panel-product-count">{products.length} product{products.length !== 1 ? 's' : ''}</div>
           <!-- Sort -->
           <div class="toolbar__panel-group">
             <label class="toolbar__panel-label" for="sort-select">Sort by</label>
@@ -162,8 +164,7 @@ const itemListSchema = hasShopify ? {
               const compareAt = product.compareAtPriceRange?.minVariantPrice;
               const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.amount);
               const isComingSoon = product.tags?.some((t: string) => t.toLowerCase() === 'coming soon');
-              const isNewArrival = product.tags?.some((t: string) => t.toLowerCase() === 'new arrival');
-              const isBackInStock = product.tags?.some((t: string) => t.toLowerCase() === 'back in stock');
+              const isNewArrival = product.createdAt && (Date.now() - new Date(product.createdAt).getTime()) < 30 * 24 * 60 * 60 * 1000;
               const firstVariant = product.variants.edges[0]?.node;
 
               return (
@@ -195,9 +196,8 @@ const itemListSchema = hasShopify ? {
                 >
                   {!product.availableForSale && !isComingSoon && <span class="product-card__badge product-card__badge--sold">Sold Out</span>}
                   {isComingSoon && <span class="product-card__badge product-card__badge--coming-soon">Coming Soon</span>}
-                  {product.availableForSale && !isComingSoon && isBackInStock && <span class="product-card__badge product-card__badge--back-in-stock">Back in Stock</span>}
-                  {product.availableForSale && !isComingSoon && !isBackInStock && isNewArrival && <span class="product-card__badge product-card__badge--new">New Arrival</span>}
-                  {product.availableForSale && !isComingSoon && !isNewArrival && !isBackInStock && isOnSale && <span class="product-card__badge">Sale</span>}
+                  {product.availableForSale && !isComingSoon && isNewArrival && <span class="product-card__badge product-card__badge--new">New</span>}
+                  {product.availableForSale && !isComingSoon && !isNewArrival && isOnSale && <span class="product-card__badge">Sale</span>}
 
                   {/* Wishlist heart */}
                   <button class="product-card__wishlist" data-handle={product.handle} aria-label="Add to wishlist">
@@ -565,9 +565,9 @@ const itemListSchema = hasShopify ? {
     flex-shrink: 0;
   }
 
-  /* Show count on mobile (subtle), hide filter text */
+  /* Hide count on mobile, hide filter text */
   .toolbar__count {
-    display: block;
+    display: none;
     font-size: 0.65rem;
     color: var(--color-charcoal-70);
     white-space: nowrap;
@@ -693,6 +693,12 @@ const itemListSchema = hasShopify ? {
     padding: 1rem 0 0.75rem;
     border-top: 1px solid var(--color-cream-dark);
     margin-top: 0.5rem;
+  }
+
+  .toolbar__panel-count {
+    font-size: 0.65rem;
+    color: var(--color-charcoal-70);
+    letter-spacing: 0.05em;
   }
 
   .toolbar__panel-group {
@@ -911,6 +917,7 @@ const itemListSchema = hasShopify ? {
       margin-top: 0.75rem;
     }
 
+    .toolbar__panel-count { display: none; }
     .toolbar__panel-group { gap: 0.35rem; }
 
 
@@ -1065,6 +1072,7 @@ const itemListSchema = hasShopify ? {
        causing the browser to skip rendering the first product image until scroll. */
     /* Override .section's 6rem top padding — products should start close to the toolbar */
     padding-top: var(--space-md) !important;
+    background: linear-gradient(to bottom, var(--color-cream, #faf8f5) 0%, #fff 120px);
   }
 
   #shop-grid.view-list {
@@ -1089,6 +1097,7 @@ const itemListSchema = hasShopify ? {
     aspect-ratio: 1 / 1;
     overflow: hidden;
     border-radius: 0;
+    background: transparent;
   }
 
   #shop-grid.view-list .product-card__image-container {
@@ -1838,7 +1847,8 @@ const itemListSchema = hasShopify ? {
     align-items: center;
     justify-content: center;
     text-align: center;
-    background: var(--color-cream, #faf8f5);
+    background: #fff;
+    border: 1px solid var(--color-cream-dark);
     border-radius: 8px;
     padding: 2rem 1.25rem;
     aspect-ratio: auto;
@@ -1952,6 +1962,7 @@ const itemListSchema = hasShopify ? {
   const sortSelect = document.getElementById('sort-select') as HTMLSelectElement;
   const viewBtns = document.querySelectorAll('.toolbar__view');
   const countEl = document.getElementById('product-count');
+  const panelCountEl = document.getElementById('panel-product-count');
   const loadMoreBtn = document.getElementById('load-more-btn');
   const loadMoreWrap = document.getElementById('load-more-wrap');
   const loadMoreCount = document.getElementById('load-more-count');
@@ -2361,6 +2372,7 @@ const itemListSchema = hasShopify ? {
     // Update count
     const countText = `${matchCount} product${matchCount !== 1 ? 's' : ''}`;
     if (countEl) countEl.textContent = countText;
+    if (panelCountEl) panelCountEl.textContent = countText;
     // Load more visibility
     if (loadMoreWrap) {
       loadMoreWrap.style.display = matchCount > showCount ? '' : 'none';
@@ -2954,6 +2966,31 @@ const itemListSchema = hasShopify ? {
       }
     });
   }
+
+  // ─── Back in Stock badges (fetched from D1 at runtime) ───
+  fetch('/api/back-in-stock')
+    .then(r => r.ok ? r.json() : [])
+    .then((handles: string[]) => {
+      if (!handles.length) return;
+      const set = new Set(handles);
+      for (const card of getCards()) {
+        const handle = card.dataset.handle;
+        if (!handle || !set.has(handle)) continue;
+        // Skip if card already has a higher-priority badge (Sold Out, Coming Soon)
+        const existing = card.querySelector('.product-card__badge');
+        if (existing) {
+          const text = existing.textContent?.trim() || '';
+          if (text === 'Sold Out' || text === 'Coming Soon') continue;
+          // Replace New or Sale badge with Back in Stock
+          existing.remove();
+        }
+        const badge = document.createElement('span');
+        badge.className = 'product-card__badge product-card__badge--back-in-stock';
+        badge.textContent = 'Back in Stock';
+        card.prepend(badge);
+      }
+    })
+    .catch(() => {}); // Non-critical
 
   }); // end astro:page-load
 </script>

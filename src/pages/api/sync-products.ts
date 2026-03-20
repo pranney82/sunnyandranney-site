@@ -1,7 +1,6 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { syncGoogleHoursToD1 } from '@/lib/sync-hours';
-import { addTagsToProduct, removeTagsFromProduct } from '@/lib/shopify-admin';
 import collectionsConfig from '@/content/settings/collections.json';
 
 export const prerender = false;
@@ -149,60 +148,42 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    // 1b. Auto-tag new arrivals & back-in-stock products
-    let tagged = { newArrivals: 0, backInStock: 0 };
+    // 1b. Track product availability for "Back in Stock" badges
+    // Stores { handle: { available: boolean, backedAt?: ISO string } }
+    // When a product goes from unavailable → available, we record the timestamp.
+    // The front-end uses this timestamp to show a "Back in Stock" badge for 14 days.
     try {
-      // Load previous product state: { handle: availableForSale }
       const prevStateRow = await env.DB.prepare(
         "SELECT value FROM settings WHERE key = 'settings:product_availability'"
       ).first<{ value: string }>();
-      const prevState: Record<string, boolean> = prevStateRow
+      const prevState: Record<string, { available: boolean; backedAt?: string }> = prevStateRow
         ? JSON.parse(prevStateRow.value)
         : {};
 
-      const taggingPromises: Promise<void>[] = [];
+      const currentState: Record<string, { available: boolean; backedAt?: string }> = {};
 
       for (const node of allProducts) {
-        const wasKnown = node.handle in prevState;
-        const wasAvailable = prevState[node.handle];
+        const prev = prevState[node.handle];
+        const entry: { available: boolean; backedAt?: string } = {
+          available: node.availableForSale,
+        };
 
-        if (!wasKnown) {
-          // Brand-new product — tag as "New Arrival"
-          taggingPromises.push(
-            addTagsToProduct(node.id, ['New Arrival'])
-              .then(() => { tagged.newArrivals++; })
-              .catch(err => console.error(`Failed to tag new arrival ${node.handle}:`, err))
-          );
-        } else if (!wasAvailable && node.availableForSale) {
-          // Was out of stock, now available — tag as "Back in Stock"
-          // Also remove "New Arrival" if it was previously tagged
-          taggingPromises.push(
-            addTagsToProduct(node.id, ['Back in Stock'])
-              .then(() => removeTagsFromProduct(node.id, ['New Arrival']).catch(() => {}))
-              .then(() => { tagged.backInStock++; })
-              .catch(err => console.error(`Failed to tag back in stock ${node.handle}:`, err))
-          );
-        } else if (wasAvailable && node.availableForSale && prevState[node.handle] !== undefined) {
-          // Product was and still is available — remove "Back in Stock" tag if enough time has passed
-          // (keep it for one sync cycle, clean up on the next)
+        if (prev && !prev.available && node.availableForSale) {
+          // Was out of stock, now back — record the timestamp
+          entry.backedAt = new Date().toISOString();
+        } else if (prev?.backedAt) {
+          // Carry forward existing backedAt timestamp
+          entry.backedAt = prev.backedAt;
         }
+
+        currentState[node.handle] = entry;
       }
 
-      if (taggingPromises.length) {
-        await Promise.all(taggingPromises);
-      }
-
-      // Persist current availability state for next sync
-      const currentState: Record<string, boolean> = {};
-      for (const node of allProducts) {
-        currentState[node.handle] = node.availableForSale;
-      }
       await env.DB.prepare(
         "INSERT INTO settings (key, value, updated_at) VALUES ('settings:product_availability', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at"
       ).bind(JSON.stringify(currentState)).run();
     } catch (err) {
-      console.error('Auto-tagging error:', err);
-      // Non-critical — continue with sync even if tagging fails
+      console.error('Availability tracking error:', err);
     }
 
     // 2. Generate embeddings in batches (Workers AI supports batch input)
@@ -334,7 +315,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, indexed, total: allProducts.length, tagged, rebuilt, hoursSynced, settingsSynced }),
+      JSON.stringify({ success: true, indexed, total: allProducts.length, rebuilt, hoursSynced, settingsSynced }),
       { headers: { 'Content-Type': 'application/json' } }
     );
   } catch (err: any) {

@@ -36,6 +36,9 @@ const roomCollections = [
         Mission
         <img src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/soard-favicon/w=40,h=40,fit=cover,q=80,format=auto" alt="" class="nav__mission-pig" width="20" height="20" loading="lazy" aria-hidden="true" />
       </a>
+      <a href="/events/" class:list={['nav__mission-link nav__mission-link--mobile nav__mission-link--golf', { 'nav__mission-link--active': currentPath === '/events' || currentPath === '/events/' }]}>
+        Golf
+      </a>
       <button class="nav__icon-btn nav__search-toggle" aria-label="Search products" id="mobile-search-toggle">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </button>
@@ -109,6 +112,9 @@ const roomCollections = [
         <a href="/about/" data-astro-prefetch class:list={['nav__mission-link', { 'nav__mission-link--active': currentPath === '/about' || currentPath === '/about/' }]}>
           Mission
           <img src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/soard-favicon/w=40,h=40,fit=cover,q=80,format=auto" alt="" class="nav__mission-pig" width="20" height="20" loading="lazy" aria-hidden="true" />
+        </a>
+        <a href="/events/" data-astro-prefetch class:list={['nav__mission-link nav__mission-link--golf', { 'nav__mission-link--active': currentPath === '/events' || currentPath === '/events/' }]}>
+          Golf
         </a>
         <button class="nav__icon-btn nav__cart" aria-label="Shopping cart" id="cart-trigger">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -198,7 +204,7 @@ const roomCollections = [
     align-items: center;
     justify-content: space-between;
     padding: 0 8px;
-    height: 48px;
+    height: 60px;
     border-bottom: 1px solid var(--color-cream-dark);
   }
 
@@ -561,6 +567,19 @@ const roomCollections = [
     color: #fff;
   }
 
+  .nav__mission-link--golf {
+    border-color: #2e7d32;
+    background: #2e7d32;
+    color: #fff;
+  }
+
+  .nav__mission-link--golf:hover {
+    background: #1b5e20;
+    border-color: #1b5e20;
+    color: #fff;
+    box-shadow: 0 0 12px rgba(46, 125, 50, 0.45), 0 0 24px rgba(46, 125, 50, 0.2);
+  }
+
   @media (min-width: 768px) {
     .nav__mission-link {
       font-size: 0.78rem;
@@ -717,18 +736,7 @@ const roomCollections = [
     font-weight: 600;
   }
 
-  /* ─── "New Arrivals" accent dot ──────────── */
-  .nav__cat-link--new::after {
-    content: '';
-    width: 3.5px;
-    height: 3.5px;
-    border-radius: 50%;
-    background: var(--color-gold);
-    flex-shrink: 0;
-    align-self: flex-start;
-    margin-top: 2px;
-    margin-left: -1px;
-  }
+  /* ─── "New Arrivals" accent dot (removed) ── */
 
   /* ─── Sale treatment ─────────────────────── */
   .nav__cat-link--sale {

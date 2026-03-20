@@ -244,13 +244,13 @@ p {
   position: relative;
   aspect-ratio: 1 / 1;
   overflow: hidden;
-  background: var(--color-cream-dark);
+  background: transparent;
 }
 
 .product-card__image img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   transition: transform 0.8s var(--ease-out), opacity 0.6s var(--ease-out);
 }
 
@@ -292,6 +292,15 @@ p {
 .product-card__badge--back-in-stock {
   background: #2e7d32;
   color: #fff;
+}
+
+@media (max-width: 600px) {
+  .product-card__badge {
+    font-size: 0.55rem;
+    padding: 0.2rem 0.5rem;
+    top: var(--space-xs, 0.4rem);
+    left: var(--space-xs, 0.4rem);
+  }
 }
 
 .product-card__info {
