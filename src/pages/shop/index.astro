@@ -859,6 +859,7 @@ const itemListSchema = hasShopify ? {
       gap: 0.25rem;
       scroll-snap-type: none;
       padding-right: 0;
+      justify-content: center;
     }
     .toolbar__categories-wrap::after {
       display: none;
@@ -1411,6 +1412,8 @@ const itemListSchema = hasShopify ? {
     align-items: baseline;
     gap: 0.5rem;
     min-height: 1.1rem; /* consistent height whether or not compare price shown */
+    flex-wrap: wrap;
+    margin-top: auto;
   }
 
   .product-card__price {
