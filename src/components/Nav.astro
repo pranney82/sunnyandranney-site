@@ -23,11 +23,12 @@ const roomCollections = [
   <div class="nav__mobile-header">
     <a href="/" class="nav__logo" aria-label="Sunny & Ranney Home">
       <img
-        src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/logo-tagline-light-bg/w=160,h=64,fit=scale-down,format=auto"
+        src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/logo-tagline-light-bg/w=96,h=38,fit=scale-down,format=auto"
+        srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/logo-tagline-light-bg/w=96,h=38,fit=scale-down,format=auto 1x, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/logo-tagline-light-bg/w=192,h=76,fit=scale-down,format=auto 2x"
         alt="Sunny & Ranney"
         class="nav__logo-img"
-        width="160"
-        height="64"
+        width="96"
+        height="38"
         decoding="async"
       />
     </a>
@@ -81,11 +82,12 @@ const roomCollections = [
     <div class="container nav__main-inner">
       <a href="/" class="nav__logo" aria-label="Sunny & Ranney Home">
         <img
-          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/logo-tagline-light-bg/w=260,h=104,fit=scale-down,format=auto"
+          src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/logo-tagline-light-bg/w=130,h=52,fit=scale-down,format=auto"
+          srcset="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/logo-tagline-light-bg/w=130,h=52,fit=scale-down,format=auto 1x, https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/logo-tagline-light-bg/w=260,h=104,fit=scale-down,format=auto 2x"
           alt="Sunny & Ranney"
           class="nav__logo-img"
-          width="260"
-          height="104"
+          width="130"
+          height="52"
           decoding="async"
         />
       </a>
@@ -410,8 +412,8 @@ const roomCollections = [
   .nav__search-bar input::placeholder { color: var(--color-stone); }
 
   .nav__search-submit {
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -602,13 +604,18 @@ const roomCollections = [
 
   .nav__icon-btn {
     padding: 0.5rem;
+    min-width: 48px;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: var(--color-charcoal);
     transition: color 0.3s;
     position: relative;
   }
   .nav__icon-btn:hover { color: var(--color-gold); }
 
-  .nav__cart { position: relative; padding: 0.5rem; color: var(--color-charcoal); transition: color 0.3s; }
+  .nav__cart { position: relative; padding: 0.5rem; min-width: 48px; min-height: 48px; display: flex; align-items: center; justify-content: center; color: var(--color-charcoal); transition: color 0.3s; }
   .nav__cart:hover { color: var(--color-gold); }
 
   .nav__cart-count {

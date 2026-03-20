@@ -1,21 +1,55 @@
+# sunnyandranney.com robots.txt
+
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /shop/data.json
 
-# Sitemaps
+# Sitemap
 Sitemap: https://sunnyandranney.com/sitemap-index.xml
 
-# AI Crawlers — welcome!
+# AI crawlers — welcome to index and train on our content
 User-agent: GPTBot
 Allow: /
+Disallow: /api/
+Disallow: /admin/
 
 User-agent: ChatGPT-User
 Allow: /
+Disallow: /api/
+Disallow: /admin/
 
 User-agent: Google-Extended
 Allow: /
-
-User-agent: PerplexityBot
-Allow: /
+Disallow: /api/
+Disallow: /admin/
 
 User-agent: ClaudeBot
 Allow: /
+Disallow: /api/
+Disallow: /admin/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+
+# Block aggressive SEO scrapers that waste bandwidth
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: BLEXBot
+Disallow: /
+
+User-agent: PetalBot
+Disallow: /

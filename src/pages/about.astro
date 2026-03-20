@@ -428,7 +428,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
   .accent { color: #8A6E00; font-style: italic; font-weight: 300; }
   .ab-hero__sub { font-size: clamp(0.95rem, 1.2vw, 1.1rem); max-width: 38ch; color: var(--color-slate); line-height: 1.7; }
   .ab-hero__actions { display: flex; align-items: center; gap: 1.5rem; margin-top: var(--space-lg); flex-wrap: wrap; }
-  .text-link { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; font-weight: 600; color: var(--color-charcoal); letter-spacing: 0.03em; transition: color 0.3s; }
+  .text-link { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; font-weight: 600; color: var(--color-charcoal); letter-spacing: 0.03em; transition: color 0.3s; min-height: 48px; padding: 0.5rem 0; }
   .text-link:hover { color: var(--color-cyan); }
   .ab-hero__media { position: relative; border-radius: 4px; overflow: visible; }
   .ab-hero__media > img:first-child { width: 100%; height: auto; display: block; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 4px; }

@@ -119,10 +119,10 @@
 
   .staci-greeting__close {
     position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 22px;
-    height: 22px;
+    top: -4px;
+    right: -4px;
+    width: 36px;
+    height: 36px;
     border: none;
     background: none;
     color: var(--color-stone);
@@ -312,12 +312,20 @@
     background: #34D399;
     border-radius: 50%;
     border: 2.5px solid var(--color-charcoal);
+  }
+
+  .staci-header__online::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 2px solid rgba(52, 211, 153, 0.4);
     animation: staciOnlinePulse 3s ease-in-out infinite;
   }
 
   @keyframes staciOnlinePulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.4); }
-    50% { box-shadow: 0 0 0 3px rgba(52, 211, 153, 0); }
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0; transform: scale(1.6); }
   }
 
   .staci-header__info strong {
@@ -352,8 +360,8 @@
     background: none;
     cursor: pointer;
     border-radius: 8px;
-    min-width: 34px;
-    min-height: 34px;
+    min-width: 44px;
+    min-height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -365,8 +373,8 @@
   }
 
   .staci-header__btn--close {
-    min-width: 38px;
-    min-height: 38px;
+    min-width: 48px;
+    min-height: 48px;
   }
 
   /* ─── Welcome Card ────────────────────────────────────────── */
@@ -405,12 +413,21 @@
       0 4px 16px rgba(255, 212, 0, 0.12),
       0 2px 6px rgba(44, 44, 44, 0.06);
     margin-bottom: 1rem;
+    position: relative;
+  }
+
+  .staci-welcome__avatar::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 212, 0, 0.15);
     animation: staciAvatarGlow 4s ease-in-out infinite;
   }
 
   @keyframes staciAvatarGlow {
-    0%, 100% { box-shadow: 0 0 0 4px rgba(255, 212, 0, 0.08), 0 4px 16px rgba(255, 212, 0, 0.12), 0 2px 6px rgba(44, 44, 44, 0.06); }
-    50% { box-shadow: 0 0 0 6px rgba(255, 212, 0, 0.12), 0 4px 24px rgba(255, 212, 0, 0.18), 0 2px 6px rgba(44, 44, 44, 0.06); }
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.08); }
   }
 
   .staci-welcome__name {

@@ -171,6 +171,10 @@ const phoneDigits = phone.replace(/\D/g, '');
     color: var(--color-gold);
     font-weight: 600;
     transition: opacity 0.2s;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0.15rem 0;
   }
 
   .footer__mission-link:hover {
@@ -306,8 +310,8 @@ const phoneDigits = phone.replace(/\D/g, '');
 
   @media (min-width: 768px) {
     .footer__nav a {
-      min-height: unset;
-      padding: 0;
+      min-height: 44px;
+      padding: 0.15rem 0;
     }
   }
 
