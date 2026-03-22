@@ -22,6 +22,9 @@ Thumbs.db
 # build-time generated
 public/reviews/
 
+# claude
+.claude/settings.local.json
+
 # cloudflare
 .wrangler/
 package-lock.json
