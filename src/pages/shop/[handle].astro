@@ -706,7 +706,9 @@ const breadcrumbSchema = {
     position: relative;
     aspect-ratio: 1;
     overflow: hidden;
-    background: var(--color-cream-dark);
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
     cursor: zoom-in;
   }
 
@@ -794,7 +796,9 @@ const breadcrumbSchema = {
     width: 72px;
     height: 72px;
     overflow: hidden;
-    border: 2px solid transparent;
+    border: 2px solid rgba(0, 0, 0, 0.08);
+    border-radius: 3px;
+    background: #fff;
     padding: 0;
     cursor: pointer;
     flex-shrink: 0;
@@ -1229,8 +1233,9 @@ const breadcrumbSchema = {
     width: 120px;
     height: 120px;
     overflow: hidden;
-    background: var(--color-cream-dark);
-    border: 2px solid transparent;
+    background: #fff;
+    border: 2px solid rgba(0, 0, 0, 0.06);
+    border-radius: 4px;
     transition: border-color 0.2s;
   }
 
@@ -1362,7 +1367,7 @@ const breadcrumbSchema = {
   .related-card__image {
     aspect-ratio: 4/5;
     overflow: hidden;
-    background: var(--color-cream-dark);
+    background: #fff;
   }
 
   .related-card__image img {
