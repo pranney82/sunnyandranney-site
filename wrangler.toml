@@ -9,6 +9,11 @@ binding = "AI"
 binding = "VECTORIZE"
 index_name = "product-catalog"
 
+[[durable_objects.bindings]]
+name = "DEPLOY_COORDINATOR"
+class_name = "DeployCoordinator"
+script_name = "deploy-coordinator"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "sunnyandranney-db"

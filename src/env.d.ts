@@ -7,6 +7,7 @@ declare namespace Cloudflare {
   interface Env {
     SYNC_SECRET?: string;
     CF_DEPLOY_HOOK_URL?: string;
+    DEPLOY_COORDINATOR: DurableObjectNamespace;
     CC_API_TOKEN?: string;
     GOOGLE_PLACES_API_KEY?: string;
     GOOGLE_PLACE_ID?: string;
