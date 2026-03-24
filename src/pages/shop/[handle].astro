@@ -202,8 +202,8 @@ const breadcrumbSchema = {
             ) : (
               <div class="pdp-gallery__placeholder">No Image</div>
             )}
-            {isNewArrival && <span class="product-card__badge product-card__badge--new" id="pdp-new-badge">New</span>}
-            {!isNewArrival && isOnSale && <span class="product-card__badge" id="pdp-sale-badge">Sale</span>}
+            {isOnSale && <span class="product-card__badge" id="pdp-sale-badge">Sale</span>}
+            {!isOnSale && isNewArrival && <span class="product-card__badge product-card__badge--new" id="pdp-new-badge">New</span>}
 
             {/* Zoom hint */}
             <div class="pdp-zoom-hint" id="zoom-hint">
