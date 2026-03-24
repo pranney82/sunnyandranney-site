@@ -279,20 +279,13 @@ p {
   z-index: 2;
 }
 
-.product-card__badge--coming-soon {
-  background: #8B2252;
-  color: #fff;
-}
 
 .product-card__badge--new {
   background: var(--color-cyan, #2a7d8c);
   color: #fff;
 }
 
-.product-card__badge--back-in-stock {
-  background: #2e7d32;
-  color: #fff;
-}
+
 
 @media (max-width: 600px) {
   .product-card__badge {

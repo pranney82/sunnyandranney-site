@@ -163,11 +163,11 @@ const PRODUCT_FRAGMENT = `
   }
 `;
 
-export async function getProducts(first = 24, cursor?: string) {
+export async function getProducts(first = 24, cursor?: string, sortKey: 'BEST_SELLING' | 'CREATED_AT' = 'BEST_SELLING') {
   const query = `
     ${PRODUCT_FRAGMENT}
     query Products($first: Int!, $after: String) {
-      products(first: $first, after: $after, sortKey: BEST_SELLING) {
+      products(first: $first, after: $after, sortKey: ${sortKey}, reverse: ${sortKey === 'CREATED_AT'}) {
         pageInfo {
           hasNextPage
           endCursor

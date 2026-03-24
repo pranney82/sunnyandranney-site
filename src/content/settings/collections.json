@@ -31,7 +31,7 @@
   },
   {
     "handle": "new-arrivals",
-    "enabled": true,
+    "enabled": false,
     "order": 5,
     "showInNav": false
   },

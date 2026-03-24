@@ -28,25 +28,17 @@ export async function getStaticPaths() {
     }
   }
 
-  // Also include new-arrivals collection + hero products — they may be from
+  // Also include newest products + hero products — they may be from
   // non-enabled collections and would 404 without pages built for them.
   try {
-    const [newArrivals, heroSetting] = await Promise.all([
-      getCollectionByHandle('new-arrivals', 8),
+    const [newest, heroSetting] = await Promise.all([
+      getProducts(8, undefined, 'CREATED_AT'),
       getHeroStatic(),
     ]);
 
-    // Add new arrivals products
-    if (newArrivals) {
-      for (const p of newArrivals.products) {
-        if (!seen.has(p.id)) { seen.add(p.id); allProducts.push(p); }
-      }
-    } else {
-      // Homepage falls back to getProducts(8) — ensure those pages are built
-      const { products: fallback } = await getProducts(8);
-      for (const p of fallback) {
-        if (!seen.has(p.id)) { seen.add(p.id); allProducts.push(p); }
-      }
+    // Add newest products (shown on homepage)
+    for (const p of newest.products) {
+      if (!seen.has(p.id)) { seen.add(p.id); allProducts.push(p); }
     }
 
     // Add hero product
@@ -107,7 +99,7 @@ const firstVariant = variants[0];
 const stockQty = firstVariant?.quantityAvailable;
 const isLowStock = stockQty !== null && stockQty > 0 && stockQty <= 5;
 const isSoldOut = !product.availableForSale;
-const isComingSoon = product.tags?.some((t: string) => t.toLowerCase() === 'coming soon');
+
 const isNewArrival = product.createdAt && (Date.now() - new Date(product.createdAt).getTime()) < 30 * 24 * 60 * 60 * 1000;
 
 // Price formatter — drops .00 on whole numbers ($800 not $800.00)
@@ -210,7 +202,6 @@ const breadcrumbSchema = {
             ) : (
               <div class="pdp-gallery__placeholder">No Image</div>
             )}
-            <span class="product-card__badge product-card__badge--back-in-stock" id="pdp-back-in-stock-badge" style="display:none">Back in Stock</span>
             {isNewArrival && <span class="product-card__badge product-card__badge--new" id="pdp-new-badge">New</span>}
             {!isNewArrival && isOnSale && <span class="product-card__badge" id="pdp-sale-badge">Sale</span>}
 
@@ -348,12 +339,12 @@ const breadcrumbSchema = {
               data-product-handle={product.handle}
               data-variant-title={variants[0]?.title || ''}
               data-variant-qty={firstVariant?.quantityAvailable ?? ''}
-              disabled={!product.availableForSale || isComingSoon}
+              disabled={!product.availableForSale}
             >
-              {isComingSoon ? 'Coming Soon' : product.availableForSale ? 'Add to Cart' : 'Sold Out'}
+              {product.availableForSale ? 'Add to Cart' : 'Sold Out'}
             </button>
 
-            {product.availableForSale && !isComingSoon && (
+            {product.availableForSale && (
               <button
                 class="btn btn--primary pdp-buy-now"
                 id="buy-now"
@@ -586,8 +577,8 @@ const breadcrumbSchema = {
       <span class="sticky-bar__title">{product.title}</span>
       <span class="sticky-bar__price" id="sticky-price">{fmt(parseFloat(price.amount))}</span>
     </div>
-    <button class="btn btn--gold sticky-bar__btn" id="sticky-add" disabled={!product.availableForSale || isComingSoon}>
-      {isComingSoon ? 'Coming Soon' : product.availableForSale ? 'Add to Cart' : 'Sold Out'}
+    <button class="btn btn--gold sticky-bar__btn" id="sticky-add" disabled={!product.availableForSale}>
+      {product.availableForSale ? 'Add to Cart' : 'Sold Out'}
     </button>
   </div>
 
@@ -617,9 +608,9 @@ const breadcrumbSchema = {
         <button
           class="btn btn--gold sticky-header__atc"
           id="sticky-header-add"
-          disabled={!product.availableForSale || isComingSoon}
+          disabled={!product.availableForSale}
         >
-          {isComingSoon ? 'Coming Soon' : product.availableForSale ? 'Add to Cart' : 'Sold Out'}
+          {product.availableForSale ? 'Add to Cart' : 'Sold Out'}
         </button>
       </div>
     </div>
@@ -850,6 +841,7 @@ const breadcrumbSchema = {
 
   .pdp-urgency svg { color: #e67e22; flex-shrink: 0; }
   .pdp-urgency strong { font-weight: 700; }
+
 
   @keyframes pulse-urgency {
     0%, 100% { opacity: 1; }
@@ -1810,10 +1802,34 @@ const breadcrumbSchema = {
     return amount % 1 === 0 ? `$${amount.toLocaleString()}` : `$${amount.toFixed(2)}`;
   }
 
+  // Must match server-side cfImage() in src/lib/images.ts
   function cfImg(url: string, width = 900) {
     if (!url || !url.includes('cdn.shopify.com')) return url;
     const sep = url.includes('?') ? '&' : '?';
-    return `${url}${sep}width=${width}&crop=center`;
+    return `${url}${sep}width=${width}&crop=center&quality=70&format=webp`;
+  }
+
+  // Must match server-side cfSrcset() widths passed in the template
+  const PDP_WIDTHS = [450, 900, 1400];
+
+  function cfSrcsetJs(url: string) {
+    if (!url) return '';
+    return PDP_WIDTHS.map(w => `${cfImg(url, w)} ${w}w`).join(', ');
+  }
+
+  /** Swap the main product image — updates src, srcset, and alt in one place. */
+  let _swapTimer = 0;
+  function updateMainImage(url: string, alt?: string) {
+    if (!mainImg) return;
+    clearTimeout(_swapTimer);
+    mainImg.onload = null;
+    mainImg.style.opacity = '0';
+    _swapTimer = window.setTimeout(() => {
+      mainImg.srcset = cfSrcsetJs(url);
+      mainImg.src = cfImg(url);
+      if (alt !== undefined) mainImg.alt = alt;
+      mainImg.onload = () => { mainImg.style.opacity = '1'; };
+    }, 150);
   }
 
   // ─── Image data ─────────────────────────────
@@ -1833,13 +1849,7 @@ const breadcrumbSchema = {
       syncDots(i);
       thumbs.forEach(t => t.classList.remove('pdp-thumb--active'));
       thumbs[i]?.classList.add('pdp-thumb--active');
-      if (mainImg) {
-        mainImg.style.opacity = '0';
-        setTimeout(() => {
-          mainImg.src = cfImg(imageUrls[i]);
-          mainImg.style.opacity = '1';
-        }, 150);
-      }
+      updateMainImage(imageUrls[i]);
     });
   });
 
@@ -1870,13 +1880,7 @@ const breadcrumbSchema = {
           syncDots(currentImageIdx);
           thumbs.forEach(t => t.classList.remove('pdp-thumb--active'));
           thumbs[currentImageIdx]?.classList.add('pdp-thumb--active');
-          if (mainImg) {
-            mainImg.style.opacity = '0';
-            setTimeout(() => {
-              mainImg.src = cfImg(imageUrls[currentImageIdx]);
-              mainImg.style.opacity = '1';
-            }, 150);
-          }
+          updateMainImage(imageUrls[currentImageIdx]);
         }
       }
     }, { passive: true });
@@ -1941,14 +1945,7 @@ const breadcrumbSchema = {
 
         currentImageIdx = i;
         syncDots(i);
-        if (mainImg) {
-          mainImg.style.opacity = '0';
-          setTimeout(() => {
-            mainImg.src = cfImg(el.dataset.url || '');
-            mainImg.alt = el.dataset.alt || '';
-            mainImg.style.opacity = '1';
-          }, 150);
-        }
+        updateMainImage(el.dataset.url || '', el.dataset.alt || '');
       }
     });
   });
@@ -1970,10 +1967,12 @@ const breadcrumbSchema = {
       const variantTitle = el.dataset.variantTitle || '';
 
       // Update add to cart button
+      const variantQtyRaw = parseInt(el.dataset.variantQty || '');
       if (addToCartBtn) {
         addToCartBtn.dataset.variantId = variantId;
         addToCartBtn.dataset.variantTitle = variantTitle;
         addToCartBtn.dataset.productPrice = variantPrice;
+        addToCartBtn.dataset.variantQty = el.dataset.variantQty || '';
         addToCartBtn.disabled = !variantAvailable;
         addToCartBtn.textContent = variantAvailable ? 'Add to Cart' : 'Sold Out';
       }
@@ -2016,12 +2015,8 @@ const breadcrumbSchema = {
       }
 
       // Switch image if variant has one
-      if (variantImage && mainImg) {
-        mainImg.style.opacity = '0';
-        setTimeout(() => {
-          mainImg.src = cfImg(variantImage);
-          mainImg.style.opacity = '1';
-        }, 150);
+      if (variantImage) {
+        updateMainImage(variantImage);
         // Update thumb active state
         thumbs.forEach((t, i) => {
           const thumbUrl = (t as HTMLElement).dataset.url || '';
@@ -2272,13 +2267,7 @@ const breadcrumbSchema = {
       thumbs.forEach(t => t.classList.remove('pdp-thumb--active'));
       thumbs[currentImageIdx]?.classList.add('pdp-thumb--active');
       syncDots(currentImageIdx);
-      if (mainImg) {
-        mainImg.style.opacity = '0';
-        setTimeout(() => {
-          mainImg.src = cfImg(imageUrls[currentImageIdx]);
-          mainImg.style.opacity = '1';
-        }, 150);
-      }
+      updateMainImage(imageUrls[currentImageIdx]);
     }
     addSwipe(galleryMain,
       () => swipeTo((currentImageIdx + 1) % imageUrls.length),
@@ -2423,24 +2412,6 @@ const breadcrumbSchema = {
       });
       recentScroll.replaceChildren(frag);
     }
-  }
-  // ─── Back in Stock badge (runtime check) ───
-  const bisHandle = window.location.pathname.split('/shop/')[1]?.replace(/\/$/, '');
-  if (bisHandle) {
-    fetch('/api/back-in-stock')
-      .then(r => r.ok ? r.json() : [])
-      .then((handles: string[]) => {
-        if (handles.includes(bisHandle)) {
-          // Show back-in-stock badge, hide new/sale badges
-          const bisEl = document.getElementById('pdp-back-in-stock-badge');
-          if (bisEl) bisEl.style.display = '';
-          const newEl = document.getElementById('pdp-new-badge');
-          if (newEl) newEl.remove();
-          const saleEl = document.getElementById('pdp-sale-badge');
-          if (saleEl) saleEl.remove();
-        }
-      })
-      .catch(() => {});
   }
 
   }); // end astro:page-load

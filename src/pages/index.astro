@@ -34,15 +34,9 @@ let heroProduct: any = null;
 let heroImageBase = heroSetting?.imageUrl?.trim().replace(/\/$/, '') || HERO_DEFAULT_IMAGE;
 
 try {
-  // Load new arrivals from Shopify automated collection
-  const newArrivals = await getCollectionByHandle('new-arrivals', 8);
-  if (newArrivals && newArrivals.products.length > 0) {
-    products = newArrivals.products;
-  } else {
-    // Fallback: latest products by best-selling if collection doesn't exist yet
-    const result = await getProducts(8);
-    products = result.products;
-  }
+  // Load newest products sorted by creation date (no Shopify collection needed)
+  const result = await getProducts(8, undefined, 'CREATED_AT');
+  products = result.products;
   hasShopify = products.length > 0;
 
   // Load hero product — smart collection "homepage-hero" (tag: hero) → hero.json → first product
@@ -111,16 +105,18 @@ function fmt(amount: number): string {
       </div>
       <div class="hero__media">
         <div class="hero__img-wrap">
-          <img
-            src={heroSrc}
-            srcset={heroSrcset}
-            sizes={HERO_SIZES}
-            alt="The Sunny & Ranney storefront in historic Roswell, Georgia"
-            width="480"
-            height="600"
-            fetchpriority="high"
-            decoding="async"
-          />
+          <a href={hasShopify && heroProduct ? `/shop/${heroProduct.handle}/` : '/shop/'} data-astro-prefetch>
+            <img
+              src={heroSrc}
+              srcset={heroSrcset}
+              sizes={HERO_SIZES}
+              alt="The Sunny & Ranney storefront in historic Roswell, Georgia"
+              width="480"
+              height="600"
+              fetchpriority="high"
+              decoding="async"
+            />
+          </a>
         </div>
         <div class="hero__accent" aria-hidden="true"></div>
         {hasShopify && heroProduct && (() => {
@@ -1307,10 +1303,7 @@ function fmt(amount: number): string {
     color: #fff;
   }
 
-  .product-card__badge--coming-soon {
-    background: #8B2252 !important;
-    color: #fff !important;
-  }
+
 
   /* ─── Sale price styling ─────────────────── */
   .product-card__price--sale {
@@ -2179,10 +2172,9 @@ function fmt(amount: number): string {
     qvSelectedVariant = variants[0] || null;
     if (qvViewFull) qvViewFull.href = `/shop/${data.handle}/`;
 
-    const comingSoon = (data.tags || '').toLowerCase().includes('coming soon');
     if (qvAdd) {
-      qvAdd.disabled = data.available === 'false' || comingSoon;
-      qvAdd.textContent = comingSoon ? 'Coming Soon' : data.available === 'false' ? 'Sold Out' : 'Add to Cart';
+      qvAdd.disabled = data.available === 'false';
+      qvAdd.textContent = data.available === 'false' ? 'Sold Out' : 'Add to Cart';
     }
 
     qvDismissGeneration++;

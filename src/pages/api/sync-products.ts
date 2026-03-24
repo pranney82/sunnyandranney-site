@@ -148,43 +148,6 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    // 1b. Track product availability for "Back in Stock" badges
-    // Stores { handle: { available: boolean, backedAt?: ISO string } }
-    // When a product goes from unavailable → available, we record the timestamp.
-    // The front-end uses this timestamp to show a "Back in Stock" badge for 14 days.
-    try {
-      const prevStateRow = await env.DB.prepare(
-        "SELECT value FROM settings WHERE key = 'settings:product_availability'"
-      ).first<{ value: string }>();
-      const prevState: Record<string, { available: boolean; backedAt?: string }> = prevStateRow
-        ? JSON.parse(prevStateRow.value)
-        : {};
-
-      const currentState: Record<string, { available: boolean; backedAt?: string }> = {};
-
-      for (const node of allProducts) {
-        const prev = prevState[node.handle];
-        const entry: { available: boolean; backedAt?: string } = {
-          available: node.availableForSale,
-        };
-
-        if (prev && !prev.available && node.availableForSale) {
-          // Was out of stock, now back — record the timestamp
-          entry.backedAt = new Date().toISOString();
-        } else if (prev?.backedAt) {
-          // Carry forward existing backedAt timestamp
-          entry.backedAt = prev.backedAt;
-        }
-
-        currentState[node.handle] = entry;
-      }
-
-      await env.DB.prepare(
-        "INSERT INTO settings (key, value, updated_at) VALUES ('settings:product_availability', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at"
-      ).bind(JSON.stringify(currentState)).run();
-    } catch (err) {
-      console.error('Availability tracking error:', err);
-    }
 
     // 2. Generate embeddings in batches (Workers AI supports batch input)
     const BATCH_SIZE = 100;
@@ -278,8 +241,8 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Poke the DeployCoordinator Durable Object to schedule a deploy.
-    // The DO debounces: each poke resets a 30-minute alarm. Only when
-    // webhook activity settles does a single deploy fire — race-free.
+    // The DO debounces: each poke resets a 15-minute alarm. A 30-minute
+    // max-wait cap ensures deploys can't be deferred indefinitely.
     let rebuilt = false;
     try {
       const id = env.DEPLOY_COORDINATOR.idFromName('singleton');

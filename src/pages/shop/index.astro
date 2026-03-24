@@ -7,7 +7,13 @@ import { fetchShopData, buildProductDataMap } from '@/lib/shop-data';
 export const prerender = true;
 
 // Fetch ALL products from enabled collections at build time
-const { products, hasShopify, productCollections, collectionTitles, collectionSubcategories } = await fetchShopData();
+const { products: rawProducts, hasShopify, productCollections, collectionTitles, collectionSubcategories } = await fetchShopData();
+
+// Sort sold-out products to the bottom
+const products = [...rawProducts].sort((a: any, b: any) => {
+  if (a.availableForSale === b.availableForSale) return 0;
+  return a.availableForSale ? -1 : 1;
+});
 
 // Random position for mission card (build-time, between index 3 and 20)
 const missionIdx = products.length >= 4
@@ -163,7 +169,6 @@ const itemListSchema = hasShopify ? {
               const price = product.priceRange.minVariantPrice;
               const compareAt = product.compareAtPriceRange?.minVariantPrice;
               const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.amount);
-              const isComingSoon = product.tags?.some((t: string) => t.toLowerCase() === 'coming soon');
               const isNewArrival = product.createdAt && (Date.now() - new Date(product.createdAt).getTime()) < 30 * 24 * 60 * 60 * 1000;
               const firstVariant = product.variants.edges[0]?.node;
 
@@ -190,14 +195,15 @@ const itemListSchema = hasShopify ? {
                   data-tags={product.tags?.join(',').toLowerCase() || ''}
                   data-collections={(productCollections[product.handle] || []).join(',')}
                   data-created={product.createdAt || ''}
+                  data-available={String(product.availableForSale)}
+                  data-on-sale={String(!!isOnSale)}
                   data-idx={idx}
                   style={idx >= 12 ? 'display:none;' : ''}
                   data-page={Math.floor(idx / 12)}
                 >
-                  {!product.availableForSale && !isComingSoon && <span class="product-card__badge product-card__badge--sold">Sold Out</span>}
-                  {isComingSoon && <span class="product-card__badge product-card__badge--coming-soon">Coming Soon</span>}
-                  {product.availableForSale && !isComingSoon && isNewArrival && <span class="product-card__badge product-card__badge--new">New</span>}
-                  {product.availableForSale && !isComingSoon && !isNewArrival && isOnSale && <span class="product-card__badge">Sale</span>}
+                  {!product.availableForSale && <span class="product-card__badge product-card__badge--sold">Sold Out</span>}
+                  {product.availableForSale && isNewArrival && <span class="product-card__badge product-card__badge--new">New</span>}
+                  {product.availableForSale && !isNewArrival && isOnSale && <span class="product-card__badge">Sale</span>}
 
                   {/* Wishlist heart */}
                   <button class="product-card__wishlist" data-handle={product.handle} aria-label="Add to wishlist">
@@ -248,7 +254,6 @@ const itemListSchema = hasShopify ? {
                         data-compare-price={isOnSale ? compareAt.amount : ''}
                         data-type={product.productType}
                         data-available={String(product.availableForSale)}
-                        data-coming-soon={String(!!isComingSoon)}
                       >Quick View</button>
                     </div>
                   </div>
@@ -291,6 +296,7 @@ const itemListSchema = hasShopify ? {
             <div class="load-more-sentinel" id="load-more-sentinel" aria-hidden="true"></div>
             <p class="load-more-count" id="load-more-count"></p>
           </div>
+          <p class="load-more-end" id="load-more-end" style="display:none;">You've seen it all</p>
 
           {/* No results */}
           <div class="no-results" id="no-results" style="display:none;">
@@ -1452,20 +1458,14 @@ const itemListSchema = hasShopify ? {
     color: var(--color-cream) !important;
   }
 
-  .product-card__badge--coming-soon {
-    background: #8B2252 !important;
-    color: #fff !important;
-  }
+
 
   .product-card__badge--new {
     background: var(--color-cyan, #2a7d8c) !important;
     color: #fff !important;
   }
 
-  .product-card__badge--back-in-stock {
-    background: #2e7d32 !important;
-    color: #fff !important;
-  }
+
 
   .product-card__add-btn,
   .product-card__add-btn-placeholder {
@@ -1511,7 +1511,7 @@ const itemListSchema = hasShopify ? {
     }
   }
 
-  /* ─── Load More (infinite scroll) ───────── */
+  /* ─── Infinite Scroll ──────────────────── */
   .load-more-wrap {
     text-align: center;
     margin-top: var(--space-xl);
@@ -1525,6 +1525,14 @@ const itemListSchema = hasShopify ? {
     font-size: 0.78rem;
     color: var(--color-slate);
     margin-top: 0.75rem;
+  }
+
+  .load-more-end {
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--color-stone);
+    margin-top: var(--space-md);
+    padding-bottom: var(--space-sm);
   }
 
   /* ─── No Results ───────────────────────── */
@@ -1951,6 +1959,7 @@ const itemListSchema = hasShopify ? {
   const panelCountEl = document.getElementById('panel-product-count');
   const loadMoreWrap = document.getElementById('load-more-wrap');
   const loadMoreCount = document.getElementById('load-more-count');
+  const loadMoreEnd = document.getElementById('load-more-end');
   const noResults = document.getElementById('no-results');
   const noResultsClear = document.getElementById('no-results-clear');
   const searchBanner = document.getElementById('search-banner');
@@ -2327,7 +2336,9 @@ const itemListSchema = hasShopify ? {
 
       const cardPrice = parseFloat(card.dataset.price || '0');
       const collections = card.dataset.collections || '';
-      const matchesCollection = !activeCollection || collections.split(',').includes(activeCollection);
+      const matchesCollection = !activeCollection || (activeCollection === 'new-arrivals'
+        ? (card.dataset.created ? (Date.now() - new Date(card.dataset.created).getTime()) < 30 * 24 * 60 * 60 * 1000 : false)
+        : collections.split(',').includes(activeCollection));
       const matchesProductType = !activeProductType || category === activeProductType || type.toLowerCase() === activeProductType.toLowerCase();
       const matchesSearch = !activeSearch ||
         title.includes(activeSearch) ||
@@ -2336,7 +2347,7 @@ const itemListSchema = hasShopify ? {
         tags.includes(activeSearch) ||
         desc.includes(activeSearch);
       const matchesPrice = cardPrice >= priceMin && cardPrice <= priceMax;
-      const matchesSale = !activeSale || !!card.querySelector('.product-card__badge')?.textContent?.trim().includes('Sale');
+      const matchesSale = !activeSale || card.dataset.onSale === 'true';
 
       if (matchesCollection && matchesProductType && matchesSearch && matchesPrice && matchesSale) {
         matchingCards.push(card);
@@ -2353,17 +2364,22 @@ const itemListSchema = hasShopify ? {
     });
 
     const shownCount = Math.min(showCount, matchCount);
+    const hasMore = matchCount > showCount;
 
     // Update count
     const countText = `${matchCount} product${matchCount !== 1 ? 's' : ''}`;
     if (countEl) countEl.textContent = countText;
     if (panelCountEl) panelCountEl.textContent = countText;
-    // Load more visibility
+
+    // Infinite scroll visibility
     if (loadMoreWrap) {
-      loadMoreWrap.style.display = matchCount > showCount ? '' : 'none';
+      loadMoreWrap.style.display = hasMore ? '' : 'none';
     }
     if (loadMoreCount) {
       loadMoreCount.textContent = `Showing ${shownCount} of ${matchCount}`;
+    }
+    if (loadMoreEnd) {
+      loadMoreEnd.style.display = (!hasMore && matchCount > 0) ? '' : 'none';
     }
 
     // No results
@@ -2425,6 +2441,11 @@ const itemListSchema = hasShopify ? {
     const sortBy = sortSelect.value;
 
     cards.sort((a, b) => {
+      // Always push sold-out items to the bottom
+      const availA = a.dataset.available !== 'false' ? 1 : 0;
+      const availB = b.dataset.available !== 'false' ? 1 : 0;
+      if (availA !== availB) return availB - availA;
+
       const priceA = parseFloat(a.dataset.price || '0');
       const priceB = parseFloat(b.dataset.price || '0');
       const titleA = (a.dataset.title || '').toLowerCase();
@@ -2469,12 +2490,16 @@ const itemListSchema = hasShopify ? {
   // ─── Infinite Scroll ──────────────────────────
   const loadMoreSentinel = document.getElementById('load-more-sentinel');
   if (loadMoreSentinel) {
+    let scrollLoading = false;
     const io = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && loadMoreWrap?.style.display !== 'none') {
+      if (entries[0].isIntersecting && loadMoreWrap?.style.display !== 'none' && !scrollLoading) {
+        scrollLoading = true;
         visiblePage++;
         applyAll();
+        // Reset after layout settles so sentinel position is recalculated
+        requestAnimationFrame(() => { scrollLoading = false; });
       }
-    }, { rootMargin: '200px' });
+    }, { rootMargin: '400px' });
     io.observe(loadMoreSentinel);
   }
 
@@ -2720,11 +2745,9 @@ const itemListSchema = hasShopify ? {
     qvSelectedVariant = variants[0] || null;
     if (qvViewFull) qvViewFull.href = `/shop/${data.handle}/`;
 
-    // Disable add if not available or coming soon
-    const comingSoon = data.comingSoon === 'true';
     if (qvAdd) {
-      qvAdd.disabled = data.available === 'false' || comingSoon;
-      qvAdd.textContent = comingSoon ? 'Coming Soon' : data.available === 'false' ? 'Sold Out' : 'Add to Cart';
+      qvAdd.disabled = data.available === 'false';
+      qvAdd.textContent = data.available === 'false' ? 'Sold Out' : 'Add to Cart';
     }
 
     // Cancel any in-flight swipe-dismiss cleanup
@@ -2952,30 +2975,6 @@ const itemListSchema = hasShopify ? {
     });
   }
 
-  // ─── Back in Stock badges (fetched from D1 at runtime) ───
-  fetch('/api/back-in-stock')
-    .then(r => r.ok ? r.json() : [])
-    .then((handles: string[]) => {
-      if (!handles.length) return;
-      const set = new Set(handles);
-      for (const card of getCards()) {
-        const handle = card.dataset.handle;
-        if (!handle || !set.has(handle)) continue;
-        // Skip if card already has a higher-priority badge (Sold Out, Coming Soon)
-        const existing = card.querySelector('.product-card__badge');
-        if (existing) {
-          const text = existing.textContent?.trim() || '';
-          if (text === 'Sold Out' || text === 'Coming Soon') continue;
-          // Replace New or Sale badge with Back in Stock
-          existing.remove();
-        }
-        const badge = document.createElement('span');
-        badge.className = 'product-card__badge product-card__badge--back-in-stock';
-        badge.textContent = 'Back in Stock';
-        card.prepend(badge);
-      }
-    })
-    .catch(() => {}); // Non-critical
 
   }); // end astro:page-load
 </script>
