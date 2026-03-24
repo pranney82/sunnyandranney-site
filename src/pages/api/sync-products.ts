@@ -247,7 +247,10 @@ export const POST: APIRoute = async ({ request }) => {
     try {
       const id = env.DEPLOY_COORDINATOR.idFromName('singleton');
       const stub = env.DEPLOY_COORDINATOR.get(id);
-      const pokeRes = await stub.fetch(new Request('https://do/poke', { method: 'POST' }));
+      const pokeRes = await stub.fetch(new Request('https://do/poke', {
+        method: 'POST',
+        headers: { 'X-Poke-Secret': syncSecret },
+      }));
       rebuilt = pokeRes.ok;
     } catch (err) {
       console.error('Deploy coordinator error:', err);

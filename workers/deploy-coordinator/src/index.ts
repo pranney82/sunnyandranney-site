@@ -9,20 +9,27 @@
  * The deploy hook URL is stored in DO storage (not env) because DO alarm()
  * handlers don't reliably receive worker-level secrets.
  *
+ * Auth:
+ *   - Admin routes (/deploy, /set-hook, /status) require Authorization: Bearer <ADMIN_TOKEN>
+ *   - Poke route (POST /) requires X-Poke-Secret header (shared with sync-products)
+ *
  * Routes:
- *   POST /            — poke (reset debounce timer), body: { hookUrl?: string }
- *   POST /deploy      — force an immediate deploy, bypassing debounce
- *   POST /set-hook    — set the deploy hook URL in DO storage
- *   GET  /status      — return current debounce state
+ *   POST /            — poke (reset debounce timer)
+ *   POST /deploy      — force an immediate deploy, bypassing debounce [auth]
+ *   POST /set-hook    — set the deploy hook URL in DO storage [auth]
+ *   GET  /status      — return current debounce state [auth]
  */
 
 interface Env {
   DEPLOY_COORDINATOR: DurableObjectNamespace;
+  ADMIN_TOKEN?: string;
+  POKE_SECRET?: string;
 }
 
 const DEBOUNCE_MS = 15 * 60 * 1000; // 15 minutes
 const MAX_WAIT_MS = 30 * 60 * 1000; // 30 minutes — deploy even if webhooks keep arriving
 const HOOK_URL_KEY = 'hookUrl';
+const ADMIN_ROUTES = ['/status', '/deploy', '/set-hook'];
 
 export class DeployCoordinator implements DurableObject {
   constructor(
@@ -171,12 +178,39 @@ export default {
     const url = new URL(request.url);
     const method = request.method;
 
+    // Route validation
+    const isAdminRoute = ADMIN_ROUTES.includes(url.pathname);
+    const isPokeRoute = url.pathname === '/';
     const allowed =
       (method === 'GET' && url.pathname === '/status') ||
-      (method === 'POST' && ['/', '/deploy', '/set-hook'].includes(url.pathname));
+      (method === 'POST' && (isPokeRoute || isAdminRoute));
 
     if (!allowed) {
       return new Response('Not found', { status: 404 });
+    }
+
+    // Admin routes require Bearer token auth
+    if (isAdminRoute) {
+      const adminToken = env.ADMIN_TOKEN;
+      if (!adminToken) {
+        return Response.json({ error: 'ADMIN_TOKEN not configured on worker' }, { status: 500 });
+      }
+      const auth = request.headers.get('Authorization');
+      if (auth !== `Bearer ${adminToken}`) {
+        return new Response('Unauthorized', { status: 401 });
+      }
+    }
+
+    // Poke route requires X-Poke-Secret header
+    if (isPokeRoute) {
+      const pokeSecret = env.POKE_SECRET;
+      if (!pokeSecret) {
+        return Response.json({ error: 'POKE_SECRET not configured on worker' }, { status: 500 });
+      }
+      const provided = request.headers.get('X-Poke-Secret');
+      if (provided !== pokeSecret) {
+        return new Response('Unauthorized', { status: 401 });
+      }
     }
 
     const id = env.DEPLOY_COORDINATOR.idFromName('singleton');
