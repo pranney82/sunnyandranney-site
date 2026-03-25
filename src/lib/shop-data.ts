@@ -12,11 +12,13 @@ export interface ShopData {
   productCollections: Record<string, string[]>;
   collectionTitles: Record<string, string>;
   collectionSubcategories: Record<string, string[]>;
+  staffPickHandles: Set<string>;
 }
 
 export async function fetchShopData(): Promise<ShopData> {
   const products: Product[] = [];
   let hasShopify = false;
+  const staffPickHandles = new Set<string>();
   const productCollections: Record<string, string[]> = {};
   const collectionTitles: Record<string, string> = {};
 
@@ -50,6 +52,14 @@ export async function fetchShopData(): Promise<ShopData> {
       }
     }
     hasShopify = products.length > 0;
+
+    // Fetch staff picks collection for badge display
+    const staffPicksCollection = await shopify.getCollectionByHandle('staff-picks', 100);
+    if (staffPicksCollection) {
+      for (const p of staffPicksCollection.products) {
+        staffPickHandles.add(p.handle);
+      }
+    }
   } catch (e) {
     console.error('[shop] Shopify fetch failed:', e instanceof Error ? e.message : e);
     console.error('[shop] Token present:', !!import.meta.env.PUBLIC_SHOPIFY_STOREFRONT_TOKEN);
@@ -73,7 +83,7 @@ export async function fetchShopData(): Promise<ShopData> {
     collectionSubcategories[handle].sort();
   }
 
-  return { products, hasShopify, productCollections, collectionTitles, collectionSubcategories };
+  return { products, hasShopify, productCollections, collectionTitles, collectionSubcategories, staffPickHandles };
 }
 
 /** Build the quick-view / search data map (images, variants, descriptions). */

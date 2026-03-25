@@ -290,6 +290,11 @@ p {
   color: #fff;
 }
 
+.product-card__badge--pick {
+  background: var(--color-sage);
+  color: #fff;
+}
+
 
 
 @media (max-width: 600px) {

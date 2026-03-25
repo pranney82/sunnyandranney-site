@@ -8,7 +8,7 @@ import { formatPriceShort as fmt, type Product } from '@/lib/shopify';
 export const prerender = true;
 
 // Fetch ALL products from enabled collections at build time
-const { products: rawProducts, hasShopify, productCollections, collectionTitles, collectionSubcategories } = await fetchShopData();
+const { products: rawProducts, hasShopify, productCollections, collectionTitles, collectionSubcategories, staffPickHandles } = await fetchShopData();
 
 // Sort sold-out products to the bottom
 const products = [...rawProducts].sort((a: Product, b: Product) => {
@@ -202,7 +202,8 @@ const itemListSchema = hasShopify ? {
                   <div class="product-card__image-container">
                     {!product.availableForSale && <span class="product-card__badge product-card__badge--sold">Sold Out</span>}
                     {product.availableForSale && isOnSale && <span class="product-card__badge">Sale</span>}
-                    {product.availableForSale && !isOnSale && isNewArrival && <span class="product-card__badge product-card__badge--new">New</span>}
+                    {product.availableForSale && !isOnSale && staffPickHandles.has(product.handle) && <span class="product-card__badge product-card__badge--pick">Staff Pick</span>}
+                    {product.availableForSale && !isOnSale && !staffPickHandles.has(product.handle) && isNewArrival && <span class="product-card__badge product-card__badge--new">New</span>}
                     <a href={`/shop/${product.handle}/`} class="product-card__image" aria-hidden="true" tabindex="-1">
                       {image ? (
                         <>
@@ -2342,8 +2343,9 @@ const itemListSchema = hasShopify ? {
 
       const cardPrice = parseFloat(card.dataset.price || '0');
       const collections = card.dataset.collections || '';
+      const isNewArrival = card.dataset.created ? (Date.now() - new Date(card.dataset.created).getTime()) < 30 * 24 * 60 * 60 * 1000 : false;
       const matchesCollection = !activeCollection || (activeCollection === 'new-arrivals'
-        ? (card.dataset.created ? (Date.now() - new Date(card.dataset.created).getTime()) < 30 * 24 * 60 * 60 * 1000 : false)
+        ? (isNewArrival && card.dataset.available !== 'false')
         : collections.split(',').includes(activeCollection));
       const matchesProductType = !activeProductType || category === activeProductType || type.toLowerCase() === activeProductType.toLowerCase();
       const matchesSearch = !activeSearch ||

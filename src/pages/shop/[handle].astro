@@ -52,6 +52,17 @@ export async function getStaticPaths() {
     }
   } catch { /* Shopify not configured — skip */ }
 
+  // Fetch staff pick handles for badge display
+  const staffPickHandles = new Set<string>();
+  try {
+    const staffPicksCollection = await getCollectionByHandle('staff-picks', 100);
+    if (staffPicksCollection) {
+      for (const p of staffPicksCollection.products) {
+        staffPickHandles.add(p.handle);
+      }
+    }
+  } catch { /* skip */ }
+
   // Build related products map — other products from the same collections
   const relatedMap = new Map<string, Product[]>();
   for (const product of allProducts) {
@@ -70,12 +81,12 @@ export async function getStaticPaths() {
 
   return allProducts.map(product => ({
     params: { handle: product.handle },
-    props: { product, relatedProducts: relatedMap.get(product.handle) || [] },
+    props: { product, relatedProducts: relatedMap.get(product.handle) || [], isStaffPick: staffPickHandles.has(product.handle) },
   }));
 }
 
 const { handle } = Astro.params;
-const { product, relatedProducts } = Astro.props;
+const { product, relatedProducts, isStaffPick } = Astro.props;
 
 if (!product) {
   return Astro.redirect('/shop/');
@@ -227,7 +238,8 @@ const breadcrumbSchema = {
             )}
             {isSoldOut && <span class="product-card__badge product-card__badge--sold" id="pdp-sold-badge">Sold Out</span>}
             {!isSoldOut && isOnSale && <span class="product-card__badge" id="pdp-sale-badge">Sale</span>}
-            {!isSoldOut && !isOnSale && isNewArrival && <span class="product-card__badge product-card__badge--new" id="pdp-new-badge">New</span>}
+            {!isSoldOut && !isOnSale && isStaffPick && <span class="product-card__badge product-card__badge--pick" id="pdp-pick-badge">Staff Pick</span>}
+            {!isSoldOut && !isOnSale && !isStaffPick && isNewArrival && <span class="product-card__badge product-card__badge--new" id="pdp-new-badge">New</span>}
 
             {/* Zoom hint */}
             <div class="pdp-zoom-hint" id="zoom-hint">
