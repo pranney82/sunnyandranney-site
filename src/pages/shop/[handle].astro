@@ -173,13 +173,13 @@ const breadcrumbSchema = {
   <section class="pdp section">
     <div class="container">
       <nav class="breadcrumbs" aria-label="Breadcrumb">
-        <ol class="breadcrumbs__list">
+        <ol class="breadcrumbs__list" role="list">
           <li><a href="/">Home</a></li>
           <li><a href="/shop/">Shop</a></li>
           {product.productType && (
             <li><a href={`/shop/?type=${encodeURIComponent(product.productType)}`}>{product.productType.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')}</a></li>
           )}
-          <li aria-current="page">{product.title}</li>
+          <li><a href={`/shop/${product.handle}/`} title={product.title} aria-current="page" tabindex="-1">{product.title}</a></li>
         </ol>
       </nav>
 
@@ -619,6 +619,10 @@ const breadcrumbSchema = {
 </Base>
 
 <style>
+  .pdp.section {
+    padding-top: var(--space-lg);
+  }
+
   .breadcrumbs {
     margin-bottom: var(--space-lg);
   }
@@ -640,7 +644,7 @@ const breadcrumbSchema = {
     align-items: center;
   }
 
-  /* Chevron separator between items */
+  /* Chevron separator — decorative, empty content so screen readers skip it */
   .breadcrumbs__list li + li::before {
     content: '';
     display: inline-block;
@@ -667,18 +671,23 @@ const breadcrumbSchema = {
     text-decoration-color: var(--color-cream-dark);
   }
 
-  /* Current page — not a link, darker color */
-  .breadcrumbs__list li[aria-current="page"] {
-    color: var(--color-charcoal);
-    font-weight: 500;
+  /* Current page — crawlable link, styled as non-interactive */
+  .breadcrumbs__list li:last-child {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 280px;
   }
 
+  .breadcrumbs__list a[aria-current="page"] {
+    color: var(--color-charcoal);
+    font-weight: 500;
+    pointer-events: none;
+    text-decoration: none;
+  }
+
   @media (min-width: 768px) {
-    .breadcrumbs__list li[aria-current="page"] {
+    .breadcrumbs__list li:last-child {
       max-width: 400px;
     }
   }
