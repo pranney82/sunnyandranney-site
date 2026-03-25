@@ -63,6 +63,9 @@ const isShopPage = Astro.url.pathname.startsWith('/shop') || Astro.url.pathname.
       .nav{position:fixed;top:0;left:0;right:0;z-index:100;background:#FAF7F2;will-change:transform}
     </style>
 
+    <!-- Flag JS is ready BEFORE first paint — gates .reveal hiding in CSS -->
+    <script is:inline>document.documentElement.classList.add('js-reveal');</script>
+
     <!-- Preconnect to external CDNs — as early as possible for LCP -->
     <link rel="preconnect" href="https://imagedelivery.net" />
     <link rel="dns-prefetch" href="https://imagedelivery.net" />
@@ -115,9 +118,24 @@ const isShopPage = Astro.url.pathname.startsWith('/shop') || Astro.url.pathname.
       window.__SHOPIFY_TOKEN = shopifyToken;
     </script>
 
-    <!-- Scroll reveal observer — re-runs after View Transitions -->
+    <!-- Sync reveal pass — is:inline blocks paint, so above-fold .reveal
+         elements are shown BEFORE the browser's first frame. No flash. -->
+    <script is:inline>
+    (function(){
+      var els = document.querySelectorAll('.reveal:not(.visible):not(.visible-instant)');
+      var vh = window.innerHeight;
+      for (var i = 0; i < els.length; i++) {
+        if (els[i].getBoundingClientRect().top < vh) {
+          els[i].classList.add('visible-instant');
+        }
+      }
+    })();
+    </script>
+
+    <!-- Async observer for below-fold reveals — module script, runs once,
+         persists across View Transitions via astro:after-swap listener. -->
     <script>
-      function initReveal() {
+      function observeReveals() {
         const observer = new IntersectionObserver(
           (entries) => {
             entries.forEach((entry) => {
@@ -129,15 +147,23 @@ const isShopPage = Astro.url.pathname.startsWith('/shop') || Astro.url.pathname.
           },
           { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
         );
-
-        document.querySelectorAll('.reveal:not(.visible)').forEach((el) => observer.observe(el));
+        document.querySelectorAll('.reveal:not(.visible):not(.visible-instant)').forEach((el) => observer.observe(el));
       }
 
-      // Run on initial load
-      initReveal();
+      observeReveals();
 
-      // Re-run after View Transitions navigate
-      document.addEventListener('astro:after-swap', initReveal);
+      // After View Transitions swap in new DOM, re-run both passes
+      document.addEventListener('astro:after-swap', () => {
+        document.documentElement.classList.add('js-reveal');
+        // Sync pass for new page's above-fold elements
+        const vh = window.innerHeight;
+        document.querySelectorAll('.reveal:not(.visible):not(.visible-instant)').forEach((el) => {
+          if (el.getBoundingClientRect().top < vh) {
+            el.classList.add('visible-instant');
+          }
+        });
+        observeReveals();
+      });
     </script>
   </body>
 </html>

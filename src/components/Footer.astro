@@ -56,7 +56,7 @@ const phoneDigits = phone.replace(/\D/g, '');
           <svg class="footer__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
         </summary>
         <nav aria-label="Shop links">
-          <ul class="footer__nav">
+          <ul class="footer__nav footer__nav--2col">
             <li><a href="/shop/">All Products</a></li>
             <li><a href="/shop/?sort=newest">New Arrivals</a></li>
             <li><a href="/shop/?collection=living">Living</a></li>
@@ -64,6 +64,7 @@ const phoneDigits = phone.replace(/\D/g, '');
             <li><a href="/shop/?collection=bedroom">Bedroom</a></li>
             <li><a href="/shop/?collection=art-mirrors">Art & Mirrors</a></li>
             <li><a href="/shop/?collection=rugs">Rugs</a></li>
+            <li><a href="/shop/?collection=outdoor">Outdoor</a></li>
             <li><a href="/shop/?sale=true">Sale</a></li>
           </ul>
         </nav>
@@ -144,7 +145,7 @@ const phoneDigits = phone.replace(/\D/g, '');
 
   @media (min-width: 768px) {
     .footer__grid {
-      grid-template-columns: 1.8fr 1fr 1fr 1fr;
+      grid-template-columns: 1.8fr 2fr 1fr 1fr;
       gap: var(--space-xl);
     }
   }
@@ -295,6 +296,14 @@ const phoneDigits = phone.replace(/\D/g, '');
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .footer__nav--2col {
+      display: block;
+      columns: 2;
+      column-gap: var(--space-md);
+    }
   }
 
   .footer__nav a {

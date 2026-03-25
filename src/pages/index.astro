@@ -110,7 +110,6 @@ const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
               width="480"
               height="480"
               fetchpriority="high"
-              decoding="async"
             />
           </a>
         </div>
@@ -508,6 +507,7 @@ const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
     border-radius: 20px;
     overflow: hidden;
     box-shadow: 0 24px 64px rgba(0,0,0,0.2), 0 8px 20px rgba(0,0,0,0.12);
+    background: #f0ede8;
   }
 
   .hero__img-wrap img {
@@ -1018,6 +1018,7 @@ const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
   .shop-look__img-wrap {
     position: relative;
     overflow: hidden;
+    background: #f0ede8;
   }
 
   .shop-look__img-wrap img {
@@ -1313,18 +1314,18 @@ const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
   }
 
   /* ─── Staggered card entrance ────────────── */
-  .home-products .product-card {
+  :global(.js-reveal) .home-products .product-card {
     opacity: 0;
     transform: translateY(16px);
     transition: opacity 0.45s var(--ease-out),
                 transform 0.45s var(--ease-out);
   }
 
-  /* Fallback: if JS hasn't run after 1s, show all cards */
+  /* Fallback: if observer hasn't run after 1s, show all cards */
   @keyframes card-fallback {
     to { opacity: 1; transform: translateY(0); }
   }
-  .home-products .product-card {
+  :global(.js-reveal) .home-products .product-card {
     animation: card-fallback 0s 1s forwards;
   }
 
@@ -1837,6 +1838,7 @@ const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
     border-radius: 16px;
     overflow: hidden;
     box-shadow: 0 20px 60px rgba(0,0,0,0.14);
+    background: #f0ede8;
   }
 
   .mission__img-wrap img {

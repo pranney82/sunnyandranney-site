@@ -424,16 +424,22 @@ p {
 .delay-5 { transition-delay: 0.5s; }
 
 /* ─── Scroll-triggered animations ───────────────────────────
-   Elements start invisible (opacity + transform don't affect layout,
-   so zero CLS). IntersectionObserver adds .visible which transitions
-   them in smoothly with no flash/jump. */
-.reveal {
+   Only hide elements when JS is confirmed ready (html.js-reveal).
+   Without JS, content stays fully visible — no flash. */
+.js-reveal .reveal {
   opacity: 0;
   transform: translateY(20px);
   transition: opacity 0.8s var(--ease-out), transform 0.8s var(--ease-out);
 }
 
-.reveal.visible {
+/* Elements already in viewport on load — shown instantly, no transition */
+.js-reveal .reveal.visible-instant {
+  opacity: 1;
+  transform: translateY(0);
+  transition: none;
+}
+
+.js-reveal .reveal.visible {
   opacity: 1;
   transform: translateY(0);
 }
@@ -550,8 +556,9 @@ p {
     animation: none !important;
     transition-duration: 0.01ms !important;
   }
-  .reveal,
-  .reveal.visible,
+  .js-reveal .reveal,
+  .js-reveal .reveal.visible,
+  .js-reveal .reveal.visible-instant,
   .animate-fade-up,
   .animate-fade-in,
   .animate-slide-left {
