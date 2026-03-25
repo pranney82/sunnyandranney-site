@@ -27,7 +27,7 @@ let hasShopify = false;
 // Load hero setting (fallback image + product handle)
 const heroSetting = await getHeroStatic();
 const HERO_DEFAULT_IMAGE = 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/sunny-ranney-storefront';
-const HERO_QUALITY = 55;
+const HERO_QUALITY = 75;
 const HERO_SIZES = '(max-width: 767px) 280px, (max-width: 1023px) 400px, 440px';
 
 let heroProduct: any = null;
@@ -65,8 +65,8 @@ try {
   console.log('Shopify API not configured.');
 }
 
-const heroSrc = cfImage(heroImageBase, { width: 480, height: 600, quality: HERO_QUALITY });
-const heroSrcset = cfSrcset(heroImageBase, [280, 480], HERO_QUALITY);
+const heroSrc = cfImage(heroImageBase, { width: 480, height: 480, quality: HERO_QUALITY });
+const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
 
 
 // Price formatter — drops .00 on whole numbers ($800 not $800.00)
@@ -112,7 +112,7 @@ function fmt(amount: number): string {
               sizes={HERO_SIZES}
               alt="The Sunny & Ranney storefront in historic Roswell, Georgia"
               width="480"
-              height="600"
+              height="480"
               fetchpriority="high"
               decoding="async"
             />
@@ -189,12 +189,12 @@ function fmt(amount: number): string {
                 <div class="staff-pick-card__img">
                   {img && (
                     <img
-                      src={cfImage(img.url, { width: 600, height: 720 })}
-                      srcset={cfSrcset(img.url, [300, 600])}
+                      src={cfImage(img.url, { width: 800, quality: 80 })}
+                      srcset={cfSrcset(img.url, [400, 600, 800], 80)}
                       sizes="(max-width: 480px) 45vw, (max-width: 768px) 30vw, 260px"
                       alt={p.title}
                       width="600"
-                      height="720"
+                      height="600"
                       loading="lazy"
                       decoding="async"
                     />
@@ -517,7 +517,7 @@ function fmt(amount: number): string {
     width: 100%;
     height: auto;
     display: block;
-    aspect-ratio: 4/5;
+    aspect-ratio: 1;
     object-fit: cover;
     transition: transform 0.8s var(--ease-out);
   }
@@ -765,6 +765,7 @@ function fmt(amount: number): string {
   .staff-picks {
     padding-top: clamp(4rem, 8vh, 6rem);
     padding-bottom: clamp(4rem, 8vh, 6rem);
+    background: #fff;
   }
 
   .staff-picks__header {
@@ -802,10 +803,10 @@ function fmt(amount: number): string {
     margin: 0;
   }
 
-  /* ── Adaptive grid: works for 3–6 items ── */
+  /* ── Grid ── */
   .staff-picks__grid {
     display: grid;
-    gap: clamp(1.25rem, 2.5vw, 1.75rem);
+    gap: clamp(2rem, 3vw, 2.5rem);
     grid-template-columns: repeat(3, 1fr);
   }
 
@@ -815,14 +816,33 @@ function fmt(amount: number): string {
     margin-inline: auto;
   }
 
-  .staff-picks__grid--5,
+  .staff-picks__grid--5 {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .staff-picks__grid--5 > :nth-child(-n+3) {
+    grid-column: span 2;
+  }
+
+  .staff-picks__grid--5 > :nth-child(4) {
+    grid-column: 2 / span 2;
+  }
+
+  .staff-picks__grid--5 > :nth-child(5) {
+    grid-column: 4 / span 2;
+  }
+
   .staff-picks__grid--6 {
     grid-template-columns: repeat(3, 1fr);
   }
 
   @media (max-width: 767px) {
-    .staff-picks__grid {
+    .staff-picks__grid,
+    .staff-picks__grid--5 {
       grid-template-columns: repeat(2, 1fr);
+    }
+    .staff-picks__grid--5 > * {
+      grid-column: span 1 !important;
     }
     .staff-picks__grid--4 {
       max-width: none;
@@ -843,30 +863,45 @@ function fmt(amount: number): string {
     display: flex;
     flex-direction: column;
     background: #fff;
-    border-radius: 12px;
+    border-radius: 10px;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.03);
-    transition: transform 0.4s var(--ease-out), box-shadow 0.4s var(--ease-out);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), 0 6px 20px rgba(0, 0, 0, 0.03);
+    transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                box-shadow 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
   .staff-pick-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
   }
 
   .staff-pick-card__img {
     position: relative;
     overflow: hidden;
-    background: #f7f5f2;
-    aspect-ratio: 4 / 5;
+    background: #f8f7f5;
+    aspect-ratio: 1 / 1;
+  }
+
+  .staff-pick-card__img::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 60%, rgba(0, 0, 0, 0.03) 100%);
+    pointer-events: none;
+    z-index: 1;
+    transition: opacity 0.4s;
+  }
+
+  .staff-pick-card:hover .staff-pick-card__img::after {
+    opacity: 0;
   }
 
   .staff-pick-card__img img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: center;
-    transition: transform 0.6s var(--ease-out);
+    object-position: center 30%;
+    transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
   .staff-pick-card:hover .staff-pick-card__img img {
@@ -879,25 +914,29 @@ function fmt(amount: number): string {
     left: 0.75rem;
     background: var(--color-charcoal);
     color: #fff;
-    font-size: 0.62rem;
+    font-size: 0.6rem;
     font-weight: 700;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    padding: 0.3rem 0.6rem;
-    border-radius: 3px;
+    padding: 0.25rem 0.55rem;
+    border-radius: 2px;
+    z-index: 2;
   }
 
   .staff-pick-card__info {
-    padding: 1rem 1.1rem 1.15rem;
+    padding: 0.9rem 1rem 1rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
   }
 
   .staff-pick-card__name {
     font-family: var(--font-body);
-    font-size: clamp(0.92rem, 1.1vw, 1rem);
-    font-weight: 600;
+    font-size: 0.9rem;
+    font-weight: 500;
     line-height: 1.4;
     color: var(--color-charcoal);
-    margin: 0 0 0.5rem;
+    margin: 0 0 0.3rem;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -911,20 +950,21 @@ function fmt(amount: number): string {
 
   .staff-pick-card__pricing {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: 0.5rem;
+    margin-top: auto;
   }
 
   .staff-pick-card__price {
     font-family: var(--font-body);
     font-size: 0.88rem;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--color-charcoal);
   }
 
   .staff-pick-card__compare {
-    font-size: 0.8rem;
-    font-weight: 500;
+    font-size: 0.82rem;
+    font-weight: 400;
     color: var(--color-stone);
     text-decoration: line-through;
   }
