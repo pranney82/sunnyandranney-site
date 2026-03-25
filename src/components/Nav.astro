@@ -45,12 +45,6 @@ const roomCollections = [
       <button class="nav__icon-btn nav__search-toggle" aria-label="Search products" id="mobile-search-toggle">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </button>
-      <a href="/shop/wishlist/" class="nav__icon-btn nav__wishlist" aria-label="Wishlist" id="mobile-wishlist-link">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-        </svg>
-        <span class="nav__wishlist-count" id="mobile-wishlist-count" style="display:none;">0</span>
-      </a>
       <button class="nav__icon-btn nav__cart" aria-label="Shopping cart" id="mobile-cart-trigger">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
@@ -128,12 +122,6 @@ const roomCollections = [
             Golf
           </a>
         </div>
-        <a href="/shop/wishlist/" class="nav__icon-btn nav__wishlist" aria-label="Wishlist" id="desktop-wishlist-link">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-          </svg>
-          <span class="nav__wishlist-count" id="desktop-wishlist-count" style="display:none;">0</span>
-        </a>
         <button class="nav__icon-btn nav__cart" aria-label="Shopping cart" id="cart-trigger">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
@@ -370,6 +358,8 @@ const roomCollections = [
   @media (min-width: 768px) {
     .nav__main { border-bottom: none; }
     .nav__main-inner { height: 72px; }
+    .nav__main-inner > .nav__logo { flex: 1; }
+    .nav__main-inner > .nav__actions { flex: 1; justify-content: flex-end; }
     .nav__logo-img { height: 52px; }
   }
 
@@ -646,25 +636,6 @@ const roomCollections = [
     justify-content: center;
   }
 
-  /* ─── Wishlist Icon ──────────────────────── */
-  .nav__wishlist { position: relative; color: var(--color-charcoal); transition: color 0.3s; text-decoration: none; }
-  .nav__wishlist:hover { color: var(--color-gold); }
-
-  .nav__wishlist-count {
-    position: absolute;
-    top: 0;
-    right: -2px;
-    width: 18px;
-    height: 18px;
-    background: #e74c3c;
-    color: #fff;
-    font-size: 0.65rem;
-    font-weight: 700;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
 
   /* ─── Category Bar ─────────────────────── */
   .nav__categories {
@@ -1219,23 +1190,6 @@ const roomCollections = [
       update();
     }
     scheduleIdle(syncMobileCartBadge);
-
-    // ── Sync wishlist badge counts ──────────────────
-    function syncWishlistBadge() {
-      try {
-        const items = JSON.parse(localStorage.getItem('sr_wishlist') || '[]');
-        const count = items.length;
-        ['mobile-wishlist-count', 'desktop-wishlist-count'].forEach(id => {
-          const el = document.getElementById(id);
-          if (!el) return;
-          el.textContent = String(count);
-          el.style.display = count > 0 ? 'flex' : 'none';
-        });
-      } catch { /* ignore */ }
-    }
-    scheduleIdle(syncWishlistBadge);
-    window.addEventListener('storage', syncWishlistBadge, { signal });
-    window.addEventListener('wishlist:change', syncWishlistBadge, { signal });
 
     // ── Active tab + indicator + scroll-into-view ──
     updateActiveTab();

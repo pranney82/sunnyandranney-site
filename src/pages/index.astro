@@ -1206,48 +1206,6 @@ function fmt(amount: number): string {
     overflow: hidden;
   }
 
-  /* ─── Wishlist heart ─────────────────────── */
-  .product-card__wishlist {
-    position: absolute;
-    top: 0.65rem;
-    right: 0.65rem;
-    z-index: 3;
-    width: 32px;
-    height: 32px;
-    border: none;
-    background: rgba(255,255,255,0.85);
-    backdrop-filter: blur(6px);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-stone);
-    cursor: pointer;
-    padding: 0;
-    transition: all 0.25s;
-    opacity: 0;
-    transform: scale(0.8);
-  }
-
-  .product-card:hover .product-card__wishlist,
-  .product-card__wishlist.is-wished {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  .product-card__wishlist:hover {
-    color: #e74c3c;
-    transform: scale(1.15);
-  }
-
-  .product-card__wishlist.is-wished {
-    color: #e74c3c;
-  }
-
-  .product-card__wishlist.is-wished svg {
-    fill: #e74c3c;
-  }
-
   /* ─── Image hover swap (homepage cards) ── */
   .product-card__img-primary,
   .product-card__img-hover {
@@ -2067,7 +2025,6 @@ function fmt(amount: number): string {
 </style>
 
 <script>
-  import { wishlist } from '@/lib/cart-store.js';
 
   document.addEventListener('astro:page-load', () => {
 
@@ -2101,35 +2058,6 @@ function fmt(amount: number): string {
       (btn as HTMLButtonElement).disabled = false;
     }, 1500);
   });
-
-  // ─── Wishlist Hearts ──────────────────────
-  function initWishlistHearts() {
-    homeProducts.querySelectorAll('.product-card__wishlist').forEach(btn => {
-      const handle = (btn as HTMLElement).dataset.handle || '';
-      if (wishlist.has(handle)) {
-        btn.classList.add('is-wished');
-      }
-    });
-  }
-
-  homeProducts.addEventListener('click', (e) => {
-    const btn = (e.target as Element)?.closest('.product-card__wishlist');
-    if (!btn) return;
-    e.preventDefault();
-    e.stopPropagation();
-
-    const handle = (btn as HTMLElement).dataset.handle || '';
-    wishlist.toggle(handle);
-    btn.classList.toggle('is-wished');
-
-    btn.animate([
-      { transform: 'scale(1)' },
-      { transform: 'scale(1.3)' },
-      { transform: 'scale(1)' },
-    ], { duration: 300, easing: 'ease-out' });
-  });
-
-  initWishlistHearts();
 
   // ─── Quick View Modal ─────────────────────
   const qvOverlay = document.getElementById('qv-overlay');

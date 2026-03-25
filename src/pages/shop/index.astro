@@ -203,11 +203,6 @@ const itemListSchema = hasShopify ? {
                   style={idx >= 12 ? 'display:none;' : ''}
                   data-page={Math.floor(idx / 12)}
                 >
-                  {/* Wishlist heart */}
-                  <button class="product-card__wishlist" data-handle={product.handle} aria-label="Add to wishlist">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                  </button>
-
                   <div class="product-card__image-container">
                     {!product.availableForSale && <span class="product-card__badge product-card__badge--sold">Sold Out</span>}
                     {product.availableForSale && isOnSale && <span class="product-card__badge">Sale</span>}
@@ -1131,11 +1126,6 @@ const itemListSchema = hasShopify ? {
     padding: var(--space-md) var(--space-lg);
   }
 
-  #shop-grid.view-list .product-card__wishlist {
-    right: auto;
-    left: 190px;
-  }
-
   /* ─── Card entrance animation ────────── */
   .product-card {
     opacity: 0;
@@ -1226,45 +1216,6 @@ const itemListSchema = hasShopify ? {
     background: transparent;
     overflow: hidden;
     contain: layout style paint;
-  }
-
-  /* Wishlist heart */
-  .product-card__wishlist {
-    position: absolute;
-    top: 0.45rem;
-    right: 0.45rem;
-    z-index: 3;
-    width: 44px;
-    height: 44px;
-    background: rgba(255,255,255,0.85);
-    backdrop-filter: blur(6px);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-stone);
-    transition: all 0.25s;
-    opacity: 0;
-    transform: scale(0.8);
-  }
-
-  .product-card:hover .product-card__wishlist,
-  .product-card__wishlist.is-wished {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  .product-card__wishlist:hover {
-    color: #e74c3c;
-    transform: scale(1.15);
-  }
-
-  .product-card__wishlist.is-wished {
-    color: #e74c3c;
-  }
-
-  .product-card__wishlist.is-wished svg {
-    fill: #e74c3c;
   }
 
   /* Image swap on hover */
@@ -2005,8 +1956,6 @@ const itemListSchema = hasShopify ? {
 </style>
 
 <script>
-  import { wishlist } from '@/lib/cart-store.js';
-
   // Clean up document-level listeners on re-init (View Transitions)
   let _shopKeyHandler: ((e: KeyboardEvent) => void) | null = null;
 
@@ -2692,36 +2641,6 @@ const itemListSchema = hasShopify ? {
       (btn as HTMLButtonElement).disabled = false;
     }, 1500);
   });
-
-  // ─── Wishlist Hearts ────────────────────────
-  function initWishlistHearts() {
-    document.querySelectorAll('.product-card__wishlist').forEach(btn => {
-      const handle = (btn as HTMLElement).dataset.handle || '';
-      if (wishlist.has(handle)) {
-        btn.classList.add('is-wished');
-      }
-    });
-  }
-
-  grid?.addEventListener('click', (e) => {
-    const btn = (e.target as Element)?.closest('.product-card__wishlist');
-    if (!btn) return;
-    e.preventDefault();
-    e.stopPropagation();
-
-    const handle = (btn as HTMLElement).dataset.handle || '';
-    wishlist.toggle(handle);
-    btn.classList.toggle('is-wished');
-
-    // Pulse animation
-    btn.animate([
-      { transform: 'scale(1)' },
-      { transform: 'scale(1.3)' },
-      { transform: 'scale(1)' },
-    ], { duration: 300, easing: 'ease-out' });
-  });
-
-  initWishlistHearts();
 
   // ─── Quick View Modal ───────────────────────
   const qvOverlay = document.getElementById('qv-overlay');

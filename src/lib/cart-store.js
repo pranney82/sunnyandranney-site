@@ -494,34 +494,6 @@ if (typeof window !== 'undefined') {
   }
 }
 
-// ─── Wishlist (lightweight) ────────────────────────────
-
-const WISH_KEY = 'sr_wishlist';
-
-export const wishlist = {
-  getItems() {
-    try { return JSON.parse(localStorage.getItem(WISH_KEY)) || []; }
-    catch { return []; }
-  },
-
-  toggle(productHandle) {
-    const items = this.getItems();
-    const idx = items.indexOf(productHandle);
-    if (idx >= 0) {
-      items.splice(idx, 1);
-    } else {
-      items.push(productHandle);
-    }
-    localStorage.setItem(WISH_KEY, JSON.stringify(items));
-    window.dispatchEvent(new CustomEvent('wishlist:change', { detail: { items } }));
-    return items;
-  },
-
-  has(productHandle) {
-    return this.getItems().includes(productHandle);
-  }
-};
-
 // ─── Recently Viewed ───────────────────────────────────
 
 const RECENT_KEY = 'sr_recent';
