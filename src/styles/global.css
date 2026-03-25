@@ -280,6 +280,11 @@ p {
 }
 
 
+.product-card__badge--sold {
+  background: var(--color-charcoal);
+  color: var(--color-cream);
+}
+
 .product-card__badge--new {
   background: var(--color-cyan, #2a7d8c);
   color: #fff;
