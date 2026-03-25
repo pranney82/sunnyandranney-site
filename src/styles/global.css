@@ -413,17 +413,18 @@ p {
 .delay-4 { animation-delay: 0.4s; }
 .delay-5 { animation-delay: 0.5s; }
 
-/* ─── Scroll-triggered animations ───────────────────────────── */
-.reveal {
-  opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 0.8s var(--ease-out),
-              transform 0.8s var(--ease-out);
+/* ─── Scroll-triggered animations ───────────────────────────
+   Elements are visible at paint — zero CLS.
+   IntersectionObserver adds .visible, which triggers a one-shot
+   keyframe. fill-mode:backwards applies the from-state only once
+   the animation starts, never at initial layout. */
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .reveal.visible {
-  opacity: 1;
-  transform: translateY(0);
+  animation: reveal 0.8s var(--ease-out) both;
 }
 
 /* ─── Cyan Section Utilities ───────────────────────────────── */
@@ -547,12 +548,13 @@ p {
     animation: none !important;
     transition-duration: 0.01ms !important;
   }
-  .reveal,
+  .reveal.visible,
   .animate-fade-up,
   .animate-fade-in,
   .animate-slide-left {
     opacity: 1;
     transform: none;
+    animation: none !important;
   }
 }
 

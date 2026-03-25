@@ -1,0 +1,325 @@
+---
+import Base from '@/layouts/Base.astro';
+import { cfImage, cfSrcset, SIZES } from '@/lib/images';
+import { fetchShopData } from '@/lib/shop-data';
+
+export const prerender = true;
+
+const { products: rawProducts, hasShopify } = await fetchShopData();
+
+// Build a lightweight lookup: handle → { title, image, price, comparePrice, type, available, handle }
+const productMap: Record<string, any> = {};
+for (const p of rawProducts) {
+  const image = p.images?.edges[0]?.node;
+  const price = p.priceRange?.minVariantPrice;
+  const compareAt = p.compareAtPriceRange?.minVariantPrice;
+  const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.amount);
+  productMap[p.handle] = {
+    title: p.title,
+    handle: p.handle,
+    type: p.productType || '',
+    price: parseFloat(price.amount),
+    comparePrice: isOnSale ? parseFloat(compareAt.amount) : null,
+    available: p.availableForSale,
+    image: image ? cfImage(image.url, { width: 400 }) : null,
+    imageSrcset: image ? cfSrcset(image.url, [200, 300, 400]) : null,
+    imageAlt: image?.altText || p.title,
+    imageW: image?.width,
+    imageH: image?.height,
+  };
+}
+
+function fmt(amount: number): string {
+  return amount % 1 === 0 ? `$${amount.toLocaleString()}` : `$${amount.toFixed(2)}`;
+}
+---
+
+<Base title="My Wishlist — Sunny & Ranney" description="Your saved items at Sunny & Ranney.">
+
+<section class="wishlist-page">
+  <div class="container">
+    <h1 class="wishlist-page__title">My Wishlist</h1>
+    <p class="wishlist-page__subtitle" id="wishlist-subtitle">Loading your saved items…</p>
+
+    <div class="wishlist-grid" id="wishlist-grid"></div>
+
+    <div class="wishlist-empty" id="wishlist-empty" style="display:none;">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </svg>
+      <p>You haven't saved any items yet.</p>
+      <a href="/shop/" class="wishlist-empty__link">Browse the shop</a>
+    </div>
+  </div>
+</section>
+
+</Base>
+
+<style>
+  .wishlist-page {
+    padding: 2rem 0 4rem;
+  }
+
+  .wishlist-page__title {
+    font-family: var(--font-heading);
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 600;
+    color: var(--color-charcoal);
+    margin: 0 0 0.25rem;
+  }
+
+  .wishlist-page__subtitle {
+    color: var(--color-stone);
+    font-size: 0.95rem;
+    margin: 0 0 1.5rem;
+  }
+
+  /* ─── Grid ───────────────────────────────── */
+  .wishlist-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .wishlist-grid { grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+  }
+
+  @media (min-width: 1024px) {
+    .wishlist-grid { grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
+  }
+
+  /* ─── Card ───────────────────────────────── */
+  .wl-card {
+    position: relative;
+    background: var(--color-warm-white);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+  }
+
+  .wl-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  }
+
+  .wl-card__remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #e74c3c;
+    transition: background 0.2s, transform 0.2s;
+  }
+
+  .wl-card__remove:hover {
+    background: #fff;
+    transform: scale(1.1);
+  }
+
+  .wl-card__image {
+    display: block;
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: var(--color-cream);
+  }
+
+  .wl-card__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+  }
+
+  .wl-card:hover .wl-card__img {
+    transform: scale(1.04);
+  }
+
+  .wl-card__info {
+    padding: 0.75rem;
+  }
+
+  .wl-card__type {
+    display: block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-stone);
+    margin-bottom: 2px;
+  }
+
+  .wl-card__title {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-charcoal);
+    text-decoration: none;
+    line-height: 1.3;
+    margin-bottom: 4px;
+  }
+
+  .wl-card__title:hover {
+    color: var(--color-gold);
+  }
+
+  .wl-card__pricing {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 0.85rem;
+  }
+
+  .wl-card__price {
+    font-weight: 600;
+    color: var(--color-charcoal);
+  }
+
+  .wl-card__price--sale {
+    color: #c0392b;
+  }
+
+  .wl-card__price--compare {
+    text-decoration: line-through;
+    color: var(--color-stone);
+    font-size: 0.8rem;
+  }
+
+  .wl-card__sold-out {
+    font-size: 0.75rem;
+    color: var(--color-stone);
+    font-style: italic;
+    margin-top: 2px;
+  }
+
+  /* ─── Empty State ────────────────────────── */
+  .wishlist-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--color-stone);
+  }
+
+  .wishlist-empty svg {
+    margin-bottom: 1rem;
+    opacity: 0.4;
+  }
+
+  .wishlist-empty p {
+    font-size: 1.05rem;
+    margin: 0 0 1rem;
+  }
+
+  .wishlist-empty__link {
+    display: inline-block;
+    padding: 0.6rem 1.5rem;
+    background: var(--color-charcoal);
+    color: #fff;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background 0.2s;
+  }
+
+  .wishlist-empty__link:hover {
+    background: var(--color-gold);
+    color: var(--color-charcoal);
+  }
+</style>
+
+<script define:vars={{ productMap }}>
+  // Product data is embedded at build time
+  window.__wishlistProducts = productMap;
+</script>
+
+<script>
+  import { wishlist } from '@/lib/cart-store.js';
+
+  function renderWishlist() {
+    const grid = document.getElementById('wishlist-grid');
+    const empty = document.getElementById('wishlist-empty');
+    const subtitle = document.getElementById('wishlist-subtitle');
+    if (!grid) return;
+
+    const products = (window as any).__wishlistProducts || {};
+    const handles = wishlist.getItems();
+
+    // Filter to only handles that exist in the product catalog
+    const validItems = handles.filter((h: string) => products[h]);
+
+    if (validItems.length === 0) {
+      grid.innerHTML = '';
+      if (empty) empty.style.display = 'block';
+      if (subtitle) subtitle.textContent = '';
+      return;
+    }
+
+    if (empty) empty.style.display = 'none';
+    if (subtitle) subtitle.textContent = `${validItems.length} saved item${validItems.length !== 1 ? 's' : ''}`;
+
+    function fmt(amount: number): string {
+      return amount % 1 === 0 ? `$${amount.toLocaleString()}` : `$${amount.toFixed(2)}`;
+    }
+
+    grid.innerHTML = validItems.map((handle: string) => {
+      const p = products[handle];
+      return `
+        <div class="wl-card" data-handle="${handle}">
+          <button class="wl-card__remove" data-handle="${handle}" aria-label="Remove from wishlist">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+          </button>
+          <a href="/shop/${handle}/" class="wl-card__image">
+            ${p.image
+              ? `<img class="wl-card__img" src="${p.image}" srcset="${p.imageSrcset}" sizes="(min-width:1024px) 25vw, (min-width:640px) 33vw, 50vw" alt="${p.imageAlt}" width="${p.imageW}" height="${p.imageH}" loading="lazy" decoding="async" />`
+              : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--color-stone);">${p.type || 'Product'}</div>`
+            }
+          </a>
+          <div class="wl-card__info">
+            <span class="wl-card__type">${p.type || '\u00A0'}</span>
+            <a href="/shop/${handle}/" class="wl-card__title">${p.title}</a>
+            <div class="wl-card__pricing">
+              <span class="wl-card__price${p.comparePrice ? ' wl-card__price--sale' : ''}">${fmt(p.price)}</span>
+              ${p.comparePrice ? `<span class="wl-card__price--compare">${fmt(p.comparePrice)}</span>` : ''}
+            </div>
+            ${!p.available ? '<div class="wl-card__sold-out">Sold out</div>' : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Handle remove clicks
+  document.getElementById('wishlist-grid')?.addEventListener('click', (e) => {
+    const btn = (e.target as Element)?.closest('.wl-card__remove') as HTMLElement | null;
+    if (!btn) return;
+    e.preventDefault();
+
+    const handle = btn.dataset.handle || '';
+    const card = btn.closest('.wl-card') as HTMLElement;
+
+    // Animate out
+    if (card) {
+      card.style.transition = 'opacity 0.25s, transform 0.25s';
+      card.style.opacity = '0';
+      card.style.transform = 'scale(0.95)';
+    }
+
+    wishlist.toggle(handle);
+
+    setTimeout(() => renderWishlist(), 280);
+  });
+
+  // Initial render
+  renderWishlist();
+  document.addEventListener('astro:after-swap', renderWishlist);
+</script>

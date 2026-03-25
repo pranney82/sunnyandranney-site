@@ -388,6 +388,13 @@ const itemListSchema = hasShopify ? {
     <div class="qv-body">
       <div class="qv-gallery">
         <img class="qv-image" id="qv-image" src="" alt="" />
+        <button class="qv-arrow qv-arrow--prev" id="qv-prev" aria-label="Previous image" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 15 7 10 12 5"/></svg>
+        </button>
+        <button class="qv-arrow qv-arrow--next" id="qv-next" aria-label="Next image" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 5 13 10 8 15"/></svg>
+        </button>
+        <span class="qv-counter" id="qv-counter" aria-hidden="true"></span>
         <div class="qv-thumbs" id="qv-thumbs"></div>
       </div>
       <div class="qv-info">
@@ -1555,7 +1562,8 @@ const itemListSchema = hasShopify ? {
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s, visibility 0.3s;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
   }
 
   .qv-overlay[aria-hidden="false"] {
@@ -1623,18 +1631,19 @@ const itemListSchema = hasShopify ? {
 
   .qv-close {
     position: absolute;
-    top: 1rem;
-    right: 1rem;
+    top: 0.75rem;
+    right: 0.75rem;
     z-index: 2;
-    width: 48px;
-    height: 48px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255,255,255,0.9);
+    background: rgba(255,255,255,0.92);
     border-radius: 50%;
     color: var(--color-charcoal);
     transition: all 0.2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
   }
   .qv-close:hover { background: var(--color-gold); }
 
@@ -1669,6 +1678,51 @@ const itemListSchema = hasShopify ? {
     object-fit: cover;
     transition: opacity 0.3s;
   }
+
+  .qv-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    width: 36px;
+    height: 36px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.88);
+    border: none;
+    border-radius: 50%;
+    color: var(--color-charcoal);
+    cursor: pointer;
+    transition: background 0.2s, box-shadow 0.2s, opacity 0.2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    opacity: 0;
+  }
+  .qv-arrow:hover { background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+  .qv-arrow--prev { left: 0.5rem; }
+  .qv-arrow--next { right: 0.5rem; }
+  .qv-arrow[aria-hidden="false"] { display: flex; }
+  .qv-gallery:hover .qv-arrow[aria-hidden="false"] { opacity: 1; }
+
+  @media (max-width: 639px) {
+    .qv-arrow { display: none !important; }
+  }
+
+  .qv-counter {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: 2;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--color-charcoal);
+    background: rgba(255,255,255,0.85);
+    padding: 0.2rem 0.5rem;
+    border-radius: 100px;
+    display: none;
+  }
+  .qv-counter[aria-hidden="false"] { display: block; }
 
   .qv-thumbs {
     position: absolute;
@@ -1750,9 +1804,16 @@ const itemListSchema = hasShopify ? {
     line-height: 1.6;
     max-width: none;
     display: -webkit-box;
-    -webkit-line-clamp: 4;
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    margin: 0;
+  }
+
+  @media (min-width: 640px) {
+    .qv-description {
+      -webkit-line-clamp: 4;
+    }
   }
 
   .qv-variants {
@@ -2668,6 +2729,9 @@ const itemListSchema = hasShopify ? {
   const qvClose = document.getElementById('qv-close');
   const qvImage = document.getElementById('qv-image') as HTMLImageElement;
   const qvThumbs = document.getElementById('qv-thumbs');
+  const qvPrev = document.getElementById('qv-prev');
+  const qvNext = document.getElementById('qv-next');
+  const qvCounter = document.getElementById('qv-counter');
   const qvType = document.getElementById('qv-type');
   const qvTitle = document.getElementById('qv-title');
   const qvPrice = document.getElementById('qv-price');
@@ -2695,6 +2759,38 @@ const itemListSchema = hasShopify ? {
     return url;
   }
 
+  function qvShowArrows(show: boolean) {
+    const val = show ? 'false' : 'true';
+    qvPrev?.setAttribute('aria-hidden', val);
+    qvNext?.setAttribute('aria-hidden', val);
+    qvCounter?.setAttribute('aria-hidden', val);
+  }
+
+  function qvUpdateCounter() {
+    if (qvCounter && qvImages.length > 1) {
+      qvCounter.textContent = `${qvCurrentImage + 1} / ${qvImages.length}`;
+    }
+  }
+
+  function qvGoToImage(idx: number) {
+    if (idx === qvCurrentImage || !qvImage) return;
+    qvCurrentImage = idx;
+    qvImage.style.opacity = '0';
+    const src = qvOptimize(qvImages[idx]);
+    const loader = new Image();
+    loader.src = src;
+    const apply = () => {
+      qvImage.src = src;
+      requestAnimationFrame(() => { qvImage.style.opacity = '1'; });
+    };
+    if (loader.complete) apply();
+    else loader.onload = apply;
+    qvThumbs?.querySelectorAll('.qv-thumb').forEach((t, i) => {
+      t.classList.toggle('qv-thumb--active', i === idx);
+    });
+    qvUpdateCounter();
+  }
+
   function openQuickView(data: any) {
     qvImages = JSON.parse(data.images || '[]');
     const variants = JSON.parse(data.variants || '[]');
@@ -2706,14 +2802,17 @@ const itemListSchema = hasShopify ? {
       qvCurrentImage = 0;
     }
 
-    // Thumbs (dots)
+    // Thumbs (dots) + arrows + counter
+    const hasMultiple = qvImages.length > 1;
     if (qvThumbs) {
-      qvThumbs.innerHTML = qvImages.length > 1
+      qvThumbs.innerHTML = hasMultiple
         ? qvImages.map((_: string, i: number) =>
             `<button class="qv-thumb ${i === 0 ? 'qv-thumb--active' : ''}" data-idx="${i}"></button>`
           ).join('')
         : '';
     }
+    qvShowArrows(hasMultiple);
+    qvUpdateCounter();
 
     if (qvType) qvType.textContent = data.type || '';
     if (qvTitle) qvTitle.textContent = data.title || '';
@@ -2768,9 +2867,24 @@ const itemListSchema = hasShopify ? {
 
   qvOverlay?.addEventListener('click', closeQuickView);
   qvClose?.addEventListener('click', closeQuickView);
+  qvPrev?.addEventListener('click', () => {
+    if (qvImages.length > 1) qvGoToImage((qvCurrentImage - 1 + qvImages.length) % qvImages.length);
+  });
+  qvNext?.addEventListener('click', () => {
+    if (qvImages.length > 1) qvGoToImage((qvCurrentImage + 1) % qvImages.length);
+  });
   if (_shopKeyHandler) document.removeEventListener('keydown', _shopKeyHandler);
   _shopKeyHandler = (e: KeyboardEvent) => {
-    if (e.key === 'Escape' && qvModal?.getAttribute('aria-hidden') === 'false') closeQuickView();
+    if (qvModal?.getAttribute('aria-hidden') !== 'false') return;
+    if (e.key === 'Escape') closeQuickView();
+    if (e.key === 'ArrowLeft' && qvImages.length > 1) {
+      e.preventDefault();
+      qvGoToImage((qvCurrentImage - 1 + qvImages.length) % qvImages.length);
+    }
+    if (e.key === 'ArrowRight' && qvImages.length > 1) {
+      e.preventDefault();
+      qvGoToImage((qvCurrentImage + 1) % qvImages.length);
+    }
   };
   document.addEventListener('keydown', _shopKeyHandler);
 
@@ -2866,12 +2980,7 @@ const itemListSchema = hasShopify ? {
   qvThumbs?.addEventListener('click', (e) => {
     const btn = (e.target as Element)?.closest('.qv-thumb') as HTMLElement;
     if (!btn) return;
-    const idx = parseInt(btn.dataset.idx || '0');
-    qvCurrentImage = idx;
-    if (qvImage) qvImage.src = qvOptimize(qvImages[idx]);
-    qvThumbs.querySelectorAll('.qv-thumb').forEach((t, i) => {
-      t.classList.toggle('qv-thumb--active', i === idx);
-    });
+    qvGoToImage(parseInt(btn.dataset.idx || '0'));
   });
 
   // Quick view touch swipe
@@ -2890,13 +2999,10 @@ const itemListSchema = hasShopify ? {
       const dx = e.changedTouches[0].clientX - qvStartX;
       const dy = e.changedTouches[0].clientY - qvStartY;
       if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
-        qvCurrentImage = dx < 0
+        const next = dx < 0
           ? (qvCurrentImage + 1) % qvImages.length
           : (qvCurrentImage - 1 + qvImages.length) % qvImages.length;
-        qvImage.src = qvOptimize(qvImages[qvCurrentImage]);
-        qvThumbs?.querySelectorAll('.qv-thumb').forEach((t, i) => {
-          t.classList.toggle('qv-thumb--active', i === qvCurrentImage);
-        });
+        qvGoToImage(next);
       }
     }, { passive: true });
   }
@@ -2912,7 +3018,7 @@ const itemListSchema = hasShopify ? {
     qvSelectedVariant = { id: btn.dataset.variantId, price, title: btn.textContent?.trim() || '' };
     // Switch to variant image if available
     const idx = parseInt(btn.dataset.idx || '0');
-    if (qvImages[idx] && qvImage) qvImage.src = qvOptimize(qvImages[idx]);
+    if (qvImages[idx]) qvGoToImage(idx);
   });
 
   // Quick view add to cart

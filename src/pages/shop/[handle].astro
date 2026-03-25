@@ -177,11 +177,29 @@ const breadcrumbSchema = {
           <li><a href="/">Home</a></li>
           <li><a href="/shop/">Shop</a></li>
           {product.productType && (
-            <li><a href={`/shop/?type=${encodeURIComponent(product.productType)}`}>{product.productType.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')}</a></li>
+            <li><a href={`/shop/?type=${encodeURIComponent(product.productType)}`} id="breadcrumb-category">{product.productType.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')}</a></li>
           )}
           <li><a href={`/shop/${product.handle}/`} title={product.title} aria-current="page" tabindex="-1">{product.title}</a></li>
         </ol>
       </nav>
+      <script is:inline>
+        (function() {
+          try {
+            var params = new URLSearchParams(window.location.search);
+            var collection = params.get('collection');
+            var type = params.get('type');
+            var catLink = document.getElementById('breadcrumb-category');
+            if (!catLink || (!collection && !type)) return;
+            var backParams = new URLSearchParams();
+            if (collection) backParams.set('collection', collection);
+            if (type) backParams.set('type', type);
+            catLink.href = '/shop/?' + backParams.toString();
+            if (collection) {
+              catLink.textContent = collection === 'new-arrivals' ? 'New Arrivals' : collection.split('-').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
+            }
+          } catch(e) {}
+        })();
+      </script>
 
       <div class="pdp-grid">
         <!-- Image Gallery -->

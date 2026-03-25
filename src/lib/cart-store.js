@@ -513,6 +513,7 @@ export const wishlist = {
       items.push(productHandle);
     }
     localStorage.setItem(WISH_KEY, JSON.stringify(items));
+    window.dispatchEvent(new CustomEvent('wishlist:change', { detail: { items } }));
     return items;
   },
 
