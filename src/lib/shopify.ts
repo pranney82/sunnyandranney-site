@@ -515,6 +515,11 @@ export function formatPrice(amount: string, currencyCode = 'USD'): string {
   }).format(parseFloat(amount));
 }
 
+/** Format price dropping .00 on whole numbers ($800 not $800.00) */
+export function formatPriceShort(amount: number): string {
+  return amount % 1 === 0 ? `$${amount.toLocaleString()}` : `$${amount.toFixed(2)}`;
+}
+
 export function getProductImage(product: Product, index = 0) {
   return product.images.edges[index]?.node;
 }

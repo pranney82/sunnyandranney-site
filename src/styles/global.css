@@ -412,24 +412,25 @@ p {
 }
 
 /* Staggered delays */
-.delay-1 { animation-delay: 0.1s; }
-.delay-2 { animation-delay: 0.2s; }
-.delay-3 { animation-delay: 0.3s; }
-.delay-4 { animation-delay: 0.4s; }
-.delay-5 { animation-delay: 0.5s; }
+.delay-1 { transition-delay: 0.1s; }
+.delay-2 { transition-delay: 0.2s; }
+.delay-3 { transition-delay: 0.3s; }
+.delay-4 { transition-delay: 0.4s; }
+.delay-5 { transition-delay: 0.5s; }
 
 /* ─── Scroll-triggered animations ───────────────────────────
-   Elements are visible at paint — zero CLS.
-   IntersectionObserver adds .visible, which triggers a one-shot
-   keyframe. fill-mode:backwards applies the from-state only once
-   the animation starts, never at initial layout. */
-@keyframes reveal {
-  from { opacity: 0; transform: translateY(30px); }
-  to   { opacity: 1; transform: translateY(0); }
+   Elements start invisible (opacity + transform don't affect layout,
+   so zero CLS). IntersectionObserver adds .visible which transitions
+   them in smoothly with no flash/jump. */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s var(--ease-out), transform 0.8s var(--ease-out);
 }
 
 .reveal.visible {
-  animation: reveal 0.8s var(--ease-out) both;
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* ─── Cyan Section Utilities ───────────────────────────────── */
@@ -534,18 +535,9 @@ p {
   color: var(--color-charcoal);
 }
 
-/* ─── Content Visibility (skip rendering for off-screen sections) ── */
-/* Note: .hero is excluded — content-visibility: auto delays above-fold rendering */
-.section:not(:first-child),
-.value-bar,
-.mission-strip,
-.mission,
-.visit-strip,
-.related-section,
-.recently-section {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 500px;
-}
+/* content-visibility removed — the generic contain-intrinsic-size caused
+   scroll-position jumps when actual section heights differed from the 500px
+   estimate.  The rendering savings are marginal on a static site. */
 
 /* ─── Reduced Motion ───────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
@@ -553,6 +545,7 @@ p {
     animation: none !important;
     transition-duration: 0.01ms !important;
   }
+  .reveal,
   .reveal.visible,
   .animate-fade-up,
   .animate-fade-in,

@@ -1,7 +1,7 @@
 ---
 import Base from '@/layouts/Base.astro';
 import GoogleReviews from '@/components/GoogleReviews.astro';
-import { getProducts, getCollectionByHandle, getProductByHandle } from '@/lib/shopify';
+import { getProducts, getCollectionByHandle, getProductByHandle, formatPriceShort as fmt } from '@/lib/shopify';
 import { cfImage, cfSrcset } from '@/lib/images';
 import { getHeroStatic, getReviewsStatic } from '@/lib/settings';
 import { fetchGooglePlaceData } from '@/lib/google-places';
@@ -69,10 +69,6 @@ const heroSrc = cfImage(heroImageBase, { width: 480, height: 480, quality: HERO_
 const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
 
 
-// Price formatter — drops .00 on whole numbers ($800 not $800.00)
-function fmt(amount: number): string {
-  return amount % 1 === 0 ? `$${amount.toLocaleString()}` : `$${amount.toFixed(2)}`;
-}
 ---
 
 <Base lcpImage={heroSrc} lcpImageSrcset={heroSrcset} lcpImageSizes={HERO_SIZES}>
@@ -508,6 +504,7 @@ function fmt(amount: number): string {
     z-index: 1;
     width: 90%;
     max-width: 320px;
+    aspect-ratio: 1;
     border-radius: 20px;
     overflow: hidden;
     box-shadow: 0 24px 64px rgba(0,0,0,0.2), 0 8px 20px rgba(0,0,0,0.12);

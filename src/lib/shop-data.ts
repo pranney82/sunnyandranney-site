@@ -4,9 +4,10 @@
  * so that product data can be externalised from the HTML payload.
  */
 import { getCollectionsStatic } from '@/lib/settings';
+import type { Product } from '@/lib/shopify';
 
 export interface ShopData {
-  products: any[];
+  products: Product[];
   hasShopify: boolean;
   productCollections: Record<string, string[]>;
   collectionTitles: Record<string, string>;
@@ -14,7 +15,7 @@ export interface ShopData {
 }
 
 export async function fetchShopData(): Promise<ShopData> {
-  const products: any[] = [];
+  const products: Product[] = [];
   let hasShopify = false;
   const productCollections: Record<string, string[]> = {};
   const collectionTitles: Record<string, string> = {};
@@ -76,11 +77,11 @@ export async function fetchShopData(): Promise<ShopData> {
 }
 
 /** Build the quick-view / search data map (images, variants, descriptions). */
-export function buildProductDataMap(products: any[]): Record<string, any> {
-  const map: Record<string, any> = {};
+export function buildProductDataMap(products: Product[]): Record<string, { i: string[]; v: Array<{ id: string; title: string; price: string; available: boolean; image: string }>; d: string }> {
+  const map: Record<string, { i: string[]; v: Array<{ id: string; title: string; price: string; available: boolean; image: string }>; d: string }> = {};
   for (const product of products) {
-    const allImages = product.images.edges.map((e: any) => e.node.url);
-    const allVariants = product.variants.edges.map((e: any) => ({
+    const allImages = product.images.edges.map(e => e.node.url);
+    const allVariants = product.variants.edges.map(e => ({
       id: e.node.id,
       title: e.node.title,
       price: e.node.price.amount,

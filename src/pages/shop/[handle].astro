@@ -3,7 +3,7 @@ export const prerender = true;
 
 import Base from '@/layouts/Base.astro';
 import { cfImage, cfSrcset, SIZES } from '@/lib/images';
-import { getCollectionByHandle, getProductByHandle, getProducts } from '@/lib/shopify';
+import { getCollectionByHandle, getProductByHandle, getProducts, formatPriceShort as fmt, type Product, type ShopifyImage, type ProductVariant, type ProductMedia } from '@/lib/shopify';
 import { getCollectionsStatic, getHeroStatic } from '@/lib/settings';
 
 export async function getStaticPaths() {
@@ -14,7 +14,7 @@ export async function getStaticPaths() {
     .sort((a, b) => a.order - b.order)
     .map(c => c.handle) ?? [];
 
-  const allProducts: any[] = [];
+  const allProducts: Product[] = [];
   const seen = new Set<string>();
 
   for (const handle of enabledHandles) {
@@ -43,7 +43,7 @@ export async function getStaticPaths() {
 
     // Add hero product
     const heroHandle = heroSetting?.productHandle;
-    if (heroHandle && !new Set(allProducts.map((p: any) => p.handle)).has(heroHandle)) {
+    if (heroHandle && !new Set(allProducts.map(p => p.handle)).has(heroHandle)) {
       const heroProduct = await getProductByHandle(heroHandle);
       if (heroProduct && !seen.has(heroProduct.id)) {
         seen.add(heroProduct.id);
@@ -53,7 +53,7 @@ export async function getStaticPaths() {
   } catch { /* Shopify not configured — skip */ }
 
   // Build related products map — other products from the same collections
-  const relatedMap = new Map<string, any[]>();
+  const relatedMap = new Map<string, Product[]>();
   for (const product of allProducts) {
     const others = allProducts
       .filter(p => p.handle !== product.handle && p.productType === product.productType)
@@ -81,18 +81,20 @@ if (!product) {
   return Astro.redirect('/shop/');
 }
 
-const images = product.images.edges.map((e: any) => e.node);
-const variants = product.variants.edges.map((e: any) => e.node);
+const images = product.images.edges.map((e: { node: ShopifyImage }) => e.node);
+const variants = product.variants.edges.map((e: { node: ProductVariant }) => e.node);
 const mainImage = images[0];
 const lcpImage = mainImage ? cfImage(mainImage.url, { width: 900 }) : undefined;
+const lcpImageSrcset = mainImage ? cfSrcset(mainImage.url, [450, 900, 1400]) : undefined;
+const lcpImageSizes = SIZES.pdpMain;
 const price = product.priceRange.minVariantPrice;
 const compareAt = product.compareAtPriceRange?.minVariantPrice;
 const isOnSale = compareAt && parseFloat(compareAt.amount) > parseFloat(price.amount);
 
 // Extract videos from media
 const videos = (product.media?.edges || [])
-  .filter((e: any) => e.node.mediaContentType === 'VIDEO' || e.node.mediaContentType === 'EXTERNAL_VIDEO')
-  .map((e: any) => e.node);
+  .filter((e: { node: ProductMedia }) => e.node.mediaContentType === 'VIDEO' || e.node.mediaContentType === 'EXTERNAL_VIDEO')
+  .map((e: { node: ProductMedia }) => e.node);
 
 // Low stock threshold - show urgency when <= 5 items left
 const firstVariant = variants[0];
@@ -101,11 +103,6 @@ const isLowStock = stockQty !== null && stockQty > 0 && stockQty <= 5;
 const isSoldOut = !product.availableForSale;
 
 const isNewArrival = product.createdAt && (Date.now() - new Date(product.createdAt).getTime()) < 30 * 24 * 60 * 60 * 1000;
-
-// Price formatter — drops .00 on whole numbers ($800 not $800.00)
-function fmt(amount: number): string {
-  return amount % 1 === 0 ? `$${amount.toLocaleString()}` : `$${amount.toFixed(2)}`;
-}
 
 const productUrl = `https://sunnyandranney.com/shop/${product.handle}/`;
 
@@ -118,7 +115,13 @@ const productSchema = {
   sku: product.handle,
   brand: { '@type': 'Brand', name: product.vendor || 'Sunny & Ranney' },
   url: productUrl,
-  image: images.map((img: any) => img.url),
+  image: images.map((img: ShopifyImage) => img.url),
+  ...(product.category && {
+    category: [
+      ...(product.category.ancestors || []).map(a => a.name),
+      product.category.name,
+    ].join(' > '),
+  }),
   offers: {
     '@type': 'Offer',
     url: productUrl,
@@ -165,6 +168,8 @@ const breadcrumbSchema = {
   description={product.seo?.description || product.description?.slice(0, 160)}
   image={mainImage?.url}
   lcpImage={lcpImage}
+  lcpImageSrcset={lcpImageSrcset}
+  lcpImageSizes={lcpImageSizes}
   type="product"
 >
   <script type="application/ld+json" set:html={JSON.stringify(productSchema)} />
@@ -234,7 +239,7 @@ const breadcrumbSchema = {
             <>
               {/* Mobile dot indicators */}
               <div class="pdp-gallery__dots" id="gallery-dots">
-                {images.map((_: any, i: number) => (
+                {images.map((_: ShopifyImage, i: number) => (
                   <button
                     class:list={['pdp-dot', { 'pdp-dot--active': i === 0 }]}
                     data-idx={i}
@@ -244,7 +249,7 @@ const breadcrumbSchema = {
               </div>
               {/* Desktop thumbnails */}
               <div class="pdp-gallery__thumbs">
-                {images.map((img: any, i: number) => (
+                {images.map((img: ShopifyImage, i: number) => (
                   <button
                     class:list={['pdp-thumb', { 'pdp-thumb--active': i === 0 }]}
                     data-url={img.url}
@@ -256,7 +261,7 @@ const breadcrumbSchema = {
                   </button>
                 ))}
                 {/* Video thumbnails */}
-                {videos.map((video: any, i: number) => (
+                {videos.map((video: ProductMedia, i: number) => (
                   <button
                     class="pdp-thumb pdp-thumb--video"
                     data-type="video"
@@ -317,7 +322,7 @@ const breadcrumbSchema = {
                 Options: <span class="pdp-variants__selected" id="selected-variant-label">{variants[0].title}</span>
               </label>
               <div class="pdp-variants__options">
-                {variants.map((v: any, i: number) => (
+                {variants.map((v: ProductVariant, i: number) => (
                   <button
                     class:list={['pdp-variant-btn', { 'pdp-variant-btn--active': i === 0 }]}
                     data-variant-id={v.id}
@@ -481,14 +486,14 @@ const breadcrumbSchema = {
         <div class="fbt-row reveal">
           <div class="fbt-item fbt-item--current">
             <div class="fbt-item__image">
-              {mainImage && <img src={cfImage(mainImage.url, { width: 300 })} alt={product.title} loading="lazy" />}
+              {mainImage && <img src={cfImage(mainImage.url, { width: 300 })} alt={product.title} loading="lazy" fetchpriority="low" />}
             </div>
             <span class="fbt-item__name">{product.title}</span>
             <span class="fbt-item__price">{fmt(parseFloat(price.amount))}</span>
             <span class="fbt-item__this">This item</span>
           </div>
           <span class="fbt-plus">+</span>
-          {relatedProducts.slice(0, 2).map((rp: any, rpIdx: number) => {
+          {relatedProducts.slice(0, 2).map((rp: Product, rpIdx: number) => {
             const rpImage = rp.images.edges[0]?.node;
             const rpPrice = rp.priceRange.minVariantPrice;
             const rpVariant = rp.variants?.edges[0]?.node;
@@ -504,7 +509,7 @@ const breadcrumbSchema = {
                     data-handle={rp.handle}
                   />
                   <a href={`/shop/${rp.handle}/`} class="fbt-item__image">
-                    {rpImage && <img src={cfImage(rpImage.url, { width: 300 })} alt={rp.title} loading="lazy" />}
+                    {rpImage && <img src={cfImage(rpImage.url, { width: 300 })} alt={rp.title} loading="lazy" fetchpriority="low" />}
                   </a>
                   <a href={`/shop/${rp.handle}/`} class="fbt-item__name">{rp.title}</a>
                   <span class="fbt-item__price">{fmt(parseFloat(rpPrice.amount))}</span>
@@ -516,7 +521,7 @@ const breadcrumbSchema = {
           <div class="fbt-total">
             <span class="fbt-total__label">Bundle Price</span>
             <span class="fbt-total__price" id="fbt-total-price">
-              {fmt(parseFloat(price.amount) + relatedProducts.slice(0, 2).reduce((s: number, rp: any) => s + parseFloat(rp.priceRange.minVariantPrice.amount), 0))}
+              {fmt(parseFloat(price.amount) + relatedProducts.slice(0, 2).reduce((s: number, rp: Product) => s + parseFloat(rp.priceRange.minVariantPrice.amount), 0))}
             </span>
             <button class="btn btn--gold fbt-total__btn" id="fbt-add-all">Add All to Cart</button>
           </div>
@@ -531,7 +536,7 @@ const breadcrumbSchema = {
       <div class="container">
         <h2 class="related-title reveal">You Might Also Love</h2>
         <div class="related-grid reveal">
-          {relatedProducts.map((rp: any) => {
+          {relatedProducts.map((rp: Product) => {
             const rpImage = rp.images.edges[0]?.node;
             const rpPrice = rp.priceRange.minVariantPrice;
             return (
@@ -547,6 +552,7 @@ const breadcrumbSchema = {
                       height={rpImage.height}
                       loading="lazy"
                       decoding="async"
+                      fetchpriority="low"
                     />
                   )}
                 </div>
@@ -1787,7 +1793,7 @@ const breadcrumbSchema = {
 </style>
 
 <script>
-  import { cart, recentlyViewed } from '@/lib/cart-store.js';
+  import { cart, recentlyViewed } from '@/lib/cart-store';
 
   // Clean up previous keydown listener on re-init (View Transitions)
   let _pdpKeyHandler: ((e: KeyboardEvent) => void) | null = null;
