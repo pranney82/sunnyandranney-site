@@ -12,6 +12,10 @@ export default defineConfig({
     sitemap(),
   ],
 
+  redirects: {
+    '/events/': 'https://sunshineonaranneyday.com/events/golf/',
+  },
+
   // Strip whitespace from HTML output
   compressHTML: true,
 

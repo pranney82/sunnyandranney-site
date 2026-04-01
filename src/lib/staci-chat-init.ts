@@ -1021,12 +1021,7 @@ setInterval(updateTimestamps, 30_000);
 const _sendBtn = document.getElementById('staci-send') as HTMLButtonElement | null;
 if (_sendBtn) _sendBtn.disabled = true;
 
-// Show proactive greeting after 5s for first-time visitors (no existing session, panel not open)
-if (!conversationHistory.length && !isPanelOpen() && !sessionStorage.getItem(GREETING_SHOWN_KEY)) {
-  setTimeout(() => {
-    if (!isPanelOpen()) showGreeting();
-  }, 5000);
-}
+// Proactive greeting disabled — users found the auto-popup annoying
 
 // Dismiss greeting whenever the toggle is clicked (panel opening)
 const _toggleEl = document.getElementById('staci-toggle');

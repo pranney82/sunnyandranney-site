@@ -39,9 +39,6 @@ const roomCollections = [
           Mission
           <img src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/soard-favicon/w=40,h=40,fit=cover,q=80,format=auto" alt="" class="nav__mission-pig" width="20" height="20" loading="lazy" aria-hidden="true" />
         </a>
-        <a href="/events/" class:list={['nav__split-pill__seg nav__split-pill__seg--golf', { 'nav__split-pill__seg--active': currentPath === '/events' || currentPath === '/events/' }]}>
-          Golf
-        </a>
       </div>
       <button class="nav__icon-btn nav__search-toggle" aria-label="Search products" id="mobile-search-toggle">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -118,9 +115,6 @@ const roomCollections = [
           <a href="/about/" data-astro-prefetch class:list={['nav__split-pill__seg nav__split-pill__seg--mission', { 'nav__split-pill__seg--active': currentPath === '/about' || currentPath === '/about/' }]}>
             Mission
             <img src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/soard-favicon/w=40,h=40,fit=cover,q=80,format=auto" alt="" class="nav__mission-pig" width="20" height="20" loading="lazy" aria-hidden="true" />
-          </a>
-          <a href="/events/" data-astro-prefetch class:list={['nav__split-pill__seg nav__split-pill__seg--golf', { 'nav__split-pill__seg--active': currentPath === '/events' || currentPath === '/events/' }]}>
-            Golf
           </a>
         </div>
         <button class="nav__icon-btn nav__cart" aria-label="Shopping cart" id="cart-trigger">
@@ -544,28 +538,14 @@ const roomCollections = [
     background: transparent;
   }
 
-  .nav__split-pill__seg--golf {
-    color: #fff;
-    background: #2e7d32;
-    border-left: 1.5px solid var(--color-charcoal, #373A36);
-  }
-
   .nav__split-pill__seg--mission:hover {
     background: var(--color-gold, #d4a843);
     color: var(--color-charcoal);
   }
 
-  .nav__split-pill__seg--golf:hover {
-    background: #1b5e20;
-  }
-
   .nav__split-pill__seg--active.nav__split-pill__seg--mission {
     background: var(--color-charcoal, #373A36);
     color: #fff;
-  }
-
-  .nav__split-pill__seg--active.nav__split-pill__seg--golf {
-    background: #1b5e20;
   }
 
   .nav__mission-pig {
