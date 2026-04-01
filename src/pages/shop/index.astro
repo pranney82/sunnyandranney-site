@@ -1131,14 +1131,16 @@ const itemListSchema = hasShopify ? {
                 transform 0.45s var(--ease-out);
   }
 
-  /* First row visible immediately — no blank flash on load */
-  .product-card:nth-child(-n+2) {
+  /* First row visible immediately — no blank flash on load.
+     Use :nth-child(… of .product-card) so the .grid-editorial
+     card doesn't consume a slot and throw off the count. */
+  .product-card:nth-child(-n+2 of .product-card) {
     opacity: 1;
     transform: translateY(0);
   }
 
   @media (min-width: 768px) {
-    .product-card:nth-child(-n+6) {
+    .product-card:nth-child(-n+6 of .product-card) {
       opacity: 1;
       transform: translateY(0);
     }
@@ -2345,7 +2347,7 @@ const itemListSchema = hasShopify ? {
       const collections = card.dataset.collections || '';
       const isNewArrival = card.dataset.created ? (Date.now() - new Date(card.dataset.created).getTime()) < 30 * 24 * 60 * 60 * 1000 : false;
       const matchesCollection = !activeCollection || (activeCollection === 'new-arrivals'
-        ? (isNewArrival && card.dataset.available !== 'false')
+        ? (isNewArrival && card.dataset.available !== 'false' && card.dataset.onSale !== 'true')
         : collections.split(',').includes(activeCollection));
       const matchesProductType = !activeProductType || category === activeProductType || type.toLowerCase() === activeProductType.toLowerCase();
       const matchesSearch = !activeSearch ||
@@ -2609,7 +2611,9 @@ const itemListSchema = hasShopify ? {
   filterChipsClear?.addEventListener('click', clearAllFilters);
 
   // ─── Initial render — apply all URL-restored filters ────
-  applyAllDebounced();
+  // Run immediately (not debounced) so observeCards() fires on the first rAF
+  // and cards surrounding the editorial don't sit invisible for 60ms.
+  applyAll();
 
   // ─── Add to Cart from Grid ──────────────────
   grid?.addEventListener('click', (e) => {
