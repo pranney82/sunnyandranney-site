@@ -197,7 +197,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
             aria-label="Play video: Peter and Holly share why they started Sunny & Ranney"
           >
             <img
-              src="https://customer-cuav5h47lgfe96ql.cloudflarestream.com/7d7459064cd569cd7a3d806914f7aec7/thumbnails/thumbnail.jpg?height=400"
+              src="https://customer-cuav5h47lgfe96ql.cloudflarestream.com/7d7459064cd569cd7a3d806914f7aec7/thumbnails/thumbnail.jpg?height=1080"
               alt="Peter and Holly Ranney — founders of Sunny & Ranney"
               width="338" height="600" loading="lazy" decoding="async"
               style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"
@@ -430,8 +430,8 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
   .ab-hero__actions { display: flex; align-items: center; gap: 1.5rem; margin-top: var(--space-lg); flex-wrap: wrap; }
   .text-link { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; font-weight: 600; color: var(--color-charcoal); letter-spacing: 0.03em; transition: color 0.3s; min-height: 48px; padding: 0.5rem 0; }
   .text-link:hover { color: var(--color-cyan); }
-  .ab-hero__media { position: relative; border-radius: 4px; overflow: visible; }
-  .ab-hero__media > img:first-child { width: 100%; height: auto; display: block; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 4px; }
+  .ab-hero__media { position: relative; border-radius: 0; overflow: visible; }
+  .ab-hero__media > img:first-child { width: 100%; height: auto; display: block; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 0; }
   .ab-hero__soard-logo {
     position: absolute;
     bottom: -24px;
@@ -474,8 +474,8 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
   .ab-how h2 { font-size: clamp(1.8rem, 3vw, 2.5rem); margin: var(--space-sm) 0 clamp(2.5rem, 6vh, 4rem); }
   .ab-how__steps { display: flex; align-items: flex-start; justify-content: center; max-width: 960px; margin: 0 auto; }
   .ab-how__step { flex: 1; max-width: 260px; padding: 0 var(--space-md); }
-  .ab-how__icon { width: 64px; height: 64px; border-radius: 50%; background: rgba(75,149,180,0.08); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-md); color: var(--color-cyan); transition: transform 0.4s cubic-bezier(0.22,1,0.36,1), background 0.3s; }
-  .ab-how__step:hover .ab-how__icon { transform: scale(1.1); background: rgba(75,149,180,0.14); }
+  .ab-how__icon { width: 64px; height: 64px; border-radius: 50%; background: rgba(75,149,180,0.08); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-md); color: var(--color-cyan); transition: transform 0.4s var(--ease-out), background 0.3s; }
+  .ab-how__step:hover .ab-how__icon { transform: scale(1.03); background: rgba(75,149,180,0.14); }
   .ab-how__num { display: block; font-family: var(--font-display); font-size: 0.7rem; font-weight: 700; color: var(--color-cyan); opacity: 0.5; line-height: 1; margin-bottom: var(--space-xs); letter-spacing: 0.1em; }
   .ab-how__connector { display: flex; align-items: center; justify-content: center; padding-top: 1.8rem; flex-shrink: 0; }
   .ab-how__step h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
@@ -532,14 +532,14 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
     position: relative;
     width: 280px;
     height: 497px;
-    border-radius: 18px;
+    border-radius: 0;
     overflow: hidden;
     background: #0d0b09;
     box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 40px 80px rgba(0,0,0,0.7);
-    transition: transform 0.5s cubic-bezier(0.22,1,0.36,1), box-shadow 0.5s cubic-bezier(0.22,1,0.36,1);
+    transition: transform 0.5s var(--ease-out), box-shadow 0.5s var(--ease-out);
   }
   .ab-video__player:hover {
-    transform: translateY(-6px) scale(1.015);
+    transform: scale(1.01);
     box-shadow: 0 0 0 1px rgba(212,175,55,0.3), 0 56px 100px rgba(0,0,0,0.75), 0 0 60px rgba(212,175,55,0.1);
   }
   .ab-video__iframe {
@@ -551,8 +551,8 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
     width: 100%; height: 100%; border: none; padding: 0;
     background: transparent; cursor: pointer;
   }
-  .ab-video__thumb img { transition: transform 0.8s cubic-bezier(0.22,1,0.36,1), opacity 0.4s ease; }
-  .ab-video__thumb:hover img { transform: scale(1.04); opacity: 0.85; }
+  .ab-video__thumb img { transition: transform 1.2s var(--ease-out), opacity 0.4s ease; }
+  .ab-video__thumb:hover img { transform: scale(1.02); opacity: 0.85; }
   .ab-video__thumb-overlay {
     position: absolute; inset: 0;
     background: linear-gradient(to top, rgba(12,9,6,0.75) 0%, rgba(12,9,6,0.08) 40%, transparent 70%);
@@ -562,9 +562,9 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
     position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     filter: drop-shadow(0 6px 24px rgba(0,0,0,0.6));
-    transition: transform 0.4s cubic-bezier(0.22,1,0.36,1);
+    transition: transform 0.4s var(--ease-out);
   }
-  .ab-video__thumb:hover .ab-video__play-btn { transform: translate(-50%, -50%) scale(1.15); }
+  .ab-video__thumb:hover .ab-video__play-btn { transform: translate(-50%, -50%) scale(1.05); }
   .ab-video__watch-label {
     position: absolute; bottom: 1.5rem; left: 50%;
     transform: translateX(-50%);
@@ -651,7 +651,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
     gap: 6px;
     max-width: 1040px;
     margin: 0 auto;
-    border-radius: 12px;
+    border-radius: 0;
     overflow: hidden;
   }
 
@@ -671,9 +671,9 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
     height: 100%;
     display: block;
     object-fit: cover;
-    transition: transform 0.6s cubic-bezier(0.22,1,0.36,1);
+    transition: transform 1.2s var(--ease-out);
   }
-  .ab-kids__tile:hover img { transform: scale(1.08); }
+  .ab-kids__tile:hover img { transform: scale(1.02); }
 
   /* Overlay with name — always has gradient at bottom, name fades in on hover */
   .ab-kids__tile-overlay {
@@ -707,7 +707,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
     letter-spacing: 0.02em;
     opacity: 0;
     transform: translateY(6px);
-    transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.22,1,0.36,1);
+    transition: opacity 0.35s ease, transform 0.35s var(--ease-out);
   }
   .ab-kids__tile:hover .ab-kids__tile-name {
     opacity: 1;
@@ -751,7 +751,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
       grid-template-columns: repeat(2, 1fr);
       grid-auto-rows: 140px;
       gap: 4px;
-      border-radius: 8px;
+      border-radius: 0;
     }
     .ab-kids__tile--wide { grid-column: span 2; }
     .ab-kids__tile-name { opacity: 1; transform: translateY(0); }
@@ -812,23 +812,23 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
   .ab-crew__card {
     position: relative;
     text-align: center;
-    transition: transform 0.5s cubic-bezier(0.22,1,0.36,1);
+    transition: transform 0.5s var(--ease-out);
   }
   .ab-crew__card:nth-child(even) { margin-top: 3rem; }
-  .ab-crew__card:hover { transform: translateY(-10px); }
+  .ab-crew__card:hover { transform: translateY(-2px); }
 
   /* Photo container */
   .ab-crew__photo {
     position: relative;
     width: 100%;
     aspect-ratio: 3 / 4;
-    border-radius: 12px;
+    border-radius: 0;
     overflow: hidden;
     background: var(--color-cream);
     box-shadow:
       0 4px 6px rgba(44,44,44,0.04),
       0 16px 48px rgba(44,44,44,0.1);
-    transition: box-shadow 0.5s cubic-bezier(0.22,1,0.36,1);
+    transition: box-shadow 0.5s var(--ease-out);
   }
   .ab-crew__card:hover .ab-crew__photo {
     box-shadow:
@@ -840,9 +840,9 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
     height: 100%;
     display: block;
     object-fit: cover;
-    transition: transform 0.7s cubic-bezier(0.22,1,0.36,1);
+    transition: transform 1.2s var(--ease-out);
   }
-  .ab-crew__card:hover .ab-crew__photo img { transform: scale(1.05); }
+  .ab-crew__card:hover .ab-crew__photo img { transform: scale(1.02); }
 
   /* Gradient overlay on photo */
   .ab-crew__overlay {
@@ -877,7 +877,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
   /* Mascot photo */
   .ab-crew__card--mascot .ab-crew__photo {
     aspect-ratio: 3 / 4;
-    border-radius: 12px;
+    border-radius: 0;
     border: none;
   }
 
@@ -912,7 +912,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
     color: white;
     background: var(--color-gold);
     padding: 0.2em 0.6em;
-    border-radius: 3px;
+    border-radius: 0;
     vertical-align: middle;
     margin-left: 0.35rem;
   }
@@ -934,7 +934,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
     background: var(--color-gold);
     opacity: 0.4;
     margin: 0.6rem auto 0;
-    transition: width 0.4s cubic-bezier(0.22,1,0.36,1), opacity 0.3s;
+    transition: width 0.4s var(--ease-out), opacity 0.3s;
   }
   .ab-crew__card:hover .ab-crew__role::after { width: 40px; opacity: 0.7; }
   .ab-crew__card p {
@@ -1051,7 +1051,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
   .ab-kids__tile {
     opacity: 0;
     transform: scale(0.96);
-    animation: mosaic-in 0.5s cubic-bezier(0.22,1,0.36,1) forwards;
+    animation: mosaic-in 0.5s var(--ease-out) forwards;
     animation-play-state: paused;
   }
   .ab-kids__mosaic.in-view .ab-kids__tile { animation-play-state: running; }

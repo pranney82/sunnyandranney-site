@@ -104,7 +104,7 @@
     font-size: 0.85rem;
     line-height: 1.5;
     padding: 0.7rem 2rem 0.7rem 0.9rem;
-    border-radius: 14px 14px 4px 14px;
+    border-radius: 0;
     box-shadow:
       0 8px 30px rgba(44, 44, 44, 0.15),
       0 2px 8px rgba(44, 44, 44, 0.06);
@@ -164,7 +164,7 @@
     align-items: center;
     gap: 0.55rem;
     padding: 0.35rem 0.9rem 0.35rem 0.35rem;
-    border-radius: 100px;
+    border-radius: 0;
     background: var(--color-charcoal);
     color: var(--color-gold);
     box-shadow:
@@ -241,7 +241,7 @@
     width: 420px;
     height: min(640px, calc(100vh - 7rem));
     background: var(--color-warm-white);
-    border-radius: 20px;
+    border-radius: 0;
     border: 1px solid rgba(44, 44, 44, 0.06);
     box-shadow:
       0 24px 80px rgba(44, 44, 44, 0.2),
@@ -254,7 +254,7 @@
     pointer-events: none;
     transition:
       opacity 0.25s ease-out,
-      transform 0.4s cubic-bezier(0.34, 1.4, 0.64, 1);
+      transform 0.35s var(--ease-out);
     overflow: hidden;
   }
 
@@ -359,7 +359,7 @@
     border: none;
     background: none;
     cursor: pointer;
-    border-radius: 8px;
+    border-radius: 0;
     min-width: 44px;
     min-height: 44px;
     display: flex;
@@ -421,13 +421,7 @@
     position: absolute;
     inset: -4px;
     border-radius: 50%;
-    border: 2px solid rgba(255, 212, 0, 0.15);
-    animation: staciAvatarGlow 4s ease-in-out infinite;
-  }
-
-  @keyframes staciAvatarGlow {
-    0%, 100% { opacity: 0.6; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.08); }
+    border: 2px solid rgba(255, 212, 0, 0.12);
   }
 
   .staci-welcome__name {
@@ -459,7 +453,7 @@
     font-size: 0.82rem;
     width: 100%;
     justify-content: flex-start;
-    border-radius: 12px;
+    border-radius: 0;
     padding: 0.65rem 0.9rem;
     min-height: 44px;
     background: white;
@@ -655,14 +649,14 @@
 
   .staci-msg--bot .staci-msg__bubble {
     background: var(--color-cream);
-    border-radius: 4px 18px 18px 18px;
+    border-radius: 0;
     box-shadow: 0 1px 3px rgba(44, 44, 44, 0.05);
   }
 
   .staci-msg--user .staci-msg__bubble {
     background: var(--color-charcoal);
     color: var(--color-cream);
-    border-radius: 18px 4px 18px 18px;
+    border-radius: 0;
     box-shadow: 0 1px 3px rgba(44, 44, 44, 0.08);
   }
 
@@ -839,7 +833,7 @@
   .staci-product-card {
     flex: 0 0 155px;
     background: white;
-    border-radius: 12px;
+    border-radius: 0;
     overflow: hidden;
     text-decoration: none;
     color: var(--color-charcoal);
@@ -977,7 +971,7 @@
     color: var(--color-slate);
     background: white;
     border: 1px solid rgba(44, 44, 44, 0.08);
-    border-radius: 100px;
+    border-radius: 0;
     cursor: pointer;
     transition: all 0.2s var(--ease-out);
     white-space: nowrap;
@@ -1034,7 +1028,7 @@
     color: var(--color-slate);
     background: white;
     border: 1px solid rgba(44, 44, 44, 0.08);
-    border-radius: 100px;
+    border-radius: 0;
     cursor: pointer;
     transition: all 0.2s var(--ease-out);
     white-space: nowrap;

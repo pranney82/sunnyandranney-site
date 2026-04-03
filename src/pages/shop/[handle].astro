@@ -740,8 +740,7 @@ const breadcrumbSchema = {
     aspect-ratio: 1;
     overflow: hidden;
     background: #fff;
-    border-radius: 4px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
+    border-radius: 0;
     cursor: zoom-in;
   }
 
@@ -763,7 +762,7 @@ const breadcrumbSchema = {
     padding: 0.4rem 0.75rem;
     background: rgba(255,255,255,0.9);
     backdrop-filter: blur(4px);
-    border-radius: 4px;
+    border-radius: 0;
     font-size: 0.72rem;
     color: var(--color-slate);
     pointer-events: none;
@@ -830,7 +829,7 @@ const breadcrumbSchema = {
     height: 72px;
     overflow: hidden;
     border: 2px solid rgba(0, 0, 0, 0.08);
-    border-radius: 3px;
+    border-radius: 0;
     background: #fff;
     padding: 0;
     cursor: pointer;
@@ -859,10 +858,10 @@ const breadcrumbSchema = {
   .pdp-price__save {
     font-size: 0.75rem;
     font-weight: 600;
-    color: white;
-    background: #27ae60;
+    color: var(--color-cream);
+    background: var(--color-charcoal);
     padding: 0.2rem 0.6rem;
-    border-radius: 3px;
+    border-radius: 0;
     letter-spacing: 0.02em;
   }
 
@@ -872,23 +871,16 @@ const breadcrumbSchema = {
     align-items: center;
     gap: 0.5rem;
     padding: 0.6rem 0.9rem;
-    background: #fef3cd;
-    border: 1px solid #f0c674;
-    border-radius: 4px;
+    background: var(--color-gold-soft);
+    border: 1px solid var(--color-gold);
+    border-radius: 0;
     font-size: 0.82rem;
-    color: #856404;
+    color: var(--color-charcoal);
     margin-bottom: var(--space-md);
-    animation: pulse-urgency 2s ease-in-out infinite;
   }
 
-  .pdp-urgency svg { color: #e67e22; flex-shrink: 0; }
+  .pdp-urgency svg { color: var(--color-gold); flex-shrink: 0; }
   .pdp-urgency strong { font-weight: 700; }
-
-
-  @keyframes pulse-urgency {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.85; }
-  }
 
   /* ─── Back in Stock Notification ─────────── */
   .pdp-notify {
@@ -995,7 +987,7 @@ const breadcrumbSchema = {
     display: inline-flex;
     align-items: center;
     border: 1.5px solid var(--color-cream-dark);
-    border-radius: 4px;
+    border-radius: 0;
     overflow: hidden;
   }
   .pdp-qty__btn {
@@ -1025,7 +1017,12 @@ const breadcrumbSchema = {
     font-weight: 500;
     background: none;
     outline: none;
+    transition: background 0.35s, border-color 0.35s;
     -moz-appearance: textfield;
+  }
+  .pdp-qty__input:focus {
+    background: rgba(255, 212, 0, 0.04);
+    border-color: var(--color-gold);
   }
   .pdp-qty__input::-webkit-inner-spin-button,
   .pdp-qty__input::-webkit-outer-spin-button { -webkit-appearance: none; }
@@ -1069,7 +1066,7 @@ const breadcrumbSchema = {
     color: var(--color-slate);
     font-size: 0.75rem;
     font-weight: 500;
-    transition: all 0.3s;
+    transition: border-color 0.4s, color 0.4s;
     background: none;
     cursor: pointer;
     font-family: var(--font-body);
@@ -1194,7 +1191,7 @@ const breadcrumbSchema = {
     font-weight: 500;
     color: var(--color-charcoal);
     list-style: none;
-    transition: color 0.2s;
+    transition: color 0.4s;
   }
 
   .pdp-accordion__header::-webkit-details-marker { display: none; }
@@ -1202,7 +1199,7 @@ const breadcrumbSchema = {
 
   .pdp-accordion__header svg {
     flex-shrink: 0;
-    transition: transform 0.25s ease;
+    transition: transform 0.35s var(--ease-out);
   }
 
   .pdp-accordion__item[open] .pdp-accordion__header svg {
@@ -1265,7 +1262,7 @@ const breadcrumbSchema = {
     overflow: hidden;
     background: #fff;
     border: 2px solid rgba(0, 0, 0, 0.06);
-    border-radius: 4px;
+    border-radius: 0;
     transition: border-color 0.2s;
   }
 
@@ -1404,10 +1401,10 @@ const breadcrumbSchema = {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.6s var(--ease-out);
+    transition: transform 1.2s var(--ease-out);
   }
 
-  .related-card:hover .related-card__image img { transform: scale(1.05); }
+  .related-card:hover .related-card__image img { transform: scale(1.04); }
 
   .related-card__info {
     padding: 0.75rem;

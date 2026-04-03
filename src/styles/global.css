@@ -90,6 +90,7 @@
 
 html {
   font-size: 16px;
+  scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -135,8 +136,16 @@ h4 { font-size: clamp(1.2rem, 2vw, 1.5rem); }
 
 p {
   font-size: clamp(0.95rem, 1.1vw, 1.1rem);
-  max-width: 65ch;
   color: var(--color-slate);
+}
+
+/* Prose context — readable line length for long-form text */
+.prose p,
+.mission__body,
+.services__desc,
+.ab-hero__sub,
+.ab-story__text p {
+  max-width: 65ch;
 }
 
 .label {
@@ -195,6 +204,12 @@ p {
   box-shadow: 0 8px 24px rgba(196, 152, 47, 0.25);
 }
 
+.btn--primary:active {
+  transform: translateY(0);
+  box-shadow: none;
+  transition-duration: 0.08s;
+}
+
 .btn--outline {
   background: transparent;
   color: var(--color-charcoal);
@@ -205,6 +220,11 @@ p {
   background: var(--color-charcoal);
   color: var(--color-cream);
   transform: translateY(-2px);
+}
+
+.btn--outline:active {
+  transform: translateY(0);
+  transition-duration: 0.08s;
 }
 
 .btn--gold {
@@ -220,16 +240,27 @@ p {
   transform: translateY(-2px);
 }
 
+.btn--gold:active {
+  transform: translateY(0);
+  transition-duration: 0.08s;
+}
+
 .btn--hero {
   padding: 1rem 2.8rem;
   font-size: 0.85rem;
-  border-radius: 7px;
+  border-radius: 0;
   transition: all 0.35s var(--ease-out);
 }
 
 .btn--hero:hover {
-  transform: scale(1.03);
+  transform: translateY(-2px);
   box-shadow: 0 8px 30px rgba(255, 212, 0, 0.35);
+}
+
+.btn--hero:active {
+  transform: translateY(0);
+  box-shadow: none;
+  transition-duration: 0.08s;
 }
 
 /* ─── Cards ─────────────────────────────────────────────────── */
@@ -251,7 +282,11 @@ p {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.8s var(--ease-out), opacity 0.6s var(--ease-out);
+  transition: transform 1.2s var(--ease-out), opacity 0.6s var(--ease-out);
+}
+
+.product-card:hover .product-card__image img {
+  transform: scale(1.04);
 }
 
 .product-card__image-ph {
@@ -523,7 +558,7 @@ p {
   font-family: var(--font-body);
   font-size: 0.85rem;
   font-weight: 600;
-  border-radius: 0 0 6px 6px;
+  border-radius: 0;
   transition: top 0.2s;
 }
 

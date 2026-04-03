@@ -487,7 +487,7 @@ const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
     width: 90%;
     max-width: 320px;
     aspect-ratio: 1;
-    border-radius: 20px;
+    border-radius: 0;
     overflow: hidden;
     box-shadow: 0 24px 64px rgba(0,0,0,0.2), 0 8px 20px rgba(0,0,0,0.12);
     background: #f0ede8;
@@ -499,7 +499,7 @@ const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
     display: block;
     aspect-ratio: 1;
     object-fit: cover;
-    transition: transform 0.8s var(--ease-out);
+    transition: transform 1.2s var(--ease-out);
   }
 
   .hero__img-wrap:hover img {
@@ -513,7 +513,7 @@ const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
     width: 55%;
     height: 50%;
     background: var(--color-gold);
-    border-radius: 20px;
+    border-radius: 0;
     opacity: 0.2;
     z-index: 0;
   }
@@ -528,7 +528,7 @@ const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
     align-items: center;
     gap: 0.65rem;
     background: white;
-    border-radius: 12px;
+    border-radius: 0;
     padding: 0.5rem 0.75rem 0.5rem 0.5rem;
     box-shadow: 0 8px 32px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.08);
     text-decoration: none;
@@ -545,7 +545,7 @@ const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
     width: 56px;
     height: 56px;
     object-fit: cover;
-    border-radius: 8px;
+    border-radius: 0;
     flex-shrink: 0;
   }
 
@@ -843,9 +843,8 @@ const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
     display: flex;
     flex-direction: column;
     background: #fff;
-    border-radius: 10px;
+    border-radius: 0;
     overflow: hidden;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), 0 6px 20px rgba(0, 0, 0, 0.03);
   }
 
   .staff-pick-card__img {
@@ -878,6 +877,11 @@ const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
     height: 100%;
     object-fit: cover;
     object-position: center 30%;
+    transition: transform 1.2s var(--ease-out);
+  }
+
+  .staff-pick-card:hover .staff-pick-card__img-primary {
+    transform: scale(1.04);
   }
 
   .staff-pick-card__img-hover {
@@ -896,7 +900,7 @@ const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
     letter-spacing: 0.12em;
     text-transform: uppercase;
     padding: 0.25rem 0.55rem;
-    border-radius: 2px;
+    border-radius: 0;
     z-index: 2;
   }
 
@@ -952,18 +956,26 @@ const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
   .staff-picks__cta {
     display: inline-flex;
     align-items: center;
-    gap: 0;
-    background: var(--color-cyan);
-    color: #fff;
+    gap: 0.5rem;
+    background: var(--color-charcoal);
+    color: var(--color-cream);
     text-decoration: none;
-    border-radius: 100px;
+    border: 2px solid var(--color-charcoal);
+    border-radius: 0;
     overflow: hidden;
-    transition: transform 0.35s var(--ease-out), box-shadow 0.35s;
+    transition: all 0.35s var(--ease-out);
   }
 
   .staff-picks__cta:hover {
+    background: var(--color-gold);
+    border-color: var(--color-gold);
+    color: var(--color-charcoal);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .staff-picks__cta:active {
+    transform: translateY(0);
+    transition-duration: 0.08s;
   }
 
   .staff-picks__cta-text {
@@ -971,24 +983,19 @@ const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    padding: 0.9rem 1.4rem 0.9rem 1.8rem;
+    padding: 0.9rem 1.6rem;
   }
 
   .staff-picks__cta-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2.6rem;
-    height: 2.6rem;
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 50%;
-    margin: 0.25rem 0.3rem 0.25rem 0;
-    transition: background 0.3s, transform 0.3s var(--ease-out);
+    padding-right: 1.4rem;
+    transition: transform 0.3s var(--ease-out);
   }
 
   .staff-picks__cta:hover .staff-picks__cta-icon {
-    background: rgba(255, 255, 255, 0.25);
-    transform: translateX(2px);
+    transform: translateX(3px);
   }
 
   /* ─── Shop the Look (hotspots) ──────────── */
@@ -1050,7 +1057,7 @@ const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
     font-size: 0.78rem;
     font-weight: 600;
     padding: 0.35rem 0.65rem;
-    border-radius: 6px;
+    border-radius: 0;
     box-shadow: 0 2px 12px rgba(0,0,0,0.12);
     white-space: nowrap;
   }
@@ -1261,7 +1268,7 @@ const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
     width: 220px;
     scroll-snap-align: start;
     background: var(--color-cream);
-    border-radius: 8px;
+    border-radius: 0;
     transition: transform 0.3s var(--ease-out), box-shadow 0.3s;
     overflow: hidden;
   }
@@ -1486,7 +1493,7 @@ const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
 
   /* ─ Mission image ─ */
   .mission__img-wrap {
-    border-radius: 16px;
+    border-radius: 0;
     overflow: hidden;
     box-shadow: 0 20px 60px rgba(0,0,0,0.14);
     background: #f0ede8;
@@ -1498,7 +1505,7 @@ const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
     height: auto;
     aspect-ratio: 3/2;
     object-fit: cover;
-    transition: transform 0.8s var(--ease-out);
+    transition: transform 1.2s var(--ease-out);
   }
 
   .mission__img-wrap:hover img {
@@ -1511,7 +1518,7 @@ const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
     align-items: center;
     gap: 0.65rem;
     background: white;
-    border-radius: 100px;
+    border-radius: 0;
     padding: 0.35rem 1rem 0.35rem 0.35rem;
     box-shadow: 0 2px 12px rgba(0,0,0,0.06);
     margin-bottom: var(--space-md);
@@ -1634,7 +1641,7 @@ const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
 
   @media (min-width: 768px) {
     .home-products .product-card {
-      border-radius: 4px;
+      border-radius: 0;
     }
     .home-products .product-card__info {
       padding: 1rem 0.25rem 0.25rem;

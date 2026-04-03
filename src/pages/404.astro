@@ -28,25 +28,28 @@ try {
   // Products unavailable — page still works
 }
 
-// Hero product is the first (best-selling from first collection)
 const heroProduct = featuredProducts[0];
 const heroImg = heroProduct?.images?.edges?.[0]?.node;
 const gridProducts = featuredProducts.slice(1, 7);
+
+const fmt = (n: number) => n % 1 === 0 ? `$${n}` : `$${n.toFixed(2)}`;
 ---
 
 <Base title="Page Not Found — Sunny & Ranney" description="The page you're looking for has moved or no longer exists." lcpImage={heroImg ? cfImage(heroImg.url, { width: 900, height: 600 }) : undefined}>
 
-  <!-- ═══ HERO: TEXT-ONLY EDITORIAL MOMENT ═══ -->
+  <!-- ═══ HERO ═══ -->
   <section class="nf-hero">
     <div class="container nf-hero__inner">
       <span class="nf-hero__eyebrow animate-fade-up">404</span>
       <h1 class="nf-hero__title animate-fade-up delay-1">
-        The page you're looking for isn't here.<br />
-        <span class="nf-hero__accent">But something beautiful might be.</span>
+        This page has wandered off.
       </h1>
-      <div class="nf-hero__rule animate-fade-up delay-2" aria-hidden="true"></div>
+      <p class="nf-hero__sub animate-fade-up delay-2">
+        But there's plenty worth discovering — every purchase transforms a child's room.
+      </p>
+      <div class="nf-hero__rule animate-fade-up delay-3" aria-hidden="true"></div>
       <div class="nf-hero__actions animate-fade-up delay-3">
-        <a href="/shop/" class="btn btn--primary" data-astro-prefetch>Shop the Collection</a>
+        <a href="/shop/" class="btn btn--primary btn--hero" data-astro-prefetch>Shop the Collection</a>
         <a href="/" class="nf-link" data-astro-prefetch>
           Return Home
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
@@ -59,8 +62,11 @@ const gridProducts = featuredProducts.slice(1, 7);
   {heroProduct && heroImg && (
     <section class="nf-feature">
       <div class="container nf-feature__inner">
-        <a href={`/shop/${heroProduct.handle}/`} class="nf-feature__img-link animate-fade-up" data-astro-prefetch>
+        <a href={`/shop/${heroProduct.handle}/`} class="nf-feature__card animate-fade-up" data-astro-prefetch>
           <div class="nf-feature__img">
+            {!heroProduct.availableForSale && (
+              <span class="product-card__badge product-card__badge--sold">Sold Out</span>
+            )}
             <img
               src={cfImage(heroImg.url, { width: 900, height: 600 })}
               srcset={cfSrcset(heroImg.url, [500, 900, 1200])}
@@ -70,16 +76,16 @@ const gridProducts = featuredProducts.slice(1, 7);
               loading="eager" decoding="async"
             />
           </div>
+          <div class="nf-feature__meta animate-fade-up delay-1">
+            {heroProduct.productType && (
+              <span class="nf-feature__type">{heroProduct.productType}</span>
+            )}
+            <span class="nf-feature__name">{heroProduct.title}</span>
+            <span class="nf-feature__price">
+              {fmt(parseFloat(heroProduct.priceRange.minVariantPrice.amount))}
+            </span>
+          </div>
         </a>
-        <div class="nf-feature__meta animate-fade-up delay-1">
-          {heroProduct.productType && (
-            <span class="nf-feature__type">{heroProduct.productType}</span>
-          )}
-          <a href={`/shop/${heroProduct.handle}/`} class="nf-feature__title" data-astro-prefetch>{heroProduct.title}</a>
-          <span class="nf-feature__price">
-            From ${parseFloat(heroProduct.priceRange.minVariantPrice.amount).toFixed(0)}
-          </span>
-        </div>
       </div>
     </section>
   )}
@@ -89,7 +95,7 @@ const gridProducts = featuredProducts.slice(1, 7);
     <section class="nf-grid-section">
       <div class="container">
         <div class="nf-grid-header reveal">
-          <span class="nf-kicker">Curated for You</span>
+          <span class="nf-kicker">While You're Here</span>
           <h2 class="nf-grid-title">Pieces Worth Discovering</h2>
         </div>
 
@@ -100,41 +106,48 @@ const gridProducts = featuredProducts.slice(1, 7);
             const compare = product.compareAtPriceRange?.minVariantPrice;
             const onSale = compare && parseFloat(compare.amount) > parseFloat(price.amount);
             return (
-              <a href={`/shop/${product.handle}/`} class={`nf-card reveal delay-${Math.min(idx + 1, 4)}`} data-astro-prefetch>
-                <div class="nf-card__img">
-                  {img && (
-                    <img
-                      src={cfImage(img.url, { width: 500, height: 650 })}
-                      srcset={cfSrcset(img.url, [280, 500])}
-                      sizes="(max-width: 639px) 45vw, (max-width: 1023px) 30vw, 22vw"
-                      alt={img.altText || product.title}
-                      width="500" height="650"
-                      loading="lazy" decoding="async"
-                    />
-                  )}
-                </div>
-                <div class="nf-card__meta">
-                  {product.productType && (
-                    <span class="nf-card__type">{product.productType}</span>
-                  )}
-                  <span class="nf-card__name">{product.title}</span>
-                  <span class="nf-card__price">
-                    {onSale && (
-                      <s class="nf-card__compare">${parseFloat(compare.amount).toFixed(0)}</s>
+              <div class={`product-card reveal delay-${Math.min(idx + 1, 4)}`}>
+                <div class="product-card__image-container">
+                  {!product.availableForSale && <span class="product-card__badge product-card__badge--sold">Sold Out</span>}
+                  {product.availableForSale && onSale && <span class="product-card__badge">Sale</span>}
+                  <a href={`/shop/${product.handle}/`} class="product-card__image" aria-hidden="true" tabindex="-1" data-astro-prefetch>
+                    {img ? (
+                      <img
+                        src={cfImage(img.url, { width: 400 })}
+                        srcset={cfSrcset(img.url, [200, 300, 400])}
+                        sizes="(max-width: 639px) 45vw, (max-width: 1023px) 30vw, 22vw"
+                        alt={img.altText || product.title}
+                        width={img.width || 400}
+                        height={img.height || 400}
+                        loading="lazy" decoding="async"
+                        class="product-card__img-primary"
+                      />
+                    ) : (
+                      <div class="product-card__image-ph">{product.productType || 'Product'}</div>
                     )}
-                    ${parseFloat(price.amount).toFixed(0)}
-                  </span>
+                  </a>
                 </div>
-              </a>
+                <div class="product-card__info">
+                  <span class="product-card__type">{product.productType || '\u00A0'}</span>
+                  <a href={`/shop/${product.handle}/`} class="product-card__title" data-astro-prefetch>{product.title}</a>
+                  <div class="product-card__pricing">
+                    <span class={`product-card__price${onSale ? ' product-card__price--sale' : ''}`}>
+                      {fmt(parseFloat(price.amount))}
+                    </span>
+                    {onSale && (
+                      <span class="product-card__price--compare">
+                        {fmt(parseFloat(compare.amount))}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
             );
           })}
         </div>
 
         <div class="nf-grid-cta reveal">
-          <a href="/shop/" class="nf-browse" data-astro-prefetch>
-            View All
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-          </a>
+          <a href="/shop/" class="btn btn--outline" data-astro-prefetch>View All Products</a>
         </div>
       </div>
     </section>
@@ -143,10 +156,9 @@ const gridProducts = featuredProducts.slice(1, 7);
   <!-- ═══ HELP STRIP ═══ -->
   <section class="nf-help reveal">
     <div class="container nf-help__inner">
+      <span class="nf-help__kicker">Need a Hand?</span>
       <p class="nf-help__text">
-        Looking for something specific?
-        <a href="/about/" data-astro-prefetch>Visit our Roswell showroom</a>
-        or ask Staci — our AI concierge — in the chat below.
+        <a href="/about/" data-astro-prefetch>Visit our Roswell showroom</a> or ask Staci — our AI concierge — in the chat below.
       </p>
     </div>
   </section>
@@ -154,21 +166,21 @@ const gridProducts = featuredProducts.slice(1, 7);
 </Base>
 
 <style>
-  /* ═══ HERO: TEXT-ONLY ═══ */
+  /* ═══ HERO ═══ */
   .nf-hero {
-    padding: var(--space-2xl) var(--space-md) var(--space-lg);
+    padding: clamp(3rem, 8vh, 5rem) var(--space-md) clamp(2rem, 5vh, 3rem);
     text-align: center;
   }
 
   .nf-hero__inner {
-    max-width: 720px;
+    max-width: 680px;
     margin: 0 auto;
   }
 
   .nf-hero__eyebrow {
     display: block;
     font-family: var(--font-body);
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     font-weight: 600;
     letter-spacing: 0.35em;
     text-transform: uppercase;
@@ -178,23 +190,30 @@ const gridProducts = featuredProducts.slice(1, 7);
 
   .nf-hero__title {
     font-family: var(--font-display);
-    font-size: clamp(1.8rem, 3.8vw, 2.8rem);
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
     font-weight: 400;
-    line-height: 1.25;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
     color: var(--color-charcoal);
-    margin-bottom: 0;
+    margin-bottom: var(--space-xs);
   }
 
-  .nf-hero__accent {
+  .nf-hero__sub {
+    font-family: var(--font-display);
+    font-size: clamp(1rem, 1.6vw, 1.15rem);
     font-style: italic;
-    color: var(--color-gold);
+    font-weight: 300;
+    line-height: 1.6;
+    color: var(--color-slate);
+    max-width: 38ch;
+    margin: 0 auto;
   }
 
   .nf-hero__rule {
     width: 48px;
     height: 2px;
     background: var(--color-gold);
-    margin: var(--space-md) auto var(--space-lg);
+    margin: var(--space-lg) auto;
   }
 
   .nf-hero__actions {
@@ -219,7 +238,7 @@ const gridProducts = featuredProducts.slice(1, 7);
   }
 
   .nf-link svg {
-    transition: transform 0.3s var(--ease-out);
+    transition: transform 0.5s var(--ease-out);
   }
 
   .nf-link:hover {
@@ -232,24 +251,25 @@ const gridProducts = featuredProducts.slice(1, 7);
 
   /* ═══ FEATURED HERO PRODUCT ═══ */
   .nf-feature {
-    padding: 0 var(--space-md) var(--space-lg);
+    padding: 0 var(--space-md) clamp(2rem, 5vh, 3.5rem);
   }
 
   .nf-feature__inner {
     max-width: var(--max-width);
     margin: 0 auto;
-    text-align: center;
   }
 
-  .nf-feature__img-link {
+  .nf-feature__card {
     display: block;
     text-decoration: none;
+    color: inherit;
+    max-width: 860px;
+    margin: 0 auto;
   }
 
   .nf-feature__img {
+    position: relative;
     overflow: hidden;
-    max-width: 860px;
-    margin: 0 auto;
     aspect-ratio: 3 / 2;
   }
 
@@ -258,56 +278,59 @@ const gridProducts = featuredProducts.slice(1, 7);
     height: 100%;
     object-fit: cover;
     display: block;
-    transition: transform 0.8s var(--ease-out);
+    transition: transform 1.2s var(--ease-out);
   }
 
-  .nf-feature__img-link:hover .nf-feature__img img {
-    transform: scale(1.03);
+  .nf-feature__card:hover .nf-feature__img img {
+    transform: scale(1.04);
   }
 
   .nf-feature__meta {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.15rem;
+    gap: 0.2rem;
     padding-top: var(--space-sm);
+    text-align: center;
   }
 
   .nf-feature__type {
-    font-size: 0.62rem;
-    font-weight: 600;
-    letter-spacing: 0.2em;
+    font-family: var(--font-body);
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--color-stone);
+    color: var(--color-slate);
   }
 
-  .nf-feature__title {
+  .nf-feature__name {
     font-family: var(--font-display);
-    font-size: 1.2rem;
+    font-size: clamp(1.05rem, 1.8vw, 1.25rem);
     color: var(--color-charcoal);
-    text-decoration: none;
+    line-height: 1.3;
     transition: color var(--duration) var(--ease-out);
   }
 
-  .nf-feature__title:hover {
-    color: var(--color-gold);
+  .nf-feature__card:hover .nf-feature__name {
+    color: var(--color-stone);
   }
 
   .nf-feature__price {
-    font-size: 0.88rem;
-    font-weight: 500;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 600;
     color: var(--color-charcoal);
   }
 
   /* ═══ CURATED GRID ═══ */
   .nf-grid-section {
-    padding: var(--space-2xl) var(--space-md) var(--space-xl);
+    padding: clamp(3rem, 6vh, 5rem) var(--space-md);
     background: var(--color-warm-white);
   }
 
   .nf-grid-header {
     text-align: center;
-    margin-bottom: var(--space-xl);
+    margin-bottom: clamp(1.5rem, 4vh, 3rem);
   }
 
   .nf-kicker {
@@ -325,132 +348,190 @@ const gridProducts = featuredProducts.slice(1, 7);
     font-family: var(--font-display);
     font-size: clamp(1.6rem, 3vw, 2.2rem);
     font-weight: 400;
+    letter-spacing: -0.01em;
     color: var(--color-charcoal);
   }
 
   .nf-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-md);
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem 1rem;
     max-width: var(--max-width);
     margin: 0 auto;
   }
 
-  .nf-card {
-    display: block;
-    text-decoration: none;
-    color: inherit;
+  .nf-grid-cta {
+    text-align: center;
+    margin-top: clamp(2rem, 4vh, 3rem);
   }
 
-  .nf-card__img {
+  /* ═══ PRODUCT CARD — identical to shop/index scoped styles ═══ */
+  .product-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: transparent;
     overflow: hidden;
-    aspect-ratio: 3 / 4;
-    background: var(--color-cream-dark);
-    margin-bottom: 0.6rem;
+    contain: layout style paint;
   }
 
-  .nf-card__img img {
+  .product-card__image-container {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .product-card__image {
+    display: block;
+    position: relative;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .product-card__img-primary {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    display: block;
-    transition: transform 0.7s var(--ease-out);
+    transition: transform 1.2s var(--ease-out), opacity 0.6s var(--ease-out);
   }
 
-  .nf-card:hover .nf-card__img img {
+  .product-card:hover .product-card__img-primary {
     transform: scale(1.04);
   }
 
-  .nf-card__meta {
+  .product-card__image-ph {
+    position: absolute;
+    inset: 0;
+    background: var(--color-cream-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-stone);
+  }
+
+  .product-card__badge {
+    position: absolute;
+    top: var(--space-sm);
+    left: var(--space-sm);
+    padding: 0.2rem 0.5rem;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--color-charcoal);
+    font-size: 0.58rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    z-index: 2;
+    backdrop-filter: blur(4px);
+  }
+
+  .product-card__badge--sold {
+    background: rgba(44, 44, 44, 0.85);
+    color: var(--color-cream);
+  }
+
+  .product-card__info {
+    padding: 0.75rem 0.1rem 0;
     display: flex;
     flex-direction: column;
-    gap: 0.1rem;
+    gap: 0.15rem;
+    flex: 1;
+    background: transparent;
   }
 
-  .nf-card__type {
-    font-size: 0.6rem;
-    font-weight: 600;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--color-stone);
-  }
-
-  .nf-card__name {
-    font-family: var(--font-display);
-    font-size: 0.95rem;
-    color: var(--color-charcoal);
-    line-height: 1.3;
-    transition: color var(--duration) var(--ease-out);
-  }
-
-  .nf-card:hover .nf-card__name {
-    color: var(--color-gold);
-  }
-
-  .nf-card__price {
-    font-size: 0.82rem;
+  .product-card__type {
+    font-size: 0.65rem;
     font-weight: 500;
-    color: var(--color-charcoal);
-    margin-top: 0.1rem;
-  }
-
-  .nf-card__compare {
-    color: var(--color-stone);
-    font-weight: 400;
-    margin-right: 0.35rem;
-  }
-
-  .nf-grid-cta {
-    text-align: center;
-    margin-top: var(--space-xl);
-  }
-
-  .nf-browse {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-family: var(--font-body);
-    font-size: 0.78rem;
-    font-weight: 600;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
+    color: var(--color-slate);
+    display: block;
+    margin-bottom: 0;
+    min-height: 0.65rem;
+  }
+
+  .product-card__title {
+    font-family: var(--font-display);
+    font-size: 0.92rem;
+    font-weight: 400;
+    line-height: 1.35;
     color: var(--color-charcoal);
     text-decoration: none;
-    padding-bottom: 3px;
-    border-bottom: 1.5px solid var(--color-charcoal);
-    transition: color var(--duration) var(--ease-out), border-color var(--duration) var(--ease-out);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin: 0.1rem 0 0.15rem;
+    min-height: calc(2 * 0.92rem * 1.35);
+    transition: color 0.2s;
+    padding: 0.15rem 0;
   }
 
-  .nf-browse svg {
-    transition: transform 0.3s var(--ease-out);
+  .product-card__title:hover {
+    color: var(--color-stone);
   }
 
-  .nf-browse:hover {
-    color: var(--color-gold);
-    border-color: var(--color-gold);
+  .product-card__pricing {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    min-height: 1.1rem;
+    flex-wrap: wrap;
+    margin-top: auto;
   }
 
-  .nf-browse:hover svg {
-    transform: translateX(4px);
+  .product-card__price {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-charcoal);
+    letter-spacing: 0.01em;
+  }
+
+  .product-card__price--sale {
+    color: var(--color-charcoal);
+    font-weight: 600;
+  }
+
+  .product-card__price--compare {
+    font-size: 0.8rem;
+    color: var(--color-stone);
+    text-decoration: line-through;
   }
 
   /* ═══ HELP STRIP ═══ */
   .nf-help {
-    padding: var(--space-xl) var(--space-md) var(--space-2xl);
+    padding: clamp(3rem, 6vh, 5rem) var(--space-md);
     text-align: center;
   }
 
   .nf-help__inner {
-    max-width: 560px;
+    max-width: 520px;
     margin: 0 auto;
     padding: var(--space-lg) var(--space-xl);
     border-top: 1px solid var(--color-cream-dark);
     border-bottom: 1px solid var(--color-cream-dark);
   }
 
+  .nf-help__kicker {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--color-stone);
+    margin-bottom: var(--space-xs);
+  }
+
   .nf-help__text {
     font-family: var(--font-display);
-    font-size: 1.05rem;
+    font-size: clamp(0.95rem, 1.4vw, 1.1rem);
     font-style: italic;
     line-height: 1.7;
     color: var(--color-slate);
@@ -469,33 +550,80 @@ const gridProducts = featuredProducts.slice(1, 7);
   }
 
   /* ═══ RESPONSIVE ═══ */
-  @media (max-width: 768px) {
+  @media (min-width: 768px) {
     .nf-grid {
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3rem 2rem;
     }
 
+    .product-card__info {
+      padding: 0.85rem 0 0;
+      gap: 0.2rem;
+    }
+
+    .product-card__title {
+      font-size: 0.95rem;
+    }
+
+    .product-card__price {
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .nf-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3rem 2.25rem;
+    }
+  }
+
+  @media (max-width: 768px) {
     .nf-feature__img {
       aspect-ratio: 4 / 3;
     }
   }
 
+  @media (max-width: 600px) {
+    .product-card__badge {
+      font-size: 0.5rem;
+      padding: 0.15rem 0.4rem;
+      top: var(--space-xs, 0.4rem);
+      left: var(--space-xs, 0.4rem);
+    }
+  }
+
   @media (max-width: 480px) {
+    .nf-hero {
+      padding: clamp(2rem, 6vh, 3rem) var(--space-sm) clamp(1.5rem, 4vh, 2rem);
+    }
+
     .nf-hero__actions {
       flex-direction: column;
       gap: var(--space-sm);
     }
 
     .nf-grid {
-      grid-template-columns: repeat(2, 1fr);
-      gap: var(--space-sm);
-    }
-
-    .nf-card__name {
-      font-size: 0.82rem;
+      gap: 1rem 0.75rem;
     }
 
     .nf-help__inner {
       padding: var(--space-md);
+    }
+
+    .nf-feature {
+      padding: 0 var(--space-sm) clamp(1.5rem, 4vh, 2.5rem);
+    }
+  }
+
+  /* ═══ REDUCED MOTION ═══ */
+  @media (prefers-reduced-motion: reduce) {
+    .product-card__img-primary {
+      transition: none;
+    }
+
+    .nf-feature__img img {
+      transition: none;
     }
   }
 </style>

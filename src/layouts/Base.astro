@@ -1,5 +1,5 @@
 ---
-import { ClientRouter } from 'astro:transitions';
+import { ClientRouter, fade } from 'astro:transitions';
 import Nav from '@/components/Nav.astro';
 import Footer from '@/components/Footer.astro';
 import VisitStrip from '@/components/VisitStrip.astro';
@@ -99,7 +99,7 @@ const isShopPage = Astro.url.pathname.startsWith('/shop') || Astro.url.pathname.
     <script is:inline>
       (function(){var n=document.getElementById('main-nav');if(n){var h=n.offsetHeight;if(h>0)document.documentElement.style.setProperty('--nav-height',h+'px')}})();
     </script>
-    <main id="main-content" style={`margin-top: var(--nav-height);`} transition:animate="fade">
+    <main id="main-content" style={`margin-top: var(--nav-height);`} transition:animate={fade({ duration: '0.15s' })}>
       <slot />
     </main>
     <VisitStrip contact={contact} hours={footerHours} holidays={holidays} />
