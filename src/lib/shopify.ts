@@ -260,10 +260,11 @@ export async function getCollections(first = 12) {
   return data.collections.edges.map((e) => e.node);
 }
 
-export async function getCollectionByHandle(handle: string, first = 100) {
+export async function getCollectionByHandle(handle: string, limit = Infinity) {
+  const PAGE_SIZE = 250; // Shopify Storefront API max
   const query = `
     ${PRODUCT_FRAGMENT}
-    query CollectionByHandle($handle: String!, $first: Int!) {
+    query CollectionByHandle($handle: String!, $first: Int!, $after: String) {
       collection(handle: $handle) {
         id
         title
@@ -275,7 +276,7 @@ export async function getCollectionByHandle(handle: string, first = 100) {
           width
           height
         }
-        products(first: $first, sortKey: BEST_SELLING) {
+        products(first: $first, sortKey: BEST_SELLING, after: $after) {
           pageInfo {
             hasNextPage
             endCursor
@@ -290,16 +291,35 @@ export async function getCollectionByHandle(handle: string, first = 100) {
     }
   `;
 
-  const data = await shopifyFetch<{
-    collection: Collection & { products: { pageInfo: { hasNextPage: boolean; endCursor: string }; edges: Array<{ node: Product }> } };
-  }>(query, { handle, first });
+  type CollectionResponse = Collection & {
+    products: { pageInfo: { hasNextPage: boolean; endCursor: string }; edges: Array<{ node: Product }> };
+  };
 
-  if (!data.collection) return null;
+  const allProducts: Product[] = [];
+  let cursor: string | undefined;
+  let collectionMeta: CollectionResponse | null = null;
+
+  do {
+    const pageSize = Math.min(PAGE_SIZE, limit - allProducts.length);
+    const data = await shopifyFetch<{ collection: CollectionResponse }>(
+      query, { handle, first: pageSize, after: cursor }
+    );
+
+    if (!data.collection) return null;
+
+    if (!collectionMeta) collectionMeta = data.collection;
+    allProducts.push(...data.collection.products.edges.map((e) => e.node));
+
+    if (allProducts.length >= limit || !data.collection.products.pageInfo.hasNextPage) {
+      break;
+    }
+    cursor = data.collection.products.pageInfo.endCursor;
+  } while (true);
 
   return {
-    ...data.collection,
-    products: data.collection.products.edges.map((e) => e.node),
-    pageInfo: data.collection.products.pageInfo,
+    ...collectionMeta!,
+    products: allProducts,
+    pageInfo: { hasNextPage: false, endCursor: '' },
   };
 }
 

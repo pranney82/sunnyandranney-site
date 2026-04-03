@@ -18,7 +18,7 @@ export async function getStaticPaths() {
   const seen = new Set<string>();
 
   for (const handle of enabledHandles) {
-    const collection = await getCollectionByHandle(handle, 100);
+    const collection = await getCollectionByHandle(handle);
     if (!collection) continue;
     for (const product of collection.products) {
       if (!seen.has(product.id)) {
@@ -55,7 +55,7 @@ export async function getStaticPaths() {
   // Fetch staff pick handles for badge display
   const staffPickHandles = new Set<string>();
   try {
-    const staffPicksCollection = await getCollectionByHandle('staff-picks', 100);
+    const staffPicksCollection = await getCollectionByHandle('staff-picks');
     if (staffPicksCollection) {
       for (const p of staffPicksCollection.products) {
         staffPickHandles.add(p.handle);

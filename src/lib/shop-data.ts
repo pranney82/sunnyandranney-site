@@ -32,7 +32,7 @@ export async function fetchShopData(): Promise<ShopData> {
 
     if (enabledHandles.length > 0) {
       const results = await Promise.all(
-        enabledHandles.map(handle => shopify.getCollectionByHandle(handle, 100))
+        enabledHandles.map(handle => shopify.getCollectionByHandle(handle))
       );
 
       const seen = new Set<string>();
@@ -54,7 +54,7 @@ export async function fetchShopData(): Promise<ShopData> {
     hasShopify = products.length > 0;
 
     // Fetch staff picks collection for badge display
-    const staffPicksCollection = await shopify.getCollectionByHandle('staff-picks', 100);
+    const staffPicksCollection = await shopify.getCollectionByHandle('staff-picks');
     if (staffPicksCollection) {
       for (const p of staffPicksCollection.products) {
         staffPickHandles.add(p.handle);
