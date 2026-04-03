@@ -269,38 +269,36 @@ p {
   position: absolute;
   top: var(--space-sm);
   left: var(--space-sm);
-  padding: 0.3rem 0.75rem;
-  background: var(--color-gold);
+  padding: 0.2rem 0.5rem;
+  background: rgba(255, 255, 255, 0.92);
   color: var(--color-charcoal);
-  font-size: 0.7rem;
+  font-size: 0.58rem;
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   z-index: 2;
+  backdrop-filter: blur(4px);
 }
 
-
 .product-card__badge--sold {
-  background: var(--color-charcoal);
+  background: rgba(44, 44, 44, 0.85);
   color: var(--color-cream);
 }
 
 .product-card__badge--new {
-  background: var(--color-cyan, #2a7d8c);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--color-charcoal);
 }
 
 .product-card__badge--pick {
-  background: var(--color-sage);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--color-charcoal);
 }
-
-
 
 @media (max-width: 600px) {
   .product-card__badge {
-    font-size: 0.55rem;
-    padding: 0.2rem 0.5rem;
+    font-size: 0.5rem;
+    padding: 0.15rem 0.4rem;
     top: var(--space-xs, 0.4rem);
     left: var(--space-xs, 0.4rem);
   }
@@ -354,20 +352,20 @@ p {
 .product-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 1rem 0.75rem;
+  gap: 1.25rem 1rem;
 }
 
 @media (min-width: 768px) {
   .product-grid {
     grid-template-columns: repeat(3, 1fr);
-    gap: 2.5rem 1.5rem;
+    gap: 3rem 2rem;
   }
 }
 
 @media (min-width: 1200px) {
   .product-grid {
     grid-template-columns: repeat(4, 1fr);
-    gap: 2.5rem 1.75rem;
+    gap: 3rem 2.25rem;
   }
 }
 

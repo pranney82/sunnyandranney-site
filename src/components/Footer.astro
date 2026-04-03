@@ -79,7 +79,7 @@ const phoneDigits = phone.replace(/\D/g, '');
         <nav aria-label="Company links">
           <ul class="footer__nav">
             <li><a href="/about/">About Us</a></li>
-            <li><a href="https://sunshineonaranneyday.com" target="_blank" rel="noopener noreferrer">
+            <li><a href="https://sunshineonaranneyday.com" target="_blank" rel="noopener noreferrer" style="white-space:nowrap">
               Sunshine on a Ranney Day
               <svg class="footer__external-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
             </a></li>
@@ -93,12 +93,12 @@ const phoneDigits = phone.replace(/\D/g, '');
           Contact
           <svg class="footer__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
         </summary>
-        <address class="footer__address">
-          <p>
-            <a href={`tel:${phoneDigits}`}>{phone}</a><br />
-            <a href={`mailto:${email}`}>{email}</a>
-          </p>
-        </address>
+        <nav aria-label="Contact links">
+          <ul class="footer__nav">
+            <li><a href={`tel:${phoneDigits}`}>{phone}</a></li>
+            <li><a href={`mailto:${email}`}>{email}</a></li>
+          </ul>
+        </nav>
       </details>
     </div>
   </div>
@@ -283,8 +283,7 @@ const phoneDigits = phone.replace(/\D/g, '');
       margin-bottom: 0;
       -webkit-tap-highlight-color: transparent;
     }
-    .footer__col > nav,
-    .footer__col > address {
+    .footer__col > nav {
       padding-bottom: var(--space-xs);
     }
   }
@@ -337,37 +336,6 @@ const phoneDigits = phone.replace(/\D/g, '');
   .footer__external-icon {
     opacity: 0.4;
     flex-shrink: 0;
-  }
-
-  /* ─── Address ──────────────────────────── */
-  .footer__address {
-    color: #C0C0BD;
-    font-size: 0.8rem;
-    font-style: normal;
-    line-height: 1.6;
-  }
-
-  .footer__address p {
-    margin: 0 0 0.5rem;
-    max-width: none;
-  }
-
-  .footer__address a {
-    color: #A0A09D;
-    transition: color 0.2s;
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-  }
-
-  .footer__address a:hover {
-    color: var(--color-cream);
-  }
-
-  .footer__address a:focus-visible {
-    outline: 2px solid var(--color-gold);
-    outline-offset: 2px;
-    border-radius: 2px;
   }
 
   /* ─── Bottom Bar ───────────────────────── */
@@ -432,9 +400,6 @@ const phoneDigits = phone.replace(/\D/g, '');
     }
     .footer__logo-img {
       height: 48px;
-    }
-    .footer__address a {
-      word-break: break-all;
     }
     .footer__bottom {
       flex-direction: column;
