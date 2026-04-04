@@ -254,10 +254,22 @@ const itemListSchema = hasShopify ? {
 
           {/* No results */}
           <div class="no-results" id="no-results" style="display:none;">
-            <div class="no-results__icon"></div>
-            <h3>No products found</h3>
-            <p>Try adjusting your search or filters</p>
-            <button class="btn btn--outline" id="no-results-clear">Clear All Filters</button>
+            <div class="no-results__illus" aria-hidden="true">
+              <svg class="no-results__svg" width="80" height="80" viewBox="0 0 80 80" fill="none">
+                <circle cx="34" cy="34" r="22" stroke="var(--color-stone)" stroke-width="2.5" opacity="0.35"/>
+                <line x1="50" y1="50" x2="66" y2="66" stroke="var(--color-stone)" stroke-width="2.5" stroke-linecap="round" opacity="0.35"/>
+                <line x1="26" y1="34" x2="42" y2="34" stroke="var(--color-stone)" stroke-width="2" stroke-linecap="round" opacity="0.25"/>
+              </svg>
+            </div>
+            <h3 class="no-results__heading">No results for <span id="no-results-query"></span></h3>
+            <p class="no-results__sub" id="no-results-sub">We couldn't find a match. Check the spelling or try a broader term.</p>
+            <div class="no-results__actions">
+              <button class="btn btn--primary" id="no-results-clear">Browse All Products</button>
+            </div>
+            <div class="no-results__suggestions" id="no-results-suggestions" style="display:none;">
+              <p class="no-results__suggestions-label">Popular categories</p>
+              <div class="no-results__suggestion-pills" id="no-results-pills"></div>
+            </div>
           </div>
         </>
       ) : (
@@ -1271,12 +1283,91 @@ const itemListSchema = hasShopify ? {
   /* ─── No Results ───────────────────────── */
   .no-results {
     text-align: center;
-    padding: var(--space-2xl) var(--space-md);
+    padding: var(--space-3xl) var(--space-md) var(--space-2xl);
+    max-width: 480px;
+    margin: 0 auto;
+    animation: noResultsFadeIn 0.4s ease-out both;
   }
-
-  .no-results__icon { font-size: 3rem; margin-bottom: 0.75rem; opacity: 0.5; }
-  .no-results h3 { margin-bottom: 0.5rem; }
-  .no-results .btn { margin-top: 1rem; }
+  @keyframes noResultsFadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .no-results__illus {
+    margin-bottom: 1.25rem;
+  }
+  .no-results__svg {
+    animation: noResultsPulse 2.5s ease-in-out infinite;
+  }
+  @keyframes noResultsPulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.55; }
+  }
+  .no-results__heading {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--color-charcoal);
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+  }
+  .no-results__heading span {
+    font-style: italic;
+    color: var(--color-stone);
+  }
+  .no-results__sub {
+    color: var(--color-stone);
+    font-size: 0.92rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+  }
+  .no-results__actions {
+    margin-bottom: 2rem;
+  }
+  .no-results__actions .btn--primary {
+    background: var(--color-charcoal);
+    color: #fff;
+    border: none;
+    padding: 0.7rem 2rem;
+    font-size: 0.88rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .no-results__actions .btn--primary:hover {
+    background: var(--color-slate);
+  }
+  .no-results__suggestions {
+    border-top: 1px solid var(--color-cream-dark);
+    padding-top: 1.5rem;
+  }
+  .no-results__suggestions-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-stone);
+    margin-bottom: 0.75rem;
+  }
+  .no-results__suggestion-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+  }
+  .no-results__pill {
+    background: var(--color-cream);
+    border: 1px solid var(--color-cream-dark);
+    color: var(--color-charcoal);
+    padding: 0.4rem 1rem;
+    font-size: 0.82rem;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+  .no-results__pill:hover {
+    background: var(--color-cream-dark);
+    border-color: var(--color-stone);
+  }
 
 
   /* ─── Placeholder ─────────────────────── */
@@ -1452,6 +1543,10 @@ const itemListSchema = hasShopify ? {
   const loadMoreEnd = document.getElementById('load-more-end');
   const noResults = document.getElementById('no-results');
   const noResultsClear = document.getElementById('no-results-clear');
+  const noResultsQuery = document.getElementById('no-results-query');
+  const noResultsSub = document.getElementById('no-results-sub');
+  const noResultsSuggestions = document.getElementById('no-results-suggestions');
+  const noResultsPills = document.getElementById('no-results-pills');
   const searchBanner = document.getElementById('search-banner');
   const searchBannerText = document.getElementById('search-banner-text');
   const searchClear = document.getElementById('search-clear');
@@ -1874,7 +1969,65 @@ const itemListSchema = hasShopify ? {
     }
 
     // No results
-    if (noResults) noResults.style.display = matchCount === 0 ? '' : 'none';
+    if (noResults) {
+      const showEmpty = matchCount === 0;
+      noResults.style.display = showEmpty ? '' : 'none';
+      if (showEmpty) {
+        // Populate search query display
+        if (noResultsQuery) {
+          noResultsQuery.textContent = activeSearch ? `"${activeSearch}"` : '';
+        }
+        // Contextual subtitle
+        if (noResultsSub) {
+          noResultsSub.textContent = activeSearch
+            ? 'We couldn\'t find a match. Check the spelling or try a broader term.'
+            : 'No products match your current filters.';
+        }
+        // Contextual heading
+        const heading = noResults.querySelector('.no-results__heading') as HTMLElement;
+        if (heading) {
+          heading.innerHTML = activeSearch
+            ? `No results for <span>"${activeSearch}"</span>`
+            : 'No products found';
+        }
+        // Build category suggestion pills from available product types
+        if (noResultsPills && noResultsSuggestions) {
+          noResultsPills.innerHTML = '';
+          const types = new Set<string>();
+          document.querySelectorAll<HTMLElement>('#shop-grid .product-card[data-type]').forEach(c => {
+            const t = c.dataset.type;
+            if (t) types.add(t);
+          });
+          const topTypes = [...types].slice(0, 6);
+          if (topTypes.length > 0) {
+            noResultsSuggestions.style.display = '';
+            for (const t of topTypes) {
+              const pill = document.createElement('button');
+              pill.className = 'no-results__pill';
+              pill.textContent = t;
+              pill.addEventListener('click', () => {
+                activeSearch = '';
+                if (searchBanner) searchBanner.style.display = 'none';
+                activeProductType = t;
+                visiblePage = 0;
+                syncPillBarState();
+                applyAll();
+                // Scroll to grid
+                const gridEl = document.getElementById('shop-grid');
+                const bar = document.querySelector('.filters-bar');
+                if (gridEl && bar) {
+                  const offset = gridEl.getBoundingClientRect().top + window.scrollY - bar.offsetHeight - parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-height') || '0');
+                  window.scrollTo({ top: offset, behavior: 'smooth' });
+                }
+              });
+              noResultsPills.appendChild(pill);
+            }
+          } else {
+            noResultsSuggestions.style.display = 'none';
+          }
+        }
+      }
+    }
     if (grid) grid.style.display = matchCount === 0 ? 'none' : '';
 
     // Position editorial card among visible products

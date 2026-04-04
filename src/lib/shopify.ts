@@ -261,7 +261,7 @@ export async function getCollections(first = 12) {
 }
 
 export async function getCollectionByHandle(handle: string, limit = Infinity) {
-  const PAGE_SIZE = 250; // Shopify Storefront API max
+  const PAGE_SIZE = 50; // Reduced from 250 — large pages with nested fields cause Shopify internal errors
   const query = `
     ${PRODUCT_FRAGMENT}
     query CollectionByHandle($handle: String!, $first: Int!, $after: String) {
