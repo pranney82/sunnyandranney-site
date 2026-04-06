@@ -573,6 +573,7 @@ function resetConversation() {
 
 function openPanel() {
   const panel = document.getElementById('staci-panel');
+  const toggle = document.getElementById('staci-toggle');
   const iconChat = document.getElementById('staci-icon-chat');
   const iconClose = document.getElementById('staci-icon-close');
   const label = document.getElementById('staci-toggle-label');
@@ -581,6 +582,7 @@ function openPanel() {
 
   panel.setAttribute('aria-hidden', 'false');
   panel.removeAttribute('inert');
+  toggle?.classList.add('is-open');
   if (iconChat) iconChat.style.display = 'none';
   if (iconClose) iconClose.style.display = 'block';
   if (label) label.style.display = 'none';
@@ -593,6 +595,7 @@ function openPanel() {
 
 function closePanel() {
   const panel = document.getElementById('staci-panel');
+  const toggle = document.getElementById('staci-toggle');
   const iconChat = document.getElementById('staci-icon-chat');
   const iconClose = document.getElementById('staci-icon-close');
   const label = document.getElementById('staci-toggle-label');
@@ -600,6 +603,7 @@ function closePanel() {
 
   panel.setAttribute('aria-hidden', 'true');
   panel.setAttribute('inert', '');
+  toggle?.classList.remove('is-open');
   if (iconChat) iconChat.style.display = 'block';
   if (iconClose) iconClose.style.display = 'none';
   if (label) label.style.display = '';

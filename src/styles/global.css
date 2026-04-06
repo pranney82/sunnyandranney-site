@@ -188,7 +188,7 @@ p {
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  border-radius: 0;
+  border-radius: 8px;
   transition: all var(--duration) var(--ease-out);
   position: relative;
   overflow: hidden;
@@ -238,31 +238,26 @@ p {
 }
 
 .btn--gold:hover {
-  background: var(--color-charcoal);
-  border-color: var(--color-charcoal);
-  color: var(--color-cream);
-  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .btn--gold:active {
-  transform: translateY(0);
+  box-shadow: none;
   transition-duration: 0.08s;
 }
 
 .btn--hero {
   padding: 1rem 2.8rem;
   font-size: 0.85rem;
-  border-radius: 0;
+  border-radius: 8px;
   transition: all 0.35s var(--ease-out);
 }
 
 .btn--hero:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(255, 212, 0, 0.35);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
 .btn--hero:active {
-  transform: translateY(0);
   box-shadow: none;
   transition-duration: 0.08s;
 }
@@ -562,7 +557,7 @@ p {
   font-family: var(--font-body);
   font-size: 0.85rem;
   font-weight: 600;
-  border-radius: 0;
+  border-radius: 8px;
   transition: top 0.2s;
 }
 

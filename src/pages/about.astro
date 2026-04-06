@@ -336,7 +336,6 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
               )}
               <div class="ab-crew__overlay" aria-hidden="true"></div>
             </div>
-            <span class="ab-crew__idx" aria-hidden="true">{String(idx + 1).padStart(2, '0')}</span>
             <div class="ab-crew__info">
               <h3>{member.name}</h3>
               <span class="ab-crew__role">{member.role}</span>
@@ -356,7 +355,6 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
             />
             <div class="ab-crew__overlay" aria-hidden="true"></div>
           </div>
-          <span class="ab-crew__idx" aria-hidden="true">{String(team.length + 1).padStart(2, '0')}</span>
           <div class="ab-crew__info">
             <h3>Gracie <span class="ab-crew__badge">Mascot</span></h3>
             <span class="ab-crew__role">Chief Morale Officer</span>
@@ -430,8 +428,8 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
   .ab-hero__actions { display: flex; align-items: center; gap: 1.5rem; margin-top: var(--space-lg); flex-wrap: wrap; }
   .text-link { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; font-weight: 600; color: var(--color-charcoal); letter-spacing: 0.03em; transition: color 0.3s; min-height: 48px; padding: 0.5rem 0; }
   .text-link:hover { color: var(--color-cyan); }
-  .ab-hero__media { position: relative; border-radius: 0; overflow: visible; }
-  .ab-hero__media > img:first-child { width: 100%; height: auto; display: block; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 0; }
+  .ab-hero__media { position: relative; border-radius: 12px; overflow: visible; }
+  .ab-hero__media > img:first-child { width: 100%; height: auto; display: block; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 12px; }
   .ab-hero__soard-logo {
     position: absolute;
     bottom: -24px;
@@ -532,7 +530,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
     position: relative;
     width: 280px;
     height: 497px;
-    border-radius: 0;
+    border-radius: 12px;
     overflow: hidden;
     background: #0d0b09;
     box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 40px 80px rgba(0,0,0,0.7);
@@ -651,7 +649,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
     gap: 6px;
     max-width: 1040px;
     margin: 0 auto;
-    border-radius: 0;
+    border-radius: 12px;
     overflow: hidden;
   }
 
@@ -751,7 +749,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
       grid-template-columns: repeat(2, 1fr);
       grid-auto-rows: 140px;
       gap: 4px;
-      border-radius: 0;
+      border-radius: 10px;
     }
     .ab-kids__tile--wide { grid-column: span 2; }
     .ab-kids__tile-name { opacity: 1; transform: translateY(0); }
@@ -822,7 +820,7 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
     position: relative;
     width: 100%;
     aspect-ratio: 3 / 4;
-    border-radius: 0;
+    border-radius: 12px;
     overflow: hidden;
     background: var(--color-cream);
     box-shadow:
@@ -877,27 +875,12 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
   /* Mascot photo */
   .ab-crew__card--mascot .ab-crew__photo {
     aspect-ratio: 3 / 4;
-    border-radius: 0;
+    border-radius: 12px;
     border: none;
   }
 
-  /* Decorative index number */
-  .ab-crew__idx {
-    display: block;
-    font-family: var(--font-display);
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.15em;
-    color: var(--color-gold);
-    opacity: 0.45;
-    margin-top: 1.25rem;
-    margin-bottom: 0.5rem;
-    transition: opacity 0.3s;
-  }
-  .ab-crew__card:hover .ab-crew__idx { opacity: 0.8; }
-
   /* Info block */
-  .ab-crew__info { position: relative; }
+  .ab-crew__info { position: relative; margin-top: 1.5rem; }
   .ab-crew__card h3 {
     font-size: clamp(1.15rem, 1.6vw, 1.35rem);
     letter-spacing: 0.02em;
@@ -909,10 +892,10 @@ const team = teamSetting?.members?.length ? teamSetting.members : DEFAULT_TEAM;
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: white;
+    color: #1a1a1a;
     background: var(--color-gold);
     padding: 0.2em 0.6em;
-    border-radius: 0;
+    border-radius: 4px;
     vertical-align: middle;
     margin-left: 0.35rem;
   }
