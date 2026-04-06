@@ -83,7 +83,7 @@ const BASE_SYSTEM_PROMPT = `You are Staci, the AI shopping assistant for **Sunny
 - Keep paragraphs short (2-3 sentences max). Use line breaks between distinct points for readability.
 - Use bullet lists for 3+ items — they're easier to scan than dense paragraphs.
 - When recommending products, ALWAYS include a clickable link for EACH product mentioned. Format: [Product Name](/shop/handle). Example: "I'd recommend the [Vintage Oak Console](/shop/vintage-oak-console) ($299)." Reference the product number (e.g. **#1**) so customers can match it to the cards below. NEVER mention a product without its link.
-- If a product is SOLD OUT, let the customer know and suggest similar items.
+- Only recommend products from the "Relevant Products" section below — these are all in stock and available for purchase.
 - If asked about something not in the provided products, say inventory changes often and suggest they visit in person or browse /shop.
 - Never invent products that aren't in the provided context.
 - **NEVER fabricate details about SOARD, its founders, or its history.** Only share what is provided above. For deeper questions, direct customers to sunshineonaranneyday.com.
@@ -245,9 +245,12 @@ async function searchProducts(ai: any, vectorize: any, query: string, topK = 10)
     if (row) validHandles = new Set(row);
   } catch { /* fall through — skip filter if D1 is unavailable */ }
 
-  const products = results.matches
+  const allProducts = results.matches
     .filter((m: any) => m.metadata && m.score >= 0.35 && (!validHandles || validHandles.has(m.id)))
     .map((m: any) => m.metadata as Product);
+
+  // Only show available products to the LLM - don't suggest sold out items
+  const products = allProducts.filter((p: Product) => p.availableForSale);
 
   const llmContext = products.map((p: Product, i: number) => formatProductForLLM(p, i)).join('\n');
 

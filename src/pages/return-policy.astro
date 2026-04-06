@@ -1,0 +1,115 @@
+---
+import Base from '@/layouts/Base.astro';
+---
+
+<Base
+  title="Return Policy — Sunny & Ranney"
+  description="Learn about our return and exchange policy at Sunny & Ranney furniture store in Roswell, GA."
+>
+  <section class="policy">
+    <div class="container policy__inner">
+      <span class="label">Store Policy</span>
+      <h1 class="policy__title">Returns & Exchanges</h1>
+
+      <div class="policy__content">
+        <p class="policy__intro">
+          At Sunny & Ranney, we want you to love your purchase. Please review our policy below before making a purchase.
+        </p>
+
+        <div class="policy__section">
+          <h2>All Sales Are Final</h2>
+          <p>Due to the nature of our curated, one-of-a-kind furniture and home decor items, <strong>all sales are final</strong> and we do not offer refunds.</p>
+        </div>
+
+        <div class="policy__section">
+          <h2>Exchanges</h2>
+          <p>We accept exchanges within <strong>14 days</strong> of purchase, subject to the following conditions:</p>
+          <ul>
+            <li>You must have your original receipt</li>
+            <li>Items must be in their original condition — unused, undamaged, and with all tags attached</li>
+            <li><strong>Sale items are not eligible for exchange</strong></li>
+          </ul>
+        </div>
+
+        <div class="policy__section">
+          <h2>Questions?</h2>
+          <p>If you have any questions about our return policy or need assistance with an exchange, please don't hesitate to contact us:</p>
+          <ul class="policy__contact">
+            <li><a href="tel:6788885140">678.888.5140</a></li>
+            <li><a href="mailto:info@sunnyandranney.com">info@sunnyandranney.com</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .policy {
+    padding: var(--space-2xl) 0 var(--space-3xl);
+  }
+
+  .policy__inner {
+    max-width: 680px;
+  }
+
+  .policy__title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 400;
+    line-height: 1.15;
+    margin-top: var(--space-sm);
+    margin-bottom: var(--space-lg);
+  }
+
+  .policy__intro {
+    font-size: 1.1rem;
+    color: var(--color-stone);
+    margin-bottom: var(--space-xl);
+    line-height: 1.7;
+  }
+
+  .policy__content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+  }
+
+  .policy__section h2 {
+    font-family: var(--font-body);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: var(--space-xs);
+  }
+
+  .policy__section p {
+    color: var(--color-stone);
+    line-height: 1.7;
+  }
+
+  .policy__section ul {
+    margin-top: var(--space-sm);
+    padding-left: 1.25rem;
+    color: var(--color-stone);
+    line-height: 1.8;
+  }
+
+  .policy__section ul li {
+    margin-bottom: 0.35rem;
+  }
+
+  .policy__contact {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  .policy__contact a {
+    color: var(--color-charcoal);
+    font-weight: 500;
+    transition: color 0.3s;
+  }
+
+  .policy__contact a:hover {
+    color: var(--color-gold);
+  }
+</style>

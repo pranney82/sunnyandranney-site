@@ -90,6 +90,7 @@ const itemListSchema = hasShopify ? {
           <div class="toolbar__categories" id="category-nav">
             <button class="filter-btn filter-btn--active" data-filter="all">All</button>
           </div>
+          <div class="toolbar__more-slot" id="more-btn-slot"></div>
         </div>
         <div class="toolbar__actions">
           <span class="toolbar__count" id="product-count">{products.length} product{products.length !== 1 ? 's' : ''}</span>
@@ -477,7 +478,6 @@ const itemListSchema = hasShopify ? {
     min-width: 0;
     scroll-snap-type: x mandatory;
     scroll-padding-left: 0.5rem;
-    padding-right: 2.5rem;
     position: relative;
   }
   .toolbar__categories::-webkit-scrollbar { display: none; }
@@ -485,8 +485,11 @@ const itemListSchema = hasShopify ? {
   /* Scroll fade indicator */
   .toolbar__categories-wrap {
     position: relative;
+    display: flex;
+    align-items: center;
     flex: 1;
     min-width: 0;
+    gap: 0;
   }
   .toolbar__categories-wrap::after {
     content: '';
@@ -498,6 +501,17 @@ const itemListSchema = hasShopify ? {
     background: linear-gradient(to left, var(--color-cream) 30%, transparent);
     pointer-events: none;
     z-index: 1;
+  }
+  /* Slot for "+X more" button - sits outside scroll container */
+  .toolbar__more-slot {
+    flex-shrink: 0;
+    position: relative;
+    z-index: 3;
+    background: var(--color-cream);
+    padding-left: 0.25rem;
+  }
+  .toolbar__more-slot:empty {
+    display: none;
   }
 
   .toolbar__actions {
@@ -549,6 +563,7 @@ const itemListSchema = hasShopify ? {
   .filter-btn--more {
     color: var(--color-stone);
     border: 1px dashed var(--color-cream-dark);
+    transition: color 0.18s, border-color 0.18s, background-color 0.18s;
   }
   .filter-btn--more:hover {
     border-color: var(--color-stone);
@@ -558,6 +573,12 @@ const itemListSchema = hasShopify ? {
     border-style: solid;
     border-color: var(--color-charcoal);
     color: var(--color-charcoal);
+  }
+  .filter-btn--more--open {
+    border-style: solid;
+    border-color: var(--color-charcoal);
+    color: var(--color-charcoal);
+    background: var(--color-cream-dark);
   }
 
   .toolbar__filter-toggle {
@@ -602,10 +623,12 @@ const itemListSchema = hasShopify ? {
     pointer-events: none;
   }
   .toolbar__subcats-expand.is-open {
-    max-height: 200px;
+    max-height: 50vh; /* Flexible for mobile, won't overwhelm viewport */
     opacity: 1;
     pointer-events: auto;
     padding-top: 0.75rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   /* ─── Filter panel (top-down dropdown) ─ */
@@ -664,9 +687,10 @@ const itemListSchema = hasShopify ? {
     gap: 0.35rem;
   }
   :global(.toolbar__category-btn) {
-    padding: 0.4rem 0.75rem;
+    padding: 0.6rem 1rem;
+    min-height: 44px; /* iOS touch target minimum */
     font-family: var(--font-body);
-    font-size: 0.78rem;
+    font-size: 0.82rem;
     font-weight: 500;
     color: var(--color-stone);
     border: 1px solid var(--color-cream-dark);
@@ -675,6 +699,7 @@ const itemListSchema = hasShopify ? {
     cursor: pointer;
     transition: color 0.18s, border-color 0.18s, background-color 0.18s;
     white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
   }
   :global(.toolbar__category-btn:hover) {
     color: var(--color-charcoal);
@@ -896,6 +921,11 @@ const itemListSchema = hasShopify ? {
       border-width: 1px;
       gap: 0;
     }
+
+    .toolbar__subcats-expand.is-open {
+      max-height: 200px;
+      overflow-y: visible;
+    }
   }
 
   /* ─── Filter toggle badge ───────────── */
@@ -986,6 +1016,14 @@ const itemListSchema = hasShopify ? {
     .filter-chip {
       padding: 0.35rem 0.75rem;
       font-size: 0.72rem;
+    }
+    :global(.toolbar__category-btn) {
+      padding: 0.4rem 0.75rem;
+      min-height: auto;
+      font-size: 0.78rem;
+    }
+    :global(.toolbar__category-list) {
+      gap: 0.5rem;
     }
   }
 
@@ -1609,9 +1647,39 @@ const itemListSchema = hasShopify ? {
   });
 
 
-  // Close on Escape
+  // Close on Escape (filter panel + subcats)
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && filterPanel?.classList.contains('is-open')) closeFilterPanel();
+    if (e.key === 'Escape') {
+      if (filterPanel?.classList.contains('is-open')) closeFilterPanel();
+      if (document.getElementById('subcats-expand')?.classList.contains('is-open')) {
+        closeSubcatsExpand();
+      }
+    }
+  });
+
+  // Close subcats + filter panel on scroll (elite UX)
+  let scrollCloseRaf = 0;
+  window.addEventListener('scroll', () => {
+    if (scrollCloseRaf) return;
+    scrollCloseRaf = requestAnimationFrame(() => {
+      if (document.getElementById('subcats-expand')?.classList.contains('is-open')) {
+        closeSubcatsExpand();
+      }
+      if (filterPanel?.classList.contains('is-open')) closeFilterPanel();
+      scrollCloseRaf = 0;
+    });
+  }, { passive: true });
+
+  // Close subcats on click outside
+  document.addEventListener('click', (e) => {
+    const subcatsEl = document.getElementById('subcats-expand');
+    if (!subcatsEl?.classList.contains('is-open')) return;
+    const target = e.target as HTMLElement;
+    const isInsideSubcats = subcatsEl.contains(target);
+    const isMoreBtn = target.closest('.filter-btn--more');
+    if (!isInsideSubcats && !isMoreBtn) {
+      closeSubcatsExpand();
+    }
   });
 
   let activeSearch = '';
@@ -1825,13 +1893,21 @@ const itemListSchema = hasShopify ? {
 
     // Add "+X more" pill if there are more subcats than shown
     const remainingCount = allSubcats.length - topSubcats.length;
-    if (remainingCount > 0) {
+    const moreBtnSlot = document.getElementById('more-btn-slot');
+    if (moreBtnSlot) moreBtnSlot.innerHTML = ''; // Clear previous
+    if (remainingCount > 0 && moreBtnSlot) {
       const moreBtn = document.createElement('button');
       moreBtn.className = 'filter-btn filter-btn--more';
       moreBtn.textContent = `+${remainingCount} more`;
+      moreBtn.setAttribute('aria-expanded', 'false');
+      moreBtn.setAttribute('aria-controls', 'subcats-expand');
+      moreBtn.setAttribute('aria-label', `Show ${remainingCount} more categories`);
       for (const attr of scopeAttrs) moreBtn.setAttribute(attr, '');
-      moreBtn.addEventListener('click', () => toggleSubcatsExpand());
-      categoryNav.appendChild(moreBtn);
+      moreBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleSubcatsExpand();
+      });
+      moreBtnSlot.appendChild(moreBtn);
     }
 
     // Update "All" button click
@@ -1852,14 +1928,38 @@ const itemListSchema = hasShopify ? {
   const subcatsExpand = document.getElementById('subcats-expand');
   const panelCategoryList = document.getElementById('panel-category-list');
 
+  function openSubcatsExpand() {
+    if (!subcatsExpand) return;
+    subcatsExpand.classList.add('is-open');
+    const moreBtn = document.getElementById('more-btn-slot')?.querySelector('.filter-btn--more');
+    if (moreBtn) {
+      moreBtn.setAttribute('aria-expanded', 'true');
+      moreBtn.classList.add('filter-btn--more--open');
+    }
+  }
+
+  function closeSubcatsExpand() {
+    if (!subcatsExpand) return;
+    subcatsExpand.classList.remove('is-open');
+    const moreBtn = document.getElementById('more-btn-slot')?.querySelector('.filter-btn--more');
+    if (moreBtn) {
+      moreBtn.setAttribute('aria-expanded', 'false');
+      moreBtn.classList.remove('filter-btn--more--open');
+    }
+  }
+
   function toggleSubcatsExpand() {
     if (!subcatsExpand) return;
-    subcatsExpand.classList.toggle('is-open');
+    subcatsExpand.classList.contains('is-open') ? closeSubcatsExpand() : openSubcatsExpand();
   }
 
   function syncPillBarState() {
     if (!categoryNav) return;
     categoryNav.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('filter-btn--active'));
+    // Also clear moreBtn active state (it's outside categoryNav now)
+    const moreBtn = document.getElementById('more-btn-slot')?.querySelector('.filter-btn--more');
+    moreBtn?.classList.remove('filter-btn--active');
+
     if (!activeProductType) {
       categoryNav.querySelector('.filter-btn[data-filter="all"]')?.classList.add('filter-btn--active');
       return;
@@ -1870,7 +1970,6 @@ const itemListSchema = hasShopify ? {
       pillMatch.classList.add('filter-btn--active');
     } else {
       // Non-top-5 subcat: highlight the "+X more" pill
-      const moreBtn = categoryNav.querySelector('.filter-btn--more');
       if (moreBtn) moreBtn.classList.add('filter-btn--active');
     }
   }
@@ -1887,7 +1986,7 @@ const itemListSchema = hasShopify ? {
     if (!panelCategoryList) return;
     panelCategoryList.innerHTML = '';
     // Close the expand row when rebuilding
-    if (subcatsExpand) subcatsExpand.classList.remove('is-open');
+    closeSubcatsExpand();
 
     const allSubcats = activeCollection ? (subcatMap[activeCollection] || []) : [];
     if (allSubcats.length <= 1) return;
@@ -1908,7 +2007,7 @@ const itemListSchema = hasShopify ? {
         panelCategoryList.querySelectorAll('.toolbar__category-btn').forEach(b => b.classList.remove('toolbar__category-btn--active'));
         if (activeProductType) btn.classList.add('toolbar__category-btn--active');
         // Close expand row and scroll to products
-        if (subcatsExpand) subcatsExpand.classList.remove('is-open');
+        closeSubcatsExpand();
         applyAll();
         const gridEl = document.getElementById('shop-grid');
         const barEl = document.querySelector('.filters-bar');
