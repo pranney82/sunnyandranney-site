@@ -92,6 +92,133 @@ export async function cleanExpiredSessions(ttlDays = 30): Promise<void> {
   }
 }
 
+// ─── Product Availability (real-time, webhook-updated) ──────────────
+
+/** Get availability for multiple products in a single query */
+export async function getProductAvailability(handles: string[]): Promise<Map<string, boolean>> {
+  const availability = new Map<string, boolean>();
+  if (!handles.length) return availability;
+
+  try {
+    // Batch query with placeholders
+    const placeholders = handles.map(() => '?').join(',');
+    const rows = await env.DB.prepare(
+      `SELECT handle, available FROM product_availability WHERE handle IN (${placeholders})`
+    ).bind(...handles).all<{ handle: string; available: number }>();
+
+    for (const row of rows.results) {
+      availability.set(row.handle, row.available === 1);
+    }
+  } catch (err) {
+    console.error('Availability read error:', err);
+  }
+
+  return availability;
+}
+
+/** Update availability for a single product (atomic, no race conditions) */
+export async function setProductAvailability(handle: string, available: boolean): Promise<void> {
+  try {
+    await env.DB.prepare(
+      `INSERT INTO product_availability (handle, available, updated_at)
+       VALUES (?, ?, datetime('now'))
+       ON CONFLICT(handle) DO UPDATE SET
+         available = excluded.available,
+         updated_at = excluded.updated_at`
+    ).bind(handle, available ? 1 : 0).run();
+  } catch (err) {
+    console.error('Availability update error:', err);
+  }
+}
+
+/** Batch update availability (for full sync) */
+export async function batchSetProductAvailability(
+  products: Array<{ handle: string; available: boolean }>
+): Promise<void> {
+  if (!products.length) return;
+
+  try {
+    // D1 batch API for atomic multi-row operations
+    const statements = products.map(p =>
+      env.DB.prepare(
+        `INSERT INTO product_availability (handle, available, updated_at)
+         VALUES (?, ?, datetime('now'))
+         ON CONFLICT(handle) DO UPDATE SET
+           available = excluded.available,
+           updated_at = excluded.updated_at`
+      ).bind(p.handle, p.available ? 1 : 0)
+    );
+
+    await env.DB.batch(statements);
+  } catch (err) {
+    console.error('Batch availability update error:', err);
+  }
+}
+
+/** Remove stale products no longer in catalog */
+export async function pruneStaleAvailability(validHandles: Set<string>): Promise<void> {
+  if (!validHandles.size) return;
+
+  try {
+    const placeholders = Array.from(validHandles).map(() => '?').join(',');
+    await env.DB.prepare(
+      `DELETE FROM product_availability WHERE handle NOT IN (${placeholders})`
+    ).bind(...validHandles).run();
+  } catch (err) {
+    console.error('Availability prune error:', err);
+  }
+}
+
+// ─── Inventory Item Mapping (for webhook lookups) ───────────────────
+
+/** Get product handle from inventory_item_id */
+export async function getHandleByInventoryItemId(inventoryItemId: string): Promise<string | null> {
+  try {
+    const row = await env.DB.prepare(
+      'SELECT handle FROM inventory_item_map WHERE inventory_item_id = ?'
+    ).bind(inventoryItemId).first<{ handle: string }>();
+    return row?.handle || null;
+  } catch (err) {
+    console.error('Inventory map lookup error:', err);
+    return null;
+  }
+}
+
+/** Batch populate inventory_item_id → handle mapping (for full sync) */
+export async function batchSetInventoryItemMap(
+  items: Array<{ inventoryItemId: string; handle: string }>
+): Promise<void> {
+  if (!items.length) return;
+
+  try {
+    const statements = items.map(item =>
+      env.DB.prepare(
+        `INSERT INTO inventory_item_map (inventory_item_id, handle)
+         VALUES (?, ?)
+         ON CONFLICT(inventory_item_id) DO UPDATE SET handle = excluded.handle`
+      ).bind(item.inventoryItemId, item.handle)
+    );
+
+    await env.DB.batch(statements);
+  } catch (err) {
+    console.error('Batch inventory map error:', err);
+  }
+}
+
+/** Remove stale mappings for products no longer in catalog */
+export async function pruneStaleInventoryMap(validHandles: Set<string>): Promise<void> {
+  if (!validHandles.size) return;
+
+  try {
+    const placeholders = Array.from(validHandles).map(() => '?').join(',');
+    await env.DB.prepare(
+      `DELETE FROM inventory_item_map WHERE handle NOT IN (${placeholders})`
+    ).bind(...validHandles).run();
+  } catch (err) {
+    console.error('Inventory map prune error:', err);
+  }
+}
+
 // ─── Rate Limiting (D1-backed, atomic, persistent across instances) ──
 
 export async function checkRateLimit(

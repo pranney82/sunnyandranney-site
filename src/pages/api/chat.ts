@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import { getSetting, checkRateLimit, getSession, upsertSession, cleanExpiredSessions } from '@/lib/db';
+import { getSetting, checkRateLimit, getSession, upsertSession, cleanExpiredSessions, getProductAvailability } from '@/lib/db';
 
 export const prerender = false;
 
@@ -229,6 +229,7 @@ interface SearchResult {
   cards: ProductCard[];
 }
 
+
 async function searchProducts(ai: any, vectorize: any, query: string, topK = 10): Promise<SearchResult> {
   const embeddingResult = await ai.run('@cf/baai/bge-base-en-v1.5', { text: [query] });
   const queryVector = embeddingResult.data?.[0];
@@ -249,8 +250,15 @@ async function searchProducts(ai: any, vectorize: any, query: string, topK = 10)
     .filter((m: any) => m.metadata && m.score >= 0.35 && (!validHandles || validHandles.has(m.id)))
     .map((m: any) => m.metadata as Product);
 
-  // Only show available products to the LLM - don't suggest sold out items
-  const products = allProducts.filter((p: Product) => p.availableForSale);
+  // Check real-time availability from D1 (updated by Shopify webhooks, vector metadata may be stale)
+  const handles = allProducts.map((p: Product) => p.handle);
+  const realTimeAvailability = await getProductAvailability(handles);
+
+  // Only show available products to the LLM - use real-time data if available, fall back to cached
+  const products = allProducts.filter((p: Product) => {
+    const realTime = realTimeAvailability.get(p.handle);
+    return realTime !== undefined ? realTime : p.availableForSale;
+  });
 
   const llmContext = products.map((p: Product, i: number) => formatProductForLLM(p, i)).join('\n');
 

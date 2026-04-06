@@ -105,7 +105,7 @@ async function syncHours(db: D1Database, apiKey: string, placeId: string): Promi
 }
 
 export default {
-  async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
     if (!env.GOOGLE_PLACES_API_KEY || !env.GOOGLE_PLACE_ID) {
       console.error('[hours-sync] Missing GOOGLE_PLACES_API_KEY or GOOGLE_PLACE_ID');
       return;

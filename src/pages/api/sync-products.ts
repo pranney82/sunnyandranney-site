@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { syncGoogleHoursToD1 } from '@/lib/sync-hours';
+import { batchSetProductAvailability, pruneStaleAvailability, batchSetInventoryItemMap, pruneStaleInventoryMap } from '@/lib/db';
 import collectionsConfig from '@/content/settings/collections.json';
 
 export const prerender = false;
@@ -28,6 +29,89 @@ const COLLECTION_PRODUCTS_QUERY = `
     }
   }
 `;
+
+// Admin API query to get inventory item IDs for products
+const ADMIN_INVENTORY_QUERY = `
+  query ($handles: String!, $cursor: String) {
+    products(first: 50, query: $handles, after: $cursor) {
+      pageInfo { hasNextPage endCursor }
+      edges {
+        node {
+          handle
+          variants(first: 10) {
+            edges {
+              node {
+                inventoryItem { id }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+/** Fetch inventory_item_id → handle mappings via Admin API */
+async function fetchInventoryItemMap(
+  domain: string,
+  adminToken: string,
+  handles: string[]
+): Promise<Array<{ inventoryItemId: string; handle: string }>> {
+  const results: Array<{ inventoryItemId: string; handle: string }> = [];
+  if (!handles.length) return results;
+
+  // Process in batches of 20 handles (Admin API query limit)
+  const BATCH_SIZE = 20;
+  for (let i = 0; i < handles.length; i += BATCH_SIZE) {
+    const batch = handles.slice(i, i + BATCH_SIZE);
+    const handleQuery = batch.map(h => `handle:${h}`).join(' OR ');
+
+    let cursor: string | null = null;
+    let hasNextPage = true;
+
+    while (hasNextPage) {
+      const res = await fetch(`https://${domain}/admin/api/2025-01/graphql.json`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Access-Token': adminToken,
+        },
+        body: JSON.stringify({
+          query: ADMIN_INVENTORY_QUERY,
+          variables: { handles: handleQuery, cursor },
+        }),
+      });
+
+      if (!res.ok) break;
+
+      const json: any = await res.json();
+      const data = json.data?.products;
+      if (!data) break;
+
+      for (const edge of data.edges) {
+        const product = edge.node;
+        for (const variantEdge of product.variants?.edges || []) {
+          const inventoryItemGid = variantEdge.node?.inventoryItem?.id;
+          if (inventoryItemGid) {
+            // Extract numeric ID from GID (gid://shopify/InventoryItem/12345)
+            const match = inventoryItemGid.match(/\/(\d+)$/);
+            if (match) {
+              results.push({
+                inventoryItemId: match[1],
+                handle: product.handle,
+              });
+            }
+          }
+        }
+      }
+
+      hasNextPage = data.pageInfo.hasNextPage;
+      cursor = data.pageInfo.endCursor;
+    }
+  }
+
+  return results;
+}
 
 /** Text used to generate the embedding — rich enough for semantic search */
 function buildEmbeddingText(node: any): string {
@@ -211,6 +295,32 @@ export const POST: APIRoute = async ({ request }) => {
     await env.DB.prepare(
       "INSERT INTO settings (key, value, updated_at) VALUES ('settings:valid_product_handles', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at"
     ).bind(JSON.stringify(currentIds)).run();
+
+    // Persist availability to dedicated D1 table (webhooks update this incrementally)
+    const availabilityData = allProducts.map(p => ({
+      handle: p.handle,
+      available: p.availableForSale,
+    }));
+    await batchSetProductAvailability(availabilityData);
+    await pruneStaleAvailability(seenHandles);
+
+    // Build inventory_item_id → handle mapping for inventory_levels/update webhooks
+    // Requires Admin API to get inventory item IDs
+    if (env.SHOPIFY_ADMIN_TOKEN) {
+      try {
+        const inventoryMap = await fetchInventoryItemMap(
+          domain,
+          env.SHOPIFY_ADMIN_TOKEN,
+          Array.from(seenHandles)
+        );
+        if (inventoryMap.length) {
+          await batchSetInventoryItemMap(inventoryMap);
+          await pruneStaleInventoryMap(seenHandles);
+        }
+      } catch (err) {
+        console.error('Inventory map sync error (non-critical):', err);
+      }
+    }
 
     // Sync Google hours → D1 so Staci always has current hours
     const googleApiKey = env.GOOGLE_PLACES_API_KEY;

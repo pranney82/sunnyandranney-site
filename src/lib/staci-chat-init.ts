@@ -1,5 +1,6 @@
 /* Staci Chat — full initialization module.
    Dynamically imported after browser idle to keep 16 KB out of the critical path. */
+/// <reference lib="dom" />
 
 const STORAGE_KEY = 'staci_chat_history';
 const STORAGE_PANEL_KEY = 'staci_panel_open';
@@ -41,7 +42,7 @@ function escapeAttr(str: string) {
   return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-/** Shared inline markdown transforms: code, bold, italic, links, lists */
+/** Shared inline markdown transforms: code, bold, italic, links, product refs */
 function applyInlineMarkdown(html: string): string {
   // Inline code: `text`
   html = html.replace(/`([^`]+?)`/g, '<code>$1</code>');
@@ -55,6 +56,12 @@ function applyInlineMarkdown(html: string): string {
   html = html.replace(/\[(.+?)\]\((.+?)\)/g, (_match, linkText, url) => {
     const safeUrl = /^(https?:\/\/|\/[^\/])/.test(url) ? url : '#';
     return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
+  });
+
+  // Product references: #1, #2, etc. → interactive chips (after bold/links processed)
+  // Match #N that's not inside an HTML tag or already processed
+  html = html.replace(/(?<!data-product="|&)#(\d)(?!["\d])/g, (_match, num) => {
+    return `<span class="staci-product-ref" data-product="${num}">#${num}</span>`;
   });
 
   return html;
@@ -647,6 +654,7 @@ function renderProductCards(cards: ProductCard[], container: HTMLElement) {
     a.href = `/shop/${encodeURIComponent(card.handle)}/`;
     a.target = '_blank';
     a.rel = 'noopener noreferrer';
+    a.dataset.product = String(card.cardIndex);
     a.innerHTML = `
       <span class="staci-product-card__number">#${card.cardIndex}</span>
       ${onSale ? '<span class="staci-product-card__badge">Sale</span>' : ''}
@@ -670,7 +678,7 @@ function renderProductCards(cards: ProductCard[], container: HTMLElement) {
   });
 
   // Insert after the container (the bot message div)
-  container.after(row);
+  container.insertAdjacentElement('afterend', row);
   scrollToBottom();
 }
 
@@ -803,7 +811,7 @@ async function sendMessage(text: string) {
       if (suggestions.length) updateChips(suggestions);
     } else {
       // ─── Non-streaming fallback ─────────────────────────
-      const data = await res.json();
+      const data = await res.json() as { reply?: string; products?: ProductCard[] };
       const rawReply = data.reply || "Sorry, I couldn't process that. Please try again.";
 
       const { clean, suggestions } = parseSuggestions(rawReply);
@@ -912,6 +920,168 @@ document.addEventListener('click', (e) => {
   if (!chip || isSending) return;
   const msg = chip.dataset.msg;
   if (msg) sendMessage(msg);
+});
+
+// ─── Bidirectional Product Highlighting ───────────────────────
+// Hover on #N in text → highlight card #N; hover on card → highlight text refs
+// All operations scoped to message↔cards sibling pairs (no global state)
+
+let _productTooltip: HTMLElement | null = null;
+
+function getOrCreateTooltip(): HTMLElement {
+  if (_productTooltip) return _productTooltip;
+  _productTooltip = document.createElement('div');
+  _productTooltip.className = 'staci-product-tooltip';
+  _productTooltip.setAttribute('role', 'tooltip');
+  document.body.appendChild(_productTooltip);
+  return _productTooltip;
+}
+
+/** Find the cards row that's sibling to the message containing this ref */
+function getCardsRowForRef(ref: HTMLElement): HTMLElement | null {
+  const message = ref.closest('.staci-msg--bot');
+  if (!message) return null;
+  const sibling = message.nextElementSibling;
+  return sibling?.classList.contains('staci-products') ? sibling as HTMLElement : null;
+}
+
+/** Find the message that's sibling to the cards row containing this card */
+function getMessageForCard(card: HTMLElement): HTMLElement | null {
+  const cardsRow = card.closest('.staci-products');
+  if (!cardsRow) return null;
+  const sibling = cardsRow.previousElementSibling;
+  return sibling?.classList.contains('staci-msg--bot') ? sibling as HTMLElement : null;
+}
+
+/** Get card element from a cards row by product number */
+function getCardInRow(cardsRow: HTMLElement, productNum: string): HTMLElement | null {
+  return cardsRow.querySelector(`.staci-product-card[data-product="${productNum}"]`);
+}
+
+function showProductTooltip(ref: HTMLElement, productNum: string) {
+  const cardsRow = getCardsRowForRef(ref);
+  if (!cardsRow) return;
+
+  const cardEl = getCardInRow(cardsRow, productNum);
+  if (!cardEl) return;
+
+  // Extract data from the DOM card (no global state)
+  const imgEl = cardEl.querySelector<HTMLImageElement>('.staci-product-card__img');
+  const titleEl = cardEl.querySelector('.staci-product-card__title');
+  const priceEl = cardEl.querySelector('.staci-product-card__price');
+  if (!imgEl || !titleEl || !priceEl) return;
+
+  const tooltip = getOrCreateTooltip();
+  // Use smaller image for tooltip
+  const imgSrc = imgEl.src.replace(/width=\d+/, 'width=120').replace(/height=\d+/, 'height=120');
+
+  tooltip.innerHTML = `
+    <img src="${escapeAttr(imgSrc)}" alt="" />
+    <div class="staci-product-tooltip__info">
+      <span class="staci-product-tooltip__title">${titleEl.textContent || ''}</span>
+      <span class="staci-product-tooltip__price">${priceEl.textContent || ''}</span>
+    </div>
+  `;
+
+  // Position above the ref
+  const rect = ref.getBoundingClientRect();
+  tooltip.style.left = `${rect.left + rect.width / 2}px`;
+  tooltip.style.top = `${rect.top - 8}px`;
+  tooltip.classList.add('is-visible');
+}
+
+function hideProductTooltip() {
+  _productTooltip?.classList.remove('is-visible');
+}
+
+/** Highlight ref↔card pair within a specific message/cards sibling pair */
+function highlightRefAndCard(
+  message: HTMLElement | null,
+  cardsRow: HTMLElement | null,
+  productNum: string,
+  highlight: boolean
+) {
+  // Highlight refs in this specific message
+  message?.querySelectorAll<HTMLElement>(`.staci-product-ref[data-product="${productNum}"]`).forEach(el => {
+    el.classList.toggle('is-highlighted', highlight);
+  });
+
+  // Highlight card in this specific cards row
+  cardsRow?.querySelectorAll<HTMLElement>(`.staci-product-card[data-product="${productNum}"]`).forEach(el => {
+    el.classList.toggle('is-highlighted', highlight);
+  });
+}
+
+// Hover on product reference in text
+document.addEventListener('mouseover', (e) => {
+  const ref = (e.target as Element).closest('.staci-product-ref') as HTMLElement | null;
+  if (!ref) return;
+  const productNum = ref.dataset.product;
+  if (!productNum) return;
+
+  const message = ref.closest('.staci-msg--bot') as HTMLElement | null;
+  const cardsRow = getCardsRowForRef(ref);
+
+  highlightRefAndCard(message, cardsRow, productNum, true);
+  showProductTooltip(ref, productNum);
+});
+
+document.addEventListener('mouseout', (e) => {
+  const ref = (e.target as Element).closest('.staci-product-ref') as HTMLElement | null;
+  if (!ref) return;
+  const productNum = ref.dataset.product;
+  if (!productNum) return;
+
+  const message = ref.closest('.staci-msg--bot') as HTMLElement | null;
+  const cardsRow = getCardsRowForRef(ref);
+
+  highlightRefAndCard(message, cardsRow, productNum, false);
+  hideProductTooltip();
+});
+
+// Hover on product card
+document.addEventListener('mouseover', (e) => {
+  const card = (e.target as Element).closest('.staci-product-card') as HTMLElement | null;
+  if (!card) return;
+  const productNum = card.dataset.product;
+  if (!productNum) return;
+
+  const cardsRow = card.closest('.staci-products') as HTMLElement | null;
+  const message = getMessageForCard(card);
+
+  highlightRefAndCard(message, cardsRow, productNum, true);
+});
+
+document.addEventListener('mouseout', (e) => {
+  const card = (e.target as Element).closest('.staci-product-card') as HTMLElement | null;
+  if (!card) return;
+  const productNum = card.dataset.product;
+  if (!productNum) return;
+
+  const cardsRow = card.closest('.staci-products') as HTMLElement | null;
+  const message = getMessageForCard(card);
+
+  highlightRefAndCard(message, cardsRow, productNum, false);
+});
+
+// Click on product ref scrolls to its paired card
+document.addEventListener('click', (e) => {
+  const ref = (e.target as Element).closest('.staci-product-ref') as HTMLElement | null;
+  if (!ref) return;
+  const productNum = ref.dataset.product;
+  if (!productNum) return;
+
+  const cardsRow = getCardsRowForRef(ref);
+  if (!cardsRow) return;
+
+  const card = getCardInRow(cardsRow, productNum);
+  if (card) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    // Flash highlight
+    const message = ref.closest('.staci-msg--bot') as HTMLElement | null;
+    highlightRefAndCard(message, cardsRow, productNum, true);
+    setTimeout(() => highlightRefAndCard(message, cardsRow, productNum, false), 800);
+  }
 });
 
 // Block native form submission entirely — prevents Astro ClientRouter
