@@ -2201,18 +2201,37 @@ const breadcrumbSchema = {
     return cfImg(url, width);
   }
 
+  // Calculate scrollbar width for fallback (browsers without scrollbar-gutter support)
+  function getScrollbarWidth(): number {
+    return window.innerWidth - document.documentElement.clientWidth;
+  }
+
+  function lockBodyScroll() {
+    const scrollbarWidth = getScrollbarWidth();
+    document.body.style.overflow = 'hidden';
+    // Compensate for scrollbar disappearance to prevent layout shift
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+  }
+
+  function unlockBodyScroll() {
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+  }
+
   function openLightbox(idx: number) {
     lightboxPrevFocus = document.activeElement as HTMLElement;
     lightboxIdx = idx;
     updateLightbox();
     lightbox?.setAttribute('aria-hidden', 'false');
-    document.body.style.overflow = 'hidden';
+    lockBodyScroll();
     setTimeout(() => lightboxClose?.focus(), 50);
   }
 
   function closeLightbox() {
     lightbox?.setAttribute('aria-hidden', 'true');
-    document.body.style.overflow = '';
+    unlockBodyScroll();
     lightboxPrevFocus?.focus();
     lightboxPrevFocus = null;
   }

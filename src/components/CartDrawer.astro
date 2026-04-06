@@ -561,12 +561,32 @@
   // ─── Open / Close ────────────────────────
   let previousFocus = null;
 
+  // Calculate scrollbar width for fallback (browsers without scrollbar-gutter support)
+  function getScrollbarWidth(): number {
+    return window.innerWidth - document.documentElement.clientWidth;
+  }
+
+  function lockBodyScroll() {
+    const scrollbarWidth = getScrollbarWidth();
+    document.body.style.overflow = 'hidden';
+    // Compensate for scrollbar disappearance to prevent layout shift
+    // (scrollbar-gutter: stable handles this in modern browsers, but this is a fallback)
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+  }
+
+  function unlockBodyScroll() {
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+  }
+
   function openCart() {
     previousFocus = document.activeElement;
     drawer?.setAttribute('aria-hidden', 'false');
     drawer?.removeAttribute('inert');
     overlay?.setAttribute('aria-hidden', 'false');
-    document.body.style.overflow = 'hidden';
+    lockBodyScroll();
     // Focus the close button
     setTimeout(() => closeBtn?.focus(), 50);
   }
@@ -575,7 +595,7 @@
     drawer?.setAttribute('aria-hidden', 'true');
     drawer?.setAttribute('inert', '');
     overlay?.setAttribute('aria-hidden', 'true');
-    document.body.style.overflow = '';
+    unlockBodyScroll();
     // Restore focus
     if (previousFocus && typeof previousFocus.focus === 'function') {
       previousFocus.focus();

@@ -275,7 +275,7 @@ function addUserBubble(text: string, animate = true) {
   if (animate) msg.dataset.ts = String(Date.now());
   if (!animate) msg.style.animation = 'none';
   msg.innerHTML = `
-    <span class="staci-msg__avatar"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0 2c-3.33 0-10 1.67-10 5v2h20v-2c0-3.33-6.67-5-10-5z"/></svg></span>
+    <span class="staci-msg__avatar"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0 2c-3.33 0-10 1.67-10 5v2h20v-2c0-3.33-6.67-5-10-5z"/></svg></span>
     <div class="staci-msg__body">
       <div class="staci-msg__bubble">${escapeHtml(text)}</div>
       ${animate ? '<span class="staci-msg__delivered"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Sent</span>' : ''}

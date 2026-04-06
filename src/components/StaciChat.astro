@@ -272,7 +272,7 @@
 
   /* ─── Header ─────────────────────────────────────────────── */
   .staci-header {
-    padding: 0.85rem 0.75rem 0.85rem 1rem;
+    padding: 0.95rem 0.85rem 0.95rem 1.1rem;
     background: linear-gradient(135deg, var(--color-charcoal) 0%, #1a1a1a 100%);
     color: var(--color-cream);
     display: flex;
@@ -288,8 +288,8 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255, 212, 0, 0.15), transparent);
+    height: 2px;
+    background: linear-gradient(90deg, transparent 5%, rgba(255, 212, 0, 0.25) 50%, transparent 95%);
   }
 
   .staci-header__info {
@@ -336,11 +336,12 @@
   }
 
   .staci-status {
-    font-size: 0.62rem;
-    letter-spacing: 0.06em;
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--color-gold);
     font-weight: 600;
+    opacity: 0.9;
   }
 
   .staci-avatar {
@@ -513,10 +514,10 @@
   .staci-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 1rem 0.85rem 0.6rem;
+    padding: 1.1rem 1rem 0.75rem;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.9rem;
     min-height: 0;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
@@ -538,79 +539,84 @@
     background: var(--color-cream-dark);
   }
 
-  .staci-msg {
+  :global(.staci-msg) {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.65rem;
     align-items: flex-start;
-    animation: staciMsgIn 0.3s var(--ease-out) both;
+    animation: staciMsgIn 0.35s var(--ease-out) both;
   }
 
-  .staci-msg--user {
+  :global(.staci-msg--user) {
     flex-direction: row-reverse;
-    animation: staciUserMsgIn 0.25s var(--ease-out) both;
+    animation: staciUserMsgIn 0.3s var(--ease-out) both;
+    padding-right: 0.25rem;
+  }
+
+  /* Hide user avatar completely - cleaner like iMessage */
+  :global(.staci-msg--user > .staci-msg__avatar) {
+    display: none;
   }
 
   /* Message grouping — hide avatar on consecutive same-role messages */
-  .staci-msg--bot + .staci-msg--bot > .staci-msg__avatar,
-  .staci-msg--bot + .staci-products + .staci-msg--bot > .staci-msg__avatar,
-  .staci-msg--bot + .staci-suggestions + .staci-msg--bot > .staci-msg__avatar {
+  :global(.staci-msg--bot + .staci-msg--bot > .staci-msg__avatar),
+  :global(.staci-msg--bot + .staci-products + .staci-msg--bot > .staci-msg__avatar),
+  :global(.staci-msg--bot + .staci-suggestions + .staci-msg--bot > .staci-msg__avatar) {
     visibility: hidden;
   }
-  .staci-msg--bot + .staci-msg--bot,
-  .staci-msg--bot + .staci-products + .staci-msg--bot,
-  .staci-msg--bot + .staci-suggestions + .staci-msg--bot {
-    margin-top: -0.35rem;
+  :global(.staci-msg--bot + .staci-msg--bot),
+  :global(.staci-msg--bot + .staci-products + .staci-msg--bot),
+  :global(.staci-msg--bot + .staci-suggestions + .staci-msg--bot) {
+    margin-top: -0.25rem;
   }
 
-  .staci-msg__avatar {
-    width: 30px;
-    height: 30px;
+  :global(.staci-msg__avatar) {
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
-    margin-top: 1px;
+    margin-top: 0.15rem;
   }
 
-  .staci-msg--bot > .staci-msg__avatar {
-    border: 1.5px solid var(--color-gold-soft);
-    box-shadow: 0 1px 4px rgba(44, 44, 44, 0.08);
+  :global(.staci-msg--bot > .staci-msg__avatar) {
+    border: 2px solid var(--color-gold-soft);
+    box-shadow:
+      0 0 0 3px rgba(255, 212, 0, 0.06),
+      0 2px 12px rgba(44, 44, 44, 0.12);
   }
 
-  span.staci-msg__avatar {
-    background: var(--color-charcoal);
-    color: var(--color-gold);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: var(--font-body);
-    font-weight: 700;
-    font-size: 0.6rem;
+  :global(span.staci-msg__avatar) {
+    display: none;
   }
 
-  .staci-msg__body {
+  :global(.staci-msg__body) {
     display: flex;
     flex-direction: column;
-    gap: 0.15rem;
+    gap: 0.25rem;
     max-width: 85%;
     min-width: 0;
   }
 
-  .staci-msg__bubble {
-    padding: 0.75rem 1rem;
-    font-size: 0.9rem;
-    line-height: 1.65;
-    letter-spacing: 0.005em;
+  :global(.staci-msg--user .staci-msg__body) {
+    align-items: flex-end;
+  }
+
+  :global(.staci-msg__bubble) {
+    padding: 0.9rem 1.15rem;
+    font-size: 0.92rem;
+    line-height: 1.7;
+    letter-spacing: 0.01em;
     color: var(--color-charcoal);
     word-break: break-word;
     overflow-wrap: anywhere;
   }
 
   /* Rich text in bot bubbles */
-  .staci-msg--bot .staci-msg__bubble :global(strong) {
+  :global(.staci-msg--bot .staci-msg__bubble strong) {
     font-weight: 700;
     color: var(--color-charcoal);
   }
-  .staci-msg--bot .staci-msg__bubble :global(a) {
+  :global(.staci-msg--bot .staci-msg__bubble a) {
     color: var(--color-cyan);
     text-decoration: none;
     font-weight: 600;
@@ -619,49 +625,97 @@
     border-radius: 4px;
     transition: background 0.15s, color 0.15s;
   }
-  .staci-msg--bot .staci-msg__bubble :global(a:hover) {
+  :global(.staci-msg--bot .staci-msg__bubble a:hover) {
     background: rgba(75, 149, 180, 0.16);
     color: var(--color-charcoal);
   }
-  .staci-msg--bot .staci-msg__bubble :global(ul),
-  .staci-msg--bot .staci-msg__bubble :global(ol) {
-    margin: 0.5rem 0 0.6rem;
-    padding-left: 1.15rem;
+  :global(.staci-msg--bot .staci-msg__bubble ul),
+  :global(.staci-msg--bot .staci-msg__bubble ol) {
+    margin: 0.75rem 0 0.5rem;
+    padding-left: 0;
+    list-style: none;
   }
-  .staci-msg--bot .staci-msg__bubble :global(li) {
-    margin: 0.35rem 0;
+  :global(.staci-msg--bot .staci-msg__bubble li) {
+    margin: 0;
+    padding: 0.4rem 0 0.4rem 1.5rem;
     line-height: 1.55;
-    padding-left: 0.2rem;
+    position: relative;
+    border-bottom: 1px solid rgba(44, 44, 44, 0.04);
   }
-  .staci-msg--bot .staci-msg__bubble :global(li::marker) {
+  :global(.staci-msg--bot .staci-msg__bubble li:last-child) {
+    border-bottom: none;
+    padding-bottom: 0.2rem;
+  }
+  :global(.staci-msg--bot .staci-msg__bubble li:first-child) {
+    padding-top: 0.2rem;
+  }
+  :global(.staci-msg--bot .staci-msg__bubble li::before) {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.65em;
+    width: 6px;
+    height: 6px;
+    background: linear-gradient(135deg, var(--color-gold) 0%, #e6c200 100%);
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px rgba(255, 212, 0, 0.15);
+  }
+  :global(.staci-msg--bot .staci-msg__bubble ol li::before) {
+    content: counter(list-item);
+    background: var(--color-charcoal);
     color: var(--color-gold);
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    font-size: 0.65rem;
     font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    top: 0.15em;
+    left: -0.1rem;
+    box-shadow: none;
   }
-  .staci-msg--bot .staci-msg__bubble :global(code) {
+  :global(.staci-msg--bot .staci-msg__bubble ol) {
+    counter-reset: list-item;
+    padding-left: 0.3rem;
+  }
+  :global(.staci-msg--bot .staci-msg__bubble ol li) {
+    counter-increment: list-item;
+    padding-left: 1.65rem;
+  }
+  :global(.staci-msg--bot .staci-msg__bubble code) {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 0.82em;
     background: rgba(44, 44, 44, 0.05);
     padding: 0.12em 0.3em;
     border-radius: 4px;
   }
-  .staci-msg--bot .staci-msg__bubble :global(p) { margin: 0; }
-  .staci-msg--bot .staci-msg__bubble :global(p + p) { margin-top: 0.55rem; }
+  :global(.staci-msg--bot .staci-msg__bubble p) { margin: 0; }
+  :global(.staci-msg--bot .staci-msg__bubble p + p) { margin-top: 0.55rem; }
 
-  .staci-msg--bot .staci-msg__bubble {
-    background: var(--color-cream);
-    border-radius: 0;
-    box-shadow: 0 1px 3px rgba(44, 44, 44, 0.05);
+  :global(.staci-msg--bot .staci-msg__bubble) {
+    background: white;
+    border-radius: 2px 18px 18px 18px;
+    box-shadow:
+      0 1px 2px rgba(44, 44, 44, 0.06),
+      0 4px 12px rgba(44, 44, 44, 0.04);
+    border: 1px solid rgba(44, 44, 44, 0.06);
+    position: relative;
   }
 
-  .staci-msg--user .staci-msg__bubble {
-    background: var(--color-charcoal);
+  :global(.staci-msg--user .staci-msg__bubble) {
+    background: linear-gradient(135deg, var(--color-charcoal) 0%, #1f1f1f 100%);
     color: var(--color-cream);
-    border-radius: 0;
-    box-shadow: 0 1px 3px rgba(44, 44, 44, 0.08);
+    border-radius: 18px 18px 2px 18px;
+    box-shadow:
+      0 2px 8px rgba(44, 44, 44, 0.15),
+      0 4px 20px rgba(44, 44, 44, 0.08);
+    letter-spacing: 0.015em;
   }
 
   /* Typing indicator — shimmer bar */
-  .staci-typing .staci-msg__bubble {
+  :global(.staci-typing .staci-msg__bubble) {
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
@@ -669,14 +723,14 @@
     min-width: 140px;
   }
 
-  .staci-shimmer {
+  :global(.staci-shimmer) {
     display: flex;
     flex-direction: column;
     gap: 5px;
     width: 100%;
   }
 
-  .staci-shimmer-bar {
+  :global(.staci-shimmer-bar) {
     height: 8px;
     border-radius: 4px;
     background:
@@ -686,15 +740,15 @@
     animation: staciShimmerSlide 1.5s ease-in-out infinite;
   }
 
-  .staci-shimmer-bar:nth-child(1) { width: 85%; }
-  .staci-shimmer-bar:nth-child(2) { width: 60%; animation-delay: 0.15s; }
+  :global(.staci-shimmer-bar:nth-child(1)) { width: 85%; }
+  :global(.staci-shimmer-bar:nth-child(2)) { width: 60%; animation-delay: 0.15s; }
 
   @keyframes staciShimmerSlide {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
   }
 
-  .staci-typing__label {
+  :global(.staci-typing__label) {
     font-size: 0.65rem;
     color: var(--color-stone);
     letter-spacing: 0.02em;
@@ -711,7 +765,7 @@
     to { opacity: 1; transform: translateX(0); }
   }
 
-  .staci-msg--bot.staci-msg--stream-start {
+  :global(.staci-msg--bot.staci-msg--stream-start) {
     animation: staciBotFadeIn 0.2s ease-out both;
   }
 
@@ -730,7 +784,7 @@
     50% { opacity: 0.15; }
   }
 
-  .staci-streaming::after {
+  :global(.staci-streaming::after) {
     content: '\25CE';
     display: inline-block;
     animation: staciCursor 0.9s steps(1) infinite;
@@ -742,19 +796,19 @@
     transition: opacity 0.3s ease-out;
   }
 
-  .staci-streaming--done::after {
+  :global(.staci-streaming--done::after) {
     opacity: 0;
     animation: none;
   }
 
   /* Error message */
-  .staci-msg--error .staci-msg__bubble {
+  :global(.staci-msg--error .staci-msg__bubble) {
     background: #FEF2F2;
     border: 1px solid #FECACA;
     color: #991B1B;
   }
 
-  .staci-retry {
+  :global(.staci-retry) {
     display: inline-flex;
     align-items: center;
     margin-top: 0.3rem;
@@ -771,52 +825,69 @@
     transition: color 0.15s;
   }
 
-  .staci-retry:hover { color: var(--color-charcoal); }
+  :global(.staci-retry:hover) { color: var(--color-charcoal); }
 
-  .staci-msg__time {
-    font-size: 0.58rem;
+  :global(.staci-msg__time) {
+    font-size: 0.65rem;
     color: var(--color-stone);
     opacity: 0;
-    padding: 0 0.25rem;
+    padding: 0.2rem 0.5rem;
     line-height: 1;
-    transition: opacity 0.2s;
+    transition: opacity 0.3s;
+    letter-spacing: 0.03em;
   }
 
-  .staci-msg:hover .staci-msg__time { opacity: 0.5; }
-  .staci-msg--user .staci-msg__time { text-align: right; }
+  :global(.staci-msg:hover .staci-msg__time) { opacity: 0.4; }
+  :global(.staci-msg--user .staci-msg__time) { text-align: right; }
+  :global(.staci-msg--bot .staci-msg__time) { padding-left: 0; }
 
-  .staci-msg--user .staci-msg__delivered {
-    display: flex;
+  :global(.staci-msg--user .staci-msg__delivered) {
+    display: inline-flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 0.2rem;
-    font-size: 0.56rem;
+    gap: 0.35rem;
+    font-size: 0.68rem;
     color: var(--color-stone);
-    padding-right: 0.25rem;
+    padding: 0.25rem 0.5rem;
     opacity: 0;
-    animation: staciFadeIn 0.3s 0.4s ease-out forwards;
+    animation: staciFadeIn 0.4s 0.6s ease-out forwards;
+    font-weight: 500;
+    letter-spacing: 0.02em;
   }
 
-  .staci-msg--user .staci-msg__delivered svg {
-    width: 10px;
-    height: 10px;
-    stroke: var(--color-stone);
+  :global(.staci-msg--user .staci-msg__delivered svg) {
+    width: 12px;
+    height: 12px;
+    stroke: #22C55E;
+    stroke-width: 2.5;
     flex-shrink: 0;
   }
 
   @keyframes staciFadeIn { to { opacity: 0.5; } }
 
-  .staci-time-sep {
+  :global(.staci-time-sep) {
     text-align: center;
-    font-size: 0.58rem;
+    font-size: 0.65rem;
     color: var(--color-stone);
-    opacity: 0.55;
-    padding: 0.25rem 0;
-    letter-spacing: 0.03em;
+    opacity: 0.5;
+    padding: 0.5rem 0;
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0.35rem 0;
+  }
+
+  :global(.staci-time-sep::before),
+  :global(.staci-time-sep::after) {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(44, 44, 44, 0.08), transparent);
   }
 
   /* ─── Product Cards (horizontal carousel) ─────────────────── */
-  .staci-products {
+  :global(.staci-products) {
     display: flex;
     gap: 0.55rem;
     padding: 0.25rem 0.85rem 0.5rem 2.6rem;
@@ -828,9 +899,9 @@
     animation: staciMsgIn 0.3s var(--ease-out) both;
   }
 
-  .staci-products::-webkit-scrollbar { display: none; }
+  :global(.staci-products::-webkit-scrollbar) { display: none; }
 
-  .staci-product-card {
+  :global(.staci-product-card) {
     flex: 0 0 155px;
     background: white;
     border-radius: 0;
@@ -847,16 +918,16 @@
     animation: staciCardIn 0.3s var(--ease-out) both;
   }
 
-  .staci-product-card:nth-child(2) { animation-delay: 0.06s; }
-  .staci-product-card:nth-child(3) { animation-delay: 0.12s; }
-  .staci-product-card:nth-child(4) { animation-delay: 0.18s; }
+  :global(.staci-product-card:nth-child(2)) { animation-delay: 0.06s; }
+  :global(.staci-product-card:nth-child(3)) { animation-delay: 0.12s; }
+  :global(.staci-product-card:nth-child(4)) { animation-delay: 0.18s; }
 
   @keyframes staciCardIn {
     from { opacity: 0; transform: translateY(6px) scale(0.97); }
     to { opacity: 1; transform: translateY(0) scale(1); }
   }
 
-  .staci-product-card__number {
+  :global(.staci-product-card__number) {
     position: absolute;
     top: 6px;
     right: 6px;
@@ -875,7 +946,7 @@
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
   }
 
-  .staci-product-card__badge {
+  :global(.staci-product-card__badge) {
     position: absolute;
     top: 6px;
     left: 6px;
@@ -893,16 +964,16 @@
     box-shadow: 0 1px 3px rgba(0,0,0,0.12);
   }
 
-  .staci-product-card:hover {
+  :global(.staci-product-card:hover) {
     transform: translateY(-2px);
     box-shadow: 0 4px 16px rgba(44, 44, 44, 0.1);
   }
 
-  .staci-product-card:active {
+  :global(.staci-product-card:active) {
     transform: scale(0.98);
   }
 
-  .staci-product-card__img {
+  :global(.staci-product-card__img) {
     width: 100%;
     aspect-ratio: 1;
     object-fit: cover;
@@ -914,7 +985,7 @@
     animation: staciImgShimmer 1.5s ease-in-out infinite;
   }
 
-  .staci-product-card__img.staci-loaded {
+  :global(.staci-product-card__img.staci-loaded) {
     animation: none;
     background: var(--color-cream-dark);
   }
@@ -924,14 +995,14 @@
     100% { background-position: -200% 0; }
   }
 
-  .staci-product-card__info {
+  :global(.staci-product-card__info) {
     padding: 0.45rem 0.55rem 0.5rem;
     display: flex;
     flex-direction: column;
     gap: 0.15rem;
   }
 
-  .staci-product-card__title {
+  :global(.staci-product-card__title) {
     font-family: var(--font-body);
     font-size: 0.72rem;
     font-weight: 600;
@@ -942,127 +1013,152 @@
     overflow: hidden;
   }
 
-  .staci-product-card__price {
+  :global(.staci-product-card__price) {
     font-family: var(--font-body);
     font-size: 0.74rem;
     font-weight: 700;
     color: var(--color-charcoal);
   }
 
-  .staci-product-card__price s {
+  :global(.staci-product-card__price s) {
     color: var(--color-stone);
     font-weight: 400;
     font-size: 0.66rem;
   }
 
-  /* ─── Inline Suggestion Pills ─────────────────────────────── */
-  .staci-suggestions {
+  /* ─── Inline Suggestion Pills (dynamically created, needs :global) ─── */
+  :global(.staci-suggestions) {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.35rem;
-    padding: 0.3rem 0.85rem 0.2rem 2.6rem;
+    gap: 0.6rem;
+    padding: 0.75rem 1rem 0.5rem 3rem;
+    margin-top: 0.25rem;
   }
 
-  .staci-suggestion-pill {
-    padding: 0.38rem 0.8rem;
+  :global(.staci-suggestion-pill) {
+    padding: 0.7rem 1.2rem 0.7rem 1rem;
     font-family: var(--font-body);
-    font-size: 0.76rem;
+    font-size: 0.82rem;
     font-weight: 500;
-    color: var(--color-slate);
-    background: white;
+    color: var(--color-charcoal);
+    background: linear-gradient(180deg, white 0%, #fafafa 100%);
     border: 1px solid rgba(44, 44, 44, 0.08);
-    border-radius: 0;
+    border-radius: 100px;
     cursor: pointer;
-    transition: all 0.2s var(--ease-out);
+    transition: all 0.25s var(--ease-out);
     white-space: nowrap;
-    min-height: 30px;
+    min-height: 42px;
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
-    animation: staciPillIn 0.3s var(--ease-out) both;
+    gap: 0.6rem;
+    animation: staciPillIn 0.4s var(--ease-out) both;
+    box-shadow:
+      0 1px 2px rgba(44, 44, 44, 0.04),
+      0 2px 8px rgba(44, 44, 44, 0.03);
+    position: relative;
+    overflow: hidden;
   }
 
-  .staci-suggestion-pill:nth-child(1) { animation-delay: 0.12s; }
-  .staci-suggestion-pill:nth-child(2) { animation-delay: 0.2s; }
-  .staci-suggestion-pill:nth-child(3) { animation-delay: 0.28s; }
+  :global(.staci-suggestion-pill:nth-child(1)) { animation-delay: 0.1s; }
+  :global(.staci-suggestion-pill:nth-child(2)) { animation-delay: 0.18s; }
+  :global(.staci-suggestion-pill:nth-child(3)) { animation-delay: 0.26s; }
 
-  .staci-suggestion-pill::before {
+  :global(.staci-suggestion-pill::before) {
     content: '';
     display: inline-block;
-    width: 5px;
-    height: 5px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
-    background: var(--color-gold);
+    background: linear-gradient(135deg, var(--color-gold) 0%, #f0c000 100%);
     flex-shrink: 0;
-    opacity: 0.7;
+    box-shadow: 0 0 0 3px rgba(255, 212, 0, 0.12);
+    transition: all 0.25s var(--ease-out);
   }
 
-  .staci-suggestion-pill:hover {
-    background: var(--color-gold-soft);
+  :global(.staci-suggestion-pill:hover) {
+    background: linear-gradient(180deg, var(--color-gold-soft) 0%, #fff8dc 100%);
     border-color: rgba(255, 212, 0, 0.4);
     color: var(--color-charcoal);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(255, 212, 0, 0.12);
+    transform: translateY(-3px);
+    box-shadow:
+      0 4px 12px rgba(255, 212, 0, 0.2),
+      0 8px 24px rgba(44, 44, 44, 0.06);
   }
 
-  .staci-suggestion-pill:hover::before {
-    opacity: 1;
+  :global(.staci-suggestion-pill:hover::before) {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 4px rgba(255, 212, 0, 0.2);
   }
 
-  .staci-suggestion-pill:active { transform: scale(0.97); }
+  :global(.staci-suggestion-pill:active) {
+    transform: scale(0.97) translateY(-1px);
+    transition-duration: 0.1s;
+  }
 
   /* ─── Quick Reply Chips ────────────────────────────────────── */
   .staci-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.35rem;
-    padding: 0.4rem 0.85rem 0.6rem;
+    gap: 0.45rem;
+    padding: 0.55rem 1rem 0.75rem;
     flex-shrink: 0;
   }
 
   .staci-chip {
-    padding: 0.38rem 0.8rem;
+    padding: 0.5rem 0.95rem;
     font-family: var(--font-body);
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     font-weight: 500;
-    color: var(--color-slate);
+    color: var(--color-charcoal);
     background: white;
     border: 1px solid rgba(44, 44, 44, 0.08);
     border-radius: 0;
     cursor: pointer;
     transition: all 0.2s var(--ease-out);
     white-space: nowrap;
-    min-height: 36px;
+    min-height: 40px;
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
+    gap: 0.5rem;
+    box-shadow: 0 1px 3px rgba(44, 44, 44, 0.04);
   }
 
   .staci-chip:hover {
     background: var(--color-gold-soft);
-    border-color: var(--color-gold);
+    border-color: rgba(255, 212, 0, 0.5);
     color: var(--color-charcoal);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(255, 212, 0, 0.12);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 212, 0, 0.15);
   }
 
-  .staci-chip:active { transform: scale(0.97); }
+  .staci-chip:active { transform: scale(0.98) translateY(-1px); }
 
   /* ─── Input ──────────────────────────────────────────────── */
   .staci-input {
     display: flex;
     align-items: flex-end;
     border-top: 1px solid rgba(44, 44, 44, 0.06);
-    padding: 0.35rem 0.5rem 0.35rem 0;
-    gap: 0;
+    padding: 0.6rem 0.75rem 0.6rem 0;
+    gap: 0.5rem;
     flex-shrink: 0;
-    background: white;
+    background: linear-gradient(180deg, #fafafa 0%, white 100%);
+    transition: all 0.25s var(--ease-out);
   }
 
   .staci-input__wrap {
     flex: 1;
     display: flex;
     flex-direction: column;
+    background: white;
+    border-radius: 24px;
+    border: 1px solid rgba(44, 44, 44, 0.08);
+    transition: all 0.25s var(--ease-out);
+    margin-left: 0.5rem;
+  }
+
+  .staci-input:focus-within .staci-input__wrap {
+    border-color: rgba(255, 212, 0, 0.5);
+    box-shadow: 0 0 0 3px rgba(255, 212, 0, 0.1);
   }
 
   .staci-char-count {
@@ -1071,17 +1167,18 @@
     text-align: right;
     padding: 0 0.85rem 0.2rem;
     display: none;
+    font-weight: 500;
   }
 
   .staci-char-count.staci-char-count--warn { color: #EF4444; }
 
   .staci-input textarea {
     flex: 1;
-    padding: 0.6rem 0.85rem;
+    padding: 0.75rem 1rem;
     border: none;
     outline: none;
     font-family: var(--font-body);
-    font-size: 0.9rem;
+    font-size: 0.92rem;
     background: transparent;
     color: var(--color-charcoal);
     min-height: 44px;
@@ -1090,46 +1187,49 @@
     overflow-y: auto;
     max-height: 120px;
     line-height: 1.5;
+    border-radius: 24px;
   }
 
   .staci-input textarea::placeholder {
     color: var(--color-stone);
-    opacity: 0.7;
+    opacity: 0.55;
   }
 
   .staci-input:focus-within {
     border-top-color: rgba(255, 212, 0, 0.3);
-    background: rgba(255, 255, 255, 1);
+    background: white;
   }
 
   .staci-input__send {
     padding: 0.5rem;
-    margin-bottom: 0.15rem;
+    margin-bottom: 0.1rem;
     color: white;
-    background: var(--color-cream-dark);
+    background: rgba(44, 44, 44, 0.12);
     border-radius: 50%;
-    width: 36px;
-    height: 36px;
+    width: 42px;
+    height: 42px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.25s var(--ease-out), transform 0.25s var(--ease-out), color 0.25s, opacity 0.25s;
+    transition: all 0.3s var(--ease-out);
     cursor: pointer;
     border: none;
     flex-shrink: 0;
-    opacity: 0.35;
   }
 
   /* Active state — textarea has content */
   .staci-input__send:not(:disabled) {
-    background: var(--color-charcoal);
-    opacity: 1;
+    background: linear-gradient(135deg, var(--color-charcoal) 0%, #1a1a1a 100%);
+    box-shadow:
+      0 2px 8px rgba(44, 44, 44, 0.25),
+      0 4px 16px rgba(44, 44, 44, 0.1);
   }
 
   .staci-input__send:not(:disabled):hover {
-    background: var(--color-gold);
+    background: linear-gradient(135deg, var(--color-gold) 0%, #e6c200 100%);
     color: var(--color-charcoal);
     transform: scale(1.08);
+    box-shadow: 0 4px 16px rgba(255, 212, 0, 0.3);
   }
 
   .staci-input__send:not(:disabled):hover svg { stroke: var(--color-charcoal); }
@@ -1150,38 +1250,44 @@
 
   /* ─── Footer ─────────────────────────────────────────────── */
   .staci-footer {
-    padding: 0.35rem 0.85rem;
-    font-size: 0.56rem;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.65rem;
     color: var(--color-stone);
     text-align: center;
-    border-top: none;
-    background: var(--color-warm-white);
+    border-top: 1px solid rgba(44, 44, 44, 0.04);
+    background: linear-gradient(180deg, var(--color-warm-white) 0%, rgba(250, 248, 244, 0.95) 100%);
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.35rem;
-    opacity: 0;
+    gap: 0.5rem;
+    opacity: 0.65;
     transition: opacity 0.2s;
+    letter-spacing: 0.01em;
   }
 
   #staci-panel:hover .staci-footer,
   #staci-panel:focus-within .staci-footer {
-    opacity: 0.5;
+    opacity: 0.85;
   }
 
   .staci-footer__sep {
-    opacity: 0.3;
-    font-size: 0.45rem;
+    opacity: 0.25;
+    font-size: 0.5rem;
   }
 
   .staci-footer a {
     color: var(--color-stone);
     text-decoration: none;
-    transition: color 0.15s;
+    transition: color 0.2s, opacity 0.2s;
+    font-weight: 500;
   }
 
-  .staci-footer a:hover { color: var(--color-charcoal); }
+  .staci-footer a:hover {
+    color: var(--color-charcoal);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
 
   /* ─── Mobile ─────────────────────────────────────────────── */
   @media (max-width: 480px) {
@@ -1251,36 +1357,56 @@
       max-width: 200px;
     }
 
-    .staci-suggestions {
-      padding-left: 0.85rem;
+    :global(.staci-suggestions) {
+      padding: 0.6rem 1rem 0.5rem 2.8rem;
       overflow-x: auto;
       flex-wrap: nowrap;
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
+      gap: 0.5rem;
     }
 
-    .staci-suggestions::-webkit-scrollbar { display: none; }
-    .staci-suggestion-pill { flex-shrink: 0; }
+    :global(.staci-suggestions::-webkit-scrollbar) { display: none; }
+    :global(.staci-suggestion-pill) {
+      flex-shrink: 0;
+      min-height: 44px;
+      padding: 0.65rem 1.1rem 0.65rem 0.9rem;
+      font-size: 0.84rem;
+    }
 
     .staci-chips {
-      padding: 0.35rem 0.65rem 0.5rem;
+      padding: 0.5rem 0.85rem 0.65rem;
       overflow-x: auto;
       flex-wrap: nowrap;
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
+      gap: 0.5rem;
     }
 
     .staci-chips::-webkit-scrollbar { display: none; }
-    .staci-chip { flex-shrink: 0; }
+    .staci-chip {
+      flex-shrink: 0;
+      min-height: 46px;
+    }
 
     .staci-input textarea { font-size: 1rem; }
 
     .staci-input {
-      padding: 0.4rem 0.5rem 0.4rem 0;
+      padding: 0.55rem 0.65rem 0.55rem 0;
+    }
+
+    .staci-input__send {
+      width: 44px;
+      height: 44px;
     }
 
     .staci-footer {
-      opacity: 0.4;
+      opacity: 0.55;
+      font-size: 0.7rem;
+    }
+
+    .staci-messages {
+      padding: 1rem 0.85rem 0.65rem;
     }
   }
 

@@ -183,7 +183,8 @@ const itemListSchema = hasShopify ? {
                     </div>
                   </div>
                 )}
-                <div class="product-card"
+                <div
+                  class={`product-card${idx >= 12 ? ' product-card--paginated' : ''}`}
                   data-type={product.productType.toLowerCase()}
                   data-category={product.category?.name || ''}
                   data-price={parseFloat(price.amount)}
@@ -196,7 +197,6 @@ const itemListSchema = hasShopify ? {
                   data-on-sale={String(!!isOnSale)}
                   data-total-qty={totalQty}
                   data-idx={idx}
-                  style={idx >= 12 ? 'display:none;' : ''}
                   data-page={Math.floor(idx / 12)}
                 >
                   <div class="product-card__image-container">
@@ -1016,6 +1016,19 @@ const itemListSchema = hasShopify ? {
     /* Override .section's 6rem top padding — products should start close to the toolbar */
     padding-top: var(--space-md) !important;
     background: linear-gradient(to bottom, var(--color-cream, #faf8f5) 0%, #fff 120px);
+    /* Scroll anchoring: browser adjusts scroll position when content changes to prevent visual jumps */
+    overflow-anchor: auto;
+  }
+
+  /* Ensure product cards participate in scroll anchoring */
+  .product-card {
+    overflow-anchor: auto;
+  }
+
+  /* The load-more sentinel should not be an anchor point */
+  .load-more-wrap,
+  .load-more-sentinel {
+    overflow-anchor: none;
   }
 
   #shop-grid.view-list {
@@ -1153,6 +1166,19 @@ const itemListSchema = hasShopify ? {
     background: transparent;
     overflow: hidden;
     contain: layout style paint;
+  }
+
+  /* Paginated cards: display:none removes from layout + render tree
+     No !important needed - specificity is sufficient */
+  .product-card--paginated {
+    display: none;
+  }
+
+  /* content-visibility:auto for visible cards - browser skips rendering
+     of off-screen cards automatically while preserving scroll behavior */
+  .product-card:not(.product-card--paginated) {
+    content-visibility: auto;
+    contain-intrinsic-block-size: auto 380px;
   }
 
   .product-card__img-primary,
@@ -1558,6 +1584,7 @@ const itemListSchema = hasShopify ? {
   // ─── Debounce helper ────────────────────────────
   let _applyTimer: ReturnType<typeof setTimeout>;
   let _isInitialRender = true;
+  let _needsEditorialReposition = true; // Set to false only for pagination-only calls
   function applyAllDebounced() {
     clearTimeout(_applyTimer);
     _applyTimer = setTimeout(applyAll, 60);
@@ -1939,14 +1966,19 @@ const itemListSchema = hasShopify ? {
         matchingCards.push(card);
         matchCount++;
       } else {
-        card.style.display = 'none';
+        // Filtered-out cards: remove from layout
+        card.classList.add('product-card--paginated');
       }
     });
 
-    // Show cards up to (visiblePage + 1) * PAGE_SIZE
+    // Paginate: show cards up to (visiblePage + 1) * PAGE_SIZE
     const showCount = (visiblePage + 1) * PAGE_SIZE;
     matchingCards.forEach((card, i) => {
-      card.style.display = i < showCount ? '' : 'none';
+      if (i < showCount) {
+        card.classList.remove('product-card--paginated');
+      } else {
+        card.classList.add('product-card--paginated');
+      }
     });
 
     const shownCount = Math.min(showCount, matchCount);
@@ -2031,26 +2063,28 @@ const itemListSchema = hasShopify ? {
     if (grid) grid.style.display = matchCount === 0 ? 'none' : '';
 
     // Position editorial card among visible products
-    // Initial render with no filters: build-time HTML is already correct — zero JS cost
+    // Only reposition when filters change, NOT during pagination (infinite scroll)
     const editorial = document.getElementById('grid-editorial') as HTMLElement;
     if (editorial) {
       const hideEditorial = activeSearch || activeSale;
-      const noFilters = !activeCollection && !activeProductType && !activeSearch && !activeSale;
       if (hideEditorial) {
         editorial.style.display = 'none';
-      } else if (_isInitialRender && noFilters) {
-        // Build-time position is correct — touch nothing
-      } else {
-        const visibleCards = matchingCards.filter(c => c.style.display !== 'none');
+      } else if (_needsEditorialReposition) {
+        // Only reposition when filters changed, not on pagination
+        const visibleCards = matchingCards.filter(c => !c.classList.contains('product-card--paginated'));
         if (visibleCards.length < 4) {
           editorial.style.display = 'none';
         } else {
           const minPos = 3;
-          const maxPos = visibleCards.length;
+          const maxPos = Math.min(visibleCards.length, 20);
           const randomIdx = minPos + Math.floor(Math.random() * (maxPos - minPos));
           grid!.insertBefore(editorial, visibleCards[randomIdx]);
           editorial.style.display = '';
         }
+        _needsEditorialReposition = false;
+      } else {
+        // Pagination only: keep editorial visible but don't move it
+        editorial.style.display = '';
       }
     }
     _isInitialRender = false;
@@ -2131,7 +2165,10 @@ const itemListSchema = hasShopify ? {
     });
   });
 
-  // ─── Infinite Scroll ──────────────────────────
+  // ─── Infinite Scroll with scroll position compensation ──────────────────────────
+  // When new cards are revealed, content below them would shift down.
+  // We compensate by NOT shifting - the user's scroll position stays stable
+  // because we only add content at the bottom of what's currently visible.
   const loadMoreSentinel = document.getElementById('load-more-sentinel');
   if (loadMoreSentinel) {
     let scrollLoading = false;
@@ -2139,8 +2176,8 @@ const itemListSchema = hasShopify ? {
       if (entries[0].isIntersecting && loadMoreWrap?.style.display !== 'none' && !scrollLoading) {
         scrollLoading = true;
         visiblePage++;
+        _needsEditorialReposition = false; // Don't move editorial during pagination
         applyAll();
-        // Reset after layout settles so sentinel position is recalculated
         requestAnimationFrame(() => { scrollLoading = false; });
       }
     }, { rootMargin: '400px' });
@@ -2269,7 +2306,8 @@ const itemListSchema = hasShopify ? {
     }, { threshold: 0.05, rootMargin: '50px' });
 
     getCards().forEach(card => {
-      if (card.style.display !== 'none') {
+      // Only observe visible cards that haven't been animated yet
+      if (card.style.display !== 'none' && !card.classList.contains('card-visible')) {
         observer.observe(card);
       }
     });
