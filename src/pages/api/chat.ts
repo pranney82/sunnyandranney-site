@@ -206,7 +206,7 @@ function formatProductForLLM(meta: Product, index: number): string {
     meta.productType ? `Category: ${meta.productType}` : '',
     meta.description || '',
     meta.tags ? `Tags: ${meta.tags}` : '',
-    !meta.availableForSale ? 'SOLD OUT' : '',
+    // Note: SOLD OUT check removed - products array is pre-filtered for D1-confirmed availability
   ];
   return parts.filter(Boolean).join(' | ');
 }
@@ -254,18 +254,20 @@ async function searchProducts(ai: any, vectorize: any, query: string, topK = 10)
   const handles = allProducts.map((p: Product) => p.handle);
   const realTimeAvailability = await getProductAvailability(handles);
 
-  // Only show available products to the LLM - use real-time data if available, fall back to cached
+  // Only show available products to the LLM - require real-time D1 confirmation
+  // If a product isn't in D1, it's stale/deleted - don't show it (safer default)
   const products = allProducts.filter((p: Product) => {
     const realTime = realTimeAvailability.get(p.handle);
-    return realTime !== undefined ? realTime : p.availableForSale;
+    return realTime === true; // Must be explicitly available in D1, no fallback to stale metadata
   });
 
   const llmContext = products.map((p: Product, i: number) => formatProductForLLM(p, i)).join('\n');
 
   // Top 4 available products with images for rich cards — track original index
+  // products array is already filtered for availability, just check for images
   const indexed: Array<{ product: Product; index: number }> = products.map((p: Product, i: number) => ({ product: p, index: i }));
   const cards: ProductCard[] = indexed
-    .filter((item: { product: Product; index: number }) => item.product.availableForSale && item.product.imageUrl)
+    .filter((item: { product: Product; index: number }) => item.product.imageUrl)
     .slice(0, 4)
     .map((item: { product: Product; index: number }) => ({
       cardIndex: item.index + 1,
@@ -273,7 +275,7 @@ async function searchProducts(ai: any, vectorize: any, query: string, topK = 10)
       handle: item.product.handle,
       price: parseFloat(item.product.price).toFixed(2),
       compareAtPrice: parseFloat(item.product.compareAtPrice || '0').toFixed(2),
-      availableForSale: item.product.availableForSale,
+      availableForSale: true, // Always true - products array is already filtered for D1-confirmed availability
       imageUrl: item.product.imageUrl || '',
     }));
 

@@ -60,7 +60,7 @@ const isShopPage = Astro.url.pathname.startsWith('/shop') || Astro.url.pathname.
 
     <!-- Critical CSS — nav position before external CSS loads -->
     <style is:inline>
-      .nav{position:fixed;top:0;left:0;right:0;z-index:100;background:#FAF7F2;will-change:transform}
+      .nav{position:fixed;top:0;left:0;right:0;z-index:100;background:#FAF7F2}
     </style>
 
     <!-- Flag JS is ready BEFORE first paint — gates .reveal hiding in CSS -->
