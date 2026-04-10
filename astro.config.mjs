@@ -2,6 +2,21 @@ import { defineConfig } from 'astro/config';
 import cloudflare from '@astrojs/cloudflare';
 import sitemap from '@astrojs/sitemap';
 
+const redirects = {
+  '/events/': 'https://sunshineonaranneyday.com/events/golf/',
+  '/deal-of-the-week/': '/shop/',
+  '/about-us-every-purchase-supports-home-makeovers/': '/about/',
+  '/showroom-inventory/': '/shop/',
+  '/shop-online/': '/shop/',
+  '/author/kbadmin/': '/',
+  '/reset-password/': '/',
+  '/home/': '/',
+  '/about-us/': '/about/',
+  '/about-us-every-purchase-supports-home-makeovers/1000/': '/about/',
+};
+
+const redirectPaths = Object.keys(redirects).map((p) => p.replace(/\/$/, ''));
+
 export default defineConfig({
   site: 'https://sunnyandranney.com',
   output: 'static',
@@ -9,12 +24,17 @@ export default defineConfig({
   adapter: cloudflare(),
   server: { port: 4322 },
   integrations: [
-    sitemap(),
+    sitemap({
+      filter: (page) => {
+        const url = new URL(page);
+        const path = url.pathname.replace(/\/$/, '');
+        if (path.startsWith('/admin')) return false;
+        return !redirectPaths.some((r) => path.startsWith(r));
+      },
+    }),
   ],
 
-  redirects: {
-    '/events/': 'https://sunshineonaranneyday.com/events/golf/',
-  },
+  redirects,
 
   // Strip whitespace from HTML output
   compressHTML: true,

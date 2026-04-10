@@ -163,6 +163,19 @@ const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
     </div>
   </section>
 
+  <!-- ═══ SHOP BY CATEGORY ═══ -->
+  <nav class="categories" aria-label="Shop by category">
+    <div class="container categories__inner">
+      <a href="/shop/?collection=living" class="categories__link">Living</a>
+      <a href="/shop/?collection=dining" class="categories__link">Dining</a>
+      <a href="/shop/?collection=bedroom" class="categories__link">Bedroom</a>
+      <a href="/shop/?collection=art-mirrors" class="categories__link">Art & Mirrors</a>
+      <a href="/shop/?collection=rugs" class="categories__link">Rugs</a>
+      <a href="/shop/?collection=outdoor" class="categories__link">Outdoor</a>
+      <a href="/shop/?sale=true" class="categories__link categories__link--sale">Sale</a>
+    </div>
+  </nav>
+
   <!-- ═══ STAFF PICKS ═══ -->
   {staffPickProducts.length > 0 && (
     <section class="staff-picks section">
@@ -739,6 +752,48 @@ const heroSrcset = cfSrcset(heroImageBase, [280, 480, 880], HERO_QUALITY);
   .section-title {
     font-size: clamp(1.6rem, 3vw, 2.2rem);
     margin-bottom: var(--space-lg);
+  }
+
+  /* ─── Category Nav ───────────────────── */
+  .categories {
+    padding: var(--space-md) 0;
+  }
+
+  .categories__inner {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .categories__link {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-charcoal);
+    border: 1px solid var(--color-stone);
+    border-radius: var(--radius-sm, 4px);
+    padding: 0.5rem 1rem;
+    transition: background 0.3s, color 0.3s;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .categories__link:hover {
+    background: var(--color-charcoal);
+    color: var(--color-cream);
+  }
+
+  .categories__link--sale {
+    border-color: var(--color-gold);
+    color: var(--color-gold);
+  }
+
+  .categories__link--sale:hover {
+    background: var(--color-gold);
+    color: white;
   }
 
   /* ─── Staff Picks ────────────────────── */

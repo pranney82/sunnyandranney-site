@@ -11,8 +11,8 @@
       "name": "Nikki",
       "role": "Team Member",
       "desc": "A valued member of the Sunny & Ranney family, helping create beautiful spaces and brighter futures every day.",
-      "imageUrl": "",
-      "initials": "NK"
+      "imageUrl": "https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/team-nikki",
+      "initials": ""
     },
     {
       "name": "BJ",
@@ -21,14 +21,7 @@
       "imageUrl": "https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/team-bj",
       "initials": ""
     },
-    {
-      "name": "Kate",
-      "role": "Team Member",
-      "desc": "Brings warmth and expertise to every interaction — helping customers find exactly what they're looking for.",
-      "imageUrl": "",
-      "initials": "KT"
-    },
-    {
+{
       "name": "Greg",
       "role": "Chief Greeter",
       "desc": "The first friendly face you see when you walk in — Greg makes sure every customer feels right at home.",

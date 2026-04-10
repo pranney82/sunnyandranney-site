@@ -1,0 +1,11 @@
+# Wildcard redirects for Cloudflare Pages
+# Old WordPress admin/plugin paths
+/wp-admin/*  /  301
+/wp-content/plugins/*  /  301
+/wp-login.php  /  301
+/wp-cron.php  /  301
+/wp-signup.php  /  301
+/xmlrpc.php  /  301
+
+# Old event pages (catch-all for events-benefiting-* variants)
+/events-benefiting-*  /about/  301
