@@ -19,6 +19,7 @@ try {
     if (!col) continue;
     for (const p of col.products) {
       if (featuredProducts.length >= 8) break;
+      if (!p.availableForSale) continue;
       if (!featuredProducts.some(f => f.id === p.id)) {
         featuredProducts.push(p);
       }

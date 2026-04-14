@@ -70,6 +70,7 @@ const PRODUCT_FRAGMENT = `
     description
     descriptionHtml
     createdAt
+    updatedAt
     productType
     category {
       id
@@ -559,6 +560,7 @@ export interface Product {
   description: string;
   descriptionHtml: string;
   createdAt: string;
+  updatedAt: string;
   productType: string;
   category: {
     id: string;

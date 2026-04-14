@@ -1,0 +1,630 @@
+---
+import Base from '@/layouts/Base.astro';
+import { getContactStatic, getHoursStatic, getReviewsStatic, formatHoursShort } from '@/lib/settings';
+import { fetchGooglePlaceData } from '@/lib/google-places';
+import { cfImage, cfSrcset } from '@/lib/images';
+
+const [contact, hours, reviewsSetting, livePlace] = await Promise.all([
+  getContactStatic(),
+  getHoursStatic(),
+  getReviewsStatic(),
+  fetchGooglePlaceData(),
+]);
+
+const address = contact?.address || '109A Oak Street';
+const city = contact?.city || 'Roswell';
+const state = contact?.state || 'GA';
+const zip = contact?.zip || '30075';
+const phone = contact?.phone || '678.888.5140';
+const phoneDigits = phone.replace(/\D/g, '');
+const hoursLine = hours ? formatHoursShort(hours) : 'Tue–Thu 10am–5pm · Fri–Sat 10am–6pm';
+
+const rating = livePlace?.rating ?? reviewsSetting?.googleRating ?? 5.0;
+const reviewCount = livePlace?.reviewCount ?? reviewsSetting?.reviewCount ?? 75;
+const reviews = (livePlace?.reviews ?? []).slice(0, 6);
+
+// Hero image — preloaded for LCP
+const heroImageBase = 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/sunny-ranney-storefront';
+const heroImageSrc = cfImage(heroImageBase, { width: 880, quality: 80 });
+const heroImageSrcset = cfSrcset(heroImageBase, [480, 720, 880, 1200], 80);
+const heroImageSizes = '(max-width: 767px) 100vw, 50vw';
+
+const title = 'Furniture Store in Roswell, GA | Sunny & Ranney';
+const description = 'Family-owned designer furniture store in Historic Roswell, GA. Sofas, dining, bedroom, rugs, art & gifts. 100% of profits fund bedroom makeovers for kids with special needs.';
+const pageUrl = 'https://sunnyandranney.com/furniture-store-roswell-ga/';
+
+// Hyper-local FAQ — targeted at Roswell furniture shoppers
+const faqs = [
+  {
+    q: 'Where is Sunny & Ranney located in Roswell, GA?',
+    a: `We're at ${address}, ${city}, ${state} ${zip} — in the heart of Historic Roswell's Canton Street district, one block from Roswell City Hall. Free street and lot parking.`,
+  },
+  {
+    q: 'What are your showroom hours?',
+    a: `${hoursLine}. Closed Sunday and Monday. Call ${phone} or check our Google Business Profile for holiday hours.`,
+  },
+  {
+    q: 'Do you deliver furniture in the Roswell and Atlanta area?',
+    a: 'Yes. We offer white-glove local delivery throughout Roswell, Alpharetta, Milton, Johns Creek, Sandy Springs, East Cobb, Marietta and surrounding North Atlanta neighborhoods. Larger items can also ship nationwide.',
+  },
+  {
+    q: 'What kind of furniture do you sell?',
+    a: 'Curated designer sofas, sectionals, dining tables, beds, accent chairs, rugs, art, mirrors, lighting, and home gifts. Our buyers hand-pick every piece — no mass-market catalog items.',
+  },
+  {
+    q: 'Is 100% of profits really donated to charity?',
+    a: 'Yes. Every dollar of profit funds Sunshine on a Ranney Day, a 501(c)(3) nonprofit that builds dream bedrooms for children with special needs. Your purchase directly funds a room makeover.',
+  },
+  {
+    q: 'Can I bring my own interior designer or design trade account?',
+    a: 'Absolutely. We work with local Atlanta-area designers on sourcing, custom orders, and project bids. Call or email us to set up a trade visit.',
+  },
+  {
+    q: 'Do you offer custom orders or in-home design consultations?',
+    a: 'Yes. We can special-order most lines we carry and offer in-home consultations throughout the Roswell and North Atlanta area. Contact the showroom to schedule.',
+  },
+];
+
+// Dedicated LocalBusiness schema for this page (unique, page-specific)
+const localSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FurnitureStore',
+  '@id': 'https://sunnyandranney.com/#furniturestore-roswell',
+  name: 'Sunny & Ranney — Furniture Store Roswell GA',
+  alternateName: 'Sunny and Ranney',
+  description,
+  url: pageUrl,
+  mainEntityOfPage: pageUrl,
+  image: [
+    'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/about/sunny-ranney-storefront/og',
+    'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/sunny-ranney-interior/og',
+  ],
+  logo: 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/logo-tagline-light-bg/full',
+  telephone: '+16788885140',
+  priceRange: '$$',
+  currenciesAccepted: 'USD',
+  paymentAccepted: 'Cash, Credit Card, Apple Pay, PayPal',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: address,
+    addressLocality: city,
+    addressRegion: state,
+    postalCode: zip,
+    addressCountry: 'US',
+  },
+  geo: { '@type': 'GeoCoordinates', latitude: 34.0234, longitude: -84.3616 },
+  hasMap: 'https://maps.app.goo.gl/QXwgPyiX93HkwjwDA',
+  openingHoursSpecification: [
+    { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Tuesday', 'Wednesday', 'Thursday'], opens: '10:00', closes: '17:00' },
+    { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Friday', 'Saturday'], opens: '10:00', closes: '18:00' },
+  ],
+  areaServed: [
+    { '@type': 'City', name: 'Roswell, GA' },
+    { '@type': 'City', name: 'Alpharetta, GA' },
+    { '@type': 'City', name: 'Milton, GA' },
+    { '@type': 'City', name: 'Johns Creek, GA' },
+    { '@type': 'City', name: 'Sandy Springs, GA' },
+    { '@type': 'City', name: 'Marietta, GA' },
+    { '@type': 'City', name: 'East Cobb, GA' },
+    { '@type': 'City', name: 'Atlanta, GA' },
+  ],
+  sameAs: [
+    'https://www.instagram.com/sunnyandranney/',
+    'https://www.facebook.com/sunnyandranney/',
+  ],
+  aggregateRating: {
+    '@type': 'AggregateRating',
+    ratingValue: rating,
+    bestRating: 5,
+    ratingCount: reviewCount,
+  },
+  makesOffer: [
+    { '@type': 'Offer', itemOffered: { '@type': 'Product', name: 'Designer Sofas & Sectionals' } },
+    { '@type': 'Offer', itemOffered: { '@type': 'Product', name: 'Dining Tables & Chairs' } },
+    { '@type': 'Offer', itemOffered: { '@type': 'Product', name: 'Bedroom Furniture' } },
+    { '@type': 'Offer', itemOffered: { '@type': 'Product', name: 'Area Rugs' } },
+    { '@type': 'Offer', itemOffered: { '@type': 'Product', name: 'Wall Art & Mirrors' } },
+    { '@type': 'Offer', itemOffered: { '@type': 'Product', name: 'Home Decor & Gifts' } },
+  ],
+  ...(reviews.length > 0 && {
+    review: reviews.map(r => ({
+      '@type': 'Review',
+      author: { '@type': 'Person', name: r.name },
+      reviewRating: { '@type': 'Rating', ratingValue: r.rating, bestRating: 5 },
+      reviewBody: r.text,
+      itemReviewed: { '@id': 'https://sunnyandranney.com/#furniturestore-roswell' },
+    })),
+  }),
+};
+
+// Service schemas — each service offered with geographic reach
+const serviceArea = {
+  '@type': 'GeoCircle',
+  geoMidpoint: { '@type': 'GeoCoordinates', latitude: 34.0234, longitude: -84.3616 },
+  geoRadius: 40000, // 40 km ~ covers metro North Atlanta
+};
+
+const services = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Service',
+    '@id': `${pageUrl}#service-delivery`,
+    name: 'White-Glove Furniture Delivery in Roswell & North Atlanta',
+    serviceType: 'Furniture Delivery',
+    description: 'Professional white-glove delivery, assembly and placement for sofas, beds, dining sets and large furniture throughout Roswell, Alpharetta, Milton, Johns Creek, Sandy Springs, East Cobb and metro Atlanta.',
+    provider: { '@id': 'https://sunnyandranney.com/#furniturestore-roswell' },
+    areaServed: serviceArea,
+    availableChannel: { '@type': 'ServiceChannel', servicePhone: '+16788885140', serviceUrl: pageUrl },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Service',
+    '@id': `${pageUrl}#service-trade`,
+    name: 'Interior Designer Trade Program',
+    serviceType: 'Design Trade Services',
+    description: 'Trade pricing and sourcing support for local Atlanta-area interior designers. We work with designers on custom orders, project bids, and in-showroom consultations.',
+    provider: { '@id': 'https://sunnyandranney.com/#furniturestore-roswell' },
+    areaServed: serviceArea,
+    audience: { '@type': 'BusinessAudience', audienceType: 'Interior Designers' },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Service',
+    '@id': `${pageUrl}#service-custom`,
+    name: 'Custom Furniture Orders & In-Home Design Consultation',
+    serviceType: 'Custom Furniture & Design Consultation',
+    description: 'Special-order furniture in your choice of fabric, finish, and dimensions, plus in-home design consultations throughout Roswell and North Atlanta.',
+    provider: { '@id': 'https://sunnyandranney.com/#furniturestore-roswell' },
+    areaServed: serviceArea,
+  },
+];
+
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://sunnyandranney.com/' },
+    { '@type': 'ListItem', position: 2, name: 'Furniture Store Roswell GA', item: pageUrl },
+  ],
+};
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map(f => ({
+    '@type': 'Question',
+    name: f.q,
+    acceptedAnswer: { '@type': 'Answer', text: f.a },
+  })),
+};
+
+const neighborhoods = [
+  'Historic Roswell', 'Canton Street', 'Roswell Mill', 'Willeo', 'Martin\'s Landing',
+  'Alpharetta', 'Milton', 'Crabapple', 'Johns Creek', 'Sandy Springs', 'East Cobb', 'Marietta',
+];
+---
+
+<Base
+  title={title}
+  description={description}
+  lcpImage={heroImageSrc}
+  lcpImageSrcset={heroImageSrcset}
+  lcpImageSizes={heroImageSizes}
+>
+  <!-- Page-specific schema: overrides/augments Base schema -->
+  <script type="application/ld+json" set:html={JSON.stringify(localSchema)}/>
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)}/>
+  <script type="application/ld+json" set:html={JSON.stringify(faqSchema)}/>
+  {services.map(s => (
+    <script type="application/ld+json" set:html={JSON.stringify(s)} />
+  ))}
+
+  <article class="roswell">
+    <!-- ─── Hero ─── -->
+    <section class="roswell__hero">
+      <div class="container roswell__hero-grid">
+        <div class="roswell__hero-copy">
+        <nav class="roswell__crumbs" aria-label="Breadcrumb">
+          <a href="/">Home</a>
+          <span aria-hidden="true">›</span>
+          <span>Furniture Store · Roswell, GA</span>
+        </nav>
+        <span class="roswell__kicker">Historic Roswell · Canton Street District</span>
+        <h1 class="roswell__h1">Furniture Store in Roswell, GA</h1>
+        <p class="roswell__lede">
+          Sunny &amp; Ranney is a family-owned designer furniture showroom in the heart of Historic Roswell.
+          Sofas, dining, bedroom, rugs, art, and hand-picked gifts — and
+          <strong>100% of profits fund bedroom makeovers for children with special needs</strong>
+          through <a href="/about/">Sunshine on a Ranney Day</a>.
+        </p>
+
+        <div class="roswell__meta">
+          <div class="roswell__meta-item">
+            <span class="roswell__meta-label">Address</span>
+            <span>{address}, {city}, {state} {zip}</span>
+          </div>
+          <div class="roswell__meta-item">
+            <span class="roswell__meta-label">Hours</span>
+            <span>{hoursLine}</span>
+          </div>
+          <div class="roswell__meta-item">
+            <span class="roswell__meta-label">Phone</span>
+            <a href={`tel:${phoneDigits}`}>{phone}</a>
+          </div>
+          <div class="roswell__meta-item">
+            <span class="roswell__meta-label">Rating</span>
+            <span>★ {rating.toFixed(1)} · {reviewCount}+ Google reviews</span>
+          </div>
+        </div>
+
+        <div class="roswell__ctas">
+          <a class="roswell__btn roswell__btn--primary" href="https://maps.app.goo.gl/QXwgPyiX93HkwjwDA" target="_blank" rel="noopener noreferrer">Get Directions</a>
+          <a class="roswell__btn roswell__btn--ghost" href="/shop/">Shop the Showroom</a>
+          <a class="roswell__btn roswell__btn--ghost" href={`tel:${phoneDigits}`}>Call {phone}</a>
+        </div>
+        </div>
+        <div class="roswell__hero-image">
+          <img
+            src={heroImageSrc}
+            srcset={heroImageSrcset}
+            sizes={heroImageSizes}
+            alt="Sunny & Ranney designer furniture storefront on Oak Street in Historic Roswell, Georgia"
+            width="880"
+            height="660"
+            fetchpriority="high"
+            decoding="async"
+          />
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── About / Why Us ─── -->
+    <section class="roswell__section">
+      <div class="container roswell__grid">
+        <div>
+          <h2>Roswell's Designer Furniture Showroom — With a Purpose</h2>
+          <p>
+            Step inside our Canton Street showroom and you'll find curated designer furniture you won't see
+            in big-box stores: American-made sofas and sectionals, solid-wood dining tables, statement beds,
+            hand-knotted rugs, original art, and thoughtful home gifts. Every piece is hand-selected by our
+            Roswell-based buying team — no catalog filler.
+          </p>
+          <p>
+            What makes us different isn't just the product. <strong>Every dollar of profit</strong> from your
+            purchase funds <a href="https://sunshineonaranneyday.com" target="_blank" rel="noopener noreferrer">Sunshine on a Ranney Day</a>,
+            a 501(c)(3) nonprofit that builds dream bedrooms for children with special needs. When you shop
+            local in Roswell at Sunny &amp; Ranney, you're furnishing your home <em>and</em> transforming a kid's life.
+          </p>
+        </div>
+        <ul class="roswell__why">
+          <li><strong>Family-owned &amp; local</strong> — born and operated in Roswell, GA.</li>
+          <li><strong>Designer-curated</strong> — quality pieces, no mass-market filler.</li>
+          <li><strong>100% of profits to charity</strong> — purchase = a child's bedroom makeover.</li>
+          <li><strong>White-glove delivery</strong> — Roswell, Alpharetta, Milton, Atlanta metro.</li>
+          <li><strong>Designer trade welcome</strong> — we work with local interior designers.</li>
+          <li><strong>Open 5 days/week</strong> — {hoursLine}.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ─── Shop Categories ─── -->
+    <section class="roswell__section roswell__section--alt">
+      <div class="container">
+        <h2>What You'll Find in Our Roswell Showroom</h2>
+        <div class="roswell__cats">
+          <a href="/shop/?collection=living"><span>Living Room</span><small>Sofas, sectionals, chairs</small></a>
+          <a href="/shop/?collection=dining"><span>Dining</span><small>Tables, chairs, buffets</small></a>
+          <a href="/shop/?collection=bedroom"><span>Bedroom</span><small>Beds, nightstands, dressers</small></a>
+          <a href="/shop/?collection=rugs"><span>Rugs</span><small>Hand-knotted &amp; area rugs</small></a>
+          <a href="/shop/?collection=art-mirrors"><span>Art &amp; Mirrors</span><small>Original art, statement mirrors</small></a>
+          <a href="/shop/?collection=outdoor"><span>Outdoor</span><small>Patio &amp; garden</small></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Service Area / Neighborhoods ─── -->
+    <section class="roswell__section">
+      <div class="container">
+        <h2>Serving Roswell &amp; North Atlanta</h2>
+        <p class="roswell__sub">
+          We proudly serve furniture shoppers throughout Historic Roswell and the greater North Atlanta area.
+          Whether you're refreshing a bungalow off Canton Street, a new build in Milton, or a family home in
+          East Cobb, we'll help you find pieces that last.
+        </p>
+        <ul class="roswell__neighborhoods">
+          {neighborhoods.map(n => <li>{n}</li>)}
+        </ul>
+      </div>
+    </section>
+
+    <!-- ─── Map & Directions ─── -->
+    <section class="roswell__section roswell__section--alt">
+      <div class="container roswell__grid">
+        <div>
+          <h2>Visit Our Roswell Showroom</h2>
+          <p class="roswell__addr">
+            <strong>Sunny &amp; Ranney</strong><br />
+            {address}<br />
+            {city}, {state} {zip}<br />
+            <a href={`tel:${phoneDigits}`}>{phone}</a>
+          </p>
+          <p><strong>Hours:</strong> {hoursLine}</p>
+          <p class="roswell__directions">
+            <strong>From GA-400:</strong> Take exit 7A (Holcomb Bridge Rd) west for ~3 miles, left on Alpharetta Hwy,
+            right on Magnolia, then left on Oak Street. We're on the left.<br />
+            <strong>From Historic Roswell Square:</strong> One block south of Roswell City Hall on Oak Street.
+            Free street and lot parking available.
+          </p>
+          <a class="roswell__btn roswell__btn--primary" href="https://maps.app.goo.gl/QXwgPyiX93HkwjwDA" target="_blank" rel="noopener noreferrer">Open in Google Maps</a>
+        </div>
+        <div class="roswell__map">
+          <iframe
+            src="https://www.google.com/maps?q=109A+Oak+Street+Roswell+GA+30075&output=embed"
+            width="100%"
+            height="420"
+            style="border:0;border-radius:12px;"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            title="Map of Sunny & Ranney furniture store at 109A Oak Street, Roswell, GA 30075"
+          ></iframe>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Reviews ─── -->
+    {reviews.length > 0 && (
+      <section class="roswell__section">
+        <div class="container">
+          <h2>What Roswell Customers Are Saying</h2>
+          <p class="roswell__sub">★ {rating.toFixed(1)} average from {reviewCount}+ Google reviews.</p>
+          <div class="roswell__reviews">
+            {reviews.map(r => (
+              <figure class="roswell__review">
+                <div class="roswell__review-head">
+                  {r.photoUrl ? (
+                    <img src={r.photoUrl} alt={`${r.name} review avatar`} width="48" height="48" loading="lazy" decoding="async" />
+                  ) : (
+                    <div class="roswell__review-initial" aria-hidden="true">{r.name.charAt(0)}</div>
+                  )}
+                  <div>
+                    <figcaption>{r.name}</figcaption>
+                    <div class="roswell__review-stars" aria-label={`${r.rating} out of 5 stars`}>
+                      {'★'.repeat(r.rating)}<span class="roswell__review-empty">{'★'.repeat(5 - r.rating)}</span>
+                    </div>
+                    {r.timeAgo && <small>{r.timeAgo}</small>}
+                  </div>
+                </div>
+                <blockquote>{r.text.length > 280 ? r.text.slice(0, 280).trim() + '…' : r.text}</blockquote>
+              </figure>
+            ))}
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- ─── Other Service Areas ─── -->
+    <section class="roswell__section roswell__section--alt">
+      <div class="container">
+        <h2>Also Serving North Atlanta</h2>
+        <p class="roswell__sub">Dedicated pages for the nearby cities we deliver to:</p>
+        <ul class="roswell__neighborhoods">
+          <li><a href="/furniture-store-alpharetta-ga/">Alpharetta, GA</a></li>
+          <li><a href="/furniture-store-milton-ga/">Milton, GA</a></li>
+          <li><a href="/furniture-store-johns-creek-ga/">Johns Creek, GA</a></li>
+          <li><a href="/furniture-store-sandy-springs-ga/">Sandy Springs, GA</a></li>
+          <li><a href="/furniture-store-east-cobb-ga/">East Cobb &amp; Marietta, GA</a></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ─── FAQ ─── -->
+    <section class="roswell__section">
+      <div class="container">
+        <h2>Frequently Asked Questions</h2>
+        <div class="roswell__faq">
+          {faqs.map(f => (
+            <details>
+              <summary>{f.q}</summary>
+              <p>{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  </article>
+</Base>
+
+<style>
+  .roswell { color: var(--color-charcoal); }
+  .roswell h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    line-height: 1.15;
+    margin: 0 0 var(--space-md);
+  }
+  .roswell p { line-height: 1.7; font-size: 1rem; margin: 0 0 var(--space-sm); max-width: 68ch; }
+
+  /* Hero */
+  .roswell__hero {
+    padding: clamp(3rem, 9vh, 6rem) 0 clamp(2.5rem, 6vh, 4rem);
+    background: linear-gradient(180deg, #FAF7F2 0%, #F3EEE5 100%);
+  }
+  .roswell__hero-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+    align-items: center;
+  }
+  @media (min-width: 860px) {
+    .roswell__hero-grid { grid-template-columns: 1.15fr 1fr; gap: var(--space-2xl); }
+  }
+  .roswell__hero-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+    aspect-ratio: 4/3;
+    object-fit: cover;
+  }
+  .roswell__crumbs { font-size: 0.78rem; color: #6b6b6b; margin-bottom: var(--space-sm); display: flex; gap: 0.5rem; align-items: center; }
+  .roswell__crumbs a { color: var(--color-cyan); }
+  .roswell__kicker {
+    display: inline-block;
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-cyan);
+    font-weight: 600;
+    margin-bottom: var(--space-xs);
+  }
+  .roswell__h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.2rem, 5vw, 3.6rem);
+    line-height: 1.08;
+    margin: 0 0 var(--space-sm);
+    color: var(--color-charcoal);
+  }
+  .roswell__lede { font-size: 1.05rem; max-width: 62ch; color: #3a3a3a; margin-bottom: var(--space-md); }
+  .roswell__lede a { color: var(--color-cyan); font-weight: 600; }
+
+  .roswell__meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-sm);
+    margin: var(--space-md) 0;
+    padding: var(--space-sm) 0;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+  }
+  .roswell__meta-item { display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.9rem; }
+  .roswell__meta-label { font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: #6b6b6b; font-weight: 600; }
+  .roswell__meta-item a { color: var(--color-cyan); }
+
+  .roswell__ctas { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: var(--space-sm); }
+  .roswell__btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0.85rem 1.6rem;
+    font-size: 0.78rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+    border-radius: 8px; transition: all 0.3s; min-height: 48px;
+  }
+  .roswell__btn--primary { background: var(--color-cyan); color: white; }
+  .roswell__btn--primary:hover { background: var(--color-cyan-light, #5BA7C4); }
+  .roswell__btn--ghost { background: transparent; color: var(--color-charcoal); border: 1.5px solid var(--color-charcoal); }
+  .roswell__btn--ghost:hover { background: var(--color-charcoal); color: white; }
+
+  /* Sections */
+  .roswell__section { padding: clamp(2.5rem, 6vh, 4.5rem) 0; }
+  .roswell__section--alt { background: #FAF7F2; }
+  .roswell__sub { color: #4a4a4a; max-width: 68ch; margin-bottom: var(--space-md); }
+
+  .roswell__grid {
+    display: grid; grid-template-columns: 1fr; gap: var(--space-xl);
+  }
+  @media (min-width: 860px) {
+    .roswell__grid { grid-template-columns: 1.15fr 1fr; align-items: start; gap: var(--space-2xl); }
+  }
+
+  .roswell__why {
+    list-style: none; padding: var(--space-md); margin: 0;
+    background: white;
+    border-left: 3px solid var(--color-gold);
+    border-radius: 4px;
+    display: flex; flex-direction: column; gap: 0.8rem;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+  }
+  .roswell__why li { font-size: 0.92rem; line-height: 1.5; color: #3a3a3a; }
+  .roswell__why strong { color: var(--color-charcoal); }
+
+  /* Categories grid */
+  .roswell__cats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-sm); margin-top: var(--space-md);
+  }
+  .roswell__cats a {
+    display: flex; flex-direction: column; gap: 0.25rem;
+    padding: var(--space-md);
+    background: white; border-radius: 10px;
+    border: 1px solid rgba(0,0,0,0.08);
+    transition: all 0.3s;
+    color: var(--color-charcoal);
+  }
+  .roswell__cats a:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,0.08); border-color: var(--color-cyan); }
+  .roswell__cats span { font-family: var(--font-display); font-size: 1.25rem; }
+  .roswell__cats small { font-size: 0.82rem; color: #6b6b6b; }
+
+  /* Neighborhoods */
+  .roswell__neighborhoods {
+    list-style: none; padding: 0; margin: 0;
+    display: flex; flex-wrap: wrap; gap: 0.5rem;
+  }
+  .roswell__neighborhoods li {
+    padding: 0.5rem 0.9rem;
+    background: white;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 999px;
+    font-size: 0.85rem;
+    color: #3a3a3a;
+  }
+
+  /* Map / Visit */
+  .roswell__addr { font-size: 1rem; line-height: 1.7; }
+  .roswell__addr a { color: var(--color-cyan); }
+  .roswell__directions { font-size: 0.92rem; color: #4a4a4a; max-width: 58ch; }
+  .roswell__map iframe { display: block; width: 100%; box-shadow: 0 12px 40px rgba(0,0,0,0.1); }
+
+  /* Reviews */
+  .roswell__reviews {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-md);
+    margin-top: var(--space-md);
+  }
+  .roswell__review {
+    margin: 0;
+    padding: var(--space-md);
+    background: white;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.05);
+  }
+  .roswell__review-head { display: flex; gap: 0.75rem; align-items: center; margin-bottom: 0.6rem; }
+  .roswell__review-head img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
+  .roswell__review-initial {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: var(--color-cyan); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-size: 1.2rem;
+  }
+  .roswell__review figcaption { font-weight: 600; color: var(--color-charcoal); font-size: 0.95rem; }
+  .roswell__review-stars { color: var(--color-gold); letter-spacing: 1px; font-size: 0.85rem; line-height: 1; }
+  .roswell__review-empty { color: rgba(0,0,0,0.15); }
+  .roswell__review small { color: #6b6b6b; font-size: 0.75rem; }
+  .roswell__review blockquote {
+    margin: 0; padding: 0;
+    font-size: 0.92rem; line-height: 1.6; color: #3a3a3a;
+  }
+
+  /* FAQ */
+  .roswell__faq { display: flex; flex-direction: column; gap: 0.5rem; max-width: 820px; }
+  .roswell__faq details {
+    background: white; border: 1px solid rgba(0,0,0,0.08); border-radius: 10px;
+    padding: 0.25rem 1.1rem;
+    transition: border-color 0.3s;
+  }
+  .roswell__faq details[open] { border-color: var(--color-cyan); }
+  .roswell__faq summary {
+    cursor: pointer; padding: 0.9rem 0;
+    font-weight: 600; font-size: 0.98rem;
+    color: var(--color-charcoal);
+    list-style: none;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .roswell__faq summary::-webkit-details-marker { display: none; }
+  .roswell__faq summary::after {
+    content: '+'; font-size: 1.3rem; color: var(--color-cyan); transition: transform 0.3s;
+    font-weight: 400;
+  }
+  .roswell__faq details[open] summary::after { transform: rotate(45deg); }
+  .roswell__faq p { padding: 0 0 0.9rem; color: #4a4a4a; font-size: 0.94rem; max-width: 70ch; }
+</style>

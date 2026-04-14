@@ -1,0 +1,230 @@
+---
+import Base from '@/layouts/Base.astro';
+import { getContactStatic, getHoursStatic, formatHoursShort } from '@/lib/settings';
+
+const [contact, hours] = await Promise.all([getContactStatic(), getHoursStatic()]);
+
+const address = contact?.address || '109A Oak Street';
+const city = contact?.city || 'Roswell';
+const state = contact?.state || 'GA';
+const zip = contact?.zip || '30075';
+const phone = contact?.phone || '678.888.5140';
+const email = contact?.email || 'info@sunnyandranney.com';
+const phoneDigits = phone.replace(/\D/g, '');
+const hoursLine = hours ? formatHoursShort(hours) : 'Tue–Thu 10am–5pm · Fri–Sat 10am–6pm';
+
+const title = 'Visit Our Roswell GA Showroom | Sunny & Ranney';
+const description = `Visit Sunny & Ranney at ${address}, ${city}, ${state} ${zip}. Hours: ${hoursLine}. Free parking in Historic Roswell's Canton Street district. Call ${phone}.`;
+const pageUrl = 'https://sunnyandranney.com/visit/';
+
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://sunnyandranney.com/' },
+    { '@type': 'ListItem', position: 2, name: 'Visit', item: pageUrl },
+  ],
+};
+
+const placeSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Place',
+  '@id': 'https://sunnyandranney.com/#place',
+  name: 'Sunny & Ranney Showroom',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: address,
+    addressLocality: city,
+    addressRegion: state,
+    postalCode: zip,
+    addressCountry: 'US',
+  },
+  geo: { '@type': 'GeoCoordinates', latitude: 34.0234, longitude: -84.3616 },
+  hasMap: 'https://maps.app.goo.gl/QXwgPyiX93HkwjwDA',
+  publicAccess: true,
+  smokingAllowed: false,
+};
+---
+
+<Base title={title} description={description}>
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+  <script type="application/ld+json" set:html={JSON.stringify(placeSchema)} />
+
+  <article class="visit">
+    <section class="visit__hero">
+      <div class="container">
+        <nav class="visit__crumbs" aria-label="Breadcrumb">
+          <a href="/">Home</a>
+          <span aria-hidden="true">›</span>
+          <span>Visit</span>
+        </nav>
+        <span class="visit__kicker">Historic Roswell · Canton Street District</span>
+        <h1>Visit Our Showroom</h1>
+        <p class="visit__lede">
+          Come see, touch, and sit on every piece before you buy. Our designer-curated showroom is in
+          the heart of Historic Roswell — one block from City Hall, with free street and lot parking.
+        </p>
+      </div>
+    </section>
+
+    <section class="visit__section">
+      <div class="container visit__grid">
+        <div>
+          <h2>Address &amp; Contact</h2>
+          <p class="visit__addr">
+            <strong>Sunny &amp; Ranney</strong><br />
+            {address}<br />
+            {city}, {state} {zip}
+          </p>
+          <p>
+            <strong>Phone:</strong> <a href={`tel:${phoneDigits}`}>{phone}</a><br />
+            <strong>Email:</strong> <a href={`mailto:${email}`}>{email}</a>
+          </p>
+
+          <h3>Showroom Hours</h3>
+          <p>{hoursLine}<br />Closed Sunday &amp; Monday</p>
+
+          <h3>Parking &amp; Access</h3>
+          <p>
+            Free street parking directly in front of the store. Additional free public lots one block north
+            on Canton Street and behind Roswell City Hall. Our showroom entrance is ground-level and
+            wheelchair-accessible.
+          </p>
+
+          <h3>Directions</h3>
+          <p>
+            <strong>From GA-400:</strong> Take exit 7A (Holcomb Bridge Rd) west ~3 miles. Left on Alpharetta Hwy,
+            right on Magnolia, left on Oak Street.<br />
+            <strong>From I-285 / Atlanta:</strong> North on GA-400 to exit 7A, then follow the GA-400 directions above.<br />
+            <strong>From East Cobb / Marietta:</strong> East on Holcomb Bridge Rd, right on Alpharetta Hwy, right on Magnolia, left on Oak.
+          </p>
+
+          <div class="visit__ctas">
+            <a class="visit__btn visit__btn--primary" href="https://maps.app.goo.gl/QXwgPyiX93HkwjwDA" target="_blank" rel="noopener noreferrer">Open in Google Maps</a>
+            <a class="visit__btn visit__btn--ghost" href={`tel:${phoneDigits}`}>Call the Store</a>
+          </div>
+        </div>
+
+        <div class="visit__map">
+          <iframe
+            src="https://www.google.com/maps?q=109A+Oak+Street+Roswell+GA+30075&output=embed"
+            width="100%"
+            height="520"
+            style="border:0;border-radius:12px;"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            title="Map of Sunny & Ranney furniture store at 109A Oak Street, Roswell, GA 30075"
+          ></iframe>
+        </div>
+      </div>
+    </section>
+
+    <section class="visit__section visit__section--alt">
+      <div class="container">
+        <h2>What to Expect When You Visit</h2>
+        <div class="visit__expect">
+          <div>
+            <h3>Designer-Curated</h3>
+            <p>Every sofa, table, rug, and accent in the showroom is hand-picked by our buying team. No mass-market catalog filler.</p>
+          </div>
+          <div>
+            <h3>Low-Pressure Browsing</h3>
+            <p>We're a family-owned store. Take your time, bring your designer, bring the kids. We're here to help when you need us.</p>
+          </div>
+          <div>
+            <h3>Purpose-Driven</h3>
+            <p>100% of profits fund bedroom makeovers for children with special needs through <a href="/about/">Sunshine on a Ranney Day</a>.</p>
+          </div>
+          <div>
+            <h3>Local Delivery</h3>
+            <p>White-glove delivery throughout Roswell, Alpharetta, Milton, Johns Creek, Sandy Springs, East Cobb &amp; metro Atlanta.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </article>
+</Base>
+
+<style>
+  .visit { color: var(--color-charcoal); }
+  .visit h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    line-height: 1.1;
+    margin: 0 0 var(--space-sm);
+  }
+  .visit h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    line-height: 1.15;
+    margin: 0 0 var(--space-md);
+  }
+  .visit h3 {
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-cyan);
+    font-weight: 600;
+    margin: var(--space-md) 0 0.4rem;
+  }
+  .visit p { line-height: 1.7; margin: 0 0 var(--space-sm); max-width: 62ch; color: #3a3a3a; }
+  .visit a { color: var(--color-cyan); }
+
+  .visit__hero {
+    padding: clamp(3rem, 9vh, 6rem) 0 clamp(2rem, 5vh, 3rem);
+    background: linear-gradient(180deg, #FAF7F2 0%, #F3EEE5 100%);
+  }
+  .visit__crumbs { font-size: 0.78rem; color: #6b6b6b; margin-bottom: var(--space-sm); display: flex; gap: 0.5rem; }
+  .visit__kicker {
+    display: inline-block;
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-cyan);
+    font-weight: 600;
+    margin-bottom: var(--space-xs);
+  }
+  .visit__lede { font-size: 1.05rem; max-width: 60ch; color: #3a3a3a; }
+
+  .visit__section { padding: clamp(2.5rem, 6vh, 4.5rem) 0; }
+  .visit__section--alt { background: #FAF7F2; }
+
+  .visit__grid {
+    display: grid; grid-template-columns: 1fr; gap: var(--space-xl);
+  }
+  @media (min-width: 860px) {
+    .visit__grid { grid-template-columns: 1fr 1.1fr; gap: var(--space-2xl); align-items: start; }
+  }
+
+  .visit__addr { font-size: 1.05rem; }
+
+  .visit__ctas { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: var(--space-md); }
+  .visit__btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0.85rem 1.6rem;
+    font-size: 0.78rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+    border-radius: 8px; transition: all 0.3s; min-height: 48px;
+  }
+  .visit__btn--primary { background: var(--color-cyan); color: white; }
+  .visit__btn--primary:hover { background: var(--color-cyan-light, #5BA7C4); }
+  .visit__btn--ghost { background: transparent; color: var(--color-charcoal); border: 1.5px solid var(--color-charcoal); }
+  .visit__btn--ghost:hover { background: var(--color-charcoal); color: white; }
+
+  .visit__map iframe { display: block; width: 100%; box-shadow: 0 12px 40px rgba(0,0,0,0.1); }
+
+  .visit__expect {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--space-lg);
+    margin-top: var(--space-md);
+  }
+  .visit__expect > div {
+    padding: var(--space-md);
+    background: white;
+    border-radius: 10px;
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+  .visit__expect h3 { margin-top: 0; }
+  .visit__expect p { font-size: 0.92rem; margin-bottom: 0; }
+</style>
