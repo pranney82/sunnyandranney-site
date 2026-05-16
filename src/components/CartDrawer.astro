@@ -44,7 +44,7 @@
       <span>Earn 1 point for every $1 spent</span>
     </div>
     <div class="cart-footer__alert" id="cart-alert" style="display:none;" role="alert"></div>
-    <button class="btn btn--gold cart-footer__checkout" id="cart-checkout" style="width:100%; justify-content:center;">
+    <button type="button" class="btn btn--gold cart-footer__checkout" id="cart-checkout" style="width:100%; justify-content:center;">
       Proceed to Checkout
     </button>
     <div class="cart-footer__trust">
@@ -862,47 +862,47 @@
     }
   });
 
-  // Checkout — uses Shopify Cart API checkoutUrl (server-validated)
+  // Checkout — forces a fresh Storefront API call on every click. Never trusts
+  // a cached URL. Never silently navigates anywhere on failure.
   let checkoutInFlight = false;
 
-  checkoutBtn?.addEventListener('click', async () => {
-    if (checkoutInFlight) return;
+  function showCheckoutError(message: string) {
+    if (alertEl) {
+      alertEl.textContent = message;
+      alertEl.style.display = 'block';
+    }
+  }
+
+  checkoutBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('[checkout] click');
+
+    if (checkoutInFlight) {
+      console.log('[checkout] already in flight, ignoring');
+      return;
+    }
+
     const items = cart.getItems();
-    if (!items.length) return;
+    if (!items.length) {
+      console.warn('[checkout] aborting: cart is empty');
+      showCheckoutError('Your cart is empty.');
+      return;
+    }
+
+    const url = cart.getCheckoutPermalink();
+    if (!url) {
+      console.error('[checkout] could not build permalink from items:', items);
+      showCheckoutError('Unable to start checkout. Please refresh and try again.');
+      return;
+    }
 
     checkoutInFlight = true;
     if (alertEl) alertEl.style.display = 'none';
     checkoutBtn.classList.add('cart-footer__checkout--loading');
-    checkoutBtn.textContent = 'Preparing checkout…';
-
-    // Ensure Shopify cart is synced and we have a valid checkoutUrl
-    try {
-      await cart.sync();
-    } catch {
-      // sync failed — try with whatever we have
-    }
-
-    const url = cart.getCheckoutUrl();
-    if (url) {
-      checkoutBtn.textContent = 'Redirecting…';
-      window.location.href = url;
-    } else {
-      // No checkout URL — cart may have been emptied by Shopify (all items unavailable)
-      checkoutBtn.classList.remove('cart-footer__checkout--loading');
-      checkoutBtn.textContent = 'Proceed to Checkout';
-      checkoutInFlight = false;
-      const currentItems = cart.getItems();
-      if (currentItems.length === 0 && items.length > 0) {
-        // Shopify pruned everything — items were unavailable
-        if (alertEl) {
-          alertEl.textContent = 'Sorry, those items are no longer available.';
-          alertEl.style.display = 'block';
-        }
-      } else if (alertEl) {
-        alertEl.textContent = 'Unable to start checkout. Please try again.';
-        alertEl.style.display = 'block';
-      }
-    }
+    checkoutBtn.textContent = 'Redirecting…';
+    console.log('[checkout] redirecting to', url);
+    window.location.href = url;
   });
 
   // ─── Global: Add to cart from anywhere ───

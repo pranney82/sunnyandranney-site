@@ -31,39 +31,31 @@ function notify(items) {
   listeners.forEach(fn => fn(items));
 }
 
-// ─── Shopify Cart API helpers ──────────────────────────
+// ─── Shopify Cart API (proxied through /api/cart) ──────
+// The Storefront token lives only in server env; client never sees it.
 
-function getShopifyConfig() {
+async function shopifyCartFetch(operation, variables = {}) {
   if (typeof window === 'undefined') return null;
-  const domain = window.__SHOPIFY_DOMAIN || 'sunnyandranney.myshopify.com';
-  const token = window.__SHOPIFY_TOKEN || '';
-  if (!token) return null;
-  return { domain, token };
-}
-
-async function shopifyCartFetch(query, variables = {}) {
-  const config = getShopifyConfig();
-  if (!config) return null;
 
   let lastError;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const res = await fetch(`https://${config.domain}/api/2025-01/graphql.json`, {
+      const res = await fetch('/api/cart', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Shopify-Storefront-Access-Token': config.token,
-        },
-        body: JSON.stringify({ query, variables }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operation, variables }),
       });
 
       if (res.status === 429 || res.status >= 500) {
-        lastError = new Error(`Shopify ${res.status}`);
+        lastError = new Error(`/api/cart ${res.status}`);
         await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
         continue;
       }
 
       const json = await res.json();
+      if (json.errors?.length) {
+        console.error('[cart] proxy errors:', json.errors);
+      }
       return json.data ?? null;
     } catch (err) {
       lastError = err;
@@ -72,41 +64,9 @@ async function shopifyCartFetch(query, variables = {}) {
       }
     }
   }
-  console.error('[cart] Shopify fetch failed after retries:', lastError);
+  console.error('[cart] proxy fetch failed after retries:', lastError);
   return null;
 }
-
-const CART_FRAGMENT = `
-  fragment CartFields on Cart {
-    id
-    checkoutUrl
-    totalQuantity
-    cost {
-      totalAmount { amount currencyCode }
-    }
-    lines(first: 50) {
-      edges {
-        node {
-          id
-          quantity
-          merchandise {
-            ... on ProductVariant {
-              id
-              title
-              availableForSale
-              price { amount }
-              product {
-                title
-                handle
-                images(first: 1) { edges { node { url } } }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-`;
 
 function getStoredCartId() {
   try { return localStorage.getItem(CART_ID_KEY); } catch { return null; }
@@ -121,7 +81,7 @@ function getStoredCheckoutUrl() {
 }
 
 function storeCheckoutUrl(url) {
-  try { localStorage.setItem(CHECKOUT_URL_KEY, url); } catch {}
+  try { localStorage.setItem(CHECKOUT_URL_KEY, url || ''); } catch {}
 }
 
 function clearShopifyCart() {
@@ -129,6 +89,17 @@ function clearShopifyCart() {
     localStorage.removeItem(CART_ID_KEY);
     localStorage.removeItem(CHECKOUT_URL_KEY);
   } catch {}
+}
+
+// The cart permalink lives on the store's primary domain, which Shopify includes
+// in every cart response as the host of `checkoutUrl`. Use that as the source of
+// truth so we never hardcode the domain or drift from Shopify's config.
+function getCheckoutOrigin() {
+  const stored = getStoredCheckoutUrl();
+  if (stored) {
+    try { return new URL(stored).origin; } catch {}
+  }
+  return 'https://shop.sunnyandranney.com';
 }
 
 // ─── Error events ────────────────────────────────────
@@ -207,15 +178,7 @@ async function shopifyCreateCart(items) {
     quantity: i.qty,
   }));
 
-  const data = await shopifyCartFetch(`
-    ${CART_FRAGMENT}
-    mutation CartCreate($input: CartInput!) {
-      cartCreate(input: $input) {
-        cart { ...CartFields }
-        userErrors { field message }
-      }
-    }
-  `, { input: { lines } });
+  const data = await shopifyCartFetch('cartCreate', { input: { lines } });
 
   const result = data?.cartCreate;
   if (result?.cart) {
@@ -231,15 +194,7 @@ async function shopifyAddLines(cartId, newItems) {
     quantity: i.qty,
   }));
 
-  const data = await shopifyCartFetch(`
-    ${CART_FRAGMENT}
-    mutation CartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
-      cartLinesAdd(cartId: $cartId, lines: $lines) {
-        cart { ...CartFields }
-        userErrors { field message }
-      }
-    }
-  `, { cartId, lines });
+  const data = await shopifyCartFetch('cartLinesAdd', { cartId, lines });
 
   const result = data?.cartLinesAdd;
   if (result?.cart) {
@@ -255,15 +210,7 @@ async function shopifyUpdateLines(cartId, updates) {
     quantity: u.qty,
   }));
 
-  const data = await shopifyCartFetch(`
-    ${CART_FRAGMENT}
-    mutation CartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) {
-      cartLinesUpdate(cartId: $cartId, lines: $lines) {
-        cart { ...CartFields }
-        userErrors { field message }
-      }
-    }
-  `, { cartId, lines });
+  const data = await shopifyCartFetch('cartLinesUpdate', { cartId, lines });
 
   const result = data?.cartLinesUpdate;
   if (result?.cart) {
@@ -274,15 +221,7 @@ async function shopifyUpdateLines(cartId, updates) {
 }
 
 async function shopifyRemoveLines(cartId, lineIds) {
-  const data = await shopifyCartFetch(`
-    ${CART_FRAGMENT}
-    mutation CartLinesRemove($cartId: ID!, $lineIds: [ID!]!) {
-      cartLinesRemove(cartId: $cartId, lineIds: $lineIds) {
-        cart { ...CartFields }
-        userErrors { field message }
-      }
-    }
-  `, { cartId, lineIds });
+  const data = await shopifyCartFetch('cartLinesRemove', { cartId, lineIds });
 
   const result = data?.cartLinesRemove;
   if (result?.cart) {
@@ -293,13 +232,7 @@ async function shopifyRemoveLines(cartId, lineIds) {
 }
 
 async function shopifyFetchCart(cartId) {
-  const data = await shopifyCartFetch(`
-    ${CART_FRAGMENT}
-    query GetCart($cartId: ID!) {
-      cart(id: $cartId) { ...CartFields }
-    }
-  `, { cartId });
-
+  const data = await shopifyCartFetch('cartFetch', { cartId });
   return data?.cart ?? null;
 }
 
@@ -427,9 +360,36 @@ export const cart = {
     clearShopifyCart();
   },
 
-  /** Get Shopify checkout URL (server-validated, not a manual permalink). */
-  getCheckoutUrl() {
-    return getStoredCheckoutUrl() || null;
+  /**
+   * Build a Shopify cart permalink URL for current items. Permalinks are
+   * Shopify's universal checkout-entry route — Shopify creates a fresh cart
+   * server-side and redirects into `/checkouts/cn/{token}`. Works on every
+   * store regardless of theme or checkout extensibility config.
+   *
+   * Format: https://{primary-domain}/cart/{variantId}:{qty},{variantId}:{qty},...
+   * Docs: https://help.shopify.com/en/manual/online-store/share/cart-permalinks
+   *
+   * The primary domain is read from the most recent Storefront API response
+   * (stored alongside cart state). Falls back to the myshopify domain.
+   */
+  getCheckoutPermalink() {
+    const items = load();
+    if (!items.length) return null;
+
+    const lines = items
+      .map(i => {
+        const numericId = String(i.variantId).split('/').pop();
+        if (!numericId) return null;
+        const qty = Math.min(Math.max(1, i.qty || 1), 20);
+        return `${numericId}:${qty}`;
+      })
+      .filter(Boolean)
+      .join(',');
+
+    if (!lines) return null;
+
+    const origin = getCheckoutOrigin();
+    return `${origin}/cart/${lines}`;
   },
 
   /**
@@ -462,27 +422,14 @@ export const cart = {
   },
 
   /**
-   * Create a one-off cart for Buy Now (single item, immediate checkout).
-   * Returns the checkoutUrl or null.
+   * Build a Buy-Now permalink for a single variant — same Shopify permalink
+   * pattern as the main cart. Doesn't touch the user's saved cart.
    */
-  async createBuyNowCart(variantId, qty = 1) {
-    const config = getShopifyConfig();
-    if (!config) {
-      // Fallback to legacy permalink if no API token
-      const domain = (typeof window !== 'undefined' && window.__SHOPIFY_DOMAIN) || 'sunnyandranney.myshopify.com';
-      const numericId = variantId.includes('/') ? variantId.split('/').pop() : variantId;
-      return `https://${domain}/cart/${numericId}:${qty}`;
-    }
-
-    const result = await shopifyCreateCart([{ variantId, qty }]);
-    if (result?.cart?.checkoutUrl) {
-      return result.cart.checkoutUrl;
-    }
-
-    if (result?.userErrors?.length) {
-      handleUserErrors(result.userErrors, 'buyNow');
-    }
-    return null;
+  createBuyNowCart(variantId, qty = 1) {
+    const numericId = String(variantId).split('/').pop();
+    if (!numericId) return null;
+    const clamped = Math.min(Math.max(1, qty), 20);
+    return `${getCheckoutOrigin()}/cart/${numericId}:${clamped}`;
   },
 };
 
