@@ -10,7 +10,9 @@
     "astro": "astro",
     "deploy:hours-sync": "wrangler deploy --config workers/hours-sync/wrangler.toml",
     "deploy:deploy-coordinator": "wrangler deploy --config workers/deploy-coordinator/wrangler.toml",
-    "sync-redirects": "node scripts/sync-shopify-redirects.mjs"
+    "deploy:shop-redirect": "wrangler deploy --config workers/shop-redirect/wrangler.toml",
+    "sync-redirects": "node scripts/sync-shopify-redirects.mjs",
+    "bulk-publish": "node scripts/bulk-publish-products.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.0.0",

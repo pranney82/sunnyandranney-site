@@ -873,7 +873,7 @@
     }
   }
 
-  checkoutBtn?.addEventListener('click', (e) => {
+  checkoutBtn?.addEventListener('click', async (e) => {
     e.preventDefault();
     e.stopPropagation();
     console.log('[checkout] click');
@@ -890,17 +890,21 @@
       return;
     }
 
-    const url = cart.getCheckoutPermalink();
-    if (!url) {
-      console.error('[checkout] could not build permalink from items:', items);
-      showCheckoutError('Unable to start checkout. Please refresh and try again.');
-      return;
-    }
-
     checkoutInFlight = true;
     if (alertEl) alertEl.style.display = 'none';
     checkoutBtn.classList.add('cart-footer__checkout--loading');
     checkoutBtn.textContent = 'Redirecting…';
+
+    const url = await cart.getCheckoutUrl();
+    if (!url) {
+      console.error('[checkout] could not get checkoutUrl for items:', items);
+      checkoutInFlight = false;
+      checkoutBtn.classList.remove('cart-footer__checkout--loading');
+      checkoutBtn.textContent = 'Proceed to Checkout';
+      showCheckoutError('Unable to start checkout. Please refresh and try again.');
+      return;
+    }
+
     console.log('[checkout] redirecting to', url);
     window.location.href = url;
   });

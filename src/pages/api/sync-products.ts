@@ -113,6 +113,66 @@ async function fetchInventoryItemMap(
   return results;
 }
 
+// Publication GIDs to auto-publish new products to (Headless, POS, Google & YouTube).
+// Online Store is intentionally excluded — sunnyandranney.com is the public storefront,
+// shop.sunnyandranney.com is being phased out via /products/{handle} redirects.
+const AUTOPUBLISH_PUBLICATIONS = [
+  'gid://shopify/Publication/284019392796', // Sunny & Ranney Headless
+  'gid://shopify/Publication/270874607900', // Point of Sale
+  'gid://shopify/Publication/280934121756', // Google & YouTube
+];
+
+/** Exchange client credentials for a 24h Admin API access token. */
+async function getAdminAccessToken(domain: string, clientId: string, clientSecret: string): Promise<string> {
+  const res = await fetch(`https://${domain}/admin/oauth/access_token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'client_credentials',
+      client_id: clientId,
+      client_secret: clientSecret,
+    }),
+  });
+  if (!res.ok) throw new Error(`Token exchange failed: ${res.status}`);
+  const data = await res.json() as { access_token: string };
+  return data.access_token;
+}
+
+/** Publish a product to the configured sales channels via Admin GraphQL. */
+async function publishProductToChannels(
+  domain: string,
+  adminToken: string,
+  productGid: string,
+): Promise<{ errors: string[] }> {
+  const mutation = `
+    mutation publishablePublish($id: ID!, $input: [PublicationInput!]!) {
+      publishablePublish(id: $id, input: $input) {
+        userErrors { field message }
+      }
+    }
+  `;
+  const res = await fetch(`https://${domain}/admin/api/2025-01/graphql.json`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Shopify-Access-Token': adminToken,
+    },
+    body: JSON.stringify({
+      query: mutation,
+      variables: {
+        id: productGid,
+        input: AUTOPUBLISH_PUBLICATIONS.map(publicationId => ({ publicationId })),
+      },
+    }),
+  });
+  if (!res.ok) return { errors: [`HTTP ${res.status}`] };
+  const json: any = await res.json();
+  const userErrors = json.data?.publishablePublish?.userErrors || [];
+  // "already published" errors are benign — treat as success
+  const fatal = userErrors.filter((e: any) => !/already/i.test(e.message || ''));
+  return { errors: fatal.map((e: any) => `${e.field?.join('.')}: ${e.message}`) };
+}
+
 /** Text used to generate the embedding — rich enough for semantic search */
 function buildEmbeddingText(node: any): string {
   return [
@@ -144,11 +204,13 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const shopifyHmac = request.headers.get('x-shopify-hmac-sha256');
+  const shopifyTopic = request.headers.get('x-shopify-topic');
   const manualSecret = request.headers.get('x-sync-secret');
+  let rawBody: string | null = null;
 
   if (shopifyHmac) {
     // Verify Shopify webhook HMAC-SHA256 signature
-    const body = await request.clone().text();
+    rawBody = await request.clone().text();
     const key = await crypto.subtle.importKey(
       'raw',
       new TextEncoder().encode(syncSecret),
@@ -156,7 +218,7 @@ export const POST: APIRoute = async ({ request }) => {
       false,
       ['sign'],
     );
-    const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(body));
+    const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(rawBody));
     const computed = btoa(String.fromCharCode(...new Uint8Array(sig)));
     if (computed !== shopifyHmac) {
       return new Response(JSON.stringify({ error: 'Invalid signature' }), {
@@ -173,6 +235,23 @@ export const POST: APIRoute = async ({ request }) => {
 
   const domain = env.PUBLIC_SHOPIFY_STORE_DOMAIN || 'sunnyandranney.myshopify.com';
   const token = env.PUBLIC_SHOPIFY_STOREFRONT_TOKEN || '';
+
+  // Auto-publish new products to Headless / POS / Google. Non-fatal on failure —
+  // a missed publish gets caught on the next products/update webhook or manual sync.
+  let autoPublishResult: { productId?: string; errors: string[] } | null = null;
+  if (shopifyTopic === 'products/create' && rawBody && env.SHOPIFY_CLIENT_ID && env.SHOPIFY_CLIENT_SECRET) {
+    try {
+      const product = JSON.parse(rawBody);
+      const productGid = `gid://shopify/Product/${product.id}`;
+      const adminToken = await getAdminAccessToken(domain, env.SHOPIFY_CLIENT_ID, env.SHOPIFY_CLIENT_SECRET);
+      const { errors } = await publishProductToChannels(domain, adminToken, productGid);
+      autoPublishResult = { productId: productGid, errors };
+      if (errors.length) console.error('Auto-publish errors:', errors);
+    } catch (err: any) {
+      console.error('Auto-publish failed (non-critical):', err?.message);
+      autoPublishResult = { errors: [err?.message || 'unknown'] };
+    }
+  }
 
   if (!token) {
     return new Response(JSON.stringify({ error: 'Shopify token not configured.' }), {
@@ -367,7 +446,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, indexed, total: allProducts.length, rebuilt, hoursSynced, settingsSynced }),
+      JSON.stringify({ success: true, indexed, total: allProducts.length, rebuilt, hoursSynced, settingsSynced, autoPublish: autoPublishResult }),
       { headers: { 'Content-Type': 'application/json' } }
     );
   } catch (err: any) {

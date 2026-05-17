@@ -40,7 +40,7 @@ async function shopifyCartFetch(operation, variables = {}) {
   let lastError;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const res = await fetch('/api/cart', {
+      const res = await fetch('/api/cart/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ operation, variables }),
@@ -170,6 +170,11 @@ let _syncQueue = Promise.resolve();
 // Serialize all Shopify mutations to avoid race conditions
 function enqueueSync(fn) {
   _syncQueue = _syncQueue.then(fn).catch(() => {});
+  return _syncQueue;
+}
+
+function waitForSync() {
+  return _syncQueue;
 }
 
 async function shopifyCreateCart(items) {
@@ -361,35 +366,24 @@ export const cart = {
   },
 
   /**
-   * Build a Shopify cart permalink URL for current items. Permalinks are
-   * Shopify's universal checkout-entry route — Shopify creates a fresh cart
-   * server-side and redirects into `/checkouts/cn/{token}`. Works on every
-   * store regardless of theme or checkout extensibility config.
-   *
-   * Format: https://{primary-domain}/cart/{variantId}:{qty},{variantId}:{qty},...
-   * Docs: https://help.shopify.com/en/manual/online-store/share/cart-permalinks
-   *
-   * The primary domain is read from the most recent Storefront API response
-   * (stored alongside cart state). Falls back to the myshopify domain.
+   * Resolve the proper Shopify checkout URL for the current cart. Waits for any
+   * pending sync to settle, then returns the cart's `checkoutUrl` issued by the
+   * Storefront API. If no Shopify cart exists yet (e.g. items were added but
+   * sync hadn't run before user clicked checkout), syncs first and then reads.
    */
-  getCheckoutPermalink() {
+  async getCheckoutUrl() {
     const items = load();
     if (!items.length) return null;
 
-    const lines = items
-      .map(i => {
-        const numericId = String(i.variantId).split('/').pop();
-        if (!numericId) return null;
-        const qty = Math.min(Math.max(1, i.qty || 1), 20);
-        return `${numericId}:${qty}`;
-      })
-      .filter(Boolean)
-      .join(',');
+    await waitForSync();
 
-    if (!lines) return null;
-
-    const origin = getCheckoutOrigin();
-    return `${origin}/cart/${lines}`;
+    let url = getStoredCheckoutUrl();
+    if (!url) {
+      // Items in localStorage but no Shopify cart yet — create one now.
+      await shopifyCreateCart(items);
+      url = getStoredCheckoutUrl();
+    }
+    return url || null;
   },
 
   /**
@@ -422,14 +416,15 @@ export const cart = {
   },
 
   /**
-   * Build a Buy-Now permalink for a single variant — same Shopify permalink
-   * pattern as the main cart. Doesn't touch the user's saved cart.
+   * Buy-Now: creates a fresh ephemeral cart via the Storefront API for a single
+   * variant and returns its checkoutUrl. Doesn't touch the user's saved cart.
    */
-  createBuyNowCart(variantId, qty = 1) {
-    const numericId = String(variantId).split('/').pop();
-    if (!numericId) return null;
+  async createBuyNowCart(variantId, qty = 1) {
     const clamped = Math.min(Math.max(1, qty), 20);
-    return `${getCheckoutOrigin()}/cart/${numericId}:${clamped}`;
+    const data = await shopifyCartFetch('cartCreate', {
+      input: { lines: [{ merchandiseId: variantId, quantity: clamped }] },
+    });
+    return data?.cartCreate?.cart?.checkoutUrl || null;
   },
 };
 

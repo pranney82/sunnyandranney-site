@@ -1,0 +1,10 @@
+name = "shop-redirect"
+main = "src/index.ts"
+compatibility_date = "2025-04-01"
+
+# Route binds the Worker to all traffic on shop.sunnyandranney.com once the
+# zone's DNS is moved from CNAME-to-Shopify to a Cloudflare-managed record
+# (orange-cloud A/AAAA pointing to a placeholder — the Worker intercepts).
+routes = [
+  { pattern = "shop.sunnyandranney.com/*", zone_name = "sunnyandranney.com" },
+]
