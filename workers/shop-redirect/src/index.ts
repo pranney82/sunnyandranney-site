@@ -21,14 +21,31 @@ function shouldRouteToShopify(pathname: string): boolean {
   return SHOPIFY_PASSTHROUGH_PREFIXES.some((p) => pathname.startsWith(p));
 }
 
+// Shopify uses /products/{handle}; the Astro storefront uses /shop/{handle}/.
+// Rewrite the path when redirecting to the custom site so customers land on
+// the real product page in a single 301 hop.
+function rewritePathForStorefront(pathname: string): string {
+  const productMatch = pathname.match(/^\/products\/([^/]+)\/?$/);
+  if (productMatch) return `/shop/${productMatch[1]}/`;
+  return pathname;
+}
+
 export default {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
-    const target = new URL(
-      url.pathname + url.search + url.hash,
-      shouldRouteToShopify(url.pathname) ? SHOPIFY_CHECKOUT_ORIGIN : STOREFRONT_ORIGIN,
-    );
 
+    if (shouldRouteToShopify(url.pathname)) {
+      const target = new URL(url.pathname + url.search + url.hash, SHOPIFY_CHECKOUT_ORIGIN);
+      return new Response(null, {
+        status: 301,
+        headers: {
+          Location: target.toString(),
+          "Cache-Control": "public, max-age=3600",
+        },
+      });
+    }
+
+    const target = new URL(rewritePathForStorefront(url.pathname) + url.search + url.hash, STOREFRONT_ORIGIN);
     return new Response(null, {
       status: 301,
       headers: {

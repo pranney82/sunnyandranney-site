@@ -366,10 +366,9 @@ export const cart = {
   },
 
   /**
-   * Resolve the proper Shopify checkout URL for the current cart. Waits for any
-   * pending sync to settle, then returns the cart's `checkoutUrl` issued by the
-   * Storefront API. If no Shopify cart exists yet (e.g. items were added but
-   * sync hadn't run before user clicked checkout), syncs first and then reads.
+   * Resolve the proper Shopify checkout URL for the current cart. Always
+   * forces a fresh sync with Shopify so a stale stored URL from a previous
+   * primary-domain configuration can't strand a customer mid-checkout.
    */
   async getCheckoutUrl() {
     const items = load();
@@ -377,13 +376,20 @@ export const cart = {
 
     await waitForSync();
 
-    let url = getStoredCheckoutUrl();
-    if (!url) {
-      // Items in localStorage but no Shopify cart yet — create one now.
+    const cartId = getStoredCartId();
+    if (cartId) {
+      const shopifyCart = await shopifyFetchCart(cartId);
+      if (shopifyCart) {
+        reconcileFromShopify(shopifyCart);
+      } else {
+        clearShopifyCart();
+        await shopifyCreateCart(items);
+      }
+    } else {
       await shopifyCreateCart(items);
-      url = getStoredCheckoutUrl();
     }
-    return url || null;
+
+    return getStoredCheckoutUrl() || null;
   },
 
   /**
