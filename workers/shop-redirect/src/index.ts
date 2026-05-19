@@ -4,7 +4,7 @@
 // carts continue to complete checkout.
 
 const STOREFRONT_ORIGIN = "https://sunnyandranney.com";
-const SHOPIFY_CHECKOUT_ORIGIN = "https://sunnyandranney.myshopify.com";
+const SHOPIFY_CHECKOUT_ORIGIN = "https://store.sunnyandranney.com";
 
 // Path prefixes that need to stay on Shopify so checkout can complete.
 const SHOPIFY_PASSTHROUGH_PREFIXES = [

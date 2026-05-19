@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { syncGoogleHoursToD1 } from '@/lib/sync-hours';
 import { batchSetProductAvailability, pruneStaleAvailability, batchSetInventoryItemMap, pruneStaleInventoryMap } from '@/lib/db';
+import { ensureProductRedirect } from '@/lib/shopify-redirects';
 import collectionsConfig from '@/content/settings/collections.json';
 
 export const prerender = false;
@@ -236,20 +237,46 @@ export const POST: APIRoute = async ({ request }) => {
   const domain = env.PUBLIC_SHOPIFY_STORE_DOMAIN || 'sunnyandranney.myshopify.com';
   const token = env.PUBLIC_SHOPIFY_STOREFRONT_TOKEN || '';
 
-  // Auto-publish new products to Headless / POS / Google. Non-fatal on failure —
-  // a missed publish gets caught on the next products/update webhook or manual sync.
+  // Admin-API-dependent side effects (auto-publish, redirect ensure) share a
+  // single token exchange. Non-fatal on failure — a miss gets caught on the
+  // next products/update webhook or manual sync.
   let autoPublishResult: { productId?: string; errors: string[] } | null = null;
-  if (shopifyTopic === 'products/create' && rawBody && env.SHOPIFY_CLIENT_ID && env.SHOPIFY_CLIENT_SECRET) {
+  let redirectResult: { handle?: string; action?: string; error?: string } | null = null;
+
+  const needsAdminApi =
+    (shopifyTopic === 'products/create' || shopifyTopic === 'products/update') &&
+    rawBody &&
+    env.SHOPIFY_CLIENT_ID &&
+    env.SHOPIFY_CLIENT_SECRET;
+
+  if (needsAdminApi) {
+    let adminToken: string | null = null;
+    let product: any = null;
     try {
-      const product = JSON.parse(rawBody);
-      const productGid = `gid://shopify/Product/${product.id}`;
-      const adminToken = await getAdminAccessToken(domain, env.SHOPIFY_CLIENT_ID, env.SHOPIFY_CLIENT_SECRET);
-      const { errors } = await publishProductToChannels(domain, adminToken, productGid);
-      autoPublishResult = { productId: productGid, errors };
-      if (errors.length) console.error('Auto-publish errors:', errors);
+      product = JSON.parse(rawBody!);
+      adminToken = await getAdminAccessToken(domain, env.SHOPIFY_CLIENT_ID!, env.SHOPIFY_CLIENT_SECRET!);
     } catch (err: any) {
-      console.error('Auto-publish failed (non-critical):', err?.message);
-      autoPublishResult = { errors: [err?.message || 'unknown'] };
+      console.error('Admin token exchange failed (non-critical):', err?.message);
+    }
+
+    // Auto-publish: only on products/create (existing behavior).
+    if (adminToken && product && shopifyTopic === 'products/create') {
+      try {
+        const productGid = `gid://shopify/Product/${product.id}`;
+        const { errors } = await publishProductToChannels(domain, adminToken, productGid);
+        autoPublishResult = { productId: productGid, errors };
+        if (errors.length) console.error('Auto-publish errors:', errors);
+      } catch (err: any) {
+        console.error('Auto-publish failed (non-critical):', err?.message);
+        autoPublishResult = { errors: [err?.message || 'unknown'] };
+      }
+    }
+
+    // Redirect ensure: on both create and update, so handle renames are kept in sync.
+    if (adminToken && product?.handle) {
+      const { action, error } = await ensureProductRedirect(domain, adminToken, product.handle);
+      redirectResult = { handle: product.handle, action, error };
+      if (error) console.error('Redirect ensure error:', error);
     }
   }
 
@@ -446,7 +473,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, indexed, total: allProducts.length, rebuilt, hoursSynced, settingsSynced, autoPublish: autoPublishResult }),
+      JSON.stringify({ success: true, indexed, total: allProducts.length, rebuilt, hoursSynced, settingsSynced, autoPublish: autoPublishResult, redirect: redirectResult }),
       { headers: { 'Content-Type': 'application/json' } }
     );
   } catch (err: any) {
