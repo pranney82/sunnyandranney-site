@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import { syncGoogleHoursToD1 } from '@/lib/sync-hours';
 
 export const prerender = false;
 
@@ -39,15 +38,8 @@ export const POST: APIRoute = async ({ request }) => {
   const synced: string[] = [];
   const origin = new URL(request.url).origin;
 
-  // 1. Sync Google hours → D1
-  const apiKey = env.GOOGLE_PLACES_API_KEY;
-  const placeId = env.GOOGLE_PLACE_ID;
-  if (apiKey && placeId) {
-    const hoursSynced = await syncGoogleHoursToD1(db, apiKey, placeId);
-    if (hoursSynced) synced.push('hours');
-  }
-
-  // 2. Sync committed JSON settings → D1
+  // Hours + reviews are synced by the hours-sync worker on a daily cron;
+  // this endpoint only refreshes the committed JSON settings.
   for (const name of ['specials', 'contact', 'email-signup'] as const) {
     try {
       const res = await fetch(`${origin}/_settings/${name}.json`, {

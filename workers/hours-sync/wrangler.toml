@@ -1,16 +1,19 @@
 name = "hours-sync"
 main = "src/index.ts"
 compatibility_date = "2025-04-01"
+workers_dev = true
 
 [triggers]
-crons = ["0 */6 * * *"]  # Every 6 hours
+crons = ["0 9 * * *"]  # Daily at 9am UTC — one Places API call per day
 
 [[d1_databases]]
 binding = "DB"
 database_name = "sunnyandranney-db"
 database_id = "a3fbfba9-569c-4dae-af1a-4a1f290963f7"
 
-[vars]
-# GOOGLE_PLACES_API_KEY and GOOGLE_PLACE_ID set via:
-# wrangler secret put GOOGLE_PLACES_API_KEY --config workers/hours-sync/wrangler.toml
-# wrangler secret put GOOGLE_PLACE_ID --config workers/hours-sync/wrangler.toml
+# Secrets — set via wrangler secret put --config workers/hours-sync/wrangler.toml
+#   GOOGLE_PLACES_API_KEY  (required)
+#   GOOGLE_PLACE_ID        (required)
+#   CF_ACCOUNT_ID          (optional — for review avatar caching to CF Images)
+#   CF_IMAGES_TOKEN        (optional — for review avatar caching to CF Images)
+#   SYNC_SECRET            (optional — required only for POST /sync manual trigger)

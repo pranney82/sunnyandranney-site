@@ -1,10 +1,15 @@
 /**
- * Fetches live review data from Google Places API (New) at build time.
- * Falls back gracefully if API key isn't set or the call fails.
+ * Build-time reader for Google Places data, served from the hours-sync worker.
  *
- * Required env vars (set in Cloudflare Pages dashboard):
- *   GOOGLE_PLACES_API_KEY — from Google Cloud Console (Places API New enabled)
- *   GOOGLE_PLACE_ID       — your Google Maps Place ID (e.g. ChIJ...)
+ * The worker fetches Google Places once daily and caches the result in D1 + CF
+ * Images. This module pulls from the worker — never from Google — so deploys
+ * cost nothing in Places API charges and never block on Google availability.
+ *
+ * Required env var:
+ *   PLACES_DATA_URL — public URL of the hours-sync worker
+ *                     (e.g. https://hours-sync.<subdomain>.workers.dev)
+ *
+ * Returns null on any failure; callers already fall back to committed JSON.
  */
 
 export interface GooglePlaceReview {
@@ -27,147 +32,49 @@ export interface GooglePlaceHours {
   note: string;
 }
 
-// Cache results so the API is only called once per build, not once per page
-let _cache: GooglePlaceData | null | undefined;
-let _hoursCache: GooglePlaceHours | null | undefined;
+interface PlacesBlob {
+  rating?: number;
+  reviewCount?: number;
+  reviews?: GooglePlaceReview[];
+  hours?: GooglePlaceHours | null;
+}
 
-// Unified fetch — single API call for both reviews + hours
-let _unifiedPromise: Promise<void> | null = null;
+let _blobPromise: Promise<PlacesBlob | null> | null = null;
 
-async function fetchUnified(): Promise<void> {
-  const apiKey = import.meta.env.GOOGLE_PLACES_API_KEY;
-  const placeId = import.meta.env.GOOGLE_PLACE_ID;
-  if (!apiKey || !placeId) {
-    _cache = null;
-    _hoursCache = null;
-    return;
-  }
-
+async function fetchBlob(): Promise<PlacesBlob | null> {
+  const url = import.meta.env.PLACES_DATA_URL;
+  if (!url) return null;
   try {
-    const res = await fetch(
-      `https://places.googleapis.com/v1/places/${placeId}`,
-      {
-        headers: {
-          'X-Goog-Api-Key': apiKey,
-          'X-Goog-FieldMask': 'rating,userRatingCount,reviews,regularOpeningHours,currentOpeningHours',
-        },
-      },
-    );
-
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
     if (!res.ok) {
-      console.warn(`[google-places] API returned ${res.status}`);
-      _cache = null;
-      _hoursCache = null;
-      return;
+      console.warn(`[google-places] worker returned ${res.status}`);
+      return null;
     }
-
-    const data = await res.json() as any;
-
-    // Parse hours
-    const regular = data.regularOpeningHours;
-    const current = data.currentOpeningHours;
-    if (regular?.periods?.length) {
-      const dayMap = new Map<number, { open: string; close: string }>();
-      for (const period of regular.periods) {
-        dayMap.set(period.open.day, {
-          open: padTime(period.open.hour, period.open.minute),
-          close: period.close ? padTime(period.close.hour, period.close.minute) : '23:59',
-        });
-      }
-      const orderedDays = [1, 2, 3, 4, 5, 6, 0];
-      const days = orderedDays.map(dayNum => {
-        const times = dayMap.get(dayNum);
-        return { day: DAY_NAMES[dayNum], open: times?.open ?? '00:00', close: times?.close ?? '00:00', closed: !times };
-      });
-      const holidays: GooglePlaceHours['holidays'] = [];
-      if (current?.specialDays) {
-        for (const special of current.specialDays) {
-          if (!special.date) continue;
-          const dateStr = `${special.date.year}-${String(special.date.month).padStart(2, '0')}-${String(special.date.day).padStart(2, '0')}`;
-          const d = new Date(dateStr + 'T12:00:00');
-          const label = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-          const matchingPeriod = current.periods?.find((p: any) =>
-            p.open.date && p.open.date.year === special.date!.year && p.open.date.month === special.date!.month && p.open.date.day === special.date!.day
-          );
-          if (matchingPeriod) {
-            holidays.push({ date: dateStr, label, closed: false, open: padTime(matchingPeriod.open.hour, matchingPeriod.open.minute), close: matchingPeriod.close ? padTime(matchingPeriod.close.hour, matchingPeriod.close.minute) : '23:59' });
-          } else {
-            holidays.push({ date: dateStr, label, closed: true, open: '00:00', close: '00:00' });
-          }
-        }
-      }
-      _hoursCache = { days, holidays, note: '' };
-      console.log('[google-places] Fetched live hours');
-    } else {
-      _hoursCache = null;
-    }
-
-    // Parse reviews
-    const reviews = (data.reviews ?? []).filter((r: any) => r.text?.text);
-    const cfAccountId = import.meta.env.CF_ACCOUNT_ID;
-    const cfImagesToken = import.meta.env.CF_IMAGES_TOKEN;
-    const reviewsWithPhotos = await Promise.all(
-      reviews.map(async (r: any, i: number) => {
-        let photoUrl = '';
-        let uri = r.authorAttribution?.photoUri;
-        if (uri) {
-          try {
-            if (uri.startsWith('//')) uri = `https:${uri}`;
-            const smallUri = uri.replace(/=s\d+/, '=s80');
-            const imgRes = await fetch(smallUri);
-            if (imgRes.ok) {
-              const buf = Buffer.from(await imgRes.arrayBuffer());
-              if (cfAccountId && cfImagesToken) {
-                const form = new FormData();
-                form.append('file', new Blob([buf]), `review-avatar-${i}`);
-                form.append('id', `review-avatar-${i}`);
-                const cfRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/images/v1`, { method: 'POST', headers: { Authorization: `Bearer ${cfImagesToken}` }, body: form });
-                const cfBody = await cfRes.json() as { success: boolean; errors?: Array<{ code: number }> };
-                if (cfBody.success || cfBody.errors?.some((e) => e.code === 5409)) {
-                  photoUrl = `https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/review-avatar-${i}/w=80,h=80,fit=cover,format=auto`;
-                }
-              }
-              if (!photoUrl) photoUrl = smallUri;
-            }
-          } catch { /* skip — will fall back to initials */ }
-        }
-        return { name: r.authorAttribution?.displayName ?? 'Anonymous', text: r.text!.text!, rating: r.rating ?? 5, photoUrl, timeAgo: r.relativePublishTimeDescription ?? '' };
-      }),
-    );
-    _cache = { rating: data.rating ?? 5.0, reviewCount: data.userRatingCount ?? 0, reviews: reviewsWithPhotos };
-    console.log('[google-places] Fetched live reviews');
+    const data = await res.json() as PlacesBlob;
+    if (!data || typeof data !== 'object') return null;
+    return data;
   } catch (err) {
-    console.warn('[google-places] Fetch failed:', err);
-    _cache = null;
-    _hoursCache = null;
+    console.warn('[google-places] fetch failed:', err);
+    return null;
   }
 }
 
-function ensureUnifiedFetch(): Promise<void> {
-  if (!_unifiedPromise) _unifiedPromise = fetchUnified();
-  return _unifiedPromise;
+function ensureFetch(): Promise<PlacesBlob | null> {
+  if (!_blobPromise) _blobPromise = fetchBlob();
+  return _blobPromise;
 }
 
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
-
-function padTime(hour: number, minute: number): string {
-  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-}
-
-/**
- * Fetch store hours from Google Places API (New) at build time.
- * Uses the unified fetch so only one API call is made per build.
- */
 export async function fetchGoogleHours(): Promise<GooglePlaceHours | null> {
-  await ensureUnifiedFetch();
-  return _hoursCache ?? null;
+  const blob = await ensureFetch();
+  return blob?.hours ?? null;
 }
 
-/**
- * Fetch reviews + rating from Google Places API (New) at build time.
- * Uses the unified fetch so only one API call is made per build.
- */
 export async function fetchGooglePlaceData(): Promise<GooglePlaceData | null> {
-  await ensureUnifiedFetch();
-  return _cache ?? null;
+  const blob = await ensureFetch();
+  if (!blob || blob.rating == null || blob.reviewCount == null) return null;
+  return {
+    rating: blob.rating,
+    reviewCount: blob.reviewCount,
+    reviews: blob.reviews ?? [],
+  };
 }

@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import { syncGoogleHoursToD1 } from '@/lib/sync-hours';
 import { batchSetProductAvailability, pruneStaleAvailability, batchSetInventoryItemMap, pruneStaleInventoryMap } from '@/lib/db';
 import { ensureProductRedirect } from '@/lib/shopify-redirects';
 import collectionsConfig from '@/content/settings/collections.json';
@@ -428,14 +427,6 @@ export const POST: APIRoute = async ({ request }) => {
       }
     }
 
-    // Sync Google hours → D1 so Staci always has current hours
-    const googleApiKey = env.GOOGLE_PLACES_API_KEY;
-    const googlePlaceId = env.GOOGLE_PLACE_ID;
-    let hoursSynced = false;
-    if (googleApiKey && googlePlaceId) {
-      hoursSynced = await syncGoogleHoursToD1(env.DB, googleApiKey, googlePlaceId);
-    }
-
     // Sync specials + contact → D1 so Staci knows about promos/announcements
     const settingsSynced: string[] = [];
     const origin = new URL(request.url).origin;
@@ -473,7 +464,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, indexed, total: allProducts.length, rebuilt, hoursSynced, settingsSynced, autoPublish: autoPublishResult, redirect: redirectResult }),
+      JSON.stringify({ success: true, indexed, total: allProducts.length, rebuilt, settingsSynced, autoPublish: autoPublishResult, redirect: redirectResult }),
       { headers: { 'Content-Type': 'application/json' } }
     );
   } catch (err: any) {
