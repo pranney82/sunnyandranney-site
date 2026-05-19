@@ -232,31 +232,16 @@ const currentPath = Astro.url.pathname;
   initTabPop();
   document.addEventListener('astro:after-swap', initTabPop);
 
-  // Sync cart count badge with the header badge
-  function syncBottomNavCart() {
-    const headerCount = document.getElementById('cart-count');
-    const bottomCount = document.getElementById('bottom-nav-cart-count');
-    if (!headerCount || !bottomCount) return;
-
-    const observer = new MutationObserver(() => {
-      const count = headerCount.textContent || '0';
-      const visible = headerCount.style.display !== 'none';
-      bottomCount.textContent = count;
-      bottomCount.style.display = visible ? 'flex' : 'none';
+  // Subscribe the badge directly to the cart store (single source of truth).
+  // Skip until the store confirms a real cart — the pre-paint inline script
+  // already painted the badge from the sr_cart_n cookie.
+  import('@/lib/cart').then(({ subscribe }) => {
+    subscribe((snap) => {
+      if (!snap.hasLoaded) return;
+      const el = document.getElementById('bottom-nav-cart-count');
+      if (!el) return;
+      el.textContent = String(snap.totalQuantity);
+      el.style.display = snap.totalQuantity > 0 ? 'flex' : 'none';
     });
-
-    observer.observe(headerCount, {
-      childList: true,
-      attributes: true,
-      attributeFilter: ['style'],
-    });
-
-    const count = headerCount.textContent || '0';
-    const visible = headerCount.style.display !== 'none';
-    bottomCount.textContent = count;
-    bottomCount.style.display = visible ? 'flex' : 'none';
-  }
-
-  syncBottomNavCart();
-  document.addEventListener('astro:after-swap', syncBottomNavCart);
+  });
 </script>

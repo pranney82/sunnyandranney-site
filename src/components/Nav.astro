@@ -1131,27 +1131,26 @@ const roomCollections = [
     if (searchInput && suggestEl) setupTypeahead(searchInput, suggestEl, signal);
     if (mobileTopbarSearch && mobileSuggestEl) setupTypeahead(mobileTopbarSearch, mobileSuggestEl, signal);
 
-    // ── Sync mobile cart badge ──────────────────
-    const scheduleIdle = window.requestIdleCallback || ((cb: () => void) => setTimeout(cb, 200));
-    function syncMobileCartBadge() {
-      const headerCount = document.getElementById('cart-count');
-      const mobileCount = document.getElementById('mobile-cart-count');
-      if (!headerCount || !mobileCount) return;
-
-      const update = () => {
-        const count = headerCount.textContent || '0';
-        const visible = headerCount.style.display !== 'none';
-        mobileCount.textContent = count;
-        mobileCount.style.display = visible ? 'flex' : 'none';
-      };
-
-      const mo = new MutationObserver(update);
-      mo.observe(headerCount, { childList: true, attributes: true, attributeFilter: ['style'] });
-      signal.addEventListener('abort', () => mo.disconnect());
-
-      update();
+    // ── Cart badge: subscribe directly to the store (single source of truth) ──
+    // Until the store confirms a real cart (snap.hasLoaded), defer to whatever
+    // the inline pre-paint script wrote from the sr_cart_n cookie — overwriting
+    // it with the empty initial snapshot would cause a flash-of-zero.
+    const headerCount = document.getElementById('cart-count');
+    const mobileCount = document.getElementById('mobile-cart-count');
+    if (headerCount || mobileCount) {
+      import('@/lib/cart').then(({ subscribe }) => {
+        const unsub = subscribe((snap) => {
+          if (!snap.hasLoaded) return;
+          const n = snap.totalQuantity;
+          [headerCount, mobileCount].forEach((el) => {
+            if (!el) return;
+            el.textContent = String(n);
+            el.style.display = n > 0 ? 'flex' : 'none';
+          });
+        });
+        signal.addEventListener('abort', unsub);
+      });
     }
-    scheduleIdle(syncMobileCartBadge);
 
     // ── Active tab + indicator + scroll-into-view ──
     updateActiveTab();

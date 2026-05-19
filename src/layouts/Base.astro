@@ -99,6 +99,21 @@ const isShopPage = Astro.url.pathname.startsWith('/shop') || Astro.url.pathname.
     <script is:inline>
       (function(){var n=document.getElementById('main-nav');if(n){var h=n.offsetHeight;if(h>0)document.documentElement.style.setProperty('--nav-height',h+'px')}})();
     </script>
+    {/* Paint cart badges from the sr_cart_n cookie BEFORE first frame.
+        /api/cart sets this on every mutation. Zero-flash badge on cold loads. */}
+    <script is:inline>
+      (function(){
+        var m=document.cookie.match(/(?:^|;\s*)sr_cart_n=(\d+)/);
+        if(!m)return;
+        var n=parseInt(m[1],10);
+        if(!n)return;
+        var ids=['cart-count','mobile-cart-count','bottom-nav-cart-count'];
+        for(var i=0;i<ids.length;i++){
+          var el=document.getElementById(ids[i]);
+          if(el){el.textContent=String(n);el.style.display='flex';}
+        }
+      })();
+    </script>
     <main id="main-content" style={`margin-top: var(--nav-height);`} transition:animate={fade({ duration: '0.15s' })}>
       <slot />
     </main>

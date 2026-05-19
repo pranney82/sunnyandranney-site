@@ -15,11 +15,15 @@
     "bulk-publish": "node scripts/bulk-publish-products.mjs"
   },
   "dependencies": {
+    "@astrojs/check": "^0.9.9",
     "@astrojs/cloudflare": "^12.0.0",
+    "@astrojs/preact": "^4.1.3",
     "@astrojs/sitemap": "^3.2.0",
     "astro": "^5.0.0",
     "lightningcss": "^1.29.1",
-    "puppeteer": "^24.40.0"
+    "preact": "^10.29.2",
+    "puppeteer": "^24.40.0",
+    "typescript": "^5.9.3"
   },
   "devDependencies": {
     "playwright": "^1.59.1"

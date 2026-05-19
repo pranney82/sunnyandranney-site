@@ -3,6 +3,8 @@ import cloudflare from '@astrojs/cloudflare';
 import sitemap from '@astrojs/sitemap';
 import { loadEnv } from 'vite';
 
+import preact from '@astrojs/preact';
+
 const env = loadEnv(process.env.NODE_ENV || 'production', process.cwd(), '');
 
 // Fetch product updatedAt map from Shopify at build time so sitemap <lastmod>
@@ -68,40 +70,38 @@ export default defineConfig({
   trailingSlash: 'always',
   adapter: cloudflare(),
   server: { port: 4322 },
-  integrations: [
-    sitemap({
-      filter: (page) => {
-        const url = new URL(page);
-        const path = url.pathname.replace(/\/$/, '');
-        if (path.startsWith('/admin')) return false;
-        return !redirectPaths.some((r) => path.startsWith(r));
-      },
-      serialize(item) {
-        const url = new URL(item.url);
-        const path = url.pathname;
-        // Product pages: use Shopify updatedAt so Google recrawls on real change
-        const productMatch = path.match(/^\/shop\/([^/]+)\/?$/);
-        if (productMatch) {
-          const handle = decodeURIComponent(productMatch[1]);
-          const updatedAt = productLastmod.get(handle);
-          if (updatedAt) item.lastmod = updatedAt;
-          item.changefreq = 'weekly';
-          item.priority = 0.8;
-          return item;
-        }
-        // Homepage + shop index: change often
-        if (path === '/' || path === '/shop/') {
-          item.changefreq = 'daily';
-          item.priority = 1.0;
-          return item;
-        }
-        // Static pages: rarely change
-        item.changefreq = 'monthly';
-        item.priority = 0.5;
+  integrations: [sitemap({
+    filter: (page) => {
+      const url = new URL(page);
+      const path = url.pathname.replace(/\/$/, '');
+      if (path.startsWith('/admin')) return false;
+      return !redirectPaths.some((r) => path.startsWith(r));
+    },
+    serialize(item) {
+      const url = new URL(item.url);
+      const path = url.pathname;
+      // Product pages: use Shopify updatedAt so Google recrawls on real change
+      const productMatch = path.match(/^\/shop\/([^/]+)\/?$/);
+      if (productMatch) {
+        const handle = decodeURIComponent(productMatch[1]);
+        const updatedAt = productLastmod.get(handle);
+        if (updatedAt) item.lastmod = updatedAt;
+        item.changefreq = 'weekly';
+        item.priority = 0.8;
         return item;
-      },
-    }),
-  ],
+      }
+      // Homepage + shop index: change often
+      if (path === '/' || path === '/shop/') {
+        item.changefreq = 'daily';
+        item.priority = 1.0;
+        return item;
+      }
+      // Static pages: rarely change
+      item.changefreq = 'monthly';
+      item.priority = 0.5;
+      return item;
+    },
+  }), preact()],
 
   redirects,
 

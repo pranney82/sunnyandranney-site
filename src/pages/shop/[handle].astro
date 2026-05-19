@@ -396,7 +396,7 @@ const breadcrumbSchema = {
             <label class="pdp-qty__label">Quantity</label>
             <div class="pdp-qty__controls">
               <button class="pdp-qty__btn" id="qty-minus" aria-label="Decrease quantity">−</button>
-              <input type="number" class="pdp-qty__input" id="qty-input" value="1" min="1" max="99" aria-label="Quantity" />
+              <input type="number" class="pdp-qty__input" id="qty-input" value="1" min="1" max="20" aria-label="Quantity" />
               <button class="pdp-qty__btn" id="qty-plus" aria-label="Increase quantity">+</button>
             </div>
           </div>
@@ -1839,7 +1839,7 @@ const breadcrumbSchema = {
 </style>
 
 <script>
-  import { cart, recentlyViewed } from '@/lib/cart-store';
+  import { addLines, buyNow, recentlyViewed } from '@/lib/cart-store';
 
   // Clean up previous keydown listener on re-init (View Transitions)
   let _pdpKeyHandler: ((e: KeyboardEvent) => void) | null = null;
@@ -2043,6 +2043,9 @@ const breadcrumbSchema = {
         addToCartBtn.dataset.variantTitle = variantTitle;
         addToCartBtn.dataset.productPrice = variantPrice;
         addToCartBtn.dataset.variantQty = el.dataset.variantQty || '';
+        // If the variant has its own image, use it for the cart line preview.
+        // Otherwise keep whatever the server-rendered product image was.
+        if (variantImage) addToCartBtn.dataset.productImage = variantImage;
         addToCartBtn.disabled = !variantAvailable;
         addToCartBtn.textContent = variantAvailable ? 'Add to Cart' : 'Sold Out';
       }
@@ -2108,13 +2111,13 @@ const breadcrumbSchema = {
 
   qtyPlus?.addEventListener('click', () => {
     const val = parseInt(qtyInput?.value || '1');
-    if (val < 99 && qtyInput) qtyInput.value = String(val + 1);
+    if (val < 20 && qtyInput) qtyInput.value = String(val + 1);
   });
 
   qtyInput?.addEventListener('change', () => {
     let val = parseInt(qtyInput.value || '1');
     if (isNaN(val) || val < 1) val = 1;
-    if (val > 99) val = 99;
+    if (val > 20) val = 20;
     qtyInput.value = String(val);
   });
 
@@ -2161,7 +2164,7 @@ const breadcrumbSchema = {
       buyNowBtn.textContent = 'Preparing…';
     }
 
-    const url = await cart.createBuyNowCart(variantId, qty);
+    const url = await buyNow(variantId, qty);
     if (url) {
       window.location.href = url;
     } else {
@@ -2378,24 +2381,50 @@ const breadcrumbSchema = {
 
   fbtChecks.forEach(cb => cb.addEventListener('change', updateFbtTotal));
 
-  fbtAddAll?.addEventListener('click', () => {
-    // Add current product
-    handleAddToCart();
-    // Add checked related items
-    fbtChecks.forEach(cb => {
+  fbtAddAll?.addEventListener('click', async () => {
+    // Batch every checked item + the current product into one Shopify call.
+    const currency = (typeof window !== 'undefined' && window.__SHOPIFY_CURRENCY) || 'USD';
+    const items: Parameters<typeof addLines>[0] = [];
+
+    // Current product (whatever variant is currently selected)
+    const currentVariantId = addToCartBtn?.dataset.variantId;
+    if (currentVariantId) {
+      const qty = parseInt(qtyInput?.value || '1') || 1;
+      items.push({
+        merchandiseId: currentVariantId,
+        quantity: qty,
+        productHandle: addToCartBtn?.dataset.productHandle || '',
+        productTitle: addToCartBtn?.dataset.productTitle || '',
+        variantTitle: addToCartBtn?.dataset.variantTitle || '',
+        image: addToCartBtn?.dataset.productImage ? { url: addToCartBtn.dataset.productImage, altText: null } : null,
+        price: { amount: addToCartBtn?.dataset.productPrice || '0', currencyCode: currency },
+      });
+    }
+
+    fbtChecks.forEach((cb) => {
       if (!(cb as HTMLInputElement).checked) return;
       const el = cb as HTMLElement;
-      window.addToCart?.({
-        variantId: el.dataset.variantId || '',
-        title: el.dataset.title || '',
-        price: parseFloat(el.dataset.price || '0'),
-        image: el.dataset.image || '',
-        handle: el.dataset.handle || '',
+      const id = el.dataset.variantId || '';
+      if (!id) return;
+      items.push({
+        merchandiseId: id,
+        quantity: 1,
+        productHandle: el.dataset.handle || '',
+        productTitle: el.dataset.title || '',
         variantTitle: '',
+        image: el.dataset.image ? { url: el.dataset.image, altText: null } : null,
+        price: { amount: el.dataset.price || '0', currencyCode: currency },
       });
     });
-    fbtAddAll.textContent = 'All Added!';
+
+    if (items.length === 0) return;
+
     (fbtAddAll as HTMLButtonElement).disabled = true;
+    fbtAddAll.textContent = 'Adding…';
+    await addLines(items);
+    window.showCartToast?.('Items added to cart');
+    window.openCart?.();
+    fbtAddAll.textContent = 'All Added!';
     setTimeout(() => {
       fbtAddAll.textContent = 'Add All to Cart';
       (fbtAddAll as HTMLButtonElement).disabled = false;
@@ -2431,6 +2460,7 @@ const breadcrumbSchema = {
   }
 
   // ─── Track recently viewed ──────────────────
+  const pdpHandle = addToCartBtn?.dataset.productHandle;
   const pdpTitle = addToCartBtn?.dataset.productTitle;
   const pdpImage = addToCartBtn?.dataset.productImage;
   const pdpPrice = addToCartBtn?.dataset.productPrice;
