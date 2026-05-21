@@ -1,8 +1,9 @@
+import type { APIRoute } from 'astro';
 import {
   exchangeCodeForTokens,
   parseIdToken,
   type PendingAuth,
-} from '../../_lib/oauth';
+} from '@/lib/auth/oauth';
 import {
   encryptSession,
   decryptSession,
@@ -13,15 +14,21 @@ import {
   SESSION_COOKIE,
   SESSION_MAX_AGE,
   type SessionData,
-} from '../../_lib/session';
+} from '@/lib/auth/session';
 
-interface Env {
-  CUSTOMER_ACCOUNT_CLIENT_ID: string;
-  CUSTOMER_ACCOUNT_CLIENT_SECRET: string;
-  SESSION_SECRET: string;
-}
+export const prerender = false;
 
-export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
+export const GET: APIRoute = async ({ request, locals }) => {
+  const env = (locals as { runtime?: { env?: Record<string, string | undefined> } }).runtime?.env
+    ?? (process.env as Record<string, string | undefined>);
+
+  const clientId = env.CUSTOMER_ACCOUNT_CLIENT_ID;
+  const clientSecret = env.CUSTOMER_ACCOUNT_CLIENT_SECRET;
+  const sessionSecret = env.SESSION_SECRET;
+  if (!clientId || !clientSecret || !sessionSecret) {
+    return new Response('auth not configured', { status: 500 });
+  }
+
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
@@ -36,7 +43,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     return new Response('no pending auth session (cookie missing or expired)', { status: 400 });
   }
 
-  const pending = await decryptSession<PendingAuth>(pendingToken, env.SESSION_SECRET);
+  const pending = await decryptSession<PendingAuth>(pendingToken, sessionSecret);
   if (!pending) {
     return new Response('invalid pending auth cookie', { status: 400 });
   }
@@ -46,12 +53,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
 
   let tokens;
   try {
-    tokens = await exchangeCodeForTokens(
-      env.CUSTOMER_ACCOUNT_CLIENT_ID,
-      env.CUSTOMER_ACCOUNT_CLIENT_SECRET,
-      code,
-      pending.codeVerifier,
-    );
+    tokens = await exchangeCodeForTokens(clientId, clientSecret, code, pending.codeVerifier);
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'unknown';
     return new Response(`token exchange failed: ${msg}`, { status: 500 });
@@ -71,7 +73,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     email: claims.email,
   };
 
-  const sessionToken = await encryptSession(session, env.SESSION_SECRET);
+  const sessionToken = await encryptSession(session, sessionSecret);
 
   const headers = new Headers();
   headers.set('Location', pending.returnTo || '/rewards');

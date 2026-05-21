@@ -1,13 +1,7 @@
-import { getSession, readCookie } from '../../_lib/session';
+import type { APIRoute } from 'astro';
+import { getSession, readCookie } from '@/lib/auth/session';
 
-interface Env {
-  SESSION_SECRET: string;
-  SHOPIFY_STORE_DOMAIN?: string;
-  PUBLIC_SHOPIFY_STORE_DOMAIN?: string;
-  SHOPIFY_STOREFRONT_TOKEN?: string;
-  PUBLIC_SHOPIFY_STOREFRONT_TOKEN?: string;
-  LOYALTY_WORKER_URL?: string;
-}
+export const prerender = false;
 
 const CART_ID_COOKIE = 'sr_cart_id';
 const STOREFRONT_API_VERSION = '2025-01';
@@ -36,38 +30,44 @@ interface RedeemBody {
   rewardId?: unknown;
 }
 
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+function json(body: unknown, status: number): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+export const POST: APIRoute = async ({ request, locals }) => {
+  const env = (locals as { runtime?: { env?: Record<string, string | undefined> } }).runtime?.env
+    ?? (process.env as Record<string, string | undefined>);
+
+  const sessionSecret = env.SESSION_SECRET;
+  if (!sessionSecret) return json({ error: 'auth not configured' }, 500);
+
   // 1. Auth
-  const session = await getSession(request, env.SESSION_SECRET);
-  if (!session) {
-    return Response.json({ error: 'not_authenticated' }, { status: 401 });
-  }
+  const session = await getSession(request, sessionSecret);
+  if (!session) return json({ error: 'not_authenticated' }, 401);
 
   // 2. Parse body
   let body: RedeemBody;
   try {
     body = (await request.json()) as RedeemBody;
   } catch {
-    return Response.json({ error: 'invalid_json' }, { status: 400 });
+    return json({ error: 'invalid_json' }, 400);
   }
   const rewardId = typeof body.rewardId === 'string' ? body.rewardId : null;
   if (!rewardId || !rewardId.startsWith('gid://shopify/Metaobject/')) {
-    return Response.json({ error: 'invalid_reward_id' }, { status: 400 });
+    return json({ error: 'invalid_reward_id' }, 400);
   }
 
-  // 3. Look up the reward
+  // 3. Look up the reward via the loyalty Worker
   const workerBase = env.LOYALTY_WORKER_URL ?? DEFAULT_LOYALTY_WORKER;
   const rewardRes = await fetch(
     `${workerBase}/api/reward?id=${encodeURIComponent(rewardId)}`,
   );
-  if (rewardRes.status === 404) {
-    return Response.json({ error: 'reward_not_found' }, { status: 404 });
-  }
+  if (rewardRes.status === 404) return json({ error: 'reward_not_found' }, 404);
   if (!rewardRes.ok) {
-    return Response.json(
-      { error: 'reward_lookup_failed', upstreamStatus: rewardRes.status },
-      { status: 502 },
-    );
+    return json({ error: 'reward_lookup_failed', upstreamStatus: rewardRes.status }, 502);
   }
   const rewardJson = (await rewardRes.json()) as { reward: Reward };
   const reward = rewardJson.reward;
@@ -77,35 +77,27 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     `${workerBase}/api/customer/balance?customer_id=${encodeURIComponent(session.customerId)}`,
   );
   if (!balRes.ok) {
-    return Response.json(
-      { error: 'balance_lookup_failed', upstreamStatus: balRes.status },
-      { status: 502 },
-    );
+    return json({ error: 'balance_lookup_failed', upstreamStatus: balRes.status }, 502);
   }
   const balance = (await balRes.json()) as { points: number };
   if (balance.points < reward.pointCost) {
-    return Response.json(
+    return json(
       { error: 'insufficient_points', available: balance.points, required: reward.pointCost },
-      { status: 400 },
+      400,
     );
   }
 
-  // 5. free_product reward requires the eligible variant to actually be in cart;
-  // we leave that check to the Discount Function at checkout time (it returns no
-  // operation if the variant isn't present), but we still need a cart.
+  // 5. Need an existing cart to attach the attribute to
   const cartId = readCookie(request.headers.get('Cookie'), CART_ID_COOKIE);
   if (!cartId) {
-    return Response.json(
-      { error: 'no_cart', message: 'Add items to your cart before redeeming.' },
-      { status: 400 },
-    );
+    return json({ error: 'no_cart', message: 'Add items to your cart before redeeming.' }, 400);
   }
 
-  // 6. Set cart attributes
+  // 6. Set cart attributes via Storefront API
   const domain = env.SHOPIFY_STORE_DOMAIN ?? env.PUBLIC_SHOPIFY_STORE_DOMAIN;
   const token = env.SHOPIFY_STOREFRONT_TOKEN ?? env.PUBLIC_SHOPIFY_STOREFRONT_TOKEN;
   if (!domain || !token) {
-    return Response.json({ error: 'storefront_not_configured' }, { status: 500 });
+    return json({ error: 'storefront_not_configured' }, 500);
   }
 
   const attributes: Array<{ key: string; value: string }> = [
@@ -141,32 +133,32 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   };
 
   if (sfJson.errors && sfJson.errors.length > 0) {
-    return Response.json(
+    return json(
       { error: 'storefront_error', detail: sfJson.errors.map((e) => e.message).join('; ') },
-      { status: 502 },
+      502,
     );
   }
 
   const result = sfJson.data?.cartAttributesUpdate;
   if (!result || result.userErrors.length > 0) {
-    return Response.json(
-      { error: 'cart_update_failed', userErrors: result?.userErrors ?? [] },
-      { status: 400 },
-    );
+    return json({ error: 'cart_update_failed', userErrors: result?.userErrors ?? [] }, 400);
   }
   if (!result.cart) {
-    return Response.json({ error: 'cart_not_found' }, { status: 404 });
+    return json({ error: 'cart_not_found' }, 404);
   }
 
-  return Response.json({
-    status: 'ok',
-    checkoutUrl: result.cart.checkoutUrl,
-    reward: {
-      id: reward.id,
-      name: reward.name,
-      pointCost: reward.pointCost,
-      rewardType: reward.rewardType,
-      value: reward.value,
+  return json(
+    {
+      status: 'ok',
+      checkoutUrl: result.cart.checkoutUrl,
+      reward: {
+        id: reward.id,
+        name: reward.name,
+        pointCost: reward.pointCost,
+        rewardType: reward.rewardType,
+        value: reward.value,
+      },
     },
-  });
+    200,
+  );
 };
