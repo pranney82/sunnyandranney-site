@@ -1,8 +1,10 @@
 ---
 import Base from '@/layouts/Base.astro';
-import { getContactStatic, getHoursStatic, formatHoursShort } from '@/lib/settings';
+import { getContactStatic, getHoursStatic, formatHoursShort, getUpcomingHolidays, getTodayHoliday } from '@/lib/settings';
 
 const [contact, hours] = await Promise.all([getContactStatic(), getHoursStatic()]);
+const todayHoliday = hours ? getTodayHoliday(hours) : null;
+const upcomingHolidays = hours ? getUpcomingHolidays(hours) : [];
 
 const address = contact?.address || '109A Oak Street';
 const city = contact?.city || 'Roswell';
@@ -84,6 +86,22 @@ const placeSchema = {
           <h3>Showroom Hours</h3>
           <p>{hoursLine}<br />Closed Sunday &amp; Monday</p>
 
+          {todayHoliday && (
+            <p class="visit__holiday-today">
+              <strong>Today ({todayHoliday.label}):</strong>{' '}
+              {todayHoliday.closed ? 'Closed' : `Special hours apply`}
+            </p>
+          )}
+
+          {upcomingHolidays.length > 0 && (
+            <>
+              <h3>Upcoming Special Hours</h3>
+              <ul class="visit__holidays">
+                {upcomingHolidays.map(h => <li>{h.formatted}</li>)}
+              </ul>
+            </>
+          )}
+
           <h3>Parking &amp; Access</h3>
           <p>
             Free street parking directly in front of the store. Additional free public lots one block north
@@ -107,11 +125,12 @@ const placeSchema = {
 
         <div class="visit__map">
           <iframe
-            src="https://www.google.com/maps?q=109A+Oak+Street+Roswell+GA+30075&output=embed"
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3306.9593635382657!2d-84.36101072419964!3d34.019254019471425!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x88f50d1cd2f8a7a7%3A0xfbc05f757f3bd1c2!2sSunny%20and%20Ranney!5e0!3m2!1sen!2sus!4v1779407841263!5m2!1sen!2sus"
             width="100%"
             height="520"
             style="border:0;border-radius:12px;"
             loading="lazy"
+            allowfullscreen
             referrerpolicy="no-referrer-when-downgrade"
             title="Map of Sunny & Ranney furniture store at 109A Oak Street, Roswell, GA 30075"
           ></iframe>
@@ -169,7 +188,7 @@ const placeSchema = {
     margin: var(--space-md) 0 0.4rem;
   }
   .visit p { line-height: 1.7; margin: 0 0 var(--space-sm); max-width: 62ch; color: #3a3a3a; }
-  .visit a { color: var(--color-cyan); }
+  .visit a:not(.visit__btn) { color: var(--color-cyan); }
 
   .visit__hero {
     padding: clamp(3rem, 9vh, 6rem) 0 clamp(2rem, 5vh, 3rem);
@@ -198,6 +217,21 @@ const placeSchema = {
   }
 
   .visit__addr { font-size: 1.05rem; }
+
+  .visit__holiday-today {
+    padding: 0.75rem 1rem;
+    background: #FFF8E5;
+    border-left: 3px solid var(--color-yellow, #F5C518);
+    border-radius: 4px;
+    font-size: 0.95rem;
+  }
+  .visit__holidays {
+    margin: 0 0 var(--space-sm);
+    padding-left: 1.2rem;
+    color: #3a3a3a;
+    line-height: 1.7;
+  }
+  .visit__holidays li { font-size: 0.95rem; }
 
   .visit__ctas { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: var(--space-md); }
   .visit__btn {
