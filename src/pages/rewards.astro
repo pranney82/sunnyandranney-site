@@ -1,0 +1,292 @@
+---
+import Base from '@/layouts/Base.astro';
+---
+
+<Base
+  title="Rewards — Sunny & Ranney"
+  description="Your Sunny & Ranney loyalty points, tier, and redemption options."
+>
+  <section class="rewards">
+    <div class="container rewards__inner">
+      <span class="label">Loyalty</span>
+      <h1 class="rewards__title">Your Rewards</h1>
+
+      <div id="rewards-loading" class="rewards__state">
+        <p>Loading your rewards…</p>
+      </div>
+
+      <div id="rewards-signed-out" class="rewards__state" hidden>
+        <p class="rewards__intro">Sign in to view your points balance and redeem rewards.</p>
+        <a class="rewards__cta" href="/api/auth/login">Sign in</a>
+      </div>
+
+      <div id="rewards-signed-in" class="rewards__state" hidden>
+        <p class="rewards__intro" id="rewards-greeting">Welcome back.</p>
+
+        <div class="rewards__grid">
+          <div class="rewards__card">
+            <span class="rewards__card-label">Available points</span>
+            <span class="rewards__card-value" id="rewards-points">—</span>
+          </div>
+          <div class="rewards__card">
+            <span class="rewards__card-label">Lifetime earned</span>
+            <span class="rewards__card-value" id="rewards-lifetime">—</span>
+          </div>
+          <div class="rewards__card">
+            <span class="rewards__card-label">Your tier</span>
+            <span class="rewards__card-value" id="rewards-tier">—</span>
+          </div>
+        </div>
+
+        <p class="rewards__earn">
+          Earn 1 point for every $1 spent. Silver tier (500 lifetime) earns 1.25×, Gold tier (2000 lifetime) earns 1.5×.
+        </p>
+
+        <h2 class="rewards__redeem-title">Redeem your points</h2>
+        <p class="rewards__redeem-sub">Pick a reward below. You need items in your cart to redeem.</p>
+
+        <div class="rewards__redeem-grid" id="rewards-redeem-tiles"></div>
+
+        <div id="rewards-redeem-msg" class="rewards__msg" hidden></div>
+
+        <p class="rewards__signout">
+          <a href="/api/auth/logout">Sign out</a>
+        </p>
+      </div>
+
+      <div id="rewards-error" class="rewards__state" hidden>
+        <p>Something went wrong loading your rewards. Please refresh, or <a href="/api/auth/login">sign in again</a>.</p>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<script>
+  interface Reward {
+    id: string;
+    handle: string;
+    name: string;
+    pointCost: number;
+    rewardType: 'fixed_amount' | 'percentage' | 'free_product' | 'free_shipping';
+    value: number;
+    eligibleVariantId: string | null;
+  }
+
+  async function init() {
+    const sections = {
+      loading: document.getElementById('rewards-loading'),
+      signedOut: document.getElementById('rewards-signed-out'),
+      signedIn: document.getElementById('rewards-signed-in'),
+      error: document.getElementById('rewards-error'),
+    };
+    const show = (key: keyof typeof sections) => {
+      for (const [k, el] of Object.entries(sections)) {
+        if (!el) continue;
+        el.hidden = k !== key;
+      }
+    };
+
+    try {
+      const meRes = await fetch('/api/auth/me', { credentials: 'same-origin' });
+      if (meRes.status === 401) {
+        show('signedOut');
+        return;
+      }
+      if (!meRes.ok) throw new Error(`auth/me ${meRes.status}`);
+      const me = await meRes.json();
+
+      const greeting = document.getElementById('rewards-greeting');
+      if (greeting && me.email) greeting.textContent = `Signed in as ${me.email}.`;
+
+      const [balRes, catalogRes] = await Promise.all([
+        fetch('/api/loyalty/balance', { credentials: 'same-origin' }),
+        fetch('/api/loyalty/rewards'),
+      ]);
+      if (!balRes.ok) throw new Error(`balance ${balRes.status}`);
+      if (!catalogRes.ok) throw new Error(`catalog ${catalogRes.status}`);
+
+      const bal = await balRes.json();
+      const catalog = await catalogRes.json() as { rewards: Reward[] };
+
+      const fmt = (n: number) => n.toLocaleString('en-US');
+      const setText = (id: string, value: string) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      };
+      setText('rewards-points', fmt(bal.points ?? 0));
+      setText('rewards-lifetime', fmt(bal.lifetime_earned ?? 0));
+      setText('rewards-tier', bal.vip_tier ?? 'Bronze');
+
+      renderRewardTiles(bal.points ?? 0, catalog.rewards);
+      show('signedIn');
+    } catch (err) {
+      console.error('[rewards]', err);
+      show('error');
+    }
+  }
+
+  function renderRewardTiles(available: number, rewards: Reward[]) {
+    const wrap = document.getElementById('rewards-redeem-tiles');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+
+    if (rewards.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'rewards__redeem-empty';
+      empty.textContent = 'No rewards available yet. Check back soon.';
+      wrap.appendChild(empty);
+      return;
+    }
+
+    for (const reward of rewards) {
+      const affordable = available >= reward.pointCost;
+      const tile = document.createElement('button');
+      tile.type = 'button';
+      tile.className = 'rewards__redeem-tile';
+      tile.disabled = !affordable;
+      tile.dataset.rewardId = reward.id;
+
+      tile.innerHTML = `
+        <span class="rewards__redeem-amount">${escapeHtml(reward.name)}</span>
+        <span class="rewards__redeem-cost">${reward.pointCost.toLocaleString('en-US')} points</span>
+      `;
+      tile.addEventListener('click', () => onRedeem(reward));
+      wrap.appendChild(tile);
+    }
+  }
+
+  async function onRedeem(reward: Reward) {
+    const msg = document.getElementById('rewards-redeem-msg');
+    if (!msg) return;
+    setMessage(msg, 'Applying redemption…', 'info');
+
+    try {
+      const res = await fetch('/api/loyalty/redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ rewardId: reward.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        const text = data?.message ?? errorCopy(data?.error) ?? 'Could not apply redemption.';
+        setMessage(msg, text, 'error');
+        return;
+      }
+      setMessage(msg, `${reward.name} applied. Redirecting to checkout…`, 'success');
+      setTimeout(() => { window.location.href = data.checkoutUrl; }, 700);
+    } catch (err) {
+      console.error('[redeem]', err);
+      setMessage(msg, 'Network error. Please try again.', 'error');
+    }
+  }
+
+  function errorCopy(code: string | undefined): string | null {
+    switch (code) {
+      case 'no_cart': return 'Add items to your cart before redeeming.';
+      case 'insufficient_points': return 'Not enough points for that reward.';
+      case 'cart_not_found': return 'Your cart has expired. Add items again.';
+      case 'not_authenticated': return 'Please sign in again.';
+      case 'reward_not_found': return 'That reward is no longer available.';
+      default: return null;
+    }
+  }
+
+  function setMessage(el: HTMLElement, text: string, kind: 'info' | 'success' | 'error') {
+    el.hidden = false;
+    el.textContent = text;
+    el.dataset.kind = kind;
+  }
+
+  function escapeHtml(s: string): string {
+    return s.replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c] as string));
+  }
+
+  init();
+</script>
+
+<style>
+  .rewards { padding: 4rem 0; }
+  .rewards__inner { max-width: 880px; margin: 0 auto; }
+  .label { display: inline-block; font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7; }
+  .rewards__title { font-size: clamp(2rem, 5vw, 3rem); margin: 0.5rem 0 2rem; }
+  .rewards__state { margin-top: 1rem; }
+  .rewards__intro { font-size: 1.1rem; margin-bottom: 1.25rem; }
+  .rewards__cta {
+    display: inline-block;
+    padding: 0.85rem 1.6rem;
+    background: #2b2b2b;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 600;
+  }
+  .rewards__cta:hover { background: #000; }
+  .rewards__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0 2rem;
+  }
+  .rewards__card {
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 8px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    background: #fff;
+  }
+  .rewards__card-label { font-size: 0.85rem; opacity: 0.7; }
+  .rewards__card-value { font-size: 1.8rem; font-weight: 700; }
+  .rewards__earn { opacity: 0.8; margin: 0.75rem 0 2rem; }
+
+  .rewards__redeem-title { font-size: 1.4rem; margin: 1rem 0 0.25rem; }
+  .rewards__redeem-sub { opacity: 0.75; margin: 0 0 1.25rem; font-size: 0.95rem; }
+  .rewards__redeem-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  .rewards__redeem-tile {
+    appearance: none;
+    border: 1px solid rgba(0,0,0,0.15);
+    border-radius: 8px;
+    padding: 1.1rem 0.75rem;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: center;
+    transition: border-color 0.15s, background 0.15s;
+    font-family: inherit;
+  }
+  .rewards__redeem-tile:hover:not(:disabled) {
+    border-color: #2b2b2b;
+    background: #faf7f2;
+  }
+  .rewards__redeem-tile:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .rewards__redeem-amount { font-size: 1.05rem; font-weight: 700; text-align: center; }
+  .rewards__redeem-cost { font-size: 0.85rem; opacity: 0.7; }
+  .rewards__redeem-empty { opacity: 0.75; font-style: italic; }
+
+  .rewards__msg {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    margin: 0.75rem 0;
+    font-size: 0.95rem;
+  }
+  .rewards__msg[data-kind="info"] { background: #f0f0f0; }
+  .rewards__msg[data-kind="success"] { background: #e7f5ec; color: #1d6b3a; }
+  .rewards__msg[data-kind="error"] { background: #fce8e6; color: #a8221b; }
+
+  .rewards__signout { margin-top: 2rem; font-size: 0.95rem; }
+  .rewards__signout a { color: #555; }
+</style>
