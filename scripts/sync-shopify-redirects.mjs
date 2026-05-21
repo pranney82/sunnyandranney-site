@@ -183,7 +183,7 @@ async function main() {
 
   for (const handle of handles) {
     const path = `/products/${handle}`;
-    const target = `${CUSTOM_DOMAIN}/products/${handle}`;
+    const target = `${CUSTOM_DOMAIN}/shop/${handle}/`;
     desiredPaths.add(path);
 
     const current = existing.get(path);
