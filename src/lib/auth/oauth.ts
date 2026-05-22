@@ -70,17 +70,27 @@ export async function exchangeCodeForTokens(
   code: string,
   codeVerifier: string,
 ): Promise<TokenResponse> {
+  // Shopify Customer Account API confidential-client token exchange requires:
+  //   - `Origin` header matching the storefront origin
+  //   - HTTP Basic auth header with client_id:client_secret (don't put secret in body)
+  //   - grant_type, redirect_uri, code, code_verifier in form body
   const params = new URLSearchParams();
   params.set('grant_type', 'authorization_code');
   params.set('client_id', clientId);
-  params.set('client_secret', clientSecret);
   params.set('redirect_uri', REDIRECT_URI);
   params.set('code', code);
   params.set('code_verifier', codeVerifier);
 
+  const basicAuth = btoa(`${clientId}:${clientSecret}`);
+
   const res = await fetch(TOKEN_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Accept: 'application/json',
+      Authorization: `Basic ${basicAuth}`,
+      Origin: 'https://sunnyandranney.com',
+    },
     body: params.toString(),
   });
 
