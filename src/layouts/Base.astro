@@ -119,7 +119,7 @@ const isShopPage = Astro.url.pathname.startsWith('/shop') || Astro.url.pathname.
     </main>
     <VisitStrip contact={contact} hours={footerHours} holidays={holidays} />
     <EmailCapture />
-    <Footer contact={contact} />
+    <Footer contact={contact} hours={hours} />
     <CartDrawer transition:persist />
 
     <StaciChat transition:persist />

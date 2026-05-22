@@ -1,11 +1,13 @@
 ---
-import type { ContactInfo } from '@/lib/settings';
+import type { ContactInfo, StoreHours } from '@/lib/settings';
+import { getTodayHoliday, getUpcomingHolidays, formatHoursShort } from '@/lib/settings';
 
 interface Props {
   contact?: ContactInfo | null;
+  hours?: StoreHours | null;
 }
 
-const { contact } = Astro.props;
+const { contact, hours } = Astro.props;
 const currentYear = new Date().getFullYear();
 
 const phone = contact?.phone || '678.888.5140';
@@ -13,6 +15,26 @@ const email = contact?.email || 'info@sunnyandranney.com';
 const instagramUrl = contact?.instagramUrl || 'https://www.instagram.com/sunnyandranney/';
 const facebookUrl = contact?.facebookUrl || 'https://www.facebook.com/sunnyandranney/';
 const phoneDigits = phone.replace(/\D/g, '');
+
+const hoursLine = hours ? formatHoursShort(hours) : null;
+
+// Compact holiday notice: today's holiday, else the next one within 7 days.
+const todayHoliday = hours ? getTodayHoliday(hours) : null;
+let holidayNotice: string | null = null;
+if (todayHoliday) {
+  holidayNotice = todayHoliday.closed
+    ? `Today: Closed for ${todayHoliday.label}`
+    : `Today: ${todayHoliday.label} hours apply`;
+} else if (hours) {
+  const [next] = getUpcomingHolidays(hours, 1);
+  if (next) {
+    const sevenOut = new Date();
+    sevenOut.setDate(sevenOut.getDate() + 7);
+    if (next.date <= sevenOut.toISOString().split('T')[0]) {
+      holidayNotice = next.formatted;
+    }
+  }
+}
 ---
 
 <footer class="footer">
@@ -105,7 +127,13 @@ const phoneDigits = phone.replace(/\D/g, '');
           <ul class="footer__nav">
             <li><a href={`tel:${phoneDigits}`}>{phone}</a></li>
             <li><a href={`mailto:${email}`}>{email}</a></li>
-            <li><a href="/visit/">Hours &amp; Directions</a></li>
+            {holidayNotice && (
+              <li class="footer__notice"><span class="footer__badge">{holidayNotice}</span></li>
+            )}
+            {hoursLine && (
+              <li class="footer__hours-line">{hoursLine}</li>
+            )}
+            <li><a href="/visit/">Directions &amp; Map</a></li>
           </ul>
         </nav>
       </details>
@@ -333,6 +361,33 @@ const phoneDigits = phone.replace(/\D/g, '');
 
   .footer__nav a:hover {
     color: var(--color-cream);
+  }
+
+  .footer__notice {
+    min-height: 0;
+    padding: 0;
+  }
+
+  .footer__badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--color-gold);
+    background: color-mix(in srgb, var(--color-gold) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-gold) 40%, transparent);
+    border-radius: 999px;
+    padding: 0.25rem 0.65rem;
+    line-height: 1.3;
+  }
+
+  .footer__hours-line {
+    color: #A0A09D;
+    font-size: 0.85rem;
+    padding: 0.25rem 0;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
   }
 
   .footer__nav a:focus-visible {
