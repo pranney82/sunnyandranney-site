@@ -162,11 +162,24 @@ export async function getHoursStatic(): Promise<StoreHours | null> {
   const googleHours = await fetchGoogleHours();
   if (googleHours) {
     const result = storeHoursSchema.safeParse(googleHours);
-    if (result.success) return result.data;
+    if (result.success) return enrichHolidayLabels(result.data);
     console.warn('[settings] Google hours failed validation, falling back to hours.json');
   }
   // Fall back to committed hours.json
-  return getSettingValidated('hours', storeHoursSchema);
+  const fallback = await getSettingValidated('hours', storeHoursSchema);
+  return fallback ? enrichHolidayLabels(fallback) : null;
+}
+
+/** Replace date-like holiday labels (e.g. "Monday, May 25") with US holiday names where applicable. */
+function enrichHolidayLabels(hours: StoreHours): StoreHours {
+  return {
+    ...hours,
+    holidays: hours.holidays.map(h => {
+      if (!isDateLikeLabel(h.label, h.date)) return h;
+      const name = getUSHolidayName(h.date);
+      return name ? { ...h, label: name } : h;
+    }),
+  };
 }
 
 export function getCollectionsStatic() {
@@ -250,8 +263,50 @@ export function getUpcomingHolidays(hours: StoreHours, limit = 3): Array<StoreHo
       const d = new Date(h.date + 'T12:00:00');
       const dayLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       const timeLabel = h.closed ? 'Closed' : `${formatTime(h.open)}–${formatTime(h.close)}`;
-      return { ...h, formatted: `${h.label} (${dayLabel}): ${timeLabel}` };
+      const prefix = isDateLikeLabel(h.label, h.date) ? h.label : `${h.label} (${dayLabel})`;
+      return { ...h, formatted: `${prefix}: ${timeLabel}` };
     });
+}
+
+/** True when the holiday label is just a formatted date (no real holiday name from Google). */
+function isDateLikeLabel(label: string, dateStr: string): boolean {
+  if (!label) return true;
+  const d = new Date(dateStr + 'T12:00:00');
+  const variants = [
+    d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
+    d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+    d.toLocaleDateString('en-US', { month: 'long', day: 'numeric' }),
+    d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+  ];
+  return variants.some(v => v.toLowerCase() === label.toLowerCase());
+}
+
+/** US holiday name for a given YYYY-MM-DD date, or null. Covers federal + common retail holidays. */
+function getUSHolidayName(dateStr: string): string | null {
+  const [, m, d] = dateStr.split('-').map(Number);
+  const dow = new Date(dateStr + 'T12:00:00').getDay(); // 0=Sun..6=Sat
+
+  // Fixed-date
+  if (m === 1 && d === 1) return "New Year's Day";
+  if (m === 6 && d === 19) return 'Juneteenth';
+  if (m === 7 && d === 4) return 'Independence Day';
+  if (m === 11 && d === 11) return 'Veterans Day';
+  if (m === 12 && d === 24) return 'Christmas Eve';
+  if (m === 12 && d === 25) return 'Christmas Day';
+  if (m === 12 && d === 31) return "New Year's Eve";
+
+  // Floating weekday
+  if (m === 1 && dow === 1 && d >= 15 && d <= 21) return 'MLK Day';
+  if (m === 2 && dow === 1 && d >= 15 && d <= 21) return "Presidents' Day";
+  if (m === 5 && dow === 0 && d >= 8 && d <= 14) return "Mother's Day";
+  if (m === 5 && dow === 1 && d >= 25 && d <= 31) return 'Memorial Day';
+  if (m === 6 && dow === 0 && d >= 15 && d <= 21) return "Father's Day";
+  if (m === 9 && dow === 1 && d <= 7) return 'Labor Day';
+  if (m === 10 && dow === 1 && d >= 8 && d <= 14) return 'Columbus Day';
+  if (m === 11 && dow === 4 && d >= 22 && d <= 28) return 'Thanksgiving';
+  if (m === 11 && dow === 5 && d >= 23 && d <= 29) return 'Black Friday';
+
+  return null;
 }
 
 /** Format a single holiday for inline display */
