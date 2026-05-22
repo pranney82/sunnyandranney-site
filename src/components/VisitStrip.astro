@@ -111,29 +111,6 @@ const mapQuery = `${address}+${city}+${state}+${zip}`.replace(/\s+/g, '+');
     overflow: hidden;
   }
 
-  /* Subtle warm glow */
-  .visit-strip::before {
-    content: '';
-    position: absolute;
-    top: -40%;
-    left: -10%;
-    width: 50%;
-    height: 180%;
-    background: radial-gradient(circle, rgba(255, 212, 0, 0.04) 0%, transparent 60%);
-    pointer-events: none;
-  }
-
-  .visit-strip::after {
-    content: '';
-    position: absolute;
-    bottom: -30%;
-    right: -5%;
-    width: 40%;
-    height: 160%;
-    background: radial-gradient(circle, rgba(75, 149, 180, 0.06) 0%, transparent 55%);
-    pointer-events: none;
-  }
-
   .visit-strip__inner {
     display: grid;
     grid-template-columns: 1fr;
@@ -224,11 +201,16 @@ const mapQuery = `${address}+${city}+${state}+${zip}`.replace(/\s+/g, '+');
     }
     .visit-strip__tagline {
       font-size: 0.82rem;
-      margin-bottom: var(--space-sm);
+      margin-bottom: var(--space-md);
       max-width: none;
     }
     .visit-strip__details {
-      display: none;
+      gap: var(--space-xs);
+      margin-bottom: var(--space-md);
+    }
+    .visit-strip__detail p,
+    .visit-strip__detail a {
+      font-size: 0.85rem;
     }
     .visit-strip__btn {
       width: 100%;
