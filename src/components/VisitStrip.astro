@@ -334,16 +334,35 @@ const mapQuery = `${address}+${city}+${state}+${zip}`.replace(/\s+/g, '+');
   }
 
   .visit-strip__holidays {
-    margin-top: 0.35rem;
-    font-size: 0.82rem;
-    color: var(--color-gold);
-    opacity: 0.85;
-    line-height: 1.5;
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    line-height: 1.4;
   }
 
-  .visit-strip__holidays p {
-    color: var(--color-gold);
+  .visit-strip__holidays :global(p) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    align-self: flex-start;
+    margin: 0;
+    padding: 0.35rem 0.65rem;
     font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-charcoal);
+    background: var(--color-gold);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(255, 212, 0, 0.25);
+  }
+
+  .visit-strip__holidays :global(p)::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-charcoal);
+    flex-shrink: 0;
   }
 
   /* ─── Button ──────────────────────────── */
@@ -399,21 +418,35 @@ const mapQuery = `${address}+${city}+${state}+${zip}`.replace(/\s+/g, '+');
       .sort((a: any, b: any) => a.date.localeCompare(b.date))
       .slice(0, 2);
 
+    function isDateLikeLabel(label: string, dateStr: string): boolean {
+      if (!label) return true;
+      const d = new Date(dateStr + 'T12:00:00');
+      const variants = [
+        d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
+        d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+        d.toLocaleDateString('en-US', { month: 'long', day: 'numeric' }),
+        d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      ];
+      return variants.some(v => v.toLowerCase() === label.toLowerCase());
+    }
+
     const lines: string[] = [];
     if (todayHoliday) {
+      const suffix = isDateLikeLabel(todayHoliday.label, todayHoliday.date) ? '' : ` (${todayHoliday.label})`;
       if (todayHoliday.closed) {
-        lines.push(`Today: Closed for ${todayHoliday.label}`);
+        lines.push(`Today: Closed${suffix}`);
       } else {
-        lines.push(`Today: ${todayHoliday.label} ${formatTime(todayHoliday.open)}\u2013${formatTime(todayHoliday.close)}`);
+        lines.push(`Today: ${formatTime(todayHoliday.open)}\u2013${formatTime(todayHoliday.close)}${suffix}`);
       }
     }
     for (const h of upcoming) {
       const d = new Date(h.date + 'T12:00:00');
-      const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      const suffix = isDateLikeLabel(h.label, h.date) ? '' : ` (${h.label})`;
       if (h.closed) {
-        lines.push(`${label}: Closed (${h.label})`);
+        lines.push(`${label}: Closed${suffix}`);
       } else {
-        lines.push(`${label}: ${h.label} ${formatTime(h.open)}\u2013${formatTime(h.close)}`);
+        lines.push(`${label}: ${formatTime(h.open)}\u2013${formatTime(h.close)}${suffix}`);
       }
     }
 
