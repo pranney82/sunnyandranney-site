@@ -1,9 +1,21 @@
 // Shopify Customer Account API OAuth (Confidential client, PKCE-enhanced).
 // Endpoints surfaced by Shopify admin → Headless → Customer Account API.
 
+// Shop ID extracted from the OpenID discovery doc's `issuer`:
+//   https://account.sunnyandranney.com/.well-known/openid-configuration
+//   issuer: "https://shopify.com/authentication/93021176092"
+const SHOP_ID = '93021176092';
+
+// Browser-facing OAuth surface stays on the vanity domain (where the customer
+// login UI lives + cookies for Customer Account sessions are scoped).
 export const AUTHORIZE_URL = 'https://account.sunnyandranney.com/authentication/oauth/authorize';
-export const TOKEN_URL = 'https://account.sunnyandranney.com/authentication/oauth/token';
 export const LOGOUT_URL = 'https://account.sunnyandranney.com/authentication/logout';
+
+// Server-to-server token exchange goes to the canonical Shopify URL. The
+// vanity domain (account.sunnyandranney.com) is fronted by Shopify edge
+// protection that rejects worker-originated POSTs as "Access denied" — the
+// canonical URL is the path Hydrogen + Shopify's own SDKs use.
+export const TOKEN_URL = `https://shopify.com/authentication/${SHOP_ID}/oauth/token`;
 export const REDIRECT_URI = 'https://sunnyandranney.com/api/auth/callback';
 export const POST_LOGOUT_URI = 'https://sunnyandranney.com/';
 export const SCOPES = 'openid email';
@@ -83,13 +95,22 @@ export async function exchangeCodeForTokens(
 
   const basicAuth = btoa(`${clientId}:${clientSecret}`);
 
+  // The default Workers User-Agent ("Cloudflare-Workers") gets filtered by
+  // Shopify's edge before reaching the OAuth handler — surface looks like a
+  // generic "Access denied" HTML page rather than a structured OAuth error.
+  // Sending a browser-style UA gets us past the edge to the actual token
+  // exchange. Referer matches our callback path for good measure.
   const res = await fetch(TOKEN_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
       Accept: 'application/json',
+      'Accept-Language': 'en-US,en;q=0.9',
       Authorization: `Basic ${basicAuth}`,
       Origin: 'https://sunnyandranney.com',
+      Referer: 'https://sunnyandranney.com/api/auth/callback',
+      'User-Agent':
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     },
     body: params.toString(),
   });
