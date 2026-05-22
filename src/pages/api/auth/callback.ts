@@ -64,12 +64,20 @@ export const GET: APIRoute = async ({ request, locals }) => {
     return new Response('nonce mismatch', { status: 403 });
   }
 
+  // Shopify Customer Account API puts the bare numeric customer ID in `sub`
+  // (sometimes serialized as a JSON number rather than a string), but the
+  // Admin API GraphQL `customer(id: $id)` query requires the full GID format.
+  const rawSub = String(claims.sub);
+  const customerGid = rawSub.startsWith('gid://')
+    ? rawSub
+    : `gid://shopify/Customer/${rawSub}`;
+
   const session: SessionData = {
     accessToken: tokens.access_token,
     refreshToken: tokens.refresh_token,
     idToken: tokens.id_token,
     expiresAt: Math.floor(Date.now() / 1000) + tokens.expires_in,
-    customerId: claims.sub,
+    customerId: customerGid,
     email: claims.email,
   };
 
