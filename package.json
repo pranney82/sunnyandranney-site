@@ -11,6 +11,7 @@
     "deploy:hours-sync": "wrangler deploy --config workers/hours-sync/wrangler.toml",
     "deploy:deploy-coordinator": "wrangler deploy --config workers/deploy-coordinator/wrangler.toml",
     "deploy:shop-redirect": "wrangler deploy --config workers/shop-redirect/wrangler.toml",
+    "deploy:loyalty": "wrangler deploy --config workers/loyalty/wrangler.toml",
     "sync-redirects": "node scripts/sync-shopify-redirects.mjs",
     "bulk-publish": "node scripts/bulk-publish-products.mjs"
   },
@@ -23,7 +24,8 @@
     "lightningcss": "^1.29.1",
     "preact": "^10.29.2",
     "puppeteer": "^24.40.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "wrangler": "^4.59.2"
   },
   "devDependencies": {
     "playwright": "^1.59.1"

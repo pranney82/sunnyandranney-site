@@ -1,0 +1,205 @@
+# Sunny & Ranney Loyalty App
+# Custom (install-only) Shopify app housing loyalty data model, discount function,
+# POS UI extension, and customer account UI extension.
+# See project_loyalty_rewards.md memory for full architecture context.
+
+client_id = "93261a3e04788b6a2c4ed81e2454bc84"
+name = "sunny-ranney-loyalty"
+handle = "sunnyandranney-rewards"
+application_url = "https://shopify.dev/apps/default-app-home"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+
+[access_scopes]
+scopes = "read_customers,write_customers,read_orders,read_discounts,write_discounts,read_metaobjects,write_metaobjects,read_metaobject_definitions,write_metaobject_definitions"
+
+[auth]
+redirect_urls = [ "https://loyalty.soard.workers.dev/auth/callback" ]
+
+[webhooks]
+api_version = "2026-04"
+
+  [[webhooks.subscriptions]]
+  topics = [ "orders/paid" ]
+  uri = "https://loyalty.soard.workers.dev/webhooks/orders-paid"
+
+  [[webhooks.subscriptions]]
+  topics = [ "refunds/create" ]
+  uri = "https://loyalty.soard.workers.dev/webhooks/refunds-create"
+
+[pos]
+embedded = false
+
+# ---------------------------------------------------------------------------
+# Customer metafields (app-owned, namespace $app:loyalty)
+# ---------------------------------------------------------------------------
+
+[customer.metafields.loyalty.points]
+name = "Loyalty Points"
+description = "Current redeemable loyalty point balance"
+type = "number_integer"
+access.admin = "merchant_read_write"
+access.storefront = "none"
+access.customer_account = "read"
+
+[customer.metafields.loyalty.lifetime_earned]
+name = "Lifetime Points Earned"
+description = "Total points earned across the customer's lifetime — drives VIP tier"
+type = "number_integer"
+access.admin = "merchant_read_write"
+access.storefront = "none"
+access.customer_account = "read"
+
+[customer.metafields.loyalty.vip_tier]
+name = "VIP Tier"
+description = "Current loyalty tier name (Bronze, Silver, Gold)"
+type = "single_line_text_field"
+access.admin = "merchant_read_write"
+access.storefront = "none"
+access.customer_account = "read"
+
+[customer.metafields.loyalty.birthday]
+name = "Birthday"
+description = "Customer birthday for bonus campaigns (optional)"
+type = "date"
+access.admin = "merchant_read_write"
+access.storefront = "none"
+access.customer_account = "read_write"
+
+# ---------------------------------------------------------------------------
+# Metaobjects (app-owned)
+# ---------------------------------------------------------------------------
+
+[metaobjects.app.loyalty_transaction]
+name = "Loyalty Transaction"
+access.admin = "merchant_read_write"
+access.storefront = "public_read"
+
+  [metaobjects.app.loyalty_transaction.fields.customer]
+  name = "Customer"
+  type = "customer_reference"
+  required = true
+
+  [metaobjects.app.loyalty_transaction.fields.type]
+  name = "Type"
+  type = "single_line_text_field"
+  required = true
+  validations.choices = [ "earn", "redeem", "refund", "expire", "adjust" ]
+
+  [metaobjects.app.loyalty_transaction.fields.amount]
+  name = "Amount"
+  type = "number_integer"
+  required = true
+
+  [metaobjects.app.loyalty_transaction.fields.order]
+  name = "Order"
+  type = "order_reference"
+  required = false
+
+  [metaobjects.app.loyalty_transaction.fields.balance_after]
+  name = "Balance After"
+  type = "number_integer"
+  required = true
+
+  [metaobjects.app.loyalty_transaction.fields.timestamp]
+  name = "Timestamp"
+  type = "date_time"
+  required = true
+
+  [metaobjects.app.loyalty_transaction.fields.notes]
+  name = "Notes"
+  type = "multi_line_text_field"
+  required = false
+
+[metaobjects.app.loyalty_tier]
+name = "Loyalty Tier"
+access.admin = "merchant_read_write"
+access.storefront = "public_read"
+
+  [metaobjects.app.loyalty_tier.fields.name]
+  name = "Name"
+  type = "single_line_text_field"
+  required = true
+
+  [metaobjects.app.loyalty_tier.fields.threshold]
+  name = "Threshold"
+  description = "Lifetime points required to reach this tier"
+  type = "number_integer"
+  required = true
+  validations.min = "0"
+
+  [metaobjects.app.loyalty_tier.fields.earn_multiplier]
+  name = "Earn Multiplier"
+  type = "number_decimal"
+  required = true
+
+  [metaobjects.app.loyalty_tier.fields.perks]
+  name = "Perks"
+  type = "multi_line_text_field"
+  required = false
+
+[metaobjects.app.bonus_campaign]
+name = "Bonus Campaign"
+access.admin = "merchant_read_write"
+access.storefront = "none"
+
+  [metaobjects.app.bonus_campaign.fields.name]
+  name = "Name"
+  type = "single_line_text_field"
+  required = true
+
+  [metaobjects.app.bonus_campaign.fields.start_date]
+  name = "Start Date"
+  type = "date_time"
+  required = true
+
+  [metaobjects.app.bonus_campaign.fields.end_date]
+  name = "End Date"
+  type = "date_time"
+  required = true
+
+  [metaobjects.app.bonus_campaign.fields.multiplier]
+  name = "Multiplier"
+  type = "number_decimal"
+  required = true
+
+  [metaobjects.app.bonus_campaign.fields.eligible_product_ids]
+  name = "Eligible Products"
+  type = "list.product_reference"
+  required = false
+
+[metaobjects.app.loyalty_reward]
+name = "Loyalty Reward"
+access.admin = "merchant_read_write"
+access.storefront = "public_read"
+
+  [metaobjects.app.loyalty_reward.fields.name]
+  name = "Name"
+  type = "single_line_text_field"
+  required = true
+
+  [metaobjects.app.loyalty_reward.fields.point_cost]
+  name = "Point Cost"
+  type = "number_integer"
+  required = true
+  validations.min = "0"
+
+  [metaobjects.app.loyalty_reward.fields.reward_type]
+  name = "Reward Type"
+  type = "single_line_text_field"
+  required = true
+  validations.choices = [ "fixed_amount", "percentage", "free_product", "free_shipping" ]
+
+  [metaobjects.app.loyalty_reward.fields.value]
+  name = "Value"
+  description = "Amount in store currency for fixed_amount, or percent (0-100) for percentage"
+  type = "number_decimal"
+  required = true
+
+  [metaobjects.app.loyalty_reward.fields.eligible_variant]
+  name = "Eligible Variant"
+  description = "Only used when reward_type = free_product"
+  type = "variant_reference"
+  required = false

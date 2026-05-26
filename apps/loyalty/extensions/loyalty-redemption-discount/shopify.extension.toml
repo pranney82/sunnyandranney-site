@@ -1,0 +1,22 @@
+api_version = "2026-04"
+
+[[extensions]]
+name = "Loyalty Redemption Discount"
+handle = "loyalty-redemption-discount"
+type = "function"
+uid = "00cf1b94-bc77-92ef-bbfb-536f6223e861e3d3b916"
+description = "Converts loyalty_redeem_points cart attribute into a fixed-amount order discount (100 pts = $1)."
+
+  [[extensions.targeting]]
+  target = "cart.lines.discounts.generate.run"
+  input_query = "src/cart_lines_discounts_generate_run.graphql"
+  export = "cart-lines-discounts-generate-run"
+
+  [[extensions.targeting]]
+  target = "cart.delivery-options.discounts.generate.run"
+  input_query = "src/cart_delivery_options_discounts_generate_run.graphql"
+  export = "cart-delivery-options-discounts-generate-run"
+
+  [extensions.build]
+  command = ""
+  path = "dist/function.wasm"

@@ -1,0 +1,16 @@
+{
+  "name": "Loyalty status",
+  "block_heading": "Loyalty",
+  "loading": "Loading loyalty balance…",
+  "no_loyalty": "Customer hasn't earned loyalty points yet.",
+  "error": "Could not load loyalty data.",
+  "points_label": "Available points",
+  "lifetime_label": "Lifetime earned",
+  "tier_label": "Tier",
+  "recent_transactions": "Recent activity",
+  "no_transactions": "No transactions yet.",
+  "tx_earn": "Earned",
+  "tx_redeem": "Redeemed",
+  "tx_adjust": "Adjustment",
+  "tx_refund_clawback": "Refund clawback"
+}

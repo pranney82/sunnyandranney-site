@@ -1,0 +1,23 @@
+api_version = "2025-10"
+
+[[extensions]]
+type = "ui_extension"
+# Change the merchant-facing name of the extension in locales/en.default.json
+name = "Sunny & Ranney Loyalty (POS)"
+uid = "1e1dd294-1019-d41a-b07f-d4b4aaff9d7d259dbd44"
+handle = "loyalty-pos"
+description = "POS tile and modal for viewing customer loyalty balance and applying point redemptions at checkout."
+
+# module: file that contains your extension’s source code
+# target: location where your extension appears in POS
+[[extensions.targeting]]
+module = "./src/Tile.jsx"
+target = "pos.home.tile.render"
+
+[[extensions.targeting]]
+module = "./src/Modal.jsx"
+target = "pos.home.modal.render"
+
+[[extensions.targeting]]
+module = "./src/CustomerBlock.jsx"
+target = "pos.customer-details.block.render"

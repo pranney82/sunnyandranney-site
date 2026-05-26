@@ -1,0 +1,17 @@
+{
+  "name": "Adjust loyalty points",
+  "title": "Adjust loyalty points",
+  "loading": "Loading customer balance…",
+  "current_balance": "Current balance",
+  "current_tier": "Current tier",
+  "delta_label": "Point adjustment (+ or –)",
+  "delta_help": "Positive to add, negative to subtract.",
+  "reason_label": "Reason",
+  "reason_placeholder": "e.g. Goodwill credit, refund makeup, manual correction",
+  "submit": "Apply adjustment",
+  "submitting": "Applying…",
+  "success": "Points adjusted. New balance: {{balance}}",
+  "error_load": "Could not load customer loyalty data.",
+  "error_zero": "Adjustment must be non-zero.",
+  "error_apply": "Failed to apply adjustment."
+}

@@ -1,0 +1,22 @@
+{
+  "name": "Sunny & Ranney Loyalty",
+  "tile_heading": "Loyalty",
+  "tile_subheading_no_customer": "Add a customer to see points",
+  "tile_subheading_loading": "Loading…",
+  "tile_subheading_balance": "{{points}} pts · {{tier}}",
+  "tile_subheading_error": "Tap to retry",
+  "modal_heading": "Loyalty rewards",
+  "modal_no_customer": "Attach a customer to this cart to view their loyalty balance and redeem rewards.",
+  "modal_loading": "Loading balance…",
+  "modal_error": "Could not load loyalty balance.",
+  "modal_balance_header": "{{name}}'s rewards",
+  "modal_points_label": "Available points",
+  "modal_lifetime_label": "Lifetime earned",
+  "modal_tier_label": "Tier",
+  "modal_redeem_title": "Redeem points",
+  "modal_redeem_sub": "100 points = $1 off this order",
+  "modal_redeem_button": "${{dollars}} off · {{points}} pts",
+  "modal_redeem_applied": "Redemption applied. Discount: ${{dollars}}.",
+  "modal_redeem_failed": "Could not apply redemption.",
+  "modal_close": "Close"
+}

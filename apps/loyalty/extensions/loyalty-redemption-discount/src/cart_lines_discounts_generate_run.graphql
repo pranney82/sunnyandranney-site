@@ -1,0 +1,33 @@
+query CartInput {
+  cart {
+    cost {
+      subtotalAmount {
+        amount
+      }
+    }
+    lines {
+      id
+      merchandise {
+        __typename
+        ... on ProductVariant {
+          id
+        }
+      }
+    }
+    rewardType: attribute(key: "loyalty_reward_type") {
+      value
+    }
+    rewardValue: attribute(key: "loyalty_reward_value") {
+      value
+    }
+    rewardVariantId: attribute(key: "loyalty_reward_variant_id") {
+      value
+    }
+    pointsAttr: attribute(key: "loyalty_redeem_points") {
+      value
+    }
+  }
+  discount {
+    discountClasses
+  }
+}
