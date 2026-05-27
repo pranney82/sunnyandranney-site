@@ -91,6 +91,7 @@ export default {
       return handleSeedRewards(env);
     }
 
+
     if (request.method === 'GET' && url.pathname === '/api/rewards') {
       return handleListRewards(env);
     }

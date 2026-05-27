@@ -106,7 +106,7 @@ const STARTER_REWARDS: Array<{
   fields: Array<{ key: string; value: string }>;
 }> = [
   {
-    handle: 'reward-100-dollar-off',
+    handle: 'lr-1-off',
     fields: [
       { key: 'name', value: '$1 off' },
       { key: 'point_cost', value: '100' },
@@ -115,7 +115,7 @@ const STARTER_REWARDS: Array<{
     ],
   },
   {
-    handle: 'reward-500-five-dollars',
+    handle: 'lr-5-off',
     fields: [
       { key: 'name', value: '$5 off' },
       { key: 'point_cost', value: '500' },
@@ -124,7 +124,7 @@ const STARTER_REWARDS: Array<{
     ],
   },
   {
-    handle: 'reward-1000-ten-dollars',
+    handle: 'lr-10-off',
     fields: [
       { key: 'name', value: '$10 off' },
       { key: 'point_cost', value: '1000' },
@@ -133,7 +133,7 @@ const STARTER_REWARDS: Array<{
     ],
   },
   {
-    handle: 'reward-2500-twentyfive-dollars',
+    handle: 'lr-25-off',
     fields: [
       { key: 'name', value: '$25 off' },
       { key: 'point_cost', value: '2500' },
@@ -142,7 +142,7 @@ const STARTER_REWARDS: Array<{
     ],
   },
   {
-    handle: 'reward-1500-ten-percent',
+    handle: 'lr-10pct-off',
     fields: [
       { key: 'name', value: '10% off order' },
       { key: 'point_cost', value: '1500' },
@@ -151,7 +151,7 @@ const STARTER_REWARDS: Array<{
     ],
   },
   {
-    handle: 'reward-3000-free-shipping',
+    handle: 'lr-free-shipping',
     fields: [
       { key: 'name', value: 'Free shipping' },
       { key: 'point_cost', value: '3000' },

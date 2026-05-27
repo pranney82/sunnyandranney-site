@@ -1,0 +1,34 @@
+api_version = "2025-10"
+uid = "0f2b11a1-7945-16fc-2d89-bad24b314beba04d6b32"
+
+[[extensions]]
+name = "Loyalty: Points earned"
+type = "flow_trigger"
+handle = "loyalty-points-earned"
+description = "Fires when a customer earns loyalty points from a paid order."
+
+[settings]
+
+  [[settings.fields]]
+  type = "customer_reference"
+
+  [[settings.fields]]
+  type = "order_reference"
+
+  [[settings.fields]]
+  type = "number_decimal"
+  key = "pointsEarned"
+  name = "Points earned"
+  description = "Number of points earned on this order (post-multiplier)."
+
+  [[settings.fields]]
+  type = "number_decimal"
+  key = "newBalance"
+  name = "New balance"
+  description = "Customer's available balance after this earn."
+
+  [[settings.fields]]
+  type = "single_line_text_field"
+  key = "tierName"
+  name = "Current tier"
+  description = "Customer's tier at the time of the earn (Bronze, Silver, Gold)."

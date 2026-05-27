@@ -1,0 +1,28 @@
+api_version = "2025-10"
+uid = "e032a453-1f9f-869d-1dc3-6a5b25f33ff01093624c"
+
+[[extensions]]
+name = "Loyalty: Tier upgraded"
+type = "flow_trigger"
+handle = "loyalty-tier-upgraded"
+description = "Fires when a customer reaches a higher tier."
+
+[settings]
+
+  [[settings.fields]]
+  type = "customer_reference"
+
+  [[settings.fields]]
+  type = "single_line_text_field"
+  key = "previousTier"
+  name = "Previous tier"
+
+  [[settings.fields]]
+  type = "single_line_text_field"
+  key = "newTier"
+  name = "New tier"
+
+  [[settings.fields]]
+  type = "number_decimal"
+  key = "lifetimeEarned"
+  name = "Lifetime points"
