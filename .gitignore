@@ -34,3 +34,4 @@ public/reviews/
 
 # cloudflare
 .wrangler/
+.dev.vars

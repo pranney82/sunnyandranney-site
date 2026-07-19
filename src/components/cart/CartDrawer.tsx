@@ -237,7 +237,7 @@ export default function CartDrawer() {
         {!isEmpty && (
           <div class="cart-drawer__shipping">
             <p class="shipping-bar__text" style={{ textAlign: 'center' }}>
-              Local pickup only — no shipping available
+              Free showroom pickup in Roswell · local delivery referral available
             </p>
           </div>
         )}
