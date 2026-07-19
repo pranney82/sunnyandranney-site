@@ -16,10 +16,8 @@ const products = [...rawProducts].sort((a: Product, b: Product) => {
   return a.availableForSale ? -1 : 1;
 });
 
-// Random position for mission card (build-time, between index 3 and 20)
-const missionIdx = products.length >= 4
-  ? 3 + Math.floor(Math.random() * Math.min(products.length - 3, 18))
-  : -1;
+// Mission card sits at a fixed slot (5th position) so it never jumps around.
+const missionIdx = products.length >= 4 ? 4 : -1;
 
 // Preload the first product image as LCP candidate
 const lcpUrl = products[0]?.images?.edges[0]?.node?.url;
@@ -135,7 +133,7 @@ const itemListSchema = hasShopify ? {
           <div class="toolbar__more-slot" id="more-btn-slot"></div>
         </div>
         <div class="toolbar__actions">
-          <span class="toolbar__count" id="product-count">{products.length} product{products.length !== 1 ? 's' : ''}</span>
+          <span class="toolbar__count" id="product-count" role="status" aria-live="polite">{products.length} product{products.length !== 1 ? 's' : ''}</span>
           <button class="toolbar__filter-toggle" id="filter-toggle" aria-expanded="false" aria-controls="filter-panel" aria-label="Filter and sort products">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
               <line x1="1" y1="4" x2="15" y2="4"/><line x1="3" y1="8" x2="13" y2="8"/><line x1="5" y1="12" x2="11" y2="12"/>
@@ -2216,10 +2214,10 @@ const itemListSchema = hasShopify ? {
         if (visibleCards.length < 4) {
           editorial.style.display = 'none';
         } else {
-          const minPos = 3;
-          const maxPos = Math.min(visibleCards.length, 20);
-          const randomIdx = minPos + Math.floor(Math.random() * (maxPos - minPos));
-          grid!.insertBefore(editorial, visibleCards[randomIdx]);
+          // Fixed slot (5th position) so the card doesn't teleport on every
+          // filter change — a moving grid item reads as broken.
+          const slot = Math.min(4, visibleCards.length - 1);
+          grid!.insertBefore(editorial, visibleCards[slot]);
           editorial.style.display = '';
         }
         _needsEditorialReposition = false;

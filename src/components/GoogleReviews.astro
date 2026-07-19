@@ -15,7 +15,7 @@ const { variant = 'full' } = Astro.props;
 
 // Live API data (auto-updated each deploy) → admin overrides → defaults
 const liveData = await fetchGooglePlaceData();
-const savedData = getReviewsStatic();
+const savedData = await getReviewsStatic();
 
 const GOOGLE_RATING = liveData?.rating ?? savedData?.googleRating ?? 5.0;
 const REVIEW_COUNT = liveData?.reviewCount ?? savedData?.reviewCount ?? 117;

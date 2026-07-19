@@ -240,6 +240,18 @@ export function formatHoursShort(hours: StoreHours): string {
   }).join(' · ');
 }
 
+/** Build schema.org OpeningHoursSpecification from the synced hours (single source of truth) */
+export function toOpeningHoursSpecification(hours: StoreHours) {
+  return hours.days
+    .filter(d => !d.closed && d.open && d.close)
+    .map(d => ({
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: `https://schema.org/${d.day}`,
+      opens: d.open,
+      closes: d.close,
+    }));
+}
+
 /** Check if today (or a given date) is a holiday, and return its info */
 export function getTodayHoliday(hours: StoreHours, dateStr?: string): StoreHours['holidays'][number] | null {
   const today = dateStr || new Date().toISOString().split('T')[0];

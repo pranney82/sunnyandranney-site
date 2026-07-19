@@ -1,4 +1,6 @@
 ---
+import { getHoursStatic, toOpeningHoursSpecification } from '@/lib/settings';
+
 interface Props {
   title?: string;
   description?: string;
@@ -16,6 +18,10 @@ interface Props {
     value: number;
     count: number;
   };
+  /** Set false on pages that emit their own LocalBusiness schema (city pages) to avoid duplicate rating markup. */
+  localBusiness?: boolean;
+  /** Set true to emit noindex (e.g. 404). */
+  noindex?: boolean;
 }
 
 const {
@@ -26,10 +32,17 @@ const {
   type = 'website',
   product,
   rating,
+  localBusiness = true,
+  noindex = false,
 } = Astro.props;
 
 const siteName = 'Sunny & Ranney';
 const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
+
+// Hours come from the single synced source (Google Places → hours.json fallback),
+// never hardcoded — so structured data can't drift from what the site displays.
+const storeHours = await getHoursStatic();
+const openingHoursSpecification = storeHours ? toOpeningHoursSpecification(storeHours) : [];
 
 // LocalBusiness structured data
 const localBusinessSchema = {
@@ -54,20 +67,7 @@ const localBusinessSchema = {
     latitude: 34.0234,
     longitude: -84.3616,
   },
-  openingHoursSpecification: [
-    {
-      '@type': 'OpeningHoursSpecification',
-      dayOfWeek: ['Tuesday', 'Wednesday', 'Thursday'],
-      opens: '10:00',
-      closes: '17:00',
-    },
-    {
-      '@type': 'OpeningHoursSpecification',
-      dayOfWeek: ['Friday', 'Saturday'],
-      opens: '10:00',
-      closes: '18:00',
-    },
-  ],
+  openingHoursSpecification,
   sameAs: [
     'https://www.instagram.com/sunnyandranney/',
     'https://www.facebook.com/sunnyandranney/',
@@ -124,7 +124,7 @@ const organizationSchema = {
 <!-- Primary Meta Tags -->
 <title>{fullTitle}</title>
 <meta name="description" content={description} />
-<meta name="robots" content="index, follow" />
+<meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow'} />
 <link rel="canonical" href={url} />
 
 <!-- Open Graph / Facebook -->
@@ -146,7 +146,9 @@ const organizationSchema = {
 <meta property="twitter:image" content={image} />
 
 <!-- Structured Data -->
-<script type="application/ld+json" set:html={JSON.stringify(localBusinessSchema)} />
+{localBusiness && (
+  <script type="application/ld+json" set:html={JSON.stringify(localBusinessSchema)} />
+)}
 <script type="application/ld+json" set:html={JSON.stringify(organizationSchema)} />
 {productSchema && (
   <script type="application/ld+json" set:html={JSON.stringify(productSchema)} />

@@ -39,6 +39,8 @@ interface Props {
     image: string;
     availability: boolean;
   };
+  localBusiness?: boolean;
+  noindex?: boolean;
 }
 
 const props = Astro.props;
@@ -107,7 +109,7 @@ const isShopPage = Astro.url.pathname.startsWith('/shop') || Astro.url.pathname.
         if(!m)return;
         var n=parseInt(m[1],10);
         if(!n)return;
-        var ids=['cart-count','mobile-cart-count','bottom-nav-cart-count'];
+        var ids=['cart-count','mobile-cart-count'];
         for(var i=0;i<ids.length;i++){
           var el=document.getElementById(ids[i]);
           if(el){el.textContent=String(n);el.style.display='flex';}

@@ -29,7 +29,7 @@
         <p class="email-capture__privacy">
           No spam, ever. Unsubscribe anytime. <span>Your email supports our mission.</span>
         </p>
-        <p class="email-capture__success" id="email-success" style="display:none;">
+        <p class="email-capture__success" id="email-success" role="status" aria-live="polite" style="display:none;">
           You're in! We'll keep you posted on new arrivals and mission updates.
         </p>
       </form>
@@ -220,6 +220,7 @@
         if (privacy) {
           privacy.textContent = err.message || 'Something went wrong. Please try again.';
           privacy.style.color = '#ff6b6b';
+          privacy.setAttribute('role', 'alert');
         }
       }
     });

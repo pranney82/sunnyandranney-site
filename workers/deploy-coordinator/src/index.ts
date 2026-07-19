@@ -77,9 +77,24 @@ export class DeployCoordinator implements DurableObject {
 
     const elapsed = now - firstPoke;
     const maxWaitReached = elapsed >= MAX_WAIT_MS;
-    const alarmTime = maxWaitReached ? now + 1000 : now + DEBOUNCE_MS;
 
-    await this.state.storage.setAlarm(alarmTime);
+    let alarmTime: number;
+    if (maxWaitReached) {
+      // Cap reached: fire ASAP and do NOT let further pokes push it out, or a
+      // sub-second poke storm would defer the deploy forever.
+      const target = now + 1000;
+      const pending = await this.state.storage.getAlarm();
+      if (pending != null && pending <= target) {
+        alarmTime = pending;
+      } else {
+        alarmTime = target;
+        await this.state.storage.setAlarm(target);
+      }
+    } else {
+      // Still within the window: debounce normally by resetting the timer.
+      alarmTime = now + DEBOUNCE_MS;
+      await this.state.storage.setAlarm(alarmTime);
+    }
 
     const response = {
       debounced: true,

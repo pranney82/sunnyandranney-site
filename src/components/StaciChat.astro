@@ -9,7 +9,7 @@
 </div>
 
 <!-- Chat toggle button -->
-<button id="staci-toggle" aria-label="Chat with Staci" title="Chat with Staci">
+<button id="staci-toggle" aria-label="Chat with Staci" title="Chat with Staci" aria-expanded="false" aria-controls="staci-panel">
   <span class="staci-badge" id="staci-badge" style="display:none;"></span>
   <img id="staci-icon-chat" class="staci-toggle__avatar" src="https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ai-chat-avatar/w=96,h=96,fit=cover,format=auto" alt="" width="40" height="40" loading="lazy" />
   <svg id="staci-icon-close" class="staci-toggle__close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
@@ -19,7 +19,7 @@
 </button>
 
 <!-- Chat panel -->
-<div id="staci-panel" aria-hidden="true" inert>
+<div id="staci-panel" role="dialog" aria-modal="true" aria-label="Chat with Staci" aria-hidden="true" inert>
   <div class="staci-header">
     <div class="staci-header__info">
       <div class="staci-header__avatar-wrap">

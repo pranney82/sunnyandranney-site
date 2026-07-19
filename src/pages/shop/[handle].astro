@@ -6,6 +6,16 @@ import { cfImage, cfSrcset, SIZES } from '@/lib/images';
 import { getCollectionByHandle, getProductByHandle, getProducts, formatPriceShort as fmt, type Product, type ShopifyImage, type ProductVariant, type ProductMedia } from '@/lib/shopify';
 import { getCollectionsStatic, getHeroStatic } from '@/lib/settings';
 
+// Shopify altText often carries raw filenames ("Screenshot2026....png", "IMG_1234").
+// Fall back to the product title so screen readers get something meaningful.
+function cleanAlt(alt: string | null | undefined, fallback: string): string {
+  const a = (alt || '').trim();
+  if (!a) return fallback;
+  if (/\.(png|jpe?g|webp|gif|heic|avif)$/i.test(a)) return fallback;
+  if (/^(img[_-]?\d|dsc[_-]?\d|screenshot|image[_-]?\d|photo[_-]?\d)/i.test(a)) return fallback;
+  return a;
+}
+
 export async function getStaticPaths() {
   // Only build PDPs for products in admin-enabled collections
   const collectionSettings = await getCollectionsStatic();
@@ -263,7 +273,7 @@ const breadcrumbSchema = {
                 src={cfImage(mainImage.url, { width: 900 })}
                 srcset={cfSrcset(mainImage.url, [450, 900, 1400])}
                 sizes={SIZES.pdpMain}
-                alt={mainImage.altText || product.title}
+                alt={cleanAlt(mainImage.altText, product.title)}
                 width={mainImage.width}
                 height={mainImage.height}
                 fetchpriority="high"
@@ -302,11 +312,11 @@ const breadcrumbSchema = {
                   <button
                     class:list={['pdp-thumb', { 'pdp-thumb--active': i === 0 }]}
                     data-url={img.url}
-                    data-alt={img.altText || product.title}
+                    data-alt={cleanAlt(img.altText, product.title)}
                     data-idx={i}
                     data-type="image"
                   >
-                    <img src={cfImage(img.url, { width: 150 })} alt={img.altText || `${product.title} ${i + 1}`} loading="lazy" />
+                    <img src={cfImage(img.url, { width: 150 })} alt={cleanAlt(img.altText, `${product.title} ${i + 1}`)} loading="lazy" />
                   </button>
                 ))}
                 {/* Video thumbnails */}
@@ -353,6 +363,7 @@ const breadcrumbSchema = {
               </span>
             )}
           </div>
+          <p class="pdp-price__terms">All sales final · Free showroom pickup in Roswell</p>
 
           {/* Low stock urgency indicator */}
           {isLowStock && (
@@ -456,8 +467,8 @@ const breadcrumbSchema = {
             <div class="pdp-delivery__item">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
               <div>
-                <strong class="pdp-delivery__label">Local Pickup Only</strong>
-                <span class="pdp-delivery__date">No shipping — visit our Roswell showroom</span>
+                <strong class="pdp-delivery__label">Free Showroom Pickup</strong>
+                <span class="pdp-delivery__date">Pick up in Roswell · local delivery referral available</span>
               </div>
             </div>
           </div>
@@ -504,10 +515,10 @@ const breadcrumbSchema = {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
               </summary>
               <div class="pdp-accordion__content">
-                <p><strong>Local Pickup Only</strong></p>
+                <p><strong>Free showroom pickup</strong></p>
                 <p>All items are available for pickup at our Roswell, GA showroom:</p>
-                <p>109A Oak Street, Roswell, GA 30075</p>
-                <p>We do not currently offer shipping. Stop by to see our full collection in person!</p>
+                <p>109A Oak Street, Roswell, GA 30075 · Tue–Sat 10am–5pm</p>
+                <p>We don't ship, but for larger pieces we're glad to refer you to a trusted local delivery service — call 678.888.5140 to arrange it.</p>
               </div>
             </details>
 
@@ -889,7 +900,8 @@ const breadcrumbSchema = {
     font-size: clamp(1.8rem, 3vw, 2.5rem);
   }
 
-  .pdp-price { display: flex; align-items: baseline; gap: 0.75rem; margin-bottom: var(--space-md); flex-wrap: wrap; }
+  .pdp-price { display: flex; align-items: baseline; gap: 0.75rem; margin-bottom: 0.4rem; flex-wrap: wrap; }
+  .pdp-price__terms { margin: 0 0 var(--space-md); font-size: 0.8rem; color: var(--color-stone); }
   .pdp-price__current { font-family: var(--font-display); font-size: 1.8rem; font-weight: 600; }
   .pdp-price__compare { font-size: 1.1rem; color: var(--color-stone); text-decoration: line-through; }
   .pdp-price__save {
@@ -2133,14 +2145,13 @@ const breadcrumbSchema = {
     const variantTitle = addToCartBtn.dataset.variantTitle || '';
     const qty = parseInt(qtyInput?.value || '1');
 
-    window.addToCart?.({
-      variantId,
-      title,
-      price,
-      image,
-      handle,
-      variantTitle,
-    }, qty);
+    const product = { variantId, title, price, image, handle, variantTitle };
+    if (typeof window.addToCart === 'function') {
+      window.addToCart(product, qty);
+    } else {
+      // Island not hydrated yet — queue so the click isn't silently dropped.
+      (window.__cartQueue = window.__cartQueue || []).push({ product, qty });
+    }
 
     addToCartBtn.textContent = 'Added!';
     addToCartBtn.classList.add('btn--added');

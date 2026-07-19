@@ -33,9 +33,12 @@ function rewritePathForStorefront(pathname: string): string {
 export default {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
+    // Collapse repeated slashes so a protocol-relative path like "//evil.com/x"
+    // can't be resolved by the URL parser into an off-domain redirect target.
+    const pathname = url.pathname.replace(/\/{2,}/g, "/");
 
-    if (shouldRouteToShopify(url.pathname)) {
-      const target = new URL(url.pathname + url.search + url.hash, SHOPIFY_CHECKOUT_ORIGIN);
+    if (shouldRouteToShopify(pathname)) {
+      const target = new URL(pathname + url.search + url.hash, SHOPIFY_CHECKOUT_ORIGIN);
       return new Response(null, {
         status: 301,
         headers: {
@@ -45,7 +48,7 @@ export default {
       });
     }
 
-    const target = new URL(rewritePathForStorefront(url.pathname) + url.search + url.hash, STOREFRONT_ORIGIN);
+    const target = new URL(rewritePathForStorefront(pathname) + url.search + url.hash, STOREFRONT_ORIGIN);
     return new Response(null, {
       status: 301,
       headers: {

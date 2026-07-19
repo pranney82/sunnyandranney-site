@@ -4,7 +4,7 @@
  * Each city page passes unique prose + data; shared layout, schema, and reviews.
  */
 import Base from '@/layouts/Base.astro';
-import { getContactStatic, getHoursStatic, getReviewsStatic, formatHoursShort } from '@/lib/settings';
+import { getContactStatic, getHoursStatic, getReviewsStatic, formatHoursShort, toOpeningHoursSpecification } from '@/lib/settings';
 import { fetchGooglePlaceData } from '@/lib/google-places';
 import { cfImage, cfSrcset } from '@/lib/images';
 
@@ -44,7 +44,7 @@ const storeState = contact?.state || 'GA';
 const zip = contact?.zip || '30075';
 const phone = contact?.phone || '678.888.5140';
 const phoneDigits = phone.replace(/\D/g, '');
-const hoursLine = hours ? formatHoursShort(hours) : 'Tue–Thu 10am–5pm · Fri–Sat 10am–6pm';
+const hoursLine = hours ? formatHoursShort(hours) : 'Tue–Sat 10am–5pm';
 
 const rating = livePlace?.rating ?? reviewsSetting?.googleRating ?? 5.0;
 const reviewCount = livePlace?.reviewCount ?? reviewsSetting?.reviewCount ?? 75;
@@ -87,10 +87,7 @@ const localSchema = {
   },
   geo: { '@type': 'GeoCoordinates', latitude: 34.0234, longitude: -84.3616 },
   hasMap: 'https://maps.app.goo.gl/QXwgPyiX93HkwjwDA',
-  openingHoursSpecification: [
-    { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Tuesday', 'Wednesday', 'Thursday'], opens: '10:00', closes: '17:00' },
-    { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Friday', 'Saturday'], opens: '10:00', closes: '18:00' },
-  ],
+  openingHoursSpecification: hours ? toOpeningHoursSpecification(hours) : [],
   areaServed: {
     '@type': 'City',
     name: `${p.cityName}, GA`,
@@ -138,21 +135,6 @@ const faqSchema = {
   })),
 };
 
-const deliveryService = {
-  '@context': 'https://schema.org',
-  '@type': 'Service',
-  '@id': `${pageUrl}#service-delivery`,
-  name: `White-Glove Furniture Delivery to ${p.cityName}, GA`,
-  serviceType: 'Furniture Delivery',
-  description: `Professional white-glove delivery, assembly and placement for furniture orders throughout ${p.cityName}, Georgia and surrounding neighborhoods.`,
-  provider: { '@id': `${pageUrl}#furniturestore` },
-  areaServed: {
-    '@type': 'City',
-    name: `${p.cityName}, GA`,
-    geo: { '@type': 'GeoCoordinates', latitude: p.cityLat, longitude: p.cityLng },
-  },
-  availableChannel: { '@type': 'ServiceChannel', servicePhone: '+16788885140', serviceUrl: pageUrl },
-};
 ---
 
 <Base
@@ -161,11 +143,11 @@ const deliveryService = {
   lcpImage={heroImageSrc}
   lcpImageSrcset={heroImageSrcset}
   lcpImageSizes={heroImageSizes}
+  localBusiness={false}
 >
   <script type="application/ld+json" set:html={JSON.stringify(localSchema)}/>
   <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)}/>
   <script type="application/ld+json" set:html={JSON.stringify(faqSchema)}/>
-  <script type="application/ld+json" set:html={JSON.stringify(deliveryService)}/>
 
   <article class="city">
     <!-- ─── Hero ─── -->
@@ -230,9 +212,10 @@ const deliveryService = {
           <h2>How We Serve {p.cityName} Homes</h2>
           <p>{p.designStyle}</p>
           <p>
-            Our Historic Roswell showroom is a short drive from {p.cityName}, and our white-glove delivery team
-            makes regular runs throughout your neighborhood. Bring your floor plan, your designer, or just your
-            questions — we'll help you find pieces that fit your home and your taste.
+            Our Historic Roswell showroom is a short drive from {p.cityName} — most customers pick up their
+            pieces here, and for larger items we're glad to connect you with a trusted local delivery service.
+            Bring your floor plan, your designer, or just your questions — we'll help you find pieces that fit
+            your home and your taste.
           </p>
           <p>
             And every dollar of profit funds <a href="/about/">Sunshine on a Ranney Day</a>, building dream bedrooms
@@ -254,7 +237,7 @@ const deliveryService = {
       <div class="container">
         <h2>Neighborhoods We Serve in {p.cityName}</h2>
         <p class="city__sub">
-          We deliver throughout {p.cityName} and work with clients in these neighborhoods and communities:
+          We welcome customers from across {p.cityName} and work with clients in these neighborhoods and communities:
         </p>
         <ul class="city__neighborhoods">
           {p.neighborhoods.map(n => <li>{n}</li>)}
@@ -297,7 +280,7 @@ const deliveryService = {
           <a href="/shop/?collection=living"><span>Living Room</span><small>Sofas, sectionals, chairs</small></a>
           <a href="/shop/?collection=dining"><span>Dining</span><small>Tables, chairs, buffets</small></a>
           <a href="/shop/?collection=bedroom"><span>Bedroom</span><small>Beds, nightstands, dressers</small></a>
-          <a href="/shop/?collection=rugs"><span>Rugs</span><small>Hand-knotted &amp; area rugs</small></a>
+          <a href="/shop/?collection=rugs-collection"><span>Rugs</span><small>Hand-knotted &amp; area rugs</small></a>
           <a href="/shop/?collection=art-mirrors"><span>Art &amp; Mirrors</span><small>Original art, mirrors</small></a>
           <a href="/shop/?collection=outdoor"><span>Outdoor</span><small>Patio &amp; garden</small></a>
         </div>
@@ -382,7 +365,8 @@ const deliveryService = {
     margin: 0 0 0.5rem;
   }
   .city p { line-height: 1.7; font-size: 1rem; margin: 0 0 var(--space-sm); max-width: 68ch; color: #3a3a3a; }
-  .city a { color: var(--color-cyan); }
+  .city a { color: var(--color-link); }
+  .city p a, .city li a, .city__faq a { text-decoration: underline; text-underline-offset: 2px; }
 
   /* Hero */
   .city__hero {

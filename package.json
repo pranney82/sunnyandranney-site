@@ -11,23 +11,21 @@
     "deploy:hours-sync": "wrangler deploy --config workers/hours-sync/wrangler.toml",
     "deploy:deploy-coordinator": "wrangler deploy --config workers/deploy-coordinator/wrangler.toml",
     "deploy:shop-redirect": "wrangler deploy --config workers/shop-redirect/wrangler.toml",
-    "deploy:loyalty": "wrangler deploy --config workers/loyalty/wrangler.toml",
-    "sync-redirects": "node scripts/sync-shopify-redirects.mjs",
-    "bulk-publish": "node scripts/bulk-publish-products.mjs"
+    "sync-redirects": "node scripts/sync-shopify-redirects.mjs"
   },
   "dependencies": {
-    "@astrojs/check": "^0.9.9",
     "@astrojs/cloudflare": "^12.0.0",
     "@astrojs/preact": "^4.1.3",
     "@astrojs/sitemap": "^3.2.0",
     "astro": "^5.0.0",
     "lightningcss": "^1.29.1",
-    "preact": "^10.29.2",
+    "preact": "^10.29.2"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "playwright": "^1.59.1",
     "puppeteer": "^24.40.0",
     "typescript": "^5.9.3",
     "wrangler": "^4.59.2"
-  },
-  "devDependencies": {
-    "playwright": "^1.59.1"
   }
 }

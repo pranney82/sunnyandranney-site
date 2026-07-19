@@ -39,6 +39,7 @@ declare global {
     closeCart?: () => void;
     addToCart?: (product: LegacyProduct, qty?: number) => void;
     showCartToast?: (title?: string, image?: string) => void;
+    __cartQueue?: Array<{ product: LegacyProduct; qty: number }>;
     __SHOPIFY_CURRENCY?: string;
   }
 }
@@ -107,8 +108,8 @@ export default function CartDrawer() {
       toastTimerRef.current = setTimeout(() => {
         setToast((cur) => (cur?.id === id ? null : cur));
       }, 2500);
-      // Badge bounce on header + bottom-nav cart badges
-      ['cart-count', 'mobile-cart-count', 'bottom-nav-cart-count'].forEach((id) => {
+      // Badge bounce on header cart badges
+      ['cart-count', 'mobile-cart-count'].forEach((id) => {
         const el = document.getElementById(id);
         if (!el) return;
         el.classList.remove('bounce');
@@ -123,6 +124,15 @@ export default function CartDrawer() {
       window.showCartToast?.(product.title, product.image);
       setIsOpen(true);
     };
+
+    // Drain any add-to-cart clicks that happened before this island hydrated
+    // (the PDP button is interactive before hydration; without this the click
+    // would show "Added!" but silently do nothing).
+    const queue = window.__cartQueue;
+    if (Array.isArray(queue) && queue.length) {
+      window.__cartQueue = [];
+      for (const { product, qty } of queue) window.addToCart!(product, qty);
+    }
 
     return () => {
       window.openCart = undefined;
@@ -196,6 +206,8 @@ export default function CartDrawer() {
       />
       <aside
         class="cart-drawer"
+        role="dialog"
+        aria-modal={isOpen ? 'true' : undefined}
         aria-hidden={isOpen ? 'false' : 'true'}
         aria-label="Shopping cart"
         // @ts-expect-error — `inert` is valid HTML, types lag in some setups
@@ -272,13 +284,7 @@ export default function CartDrawer() {
                 <span>Subtotal</span>
                 <span class="cart-footer__total">{formatMoney(snap.subtotal)}</span>
               </div>
-              <p class="cart-footer__note">Taxes calculated at checkout · Local pickup only</p>
-              <div class="cart-footer__rewards">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
-                <span>Earn 1 point for every $1 spent</span>
-              </div>
+              <p class="cart-footer__note">Taxes calculated at checkout · Free showroom pickup · Local delivery referral available</p>
               {(snap.lastError || checkoutMsg) && (
                 <div class="cart-footer__alert" role="alert">
                   {checkoutMsg ?? snap.lastError?.message}
@@ -334,6 +340,8 @@ function CartShell({
       <div class="cart-overlay" aria-hidden={isOpen ? 'false' : 'true'} onClick={onClose} />
       <aside
         class="cart-drawer"
+        role="dialog"
+        aria-modal={isOpen ? 'true' : undefined}
         aria-hidden={isOpen ? 'false' : 'true'}
         aria-label="Shopping cart"
         // @ts-expect-error inert

@@ -36,12 +36,18 @@ export const POST: APIRoute = async ({ request }) => {
     new TextEncoder().encode(syncSecret),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
-    ['sign'],
+    ['verify'],
   );
-  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(body));
-  const computed = btoa(String.fromCharCode(...new Uint8Array(sig)));
+  // crypto.subtle.verify is constant-time; avoids the timing side channel of `===`.
+  let valid = false;
+  try {
+    const sigBytes = Uint8Array.from(atob(shopifyHmac), (c) => c.charCodeAt(0));
+    valid = await crypto.subtle.verify('HMAC', key, sigBytes, new TextEncoder().encode(body));
+  } catch {
+    valid = false;
+  }
 
-  if (computed !== shopifyHmac) {
+  if (!valid) {
     return new Response(JSON.stringify({ error: 'Invalid signature' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },

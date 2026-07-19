@@ -45,12 +45,13 @@
   --color-charcoal:    #2C2C2C;
   --color-charcoal-70: #2C2C2Cb3;
   --color-slate:       #5A5A58;
-  --color-stone:       #8A8A87;
+  --color-stone:       #6B6B68;
   --color-gold:        #FFD400;
   --color-gold-light:  #FFE24D;
   --color-gold-soft:   #FFF4B8;
   --color-cyan:        #4B95B4;
   --color-cyan-light:  #7BB5CC;
+  --color-link:        #1A6580; /* accessible link text (6:1 on cream); --color-cyan is background-only */
   --color-sage:        #8B9E7E;
   --color-sage-light:  #C8D4BF;
   --color-blush:       #D4A59A;
@@ -568,9 +569,17 @@ p {
 }
 
 /* ─── Focus Visible (keyboard accessibility) ─────────────── */
+/* Two-layer ring: dark outline stays visible on the cream page (gold alone
+   is ~1.3:1 there), gold glow keeps the brand cue. */
 :focus-visible {
-  outline: 2px solid var(--color-gold);
+  outline: 2px solid var(--color-charcoal);
   outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--color-gold-soft);
+}
+/* On dark surfaces, gold outline already has contrast — keep it there. */
+.footer :focus-visible,
+[data-surface="dark"] :focus-visible {
+  outline-color: var(--color-gold);
 }
 
 ::selection {

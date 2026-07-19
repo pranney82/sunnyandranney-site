@@ -36,7 +36,7 @@ const gridProducts = featuredProducts.slice(1, 7);
 const fmt = (n: number) => n % 1 === 0 ? `$${n}` : `$${n.toFixed(2)}`;
 ---
 
-<Base title="Page Not Found — Sunny & Ranney" description="The page you're looking for has moved or no longer exists." lcpImage={heroImg ? cfImage(heroImg.url, { width: 900, height: 600 }) : undefined}>
+<Base title="Page Not Found — Sunny & Ranney" description="The page you're looking for has moved or no longer exists." lcpImage={heroImg ? cfImage(heroImg.url, { width: 900, height: 600 }) : undefined} noindex={true}>
 
   <!-- ═══ HERO ═══ -->
   <section class="nf-hero">

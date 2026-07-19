@@ -882,7 +882,7 @@ const roomCollections = [
     });
 
     const allLink = document.createElement('a');
-    allLink.href = `/shop?q=${encodeURIComponent(query)}`;
+    allLink.href = `/shop/?q=${encodeURIComponent(query)}`;
     allLink.className = 'search-suggest__all';
     allLink.textContent = `View all results for "${query}"`;
     frag.appendChild(allLink);
@@ -893,7 +893,7 @@ const roomCollections = [
 
   function doSearch(input: HTMLInputElement) {
     const q = input.value.trim();
-    if (q) window.location.href = `/shop?q=${encodeURIComponent(q)}`;
+    if (q) window.location.href = `/shop/?q=${encodeURIComponent(q)}`;
   }
 
   function setupTypeahead(input: HTMLInputElement, suggestEl: HTMLElement, signal: AbortSignal) {

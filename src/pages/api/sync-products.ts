@@ -183,6 +183,50 @@ function buildEmbeddingText(node: any): string {
   ].filter(Boolean).join('. ');
 }
 
+async function sha256Hex(text: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/** Normalize a Shopify REST webhook payload into the Storefront-API shape
+ *  that buildEmbeddingText and the metadata builder expect. */
+function normalizeWebhookProduct(p: any): any {
+  const tagsArr = typeof p.tags === 'string'
+    ? p.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
+    : (Array.isArray(p.tags) ? p.tags : []);
+  const variant = p.variants?.[0] || {};
+  const imageUrl = p.image?.src || p.images?.[0]?.src || '';
+  const available = p.status === 'active' && (p.variants || []).some(
+    (v: any) => (v.inventory_quantity ?? 0) > 0 || v.inventory_policy === 'continue'
+  );
+  return {
+    title: p.title || '',
+    handle: p.handle || '',
+    productType: p.product_type || '',
+    description: stripHtml(p.body_html || ''),
+    tags: tagsArr,
+    availableForSale: available,
+    priceRange: { minVariantPrice: { amount: variant.price || '0' } },
+    compareAtPriceRange: { minVariantPrice: { amount: variant.compare_at_price || '0' } },
+    images: { edges: imageUrl ? [{ node: { url: imageUrl } }] : [] },
+  };
+}
+
+/** Constant-time string equality — avoids the timing side channel of `!==`. */
+function timingSafeEqualStr(a: string, b: string): boolean {
+  const enc = new TextEncoder();
+  const ab = enc.encode(a);
+  const bb = enc.encode(b);
+  if (ab.length !== bb.length) return false;
+  let r = 0;
+  for (let i = 0; i < ab.length; i++) r |= ab[i] ^ bb[i];
+  return r === 0;
+}
+
 export const POST: APIRoute = async ({ request }) => {
   const ai = env.AI;
   const vectorize = env.VECTORIZE;
@@ -216,17 +260,23 @@ export const POST: APIRoute = async ({ request }) => {
       new TextEncoder().encode(syncSecret),
       { name: 'HMAC', hash: 'SHA-256' },
       false,
-      ['sign'],
+      ['verify'],
     );
-    const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(rawBody));
-    const computed = btoa(String.fromCharCode(...new Uint8Array(sig)));
-    if (computed !== shopifyHmac) {
+    // crypto.subtle.verify is constant-time; avoids the timing side channel of `===`.
+    let valid = false;
+    try {
+      const sigBytes = Uint8Array.from(atob(shopifyHmac), (c) => c.charCodeAt(0));
+      valid = await crypto.subtle.verify('HMAC', key, sigBytes, new TextEncoder().encode(rawBody));
+    } catch {
+      valid = false;
+    }
+    if (!valid) {
       return new Response(JSON.stringify({ error: 'Invalid signature' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
       });
     }
-  } else if (manualSecret !== syncSecret) {
+  } else if (!manualSecret || !timingSafeEqualStr(manualSecret, syncSecret)) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
@@ -276,6 +326,96 @@ export const POST: APIRoute = async ({ request }) => {
       const { action, error } = await ensureProductRedirect(domain, adminToken, product.handle);
       redirectResult = { handle: product.handle, action, error };
       if (error) console.error('Redirect ensure error:', error);
+    }
+  }
+
+  // ─── Fast path: single-product webhook ─────────────────────────
+  // Avoids re-embedding the entire catalog on every Shopify product update.
+  // Falls through to the full sync below on any failure.
+  if (rawBody && (shopifyTopic === 'products/update' || shopifyTopic === 'products/create')) {
+    try {
+      const raw = JSON.parse(rawBody);
+      const node = normalizeWebhookProduct(raw);
+      if (!node.handle) throw new Error('webhook missing handle');
+
+      const id = node.handle.slice(0, 64);
+      const text = buildEmbeddingText(node);
+      const nextHash = await sha256Hex(text);
+
+      let prevHash: string | undefined;
+      try {
+        const existing = await vectorize.getByIds([id]);
+        prevHash = existing?.[0]?.metadata?.textHash as string | undefined;
+      } catch { /* no existing vector — treat as new */ }
+
+      let embedded = false;
+      if (text && prevHash !== nextHash) {
+        const embeddingResult = (await ai.run('@cf/baai/bge-base-en-v1.5', {
+          text: [text],
+        })) as { data: number[][] };
+        if (embeddingResult.data?.[0]) {
+          await vectorize.upsert([{
+            id,
+            values: embeddingResult.data[0],
+            metadata: {
+              title: node.title,
+              handle: node.handle,
+              productType: node.productType,
+              description: node.description.slice(0, 300),
+              tags: node.tags.join(', '),
+              availableForSale: node.availableForSale,
+              price: node.priceRange.minVariantPrice.amount,
+              compareAtPrice: node.compareAtPriceRange.minVariantPrice.amount,
+              imageUrl: node.images.edges[0]?.node.url || '',
+              textHash: nextHash,
+            },
+          }]);
+          embedded = true;
+        }
+      }
+
+      await batchSetProductAvailability([{ handle: node.handle, available: node.availableForSale }]);
+
+      try {
+        const row = await env.DB.prepare(
+          "SELECT value FROM settings WHERE key = 'settings:valid_product_handles'"
+        ).first<{ value: string }>();
+        const prev: string[] = row ? JSON.parse(row.value) : [];
+        if (!prev.includes(id)) {
+          prev.push(id);
+          await env.DB.prepare(
+            "INSERT INTO settings (key, value, updated_at) VALUES ('settings:valid_product_handles', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at"
+          ).bind(JSON.stringify(prev)).run();
+        }
+      } catch { /* non-critical */ }
+
+      let rebuilt = false;
+      try {
+        const doId = env.DEPLOY_COORDINATOR.idFromName('singleton');
+        const stub = env.DEPLOY_COORDINATOR.get(doId);
+        const pokeRes = await stub.fetch(new Request('https://do/poke', {
+          method: 'POST',
+          headers: { 'X-Poke-Secret': syncSecret },
+        }));
+        rebuilt = pokeRes.ok;
+      } catch (err) {
+        console.error('Deploy coordinator error (non-critical):', err);
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          path: 'single-product',
+          handle: node.handle,
+          embedded,
+          rebuilt,
+          autoPublish: autoPublishResult,
+          redirect: redirectResult,
+        }),
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+    } catch (err: any) {
+      console.error('Single-product fast path failed, falling through to full sync:', err?.message);
     }
   }
 
@@ -352,6 +492,8 @@ export const POST: APIRoute = async ({ request }) => {
 
       if (!embeddingResult.data?.length) continue;
 
+      const textHashes = await Promise.all(texts.map(t => sha256Hex(t)));
+
       // 3. Upsert vectors into Vectorize with product metadata
       const vectors = batch.map((node: any, j: number) => ({
         id: node.handle.slice(0, 64), // Vectorize max ID is 64 bytes
@@ -366,6 +508,7 @@ export const POST: APIRoute = async ({ request }) => {
           price: node.priceRange.minVariantPrice.amount,
           compareAtPrice: node.compareAtPriceRange?.minVariantPrice?.amount || '0',
           imageUrl: node.images?.edges?.[0]?.node?.url || '',
+          textHash: textHashes[j],
         },
       }));
 

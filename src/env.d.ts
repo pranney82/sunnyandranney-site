@@ -13,7 +13,5 @@ declare namespace Cloudflare {
     GOOGLE_PLACE_ID?: string;
     ANTHROPIC_API_KEY: string;
     SHOPIFY_ADMIN_TOKEN?: string;
-    CF_IMAGES_TOKEN?: string;
-    CF_ACCOUNT_ID?: string;
   }
 }

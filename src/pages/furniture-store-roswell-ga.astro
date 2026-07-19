@@ -1,6 +1,6 @@
 ---
 import Base from '@/layouts/Base.astro';
-import { getContactStatic, getHoursStatic, getReviewsStatic, formatHoursShort } from '@/lib/settings';
+import { getContactStatic, getHoursStatic, getReviewsStatic, formatHoursShort, toOpeningHoursSpecification } from '@/lib/settings';
 import { fetchGooglePlaceData } from '@/lib/google-places';
 import { cfImage, cfSrcset } from '@/lib/images';
 
@@ -17,7 +17,7 @@ const state = contact?.state || 'GA';
 const zip = contact?.zip || '30075';
 const phone = contact?.phone || '678.888.5140';
 const phoneDigits = phone.replace(/\D/g, '');
-const hoursLine = hours ? formatHoursShort(hours) : 'Tue–Thu 10am–5pm · Fri–Sat 10am–6pm';
+const hoursLine = hours ? formatHoursShort(hours) : 'Tue–Sat 10am–5pm';
 
 const rating = livePlace?.rating ?? reviewsSetting?.googleRating ?? 5.0;
 const reviewCount = livePlace?.reviewCount ?? reviewsSetting?.reviewCount ?? 75;
@@ -45,7 +45,7 @@ const faqs = [
   },
   {
     q: 'Do you deliver furniture in the Roswell and Atlanta area?',
-    a: 'Yes. We offer white-glove local delivery throughout Roswell, Alpharetta, Milton, Johns Creek, Sandy Springs, East Cobb, Marietta and surrounding North Atlanta neighborhoods. Larger items can also ship nationwide.',
+    a: "We're a pickup-first showroom in Historic Roswell — most customers collect their pieces here. For sofas, beds and other large items, we'll connect you with a trusted local delivery service covering Roswell, Alpharetta, Milton, Johns Creek, Sandy Springs, East Cobb, Marietta and the North Atlanta area. Call 678.888.5140 to arrange it.",
   },
   {
     q: 'What kind of furniture do you sell?',
@@ -94,10 +94,7 @@ const localSchema = {
   },
   geo: { '@type': 'GeoCoordinates', latitude: 34.0234, longitude: -84.3616 },
   hasMap: 'https://maps.app.goo.gl/QXwgPyiX93HkwjwDA',
-  openingHoursSpecification: [
-    { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Tuesday', 'Wednesday', 'Thursday'], opens: '10:00', closes: '17:00' },
-    { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Friday', 'Saturday'], opens: '10:00', closes: '18:00' },
-  ],
+  openingHoursSpecification: hours ? toOpeningHoursSpecification(hours) : [],
   areaServed: [
     { '@type': 'City', name: 'Roswell, GA' },
     { '@type': 'City', name: 'Alpharetta, GA' },
@@ -145,17 +142,6 @@ const serviceArea = {
 };
 
 const services = [
-  {
-    '@context': 'https://schema.org',
-    '@type': 'Service',
-    '@id': `${pageUrl}#service-delivery`,
-    name: 'White-Glove Furniture Delivery in Roswell & North Atlanta',
-    serviceType: 'Furniture Delivery',
-    description: 'Professional white-glove delivery, assembly and placement for sofas, beds, dining sets and large furniture throughout Roswell, Alpharetta, Milton, Johns Creek, Sandy Springs, East Cobb and metro Atlanta.',
-    provider: { '@id': 'https://sunnyandranney.com/#furniturestore-roswell' },
-    areaServed: serviceArea,
-    availableChannel: { '@type': 'ServiceChannel', servicePhone: '+16788885140', serviceUrl: pageUrl },
-  },
   {
     '@context': 'https://schema.org',
     '@type': 'Service',
@@ -210,6 +196,7 @@ const neighborhoods = [
   lcpImage={heroImageSrc}
   lcpImageSrcset={heroImageSrcset}
   lcpImageSizes={heroImageSizes}
+  localBusiness={false}
 >
   <!-- Page-specific schema: overrides/augments Base schema -->
   <script type="application/ld+json" set:html={JSON.stringify(localSchema)}/>
@@ -300,7 +287,7 @@ const neighborhoods = [
           <li><strong>Family-owned &amp; local</strong> — born and operated in Roswell, GA.</li>
           <li><strong>Designer-curated</strong> — quality pieces, no mass-market filler.</li>
           <li><strong>100% of profits to charity</strong> — purchase = a child's bedroom makeover.</li>
-          <li><strong>White-glove delivery</strong> — Roswell, Alpharetta, Milton, Atlanta metro.</li>
+          <li><strong>Pickup + delivery referral</strong> — collect in Roswell, or we'll connect you with a local delivery service.</li>
           <li><strong>Designer trade welcome</strong> — we work with local interior designers.</li>
           <li><strong>Open 5 days/week</strong> — {hoursLine}.</li>
         </ul>
@@ -315,7 +302,7 @@ const neighborhoods = [
           <a href="/shop/?collection=living"><span>Living Room</span><small>Sofas, sectionals, chairs</small></a>
           <a href="/shop/?collection=dining"><span>Dining</span><small>Tables, chairs, buffets</small></a>
           <a href="/shop/?collection=bedroom"><span>Bedroom</span><small>Beds, nightstands, dressers</small></a>
-          <a href="/shop/?collection=rugs"><span>Rugs</span><small>Hand-knotted &amp; area rugs</small></a>
+          <a href="/shop/?collection=rugs-collection"><span>Rugs</span><small>Hand-knotted &amp; area rugs</small></a>
           <a href="/shop/?collection=art-mirrors"><span>Art &amp; Mirrors</span><small>Original art, statement mirrors</small></a>
           <a href="/shop/?collection=outdoor"><span>Outdoor</span><small>Patio &amp; garden</small></a>
         </div>
@@ -406,7 +393,7 @@ const neighborhoods = [
     <section class="roswell__section roswell__section--alt">
       <div class="container">
         <h2>Also Serving North Atlanta</h2>
-        <p class="roswell__sub">Dedicated pages for the nearby cities we deliver to:</p>
+        <p class="roswell__sub">Dedicated pages for the nearby cities we serve:</p>
         <ul class="roswell__neighborhoods">
           <li><a href="/furniture-store-alpharetta-ga/">Alpharetta, GA</a></li>
           <li><a href="/furniture-store-milton-ga/">Milton, GA</a></li>

@@ -590,6 +590,7 @@ function openPanel() {
   panel.setAttribute('aria-hidden', 'false');
   panel.removeAttribute('inert');
   toggle?.classList.add('is-open');
+  toggle?.setAttribute('aria-expanded', 'true');
   if (iconChat) iconChat.style.display = 'none';
   if (iconClose) iconClose.style.display = 'block';
   if (label) label.style.display = 'none';
@@ -611,6 +612,7 @@ function closePanel() {
   panel.setAttribute('aria-hidden', 'true');
   panel.setAttribute('inert', '');
   toggle?.classList.remove('is-open');
+  toggle?.setAttribute('aria-expanded', 'false');
   if (iconChat) iconChat.style.display = 'block';
   if (iconClose) iconClose.style.display = 'none';
   if (label) label.style.display = '';

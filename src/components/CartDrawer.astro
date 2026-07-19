@@ -213,7 +213,7 @@ import CartDrawer from './cart/CartDrawer.tsx';
   }
 
   @media (max-width: 767px) {
-    .cart-item__qty button { width: 36px; height: 36px; font-size: 1rem; }
+    .cart-item__qty button { width: 44px; height: 44px; font-size: 1rem; }
     .cart-item__qty span { width: 32px; font-size: 0.9rem; }
   }
 
@@ -291,25 +291,6 @@ import CartDrawer from './cart/CartDrawer.tsx';
     margin-bottom: 1rem;
   }
 
-  .cart-footer__rewards {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
-    padding: 0.5rem 0.75rem;
-    margin-bottom: 1rem;
-    font-size: 0.72rem;
-    font-weight: 500;
-    color: #7a5a06;
-    background: color-mix(in srgb, var(--color-gold, #b8860b) 12%, transparent);
-    border-radius: 0;
-    letter-spacing: 0.02em;
-  }
-  .cart-footer__rewards svg {
-    flex-shrink: 0;
-    stroke: #7a5a06;
-  }
-
   /* ─── Cart Footer Trust ─────────────── */
   .cart-footer__trust {
     display: flex;
@@ -336,8 +317,7 @@ import CartDrawer from './cart/CartDrawer.tsx';
   }
 
   .nav__cart-count.bounce,
-  #mobile-cart-count.bounce,
-  #bottom-nav-cart-count.bounce {
+  #mobile-cart-count.bounce {
     animation: cartBadgeBounce 0.5s var(--ease-out);
   }
 
