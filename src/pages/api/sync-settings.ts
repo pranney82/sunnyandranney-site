@@ -11,7 +11,7 @@ const UPSERT_SQL = "INSERT INTO settings (key, value, updated_at) VALUES (?, ?, 
  * POST /api/sync-settings
  *
  * Syncs live store hours from Google Places API + committed JSON settings
- * (specials, contact, email-signup) into D1 so runtime APIs (chat, subscribe)
+ * (specials, contact) into D1 so runtime APIs (chat)
  * have current config without waiting for a rebuild.
  *
  * Settings are read from the static /_settings/*.json endpoints that Astro
@@ -40,7 +40,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   // Hours + reviews are synced by the hours-sync worker on a daily cron;
   // this endpoint only refreshes the committed JSON settings.
-  for (const name of ['specials', 'contact', 'email-signup'] as const) {
+  for (const name of ['specials', 'contact'] as const) {
     try {
       const res = await fetch(`${origin}/_settings/${name}.json`, {
         signal: AbortSignal.timeout(5000),

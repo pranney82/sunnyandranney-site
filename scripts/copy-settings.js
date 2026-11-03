@@ -7,7 +7,7 @@ import { join } from 'path';
 
 const SRC = 'src/content/settings';
 const DEST = 'dist/_settings';
-const EXPOSE = ['specials', 'contact', 'email-signup'];
+const EXPOSE = ['specials', 'contact'];
 
 mkdirSync(DEST, { recursive: true });
 

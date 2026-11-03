@@ -69,11 +69,6 @@ const contactInfoSchema = z.object({
   facebookUrl: z.string(),
 });
 
-const emailSignupConfigSchema = z.object({
-  constantContactListId: z.string(),
-  constantContactListName: z.string(),
-});
-
 const heroSettingSchema = z.object({
   imageUrl: z.string(),
   productHandle: z.string(),
@@ -123,7 +118,6 @@ export type StoreHours = z.infer<typeof storeHoursSchema>;
 export type CollectionSetting = z.infer<typeof collectionSettingSchema>;
 export type StoreSpecials = z.infer<typeof storeSpecialsSchema>;
 export type ContactInfo = z.infer<typeof contactInfoSchema>;
-export type EmailSignupConfig = z.infer<typeof emailSignupConfigSchema>;
 export type HeroSetting = z.infer<typeof heroSettingSchema>;
 export type KidStory = z.infer<typeof kidStorySchema>;
 export type KidsSetting = z.infer<typeof kidsSettingSchema>;
@@ -192,10 +186,6 @@ export function getSpecialsStatic() {
 
 export function getContactStatic() {
   return getSettingValidated('contact', contactInfoSchema);
-}
-
-export function getEmailSignupStatic() {
-  return getSettingValidated('email-signup', emailSignupConfigSchema);
 }
 
 export function getHeroStatic() {

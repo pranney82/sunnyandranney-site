@@ -1,11 +1,27 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import { getSetting, checkRateLimit } from '@/lib/db';
-import type { EmailSignupConfig } from '@/lib/settings';
+import { checkRateLimit } from '@/lib/db';
 
 export const prerender = false;
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' } as const;
+const KIT_API = 'https://api.kit.com/v4';
+// The store's audience in Kit: store broadcasts go to this tag.
+const KIT_TAG = 'Sunny & Ranney';
+
+/** One Kit v4 call. KIT_API_KEY is a secret set in the Cloudflare dashboard. */
+function kit(path: string, body: unknown) {
+  return fetch(`${KIT_API}${path}`, {
+    method: 'POST',
+    signal: AbortSignal.timeout(15000),
+    headers: {
+      'X-Kit-Api-Key': env.KIT_API_KEY!,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+}
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
   // Rate limit: 5 signups per IP per hour
@@ -17,7 +33,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     });
   }
 
-  const { email } = await request.json() as { email: string };
+  const { email } = await request.json().catch(() => ({})) as { email?: string };
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return new Response(JSON.stringify({ error: 'Valid email address is required' }), {
@@ -26,11 +42,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     });
   }
 
-  // API key from env var (secret), list ID from D1 settings
-  const apiKey = env.CC_API_TOKEN;
-  const config = await getSetting<EmailSignupConfig>('settings:email-signup');
-
-  if (!apiKey || !config?.constantContactListId) {
+  if (!env.KIT_API_KEY) {
     return new Response(JSON.stringify({ error: 'Email signup is not configured yet' }), {
       status: 503,
       headers: JSON_HEADERS,
@@ -38,22 +50,20 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   }
 
   try {
-    const res = await fetch('https://api.cc.email/v3/contacts/sign_up_form', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({
-        email_address: email,
-        list_memberships: [config.constantContactListId],
-      }),
-    });
+    // Create the subscriber and look up the tag (both answer 200 when they
+    // already exist), then tag them.
+    const [created, tag] = await Promise.all([
+      kit('/subscribers', { email_address: email, state: 'active' }),
+      kit('/tags', { name: KIT_TAG }),
+    ]);
+    const failed = !created.ok ? created : !tag.ok ? tag : null;
+    const tagId = failed ? null : ((await tag.json()) as { tag?: { id?: number } }).tag?.id;
+    const tagged = failed ?? (tagId
+      ? await kit(`/tags/${tagId}/subscribers`, { email_address: email })
+      : new Response('Kit returned no tag id', { status: 502 }));
 
-    if (!res.ok) {
-      const text = await res.text();
-      console.error('Constant Contact API error:', res.status, text);
+    if (!tagged.ok) {
+      console.error('Kit API error:', tagged.status, await tagged.text());
       return new Response(JSON.stringify({ error: 'Failed to subscribe. Please try again.' }), {
         status: 502,
         headers: JSON_HEADERS,
