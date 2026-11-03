@@ -26,6 +26,10 @@
             Subscribe
           </button>
         </div>
+        <div class="email-capture__hp" aria-hidden="true">
+          <label for="email-website">Leave this empty</label>
+          <input type="text" id="email-website" name="website" tabindex="-1" autocomplete="off" />
+        </div>
         <p class="email-capture__privacy">
           No spam, ever. Unsubscribe anytime. <span>Your email supports our mission.</span>
         </p>
@@ -80,7 +84,15 @@
     .email-capture__btn {
       padding: 0.9rem 1.5rem;
     }
-    .email-capture__privacy {
+    .email-capture__hp {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  .email-capture__privacy {
       font-size: 0.68rem;
     }
   }
@@ -199,7 +211,7 @@
         const res = await fetch('/api/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
+          body: JSON.stringify({ email, website: (form.querySelector('#email-website') as HTMLInputElement)?.value || '' }),
         });
 
         if (!res.ok) {

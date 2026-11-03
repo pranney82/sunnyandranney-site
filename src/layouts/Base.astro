@@ -41,6 +41,8 @@ interface Props {
   };
   localBusiness?: boolean;
   noindex?: boolean;
+  /** Pages that are themselves the signup (/join/) skip the footer copy. */
+  hideEmailCapture?: boolean;
 }
 
 const props = Astro.props;
@@ -120,7 +122,7 @@ const isShopPage = Astro.url.pathname.startsWith('/shop') || Astro.url.pathname.
       <slot />
     </main>
     <VisitStrip contact={contact} hours={footerHours} holidays={holidays} />
-    <EmailCapture />
+    {!props.hideEmailCapture && <EmailCapture />}
     <Footer contact={contact} hours={hours} />
     <CartDrawer transition:persist />
 

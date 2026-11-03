@@ -1,0 +1,230 @@
+---
+import Base from '@/layouts/Base.astro';
+---
+
+<Base
+  title="Join Our Email List | Sunny & Ranney"
+  description="Get new arrivals, in-store events and sales from Sunny & Ranney in Roswell, GA, plus news from the room makeovers your shopping funds."
+  hideEmailCapture
+>
+  <section class="join">
+    <div class="container join__inner">
+      <span class="label">Email List</span>
+      <h1 class="join__title">Be the first to know</h1>
+      <p class="join__intro">
+        New arrivals, in-store events and sales, plus news from the room makeovers your shopping helps fund.
+      </p>
+
+      <form class="join__form" id="join-form" novalidate>
+        <label class="join__label" for="join-email">Your email</label>
+        <div class="join__row">
+          <input
+            type="email"
+            id="join-email"
+            name="email"
+            required
+            autocomplete="email"
+            inputmode="email"
+            placeholder="you@example.com"
+          />
+          <button type="submit" class="join__btn" id="join-btn">Join</button>
+        </div>
+        <div class="join__hp" aria-hidden="true">
+          <label for="join-website">Leave this empty</label>
+          <input type="text" id="join-website" name="website" tabindex="-1" autocomplete="off" />
+        </div>
+        <p class="join__note" id="join-note">Unsubscribe anytime.</p>
+      </form>
+
+      <div class="join__done" id="join-done" role="status" aria-live="polite" hidden>
+        <h2>You're on the list</h2>
+        <p>Watch your inbox for new arrivals. See you at the store!</p>
+        <a class="join__shop" href="/shop/">Shop new arrivals</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .join {
+    padding: var(--space-2xl) 0 var(--space-3xl);
+  }
+
+  .join__inner {
+    max-width: 560px;
+  }
+
+  .join__title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 400;
+    line-height: 1.15;
+    margin-top: var(--space-sm);
+    margin-bottom: var(--space-md);
+  }
+
+  .join__intro {
+    font-size: 1.1rem;
+    color: var(--color-stone);
+    line-height: 1.7;
+    margin-bottom: var(--space-xl);
+  }
+
+  .join__label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .join__row {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .join__row input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.9rem 1rem;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    border: 1.5px solid var(--color-cream-dark);
+    border-radius: 8px;
+    background: white;
+  }
+
+  .join__row input:focus {
+    outline: none;
+    border-color: var(--color-cyan);
+    box-shadow: 0 0 0 3px rgba(75, 149, 180, 0.15);
+  }
+
+  .join__btn {
+    padding: 0.9rem 1.75rem;
+    background: var(--color-gold);
+    color: var(--color-charcoal);
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .join__btn:hover {
+    background: var(--color-gold-light);
+  }
+
+  .join__btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .join__hp {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  .join__note {
+    font-size: 0.85rem;
+    color: var(--color-stone);
+    margin-top: 0.75rem;
+  }
+
+  .join__note.is-error {
+    color: var(--color-charcoal);
+    font-weight: 600;
+  }
+
+  .join__done h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    font-weight: 400;
+    margin-bottom: var(--space-sm);
+  }
+
+  .join__done p {
+    color: var(--color-stone);
+    margin-bottom: var(--space-lg);
+  }
+
+  .join__shop {
+    display: inline-block;
+    padding: 0.9rem 1.75rem;
+    background: var(--color-charcoal);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    border-radius: 8px;
+  }
+
+  @media (max-width: 480px) {
+    .join__row {
+      flex-direction: column;
+    }
+  }
+</style>
+
+<script>
+  function initJoin() {
+    const form = document.getElementById('join-form') as HTMLFormElement | null;
+    if (!form || form.dataset.bound) return;
+    form.dataset.bound = 'true';
+    const input = form.querySelector('#join-email') as HTMLInputElement;
+    const hp = form.querySelector('#join-website') as HTMLInputElement;
+    const btn = form.querySelector('#join-btn') as HTMLButtonElement;
+    const note = form.querySelector('#join-note') as HTMLElement;
+    const done = document.getElementById('join-done') as HTMLElement;
+    const noteText = note.textContent;
+
+    const showError = (msg: string) => {
+      note.textContent = msg;
+      note.classList.add('is-error');
+      note.setAttribute('role', 'alert');
+      input.focus();
+    };
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = input.value.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showError('Please enter your email address, like you@example.com.');
+        return;
+      }
+      note.textContent = noteText;
+      note.classList.remove('is-error');
+      note.removeAttribute('role');
+      btn.disabled = true;
+      btn.textContent = 'Joining...';
+      try {
+        const res = await fetch('/api/subscribe/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, website: hp.value }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || 'Something went wrong. Please try again.');
+        }
+        form.hidden = true;
+        done.hidden = false;
+      } catch (err: any) {
+        btn.disabled = false;
+        btn.textContent = 'Join';
+        showError(err.message || 'Something went wrong. Please try again.');
+      }
+    });
+  }
+
+  initJoin();
+  document.addEventListener('astro:after-swap', initJoin);
+</script>

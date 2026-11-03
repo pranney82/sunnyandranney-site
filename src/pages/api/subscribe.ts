@@ -33,7 +33,13 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     });
   }
 
-  const { email } = await request.json().catch(() => ({})) as { email?: string };
+  const { email, website } = await request.json().catch(() => ({})) as { email?: string; website?: string };
+
+  // Honeypot: people never see the hidden "website" box, bots fill it in.
+  // Answer like a real signup so the bot moves on, and add no one.
+  if (website) {
+    return new Response(JSON.stringify({ success: true }), { headers: JSON_HEADERS });
+  }
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return new Response(JSON.stringify({ error: 'Valid email address is required' }), {
