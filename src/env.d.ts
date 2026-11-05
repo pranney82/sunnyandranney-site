@@ -11,7 +11,6 @@ declare namespace Cloudflare {
     KIT_API_KEY?: string;
     GOOGLE_PLACES_API_KEY?: string;
     GOOGLE_PLACE_ID?: string;
-    ANTHROPIC_API_KEY: string;
     SHOPIFY_ADMIN_TOKEN?: string;
   }
 }

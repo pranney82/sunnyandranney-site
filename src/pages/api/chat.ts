@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import { viaGateway, anthropicRun, aiCapped } from '@/lib/ai';
+import { viaGateway, aiCapped } from '@/lib/ai';
 import { getSetting, checkRateLimit, getSession, upsertSession, cleanExpiredSessions, getProductAvailability } from '@/lib/db';
 
 export const prerender = false;
@@ -14,7 +14,6 @@ const JSON_HEADERS = { 'Content-Type': 'application/json' } as const;
 const RATE_LIMIT_WINDOW = 60;
 const RATE_LIMIT_MAX = 20;
 const RATE_LIMIT_HOUR_MAX = 60;
-const ANTHROPIC_MODEL = 'claude-sonnet-4-6';
 const SESSION_SUMMARY_THRESHOLD = 30;
 const SESSION_TRUNCATE_TO = 10;
 
@@ -284,55 +283,6 @@ async function searchProducts(ai: any, vectorize: any, query: string, topK = 10)
   return { llmContext, cards };
 }
 
-// ─── Anthropic streaming adapter ─────────────────────────────
-// Transforms Anthropic SSE events into the format the frontend expects:
-// data: {"response":"token"}\n\n
-
-function createAnthropicStream(
-  anthropicBody: ReadableStream,
-  productCards: ProductCard[],
-): ReadableStream {
-  const encoder = new TextEncoder();
-  const productsEvent = productCards.length
-    ? `data: ${JSON.stringify({ products: productCards })}\n\n`
-    : '';
-
-  return new ReadableStream({
-    async start(controller) {
-      if (productsEvent) controller.enqueue(encoder.encode(productsEvent));
-
-      const reader = anthropicBody.getReader();
-      const decoder = new TextDecoder();
-      let buf = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const lines = buf.split('\n');
-        buf = lines.pop() || '';
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const data = line.slice(6).trim();
-          if (!data || data === '[DONE]') continue;
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
-              controller.enqueue(encoder.encode(
-                `data: ${JSON.stringify({ response: parsed.delta.text })}\n\n`
-              ));
-            }
-          } catch { /* skip malformed chunks */ }
-        }
-      }
-
-      controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-      controller.close();
-    },
-  });
-}
-
 // ─── Workers AI streaming adapter (passthrough + products) ───
 
 function createWorkersAIStream(
@@ -358,19 +308,7 @@ function createWorkersAIStream(
   });
 }
 
-// ─── Claude, through the gateway ─────────────────────────────
-
-/** Anthropic's Response, or null when it can't answer so the caller falls back. The log says why, never what was asked */
-async function askAnthropic(feature: string, body: Record<string, unknown>): Promise<Response | null> {
-  try {
-    const res = await anthropicRun(env.AI, env.ANTHROPIC_API_KEY!, feature, { model: ANTHROPIC_MODEL, ...body });
-    if (res.ok && res.body) return res;
-    console.error('Anthropic answered', res.status);
-  } catch (err: any) {
-    console.error('Anthropic through the gateway:', err?.message);
-  }
-  return null;
-}
+// ─── What the model is sent ──────────────────────────────────
 
 /**
  * The conversation as the model gets it: only the two roles and plain text a real chat sends, the newest kept, up to
@@ -394,7 +332,6 @@ function historyOf(messages: ChatMessage[]): ChatMessage[] {
 
 async function generateSummary(
   messages: ChatMessage[],
-  useAnthropic: boolean,
 ): Promise<string> {
   const summaryPrompt = 'Summarize this customer conversation in 2-3 sentences. Focus on what products they were interested in, any preferences mentioned, and where the conversation left off.';
   const conversationText = messages
@@ -403,26 +340,14 @@ async function generateSummary(
     .slice(0, 3000);
 
   try {
-    if (useAnthropic && env.ANTHROPIC_API_KEY) {
-      const res = await askAnthropic('chat-summary', {
-        max_tokens: 200,
-        system: summaryPrompt,
-        messages: [{ role: 'user', content: conversationText }],
-      });
-      if (res) {
-        const data = await res.json() as any;
-        return data.content?.[0]?.text || '';
-      }
-    } else {
-      const result = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
-        messages: [
-          { role: 'system', content: summaryPrompt },
-          { role: 'user', content: conversationText },
-        ],
-        max_tokens: 200,
-      }, viaGateway('chat-summary')) as { response?: string };
-      return result.response || '';
-    }
+    const result = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
+      messages: [
+        { role: 'system', content: summaryPrompt },
+        { role: 'user', content: conversationText },
+      ],
+      max_tokens: 200,
+    }, viaGateway('chat-summary')) as { response?: string };
+    return result.response || '';
   } catch (err) {
     console.error('Summary generation error:', err);
   }
@@ -480,7 +405,6 @@ export const POST: APIRoute = async ({ request }) => {
 
     const ai = env.AI;
     const vectorize = env.VECTORIZE;
-    const useAnthropic = !!ai && !!env.ANTHROPIC_API_KEY;
 
     if (!ai) {
       return new Response(JSON.stringify({ error: 'AI service unavailable.' }), { status: 503, headers: JSON_HEADERS });
@@ -517,44 +441,19 @@ export const POST: APIRoute = async ({ request }) => {
 
     // ─── Streaming response ────────────────────────────────
     if (stream) {
-      let combinedStream: ReadableStream;
-
-      if (useAnthropic) {
-        // Anthropic Messages API
-        const anthropicRes = await askAnthropic('chat', {
-          max_tokens: MAX_TOKENS,
-          system: fullSystem,
-          messages: trimmedMessages,
-          stream: true,
-        });
-
-        if (!anthropicRes) {
-          // Fallback to Workers AI on Anthropic failure
-          const eventStream = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
-            messages: [{ role: 'system', content: fullSystem }, ...trimmedMessages],
-            max_tokens: MAX_TOKENS,
-            stream: true,
-          }, viaGateway('chat')) as ReadableStream;
-          combinedStream = createWorkersAIStream(eventStream, productCards);
-        } else {
-          combinedStream = createAnthropicStream(anthropicRes.body!, productCards);
-        }
-      } else {
-        // Workers AI
-        const eventStream = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
-          messages: [{ role: 'system', content: fullSystem }, ...trimmedMessages],
-          max_tokens: MAX_TOKENS,
-          stream: true,
-        }, viaGateway('chat')) as ReadableStream;
-        combinedStream = createWorkersAIStream(eventStream, productCards);
-      }
+      const eventStream = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
+        messages: [{ role: 'system', content: fullSystem }, ...trimmedMessages],
+        max_tokens: MAX_TOKENS,
+        stream: true,
+      }, viaGateway('chat')) as ReadableStream;
+      const combinedStream = createWorkersAIStream(eventStream, productCards);
 
       // Save session to D1 in the background (don't block response)
       if (sessionId) {
         const sessionMessages = [...trimmedMessages];
         // We don't have the assistant reply yet (it's streaming), so save what we have.
         // The next request will include the assistant reply in the messages array.
-        saveSessionBackground(sessionId, sessionMessages, useAnthropic);
+        saveSessionBackground(sessionId, sessionMessages);
       }
 
       return new Response(combinedStream, {
@@ -567,38 +466,16 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // ─── Non-streaming response ────────────────────────────
-    let reply = '';
-
-    if (useAnthropic) {
-      const anthropicRes = await askAnthropic('chat', {
-        max_tokens: MAX_TOKENS,
-        system: fullSystem,
-        messages: trimmedMessages,
-      });
-
-      if (anthropicRes) {
-        const data = await anthropicRes.json() as any;
-        reply = data.content?.[0]?.text || '';
-      } else {
-        // Fallback
-        const result = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
-          messages: [{ role: 'system', content: fullSystem }, ...trimmedMessages],
-          max_tokens: MAX_TOKENS,
-        }, viaGateway('chat')) as { response?: string };
-        reply = result.response || '';
-      }
-    } else {
-      const result = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
-        messages: [{ role: 'system', content: fullSystem }, ...trimmedMessages],
-        max_tokens: MAX_TOKENS,
-      }, viaGateway('chat')) as { response?: string };
-      reply = result.response || '';
-    }
+    const result = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
+      messages: [{ role: 'system', content: fullSystem }, ...trimmedMessages],
+      max_tokens: MAX_TOKENS,
+    }, viaGateway('chat')) as { response?: string };
+    const reply = result.response || '';
 
     // Save session
     if (sessionId) {
       const sessionMessages = [...trimmedMessages, { role: 'assistant', content: reply }];
-      saveSessionBackground(sessionId, sessionMessages, useAnthropic);
+      saveSessionBackground(sessionId, sessionMessages);
     }
 
     return new Response(JSON.stringify({ reply, products: productCards }), { headers: JSON_HEADERS });
@@ -622,13 +499,12 @@ export const POST: APIRoute = async ({ request }) => {
 function saveSessionBackground(
   sessionId: string,
   messages: ChatMessage[],
-  useAnthropic: boolean,
 ): void {
   (async () => {
     try {
       // If conversation is long, generate a summary and truncate
       if (messages.length > SESSION_SUMMARY_THRESHOLD) {
-        const summary = await generateSummary(messages, useAnthropic);
+        const summary = await generateSummary(messages);
         const truncated = messages.slice(-SESSION_TRUNCATE_TO);
         await upsertSession(sessionId, truncated, summary);
       } else {
