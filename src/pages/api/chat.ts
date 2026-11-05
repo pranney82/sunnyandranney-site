@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
+import { viaGateway } from '@/lib/ai';
 import { getSetting, checkRateLimit, getSession, upsertSession, cleanExpiredSessions, getProductAvailability } from '@/lib/db';
 
 export const prerender = false;
@@ -231,12 +232,12 @@ interface SearchResult {
 
 
 async function searchProducts(ai: any, vectorize: any, query: string, topK = 10): Promise<SearchResult> {
-  const embeddingResult = await ai.run('@cf/baai/bge-base-en-v1.5', { text: [query] });
+  const embeddingResult = await ai.run('@cf/baai/bge-base-en-v1.5', { text: [query] }, viaGateway('chat-search'));
   const queryVector = embeddingResult.data?.[0];
-  if (!queryVector) return { llmContext: 'No products found.', cards: [] };
+  if (!queryVector) return { llmContext: '', cards: [] };
 
   const results = await vectorize.query(queryVector, { topK, returnMetadata: 'all' });
-  if (!results.matches?.length) return { llmContext: 'No matching products found.', cards: [] };
+  if (!results.matches?.length) return { llmContext: '', cards: [] };
 
   // Filter against the valid product handles stored in D1 by sync-products.
   // Also apply a similarity score threshold to remove noise.
@@ -395,7 +396,7 @@ async function generateSummary(
           { role: 'user', content: conversationText },
         ],
         max_tokens: 200,
-      }) as { response?: string };
+      }, viaGateway('chat-summary')) as { response?: string };
       return result.response || '';
     }
   } catch (err) {
@@ -478,7 +479,10 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const systemPrompt = await buildSystemPrompt(pageContext, sessionSummary);
-    const fullSystem = systemPrompt + (productContext ? `\n\n## Relevant Products From Our Shop\n${productContext}` : '');
+    // With no products found the model must be told so, or it makes up believable ones.
+    const fullSystem = systemPrompt + (productContext
+      ? `\n\n## Relevant Products From Our Shop\n${productContext}`
+      : `\n\n## Relevant Products From Our Shop\nNone were found for this message. Do not name, describe, price or link any product. Say you can't see a match right now and invite them to browse [the shop](/shop) or visit the store.`);
 
     // ─── Streaming response ────────────────────────────────
     if (stream) {
@@ -512,7 +516,7 @@ export const POST: APIRoute = async ({ request }) => {
               messages: [{ role: 'system', content: fullSystem }, ...trimmedMessages],
               max_tokens: MAX_TOKENS,
               stream: true,
-            }) as ReadableStream;
+            }, viaGateway('chat')) as ReadableStream;
             combinedStream = createWorkersAIStream(eventStream, productCards);
           } else {
             throw new Error('Both Anthropic and Workers AI unavailable');
@@ -526,7 +530,7 @@ export const POST: APIRoute = async ({ request }) => {
           messages: [{ role: 'system', content: fullSystem }, ...trimmedMessages],
           max_tokens: MAX_TOKENS,
           stream: true,
-        }) as ReadableStream;
+        }, viaGateway('chat')) as ReadableStream;
         combinedStream = createWorkersAIStream(eventStream, productCards);
       }
 
@@ -577,14 +581,14 @@ export const POST: APIRoute = async ({ request }) => {
         const result = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
           messages: [{ role: 'system', content: fullSystem }, ...trimmedMessages],
           max_tokens: MAX_TOKENS,
-        }) as { response?: string };
+        }, viaGateway('chat')) as { response?: string };
         reply = result.response || '';
       }
     } else {
       const result = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
         messages: [{ role: 'system', content: fullSystem }, ...trimmedMessages],
         max_tokens: MAX_TOKENS,
-      }) as { response?: string };
+      }, viaGateway('chat')) as { response?: string };
       reply = result.response || '';
     }
 

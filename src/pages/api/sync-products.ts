@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { batchSetProductAvailability, pruneStaleAvailability, batchSetInventoryItemMap, pruneStaleInventoryMap } from '@/lib/db';
 import { ensureProductRedirect } from '@/lib/shopify-redirects';
+import { viaGateway } from '@/lib/ai';
 import collectionsConfig from '@/content/settings/collections.json';
 
 export const prerender = false;
@@ -216,6 +217,61 @@ function normalizeWebhookProduct(p: any): any {
   };
 }
 
+// ─── When a full sync runs ──────────────────────────────────────
+// Shopify gives a webhook 5 seconds, then counts it failed and sends it again,
+// up to 8 more times over 4 hours. A full sync takes longer than that, so a
+// webhook must never run one and wait for it. On Nov 5 2026, 447 products
+// deleted in Shopify admin each ran the sync 9 times: 22,000 AI calls, about $20.
+//
+// Instead a webhook notes that the catalog changed and answers at once. The next
+// webhook to arrive once the gap below has passed runs one sync after answering.
+const CHANGED_KEY = 'settings:catalog_changed';
+const CLAIM_KEY = 'settings:full_sync_claim';
+const HASHES_KEY = 'settings:product_sync_hashes';
+const FULL_SYNC_GAP_MINUTES = 15;
+
+const sqliteNow = () => new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+async function markCatalogChanged(): Promise<void> {
+  await env.DB.prepare(
+    `INSERT INTO settings (key, value, updated_at) VALUES (?, '""', datetime('now'))
+     ON CONFLICT(key) DO UPDATE SET updated_at = excluded.updated_at`
+  ).bind(CHANGED_KEY).run();
+}
+
+/** True for the one caller that may run a full sync now. */
+async function claimFullSync(): Promise<boolean> {
+  const { results } = await env.DB.prepare('SELECT key FROM settings WHERE key IN (?, ?)')
+    .bind(CHANGED_KEY, CLAIM_KEY).all<{ key: string }>();
+  const keys = new Set(results.map(r => r.key));
+  if (keys.has(CLAIM_KEY) && !keys.has(CHANGED_KEY)) return false;
+  if (!keys.has(CLAIM_KEY)) await markCatalogChanged(); // the first ever sync
+
+  // One statement, so of many webhooks at once only one gets the claim.
+  const claim = await env.DB.prepare(
+    `INSERT INTO settings (key, value, updated_at) VALUES (?, '""', datetime('now'))
+     ON CONFLICT(key) DO UPDATE SET updated_at = excluded.updated_at
+     WHERE settings.updated_at <= datetime('now', ?)`
+  ).bind(CLAIM_KEY, `-${FULL_SYNC_GAP_MINUTES} minutes`).run();
+  return Boolean(claim.meta.changes);
+}
+
+/** Vector metadata for a product from the Storefront API. */
+function productMetadata(node: any, textHash: string) {
+  return {
+    title: node.title,
+    handle: node.handle,
+    productType: node.productType || '',
+    description: node.description?.slice(0, 300) || '',
+    tags: (node.tags || []).join(', '),
+    availableForSale: node.availableForSale,
+    price: node.priceRange.minVariantPrice.amount,
+    compareAtPrice: node.compareAtPriceRange?.minVariantPrice?.amount || '0',
+    imageUrl: node.images?.edges?.[0]?.node?.url || '',
+    textHash,
+  };
+}
+
 /** Constant-time string equality — avoids the timing side channel of `!==`. */
 function timingSafeEqualStr(a: string, b: string): boolean {
   const enc = new TextEncoder();
@@ -227,7 +283,219 @@ function timingSafeEqualStr(a: string, b: string): boolean {
   return r === 0;
 }
 
-export const POST: APIRoute = async ({ request }) => {
+/** The whole catalog: embeds what changed, clears what's gone, refreshes availability. */
+async function runFullSync({ ai, vectorize, domain, token, origin, syncSecret }: {
+  ai: any; vectorize: any; domain: string; token: string; origin: string; syncSecret: string;
+}) {
+  const startedAt = sqliteNow();
+
+  // The migrations that made these two tables never ran on production, so the
+  // chat's availability check found nothing and it had no real products to show.
+  await env.DB.batch([
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS product_availability (
+      handle TEXT PRIMARY KEY,
+      available INTEGER NOT NULL DEFAULT 1,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS inventory_item_map (
+      inventory_item_id TEXT PRIMARY KEY,
+      handle TEXT NOT NULL
+    )`),
+  ]);
+
+  // 1. Fetch products only from enabled collections on the site
+  const enabledHandles = collectionsConfig
+    .filter((c: any) => c.enabled)
+    .map((c: any) => c.handle);
+
+  const seenHandles = new Set<string>();
+  const allProducts: any[] = [];
+
+  for (const collectionHandle of enabledHandles) {
+    let cursor: string | null = null;
+    let hasNextPage = true;
+
+    while (hasNextPage) {
+      const res = await fetch(`https://${domain}/api/2025-01/graphql.json`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Storefront-Access-Token': token,
+        },
+        body: JSON.stringify({
+          query: COLLECTION_PRODUCTS_QUERY,
+          variables: { handle: collectionHandle, cursor },
+        }),
+      });
+
+      const json: any = await res.json();
+      const data = json.data?.collection?.products;
+      if (!data) break;
+
+      for (const edge of data.edges) {
+        const node = edge.node;
+        // Deduplicate products that appear in multiple collections
+        if (!seenHandles.has(node.handle)) {
+          seenHandles.add(node.handle);
+          allProducts.push(node);
+        }
+      }
+
+      hasNextPage = data.pageInfo.hasNextPage;
+      cursor = data.pageInfo.endCursor;
+    }
+  }
+
+  if (!allProducts.length) throw new Error('No products found in enabled collections.');
+
+  // 2. Embed only what changed since the last full sync. The hash covers the
+  // metadata as well as the text, so a new price still reaches the vector.
+  const hashRow = await env.DB.prepare('SELECT value FROM settings WHERE key = ?')
+    .bind(HASHES_KEY).first<{ value: string }>();
+  const prevHashes: Record<string, string> = hashRow ? JSON.parse(hashRow.value) : {};
+
+  const entries = await Promise.all(allProducts.map(async (node: any) => {
+    const text = buildEmbeddingText(node);
+    const metadata = productMetadata(node, await sha256Hex(text));
+    return {
+      id: node.handle.slice(0, 64), // Vectorize max ID is 64 bytes
+      text,
+      metadata,
+      hash: await sha256Hex(JSON.stringify([text, metadata])),
+    };
+  }));
+
+  const nextHashes: Record<string, string> = {};
+  const changed = entries.filter(e => {
+    if (prevHashes[e.id] !== e.hash) return true;
+    nextHashes[e.id] = e.hash;
+    return false;
+  });
+
+  const BATCH_SIZE = 100;
+  let indexed = 0;
+
+  for (let i = 0; i < changed.length; i += BATCH_SIZE) {
+    const batch = changed.slice(i, i + BATCH_SIZE);
+
+    const embeddingResult = (await ai.run('@cf/baai/bge-base-en-v1.5', {
+      text: batch.map(e => e.text),
+    }, viaGateway('product-sync'))) as { data: number[][] };
+
+    if (!embeddingResult.data?.length) continue;
+
+    // 3. Upsert vectors into Vectorize with product metadata
+    await vectorize.upsert(batch.map((e, j) => ({
+      id: e.id,
+      values: embeddingResult.data[j],
+      metadata: e.metadata,
+    })));
+    for (const e of batch) nextHashes[e.id] = e.hash;
+    indexed += batch.length;
+  }
+
+  // 4. Remove stale vectors for products no longer in enabled collections.
+  // Compare against the previous sync's handle list stored in D1 — this is
+  // deterministic and doesn't rely on querying vectors (which was unreliable).
+  const currentIds = Array.from(seenHandles).map(h => h.slice(0, 64));
+  const currentIdSet = new Set(currentIds);
+
+  try {
+    const prevRow = await env.DB.prepare(
+      "SELECT value FROM settings WHERE key = 'settings:valid_product_handles'"
+    ).first<{ value: string }>();
+    const prevIds: string[] = prevRow ? JSON.parse(prevRow.value) : [];
+    const staleIds = prevIds.filter(id => !currentIdSet.has(id));
+
+    if (staleIds.length) {
+      // Vectorize deleteByIds accepts max 1000 at a time
+      for (let i = 0; i < staleIds.length; i += 1000) {
+        await vectorize.deleteByIds(staleIds.slice(i, i + 1000));
+      }
+    }
+  } catch {
+    // Non-critical — stale vectors will just score low in searches
+  }
+
+  await env.DB.prepare(
+    `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now'))
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
+  ).bind(HASHES_KEY, JSON.stringify(nextHashes)).run();
+
+  // Persist the current valid handles so the next sync can diff against them
+  await env.DB.prepare(
+    "INSERT INTO settings (key, value, updated_at) VALUES ('settings:valid_product_handles', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at"
+  ).bind(JSON.stringify(currentIds)).run();
+
+  // Persist availability to dedicated D1 table (webhooks update this incrementally)
+  const availabilityData = allProducts.map(p => ({
+    handle: p.handle,
+    available: p.availableForSale,
+  }));
+  await batchSetProductAvailability(availabilityData);
+  await pruneStaleAvailability(seenHandles);
+
+  // Build inventory_item_id → handle mapping for inventory_levels/update webhooks
+  // Requires Admin API to get inventory item IDs
+  if (env.SHOPIFY_ADMIN_TOKEN) {
+    try {
+      const inventoryMap = await fetchInventoryItemMap(
+        domain,
+        env.SHOPIFY_ADMIN_TOKEN,
+        Array.from(seenHandles)
+      );
+      if (inventoryMap.length) {
+        await batchSetInventoryItemMap(inventoryMap);
+        await pruneStaleInventoryMap(seenHandles);
+      }
+    } catch (err) {
+      console.error('Inventory map sync error (non-critical):', err);
+    }
+  }
+
+  // Sync specials + contact → D1 so Staci knows about promos/announcements
+  const settingsSynced: string[] = [];
+  for (const name of ['specials', 'contact'] as const) {
+    try {
+      const res = await fetch(`${origin}/_settings/${name}.json`, {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        await env.DB.prepare(
+          "INSERT INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at"
+        ).bind(`settings:${name}`, JSON.stringify(data)).run();
+        settingsSynced.push(name);
+      }
+    } catch {
+      // Non-critical — settings will sync on next manual trigger
+    }
+  }
+
+  // Poke the DeployCoordinator Durable Object to schedule a deploy.
+  // The DO debounces: each poke resets a 15-minute alarm. A 30-minute
+  // max-wait cap ensures deploys can't be deferred indefinitely.
+  let rebuilt = false;
+  try {
+    const id = env.DEPLOY_COORDINATOR.idFromName('singleton');
+    const stub = env.DEPLOY_COORDINATOR.get(id);
+    const pokeRes = await stub.fetch(new Request('https://do/poke', {
+      method: 'POST',
+      headers: { 'X-Poke-Secret': syncSecret },
+    }));
+    rebuilt = pokeRes.ok;
+  } catch (err) {
+    console.error('Deploy coordinator error:', err);
+  }
+
+  // A change noted while this ran is left for the next sync.
+  await env.DB.prepare('DELETE FROM settings WHERE key = ? AND updated_at < ?')
+    .bind(CHANGED_KEY, startedAt).run();
+
+  return { indexed, unchanged: entries.length - changed.length, total: allProducts.length, rebuilt, settingsSynced };
+}
+
+export const POST: APIRoute = async ({ request, locals }) => {
   const ai = env.AI;
   const vectorize = env.VECTORIZE;
 
@@ -329,9 +597,23 @@ export const POST: APIRoute = async ({ request }) => {
     }
   }
 
+  const origin = new URL(request.url).origin;
+
+  /** After answering Shopify, run one full sync if one is owed. Never fails a webhook. */
+  const fullSyncIfDue = async () => {
+    try {
+      if (!token || !(await claimFullSync())) return;
+      (locals as any).runtime.ctx.waitUntil(
+        runFullSync({ ai, vectorize, domain, token, origin, syncSecret })
+          .catch((err: any) => console.error('Product sync error:', err?.message))
+      );
+    } catch (err: any) {
+      console.error('Full sync check failed:', err?.message);
+    }
+  };
+
   // ─── Fast path: single-product webhook ─────────────────────────
   // Avoids re-embedding the entire catalog on every Shopify product update.
-  // Falls through to the full sync below on any failure.
   if (rawBody && (shopifyTopic === 'products/update' || shopifyTopic === 'products/create')) {
     try {
       const raw = JSON.parse(rawBody);
@@ -352,7 +634,7 @@ export const POST: APIRoute = async ({ request }) => {
       if (text && prevHash !== nextHash) {
         const embeddingResult = (await ai.run('@cf/baai/bge-base-en-v1.5', {
           text: [text],
-        })) as { data: number[][] };
+        }, viaGateway('product-sync'))) as { data: number[][] };
         if (embeddingResult.data?.[0]) {
           await vectorize.upsert([{
             id,
@@ -402,6 +684,8 @@ export const POST: APIRoute = async ({ request }) => {
         console.error('Deploy coordinator error (non-critical):', err);
       }
 
+      await fullSyncIfDue();
+
       return new Response(
         JSON.stringify({
           success: true,
@@ -415,8 +699,23 @@ export const POST: APIRoute = async ({ request }) => {
         { headers: { 'Content-Type': 'application/json' } }
       );
     } catch (err: any) {
-      console.error('Single-product fast path failed, falling through to full sync:', err?.message);
+      // Shopify sends this one product again. It never widens into a full sync.
+      console.error('Single-product sync failed:', err?.message);
+      return new Response(JSON.stringify({ error: 'Sync failed.' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
+  }
+
+  // Any other webhook, products/delete above all: it carries only a number, never
+  // the handle a vector is stored under, so the next full sync clears it out.
+  if (shopifyHmac) {
+    await markCatalogChanged();
+    await fullSyncIfDue();
+    return new Response(JSON.stringify({ success: true, path: 'noted', topic: shopifyTopic }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   if (!token) {
@@ -427,189 +726,10 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   try {
-    // 1. Fetch products only from enabled collections on the site
-    const enabledHandles = collectionsConfig
-      .filter((c: any) => c.enabled)
-      .map((c: any) => c.handle);
-
-    const seenHandles = new Set<string>();
-    const allProducts: any[] = [];
-
-    for (const collectionHandle of enabledHandles) {
-      let cursor: string | null = null;
-      let hasNextPage = true;
-
-      while (hasNextPage) {
-        const res = await fetch(`https://${domain}/api/2025-01/graphql.json`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Shopify-Storefront-Access-Token': token,
-          },
-          body: JSON.stringify({
-            query: COLLECTION_PRODUCTS_QUERY,
-            variables: { handle: collectionHandle, cursor },
-          }),
-        });
-
-        const json: any = await res.json();
-        const data = json.data?.collection?.products;
-        if (!data) break;
-
-        for (const edge of data.edges) {
-          const node = edge.node;
-          // Deduplicate products that appear in multiple collections
-          if (!seenHandles.has(node.handle)) {
-            seenHandles.add(node.handle);
-            allProducts.push(node);
-          }
-        }
-
-        hasNextPage = data.pageInfo.hasNextPage;
-        cursor = data.pageInfo.endCursor;
-      }
-    }
-
-    if (!allProducts.length) {
-      return new Response(JSON.stringify({ error: 'No products found in enabled collections.' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-
-    // 2. Generate embeddings in batches (Workers AI supports batch input)
-    const BATCH_SIZE = 100;
-    let indexed = 0;
-
-    for (let i = 0; i < allProducts.length; i += BATCH_SIZE) {
-      const batch = allProducts.slice(i, i + BATCH_SIZE);
-      const texts = batch.map(buildEmbeddingText);
-
-      const embeddingResult = (await ai.run('@cf/baai/bge-base-en-v1.5', {
-        text: texts,
-      })) as { data: number[][] };
-
-      if (!embeddingResult.data?.length) continue;
-
-      const textHashes = await Promise.all(texts.map(t => sha256Hex(t)));
-
-      // 3. Upsert vectors into Vectorize with product metadata
-      const vectors = batch.map((node: any, j: number) => ({
-        id: node.handle.slice(0, 64), // Vectorize max ID is 64 bytes
-        values: embeddingResult.data[j],
-        metadata: {
-          title: node.title,
-          handle: node.handle,
-          productType: node.productType || '',
-          description: node.description?.slice(0, 300) || '',
-          tags: (node.tags || []).join(', '),
-          availableForSale: node.availableForSale,
-          price: node.priceRange.minVariantPrice.amount,
-          compareAtPrice: node.compareAtPriceRange?.minVariantPrice?.amount || '0',
-          imageUrl: node.images?.edges?.[0]?.node?.url || '',
-          textHash: textHashes[j],
-        },
-      }));
-
-      await vectorize.upsert(vectors);
-      indexed += vectors.length;
-    }
-
-    // 4. Remove stale vectors for products no longer in enabled collections.
-    // Compare against the previous sync's handle list stored in D1 — this is
-    // deterministic and doesn't rely on querying vectors (which was unreliable).
-    const currentIds = Array.from(seenHandles).map(h => h.slice(0, 64));
-    const currentIdSet = new Set(currentIds);
-
-    try {
-      const prevRow = await env.DB.prepare(
-        "SELECT value FROM settings WHERE key = 'settings:valid_product_handles'"
-      ).first<{ value: string }>();
-      const prevIds: string[] = prevRow ? JSON.parse(prevRow.value) : [];
-      const staleIds = prevIds.filter(id => !currentIdSet.has(id));
-
-      if (staleIds.length) {
-        // Vectorize deleteByIds accepts max 1000 at a time
-        for (let i = 0; i < staleIds.length; i += 1000) {
-          await vectorize.deleteByIds(staleIds.slice(i, i + 1000));
-        }
-      }
-    } catch {
-      // Non-critical — stale vectors will just score low in searches
-    }
-
-    // Persist the current valid handles so the next sync can diff against them
-    await env.DB.prepare(
-      "INSERT INTO settings (key, value, updated_at) VALUES ('settings:valid_product_handles', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at"
-    ).bind(JSON.stringify(currentIds)).run();
-
-    // Persist availability to dedicated D1 table (webhooks update this incrementally)
-    const availabilityData = allProducts.map(p => ({
-      handle: p.handle,
-      available: p.availableForSale,
-    }));
-    await batchSetProductAvailability(availabilityData);
-    await pruneStaleAvailability(seenHandles);
-
-    // Build inventory_item_id → handle mapping for inventory_levels/update webhooks
-    // Requires Admin API to get inventory item IDs
-    if (env.SHOPIFY_ADMIN_TOKEN) {
-      try {
-        const inventoryMap = await fetchInventoryItemMap(
-          domain,
-          env.SHOPIFY_ADMIN_TOKEN,
-          Array.from(seenHandles)
-        );
-        if (inventoryMap.length) {
-          await batchSetInventoryItemMap(inventoryMap);
-          await pruneStaleInventoryMap(seenHandles);
-        }
-      } catch (err) {
-        console.error('Inventory map sync error (non-critical):', err);
-      }
-    }
-
-    // Sync specials + contact → D1 so Staci knows about promos/announcements
-    const settingsSynced: string[] = [];
-    const origin = new URL(request.url).origin;
-    for (const name of ['specials', 'contact'] as const) {
-      try {
-        const res = await fetch(`${origin}/_settings/${name}.json`, {
-          signal: AbortSignal.timeout(5000),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          await env.DB.prepare(
-            "INSERT INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at"
-          ).bind(`settings:${name}`, JSON.stringify(data)).run();
-          settingsSynced.push(name);
-        }
-      } catch {
-        // Non-critical — settings will sync on next manual trigger
-      }
-    }
-
-    // Poke the DeployCoordinator Durable Object to schedule a deploy.
-    // The DO debounces: each poke resets a 15-minute alarm. A 30-minute
-    // max-wait cap ensures deploys can't be deferred indefinitely.
-    let rebuilt = false;
-    try {
-      const id = env.DEPLOY_COORDINATOR.idFromName('singleton');
-      const stub = env.DEPLOY_COORDINATOR.get(id);
-      const pokeRes = await stub.fetch(new Request('https://do/poke', {
-        method: 'POST',
-        headers: { 'X-Poke-Secret': syncSecret },
-      }));
-      rebuilt = pokeRes.ok;
-    } catch (err) {
-      console.error('Deploy coordinator error:', err);
-    }
-
-    return new Response(
-      JSON.stringify({ success: true, indexed, total: allProducts.length, rebuilt, settingsSynced, autoPublish: autoPublishResult, redirect: redirectResult }),
-      { headers: { 'Content-Type': 'application/json' } }
-    );
+    const result = await runFullSync({ ai, vectorize, domain, token, origin, syncSecret });
+    return new Response(JSON.stringify({ success: true, ...result }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (err: any) {
     console.error('Product sync error:', err?.message);
     return new Response(JSON.stringify({ error: 'Sync failed.' }), {
