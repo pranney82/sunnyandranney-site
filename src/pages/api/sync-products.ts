@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { batchSetProductAvailability, pruneStaleAvailability, batchSetInventoryItemMap, pruneStaleInventoryMap } from '@/lib/db';
 import { ensureProductRedirect } from '@/lib/shopify-redirects';
-import { viaGateway } from '@/lib/ai';
+import { viaGateway, aiCapped } from '@/lib/ai';
 import collectionsConfig from '@/content/settings/collections.json';
 
 export const prerender = false;
@@ -374,6 +374,11 @@ async function runFullSync({ ai, vectorize, domain, token, origin, syncSecret }:
 
   const BATCH_SIZE = 100;
   let indexed = 0;
+  // Kept after every batch: a sync cut off or stopped at a cap goes on from there, not from the start
+  const saveHashes = () => env.DB.prepare(
+    `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now'))
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
+  ).bind(HASHES_KEY, JSON.stringify(nextHashes)).run();
 
   for (let i = 0; i < changed.length; i += BATCH_SIZE) {
     const batch = changed.slice(i, i + BATCH_SIZE);
@@ -392,6 +397,7 @@ async function runFullSync({ ai, vectorize, domain, token, origin, syncSecret }:
     })));
     for (const e of batch) nextHashes[e.id] = e.hash;
     indexed += batch.length;
+    await saveHashes();
   }
 
   // 4. Remove stale vectors for products no longer in enabled collections.
@@ -417,10 +423,7 @@ async function runFullSync({ ai, vectorize, domain, token, origin, syncSecret }:
     // Non-critical — stale vectors will just score low in searches
   }
 
-  await env.DB.prepare(
-    `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now'))
-     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
-  ).bind(HASHES_KEY, JSON.stringify(nextHashes)).run();
+  await saveHashes();
 
   // Persist the current valid handles so the next sync can diff against them
   await env.DB.prepare(
@@ -632,10 +635,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
       let embedded = false;
       if (text && prevHash !== nextHash) {
+        // A cap reached: price and stock still go in below, and the next full sync reads the new words
         const embeddingResult = (await ai.run('@cf/baai/bge-base-en-v1.5', {
           text: [text],
-        }, viaGateway('product-sync'))) as { data: number[][] };
-        if (embeddingResult.data?.[0]) {
+        }, viaGateway('product-sync')).catch(async (err: unknown) => {
+          if (!aiCapped(err)) throw err;
+          await markCatalogChanged();
+          return null;
+        })) as { data: number[][] } | null;
+        if (embeddingResult?.data?.[0]) {
           await vectorize.upsert([{
             id,
             values: embeddingResult.data[0],

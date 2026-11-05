@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import { viaGateway } from '@/lib/ai';
+import { viaGateway, anthropicRun, aiCapped } from '@/lib/ai';
 import { getSetting, checkRateLimit, getSession, upsertSession, cleanExpiredSessions, getProductAvailability } from '@/lib/db';
 
 export const prerender = false;
@@ -8,12 +8,13 @@ export const prerender = false;
 // ─── Constants ──────────────────────────────────────────────
 const MAX_HISTORY = 20;
 const MAX_INPUT_LENGTH = 500;
+const MAX_HISTORY_CHARS = 16000;
 const MAX_TOKENS = 2048;
 const JSON_HEADERS = { 'Content-Type': 'application/json' } as const;
 const RATE_LIMIT_WINDOW = 60;
 const RATE_LIMIT_MAX = 20;
+const RATE_LIMIT_HOUR_MAX = 60;
 const ANTHROPIC_MODEL = 'claude-sonnet-4-6';
-const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const SESSION_SUMMARY_THRESHOLD = 30;
 const SESSION_TRUNCATE_TO = 10;
 
@@ -357,6 +358,38 @@ function createWorkersAIStream(
   });
 }
 
+// ─── Claude, through the gateway ─────────────────────────────
+
+/** Anthropic's Response, or null when it can't answer so the caller falls back. The log says why, never what was asked */
+async function askAnthropic(feature: string, body: Record<string, unknown>): Promise<Response | null> {
+  try {
+    const res = await anthropicRun(env.AI, env.ANTHROPIC_API_KEY!, feature, { model: ANTHROPIC_MODEL, ...body });
+    if (res.ok && res.body) return res;
+    console.error('Anthropic answered', res.status);
+  } catch (err: any) {
+    console.error('Anthropic through the gateway:', err?.message);
+  }
+  return null;
+}
+
+/**
+ * The conversation as the model gets it: only the two roles and plain text a real chat sends, the newest kept, up to
+ * MAX_HISTORY_CHARS. The browser sends this history, so only its last message is the customer's and held to
+ * MAX_INPUT_LENGTH; without a limit on the rest anyone could send any amount, and each message spends AI.
+ */
+function historyOf(messages: ChatMessage[]): ChatMessage[] {
+  const clean = messages.filter((m) => (m?.role === 'user' || m?.role === 'assistant') && typeof m.content === 'string' && m.content.trim());
+  const kept: ChatMessage[] = [];
+  let total = 0;
+  for (const m of clean.slice(-MAX_HISTORY).reverse()) {
+    total += m.content.length;
+    if (total > MAX_HISTORY_CHARS) break;
+    kept.unshift({ role: m.role, content: m.content });
+  }
+  while (kept[0]?.role === 'assistant') kept.shift();
+  return kept;
+}
+
 // ─── Session summary generation ──────────────────────────────
 
 async function generateSummary(
@@ -371,21 +404,12 @@ async function generateSummary(
 
   try {
     if (useAnthropic && env.ANTHROPIC_API_KEY) {
-      const res = await fetch(ANTHROPIC_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': env.ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: ANTHROPIC_MODEL,
-          max_tokens: 200,
-          system: summaryPrompt,
-          messages: [{ role: 'user', content: conversationText }],
-        }),
+      const res = await askAnthropic('chat-summary', {
+        max_tokens: 200,
+        system: summaryPrompt,
+        messages: [{ role: 'user', content: conversationText }],
       });
-      if (res.ok) {
+      if (res) {
         const data = await res.json() as any;
         return data.content?.[0]?.text || '';
       }
@@ -414,7 +438,8 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const ip = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || 'unknown';
-    const allowed = await checkRateLimit(`chat:${ip}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW);
+    const allowed = await checkRateLimit(`chat:${ip}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW)
+      && await checkRateLimit(`chat-hour:${ip}`, RATE_LIMIT_HOUR_MAX, 3600);
     if (!allowed) {
       return new Response(JSON.stringify({ error: 'Too many messages. Please wait a moment and try again.' }), {
         status: 429,
@@ -428,7 +453,11 @@ export const POST: APIRoute = async ({ request }) => {
       pageContext?: PageContext;
       sessionId?: string;
     };
-    const { messages, stream = false, pageContext, sessionId } = body;
+    const { messages, stream = false } = body;
+    // Both come from the browser and go near the model, so they're held like the messages are
+    const clip = (v: unknown, max: number) => (typeof v === 'string' ? v.slice(0, max) : '');
+    const pageContext: PageContext = { url: clip(body.pageContext?.url, 300), title: clip(body.pageContext?.title, 200) };
+    const sessionId = clip(body.sessionId, 64);
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: 'Messages array required' }), {
@@ -437,8 +466,12 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    const lastUserMsg = [...messages].reverse().find((m: ChatMessage) => m.role === 'user');
-    if (lastUserMsg && lastUserMsg.content.length > MAX_INPUT_LENGTH) {
+    const trimmedMessages = historyOf(messages);
+    const lastMsg = trimmedMessages.at(-1);
+    if (lastMsg?.role !== 'user') {
+      return new Response(JSON.stringify({ error: 'Messages array required' }), { status: 400, headers: JSON_HEADERS });
+    }
+    if (lastMsg.content.length > MAX_INPUT_LENGTH) {
       return new Response(JSON.stringify({ error: 'Message too long. Please keep it under 500 characters.' }), {
         status: 400,
         headers: JSON_HEADERS,
@@ -447,13 +480,11 @@ export const POST: APIRoute = async ({ request }) => {
 
     const ai = env.AI;
     const vectorize = env.VECTORIZE;
-    const useAnthropic = !!env.ANTHROPIC_API_KEY;
+    const useAnthropic = !!ai && !!env.ANTHROPIC_API_KEY;
 
-    if (!ai && !useAnthropic) {
+    if (!ai) {
       return new Response(JSON.stringify({ error: 'AI service unavailable.' }), { status: 503, headers: JSON_HEADERS });
     }
-
-    const trimmedMessages: ChatMessage[] = messages.slice(-MAX_HISTORY);
 
     // ─── Load session summary from D1 ──────────────────────
     let sessionSummary = '';
@@ -490,39 +521,23 @@ export const POST: APIRoute = async ({ request }) => {
 
       if (useAnthropic) {
         // Anthropic Messages API
-        const anthropicRes = await fetch(ANTHROPIC_API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': env.ANTHROPIC_API_KEY!,
-            'anthropic-version': '2023-06-01',
-          },
-          body: JSON.stringify({
-            model: ANTHROPIC_MODEL,
-            max_tokens: MAX_TOKENS,
-            system: fullSystem,
-            messages: trimmedMessages.map(m => ({
-              role: m.role as 'user' | 'assistant',
-              content: m.content,
-            })),
-            stream: true,
-          }),
+        const anthropicRes = await askAnthropic('chat', {
+          max_tokens: MAX_TOKENS,
+          system: fullSystem,
+          messages: trimmedMessages,
+          stream: true,
         });
 
-        if (!anthropicRes.ok || !anthropicRes.body) {
+        if (!anthropicRes) {
           // Fallback to Workers AI on Anthropic failure
-          if (ai) {
-            const eventStream = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
-              messages: [{ role: 'system', content: fullSystem }, ...trimmedMessages],
-              max_tokens: MAX_TOKENS,
-              stream: true,
-            }, viaGateway('chat')) as ReadableStream;
-            combinedStream = createWorkersAIStream(eventStream, productCards);
-          } else {
-            throw new Error('Both Anthropic and Workers AI unavailable');
-          }
+          const eventStream = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
+            messages: [{ role: 'system', content: fullSystem }, ...trimmedMessages],
+            max_tokens: MAX_TOKENS,
+            stream: true,
+          }, viaGateway('chat')) as ReadableStream;
+          combinedStream = createWorkersAIStream(eventStream, productCards);
         } else {
-          combinedStream = createAnthropicStream(anthropicRes.body, productCards);
+          combinedStream = createAnthropicStream(anthropicRes.body!, productCards);
         }
       } else {
         // Workers AI
@@ -555,28 +570,16 @@ export const POST: APIRoute = async ({ request }) => {
     let reply = '';
 
     if (useAnthropic) {
-      const anthropicRes = await fetch(ANTHROPIC_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': env.ANTHROPIC_API_KEY!,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: ANTHROPIC_MODEL,
-          max_tokens: MAX_TOKENS,
-          system: fullSystem,
-          messages: trimmedMessages.map(m => ({
-            role: m.role as 'user' | 'assistant',
-            content: m.content,
-          })),
-        }),
+      const anthropicRes = await askAnthropic('chat', {
+        max_tokens: MAX_TOKENS,
+        system: fullSystem,
+        messages: trimmedMessages,
       });
 
-      if (anthropicRes.ok) {
+      if (anthropicRes) {
         const data = await anthropicRes.json() as any;
         reply = data.content?.[0]?.text || '';
-      } else if (ai) {
+      } else {
         // Fallback
         const result = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
           messages: [{ role: 'system', content: fullSystem }, ...trimmedMessages],
@@ -602,6 +605,10 @@ export const POST: APIRoute = async ({ request }) => {
 
   } catch (err: any) {
     console.error('Chat API error:', err?.message);
+    // A spending cap reached: it lifts by itself, and the shop's still open (429: the chat box shows this error's words)
+    if (aiCapped(err)) {
+      return new Response(JSON.stringify({ error: 'Our chat is taking a short break. You can browse the shop or visit the store in the meantime.' }), { status: 429, headers: JSON_HEADERS });
+    }
     return new Response(JSON.stringify({ error: 'Something went wrong. Please try again.' }), {
       status: 500,
       headers: JSON_HEADERS,

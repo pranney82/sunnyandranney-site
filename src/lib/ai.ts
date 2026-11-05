@@ -5,11 +5,35 @@
  *
  * The gateway (Cloudflare → AI → AI Gateway → sunnyandranney-site) counts the
  * store's AI apart from SOARD's, which shares the Cloudflare account, and caps
- * it an hour at a time if something ever loops. `feature` is the name shown
- * beside the numbers. Nothing customers type is logged: the gateway's own log
- * setting is off, and collectLog says so again on each call.
+ * it if something ever loops: calls an hour for the store, dollars a day for the
+ * store and for each feature, so a busy chat can't stop the product sync.
+ * `feature` is the name shown beside the numbers. Nothing customers type is
+ * logged: the gateway's own log setting is off, and collectLog says so again on
+ * each call.
+ *
+ * Claude goes the same way (anthropicRun), with the store's own key, so its cost
+ * is counted and capped with the rest and a failure shows its status there.
  */
 const GATEWAY_ID = 'sunnyandranney-site';
+
+/** Cloudflare turned the call away at a cap: 2003 the gateway's calls an hour, 2045 a spend limit */
+export const aiCapped = (err: unknown) => /^\s*(2003|2045):/.test(String((err as Error)?.message || ''));
+
+/** One Anthropic Messages request through the gateway → Anthropic's Response, streaming when the body asks */
+export function anthropicRun(ai: Ai, apiKey: string, feature: string, body: Record<string, unknown>): Promise<Response> {
+  return ai.gateway(GATEWAY_ID).run({
+    provider: 'anthropic',
+    endpoint: 'v1/messages',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'cf-aig-collect-log': 'false',
+      'cf-aig-metadata': JSON.stringify({ feature }),
+    },
+    query: body,
+  });
+}
 
 export function viaGateway(feature: string) {
   return {
