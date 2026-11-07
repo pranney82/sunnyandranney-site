@@ -1,0 +1,215 @@
+---
+export const prerender = false;
+
+import AdminBase from '@/layouts/AdminBase.astro';
+import { liveGusto } from '@/lib/gusto/client.mjs';
+import { syncEmployeesIfStale } from '@/lib/gusto/employees.mjs';
+import { GustoError } from '@/lib/gusto/oauth.mjs';
+import { listStaff } from '@/lib/time-clock/store';
+
+if (Astro.locals.admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
+
+const env = Astro.locals.runtime.env;
+const gusto = await liveGusto(env);
+let gustoProblem = '';
+if (gusto.client) {
+  try {
+    await syncEmployeesIfStale(env.DB, gusto.client, gusto.connection);
+  } catch (err) {
+    if (!(err instanceof GustoError)) throw err;
+    gustoProblem = err.message;
+  }
+}
+
+const staff = await listStaff(env.DB);
+---
+
+<AdminBase title="Staff">
+  <div class="page-header">
+    <h1>Staff</h1>
+    <div class="page-actions">
+      <button type="button" class="btn btn-primary" id="add-staff">Add employee</button>
+    </div>
+  </div>
+
+  {gustoProblem && <p class="notice">Could not update the list from Gusto. {gustoProblem}</p>}
+
+  {
+    staff.length === 0 ? (
+      <div class="card empty">No staff yet.</div>
+    ) : (
+      <section class="card">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Time clock</th>
+                <th class="wide-only">Gusto</th>
+                <th class="wide-only">Overtime</th>
+                <th>Store staff</th>
+                <th><span class="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {staff.map((person) => (
+                <tr>
+                  <td>{person.display_name}</td>
+                  <td>
+                    {!person.active ? (
+                      <span class="badge">Inactive</span>
+                    ) : person.pin_hash ? (
+                      <span class="badge badge-approved">Active</span>
+                    ) : (
+                      <span class="badge badge-pending">Needs a PIN</span>
+                    )}
+                  </td>
+                  <td class="wide-only">
+                    {person.gusto_employee_uuid && person.gusto_job_uuid ? (
+                      <span class="badge badge-approved">Linked</span>
+                    ) : person.gusto_employee_uuid ? (
+                      <span class="badge badge-pending">Needs a job</span>
+                    ) : (
+                      <span class="badge badge-pending">Not linked</span>
+                    )}
+                  </td>
+                  <td class="wide-only">{person.overtime_eligible ? 'Eligible' : 'Exempt'}</td>
+                  <td>{person.store_staff ? 'Yes' : 'No'}</td>
+                  <td class="num">
+                    <button
+                      type="button"
+                      class="btn"
+                      data-edit
+                      data-id={person.id}
+                      data-name={person.display_name}
+                      data-email={person.email ?? ''}
+                      data-overtime={person.overtime_eligible ? '1' : ''}
+                      data-active={person.active ? '1' : ''}
+                      data-store={person.store_staff ? '1' : ''}
+                    >
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    )
+  }
+
+  <dialog id="staff-dialog" aria-labelledby="staff-title">
+    <form id="staff-form">
+      <h2 id="staff-title"></h2>
+      <p id="staff-error" class="form-error" role="alert"></p>
+      <div class="field">
+        <label for="staff-name">Name</label>
+        <input id="staff-name" type="text" maxlength="100" required />
+      </div>
+      <div class="field">
+        <label for="staff-email">Admin login email (managers only)</label>
+        <input id="staff-email" type="email" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label for="staff-pin" id="staff-pin-label">Clock PIN (4 to 8 digits)</label>
+        <input id="staff-pin" type="password" inputmode="numeric" autocomplete="new-password" pattern="[0-9]{4,8}" />
+      </div>
+      <div class="field">
+        <label class="check"><input id="staff-overtime" type="checkbox" /> Overtime eligible</label>
+      </div>
+      <div class="field" id="staff-active-field">
+        <label class="check"><input id="staff-active" type="checkbox" /> Active on the time clock</label>
+      </div>
+      <div class="field" id="staff-store-field">
+        <label class="check"><input id="staff-store" type="checkbox" /> Store staff (shows on Payroll and Gusto history)</label>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="btn" id="staff-cancel">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+</AdminBase>
+
+<style>
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  @media (max-width: 480px) {
+    .wide-only { display: none; }
+  }
+</style>
+
+<script>
+  import { post } from '@/lib/time-clock/admin-client';
+
+  const dialog = document.querySelector<HTMLDialogElement>('#staff-dialog')!;
+  const form = document.querySelector<HTMLFormElement>('#staff-form')!;
+  const title = document.querySelector<HTMLElement>('#staff-title')!;
+  const error = document.querySelector<HTMLElement>('#staff-error')!;
+  const name = document.querySelector<HTMLInputElement>('#staff-name')!;
+  const email = document.querySelector<HTMLInputElement>('#staff-email')!;
+  const pin = document.querySelector<HTMLInputElement>('#staff-pin')!;
+  const pinLabel = document.querySelector<HTMLElement>('#staff-pin-label')!;
+  const overtime = document.querySelector<HTMLInputElement>('#staff-overtime')!;
+  const active = document.querySelector<HTMLInputElement>('#staff-active')!;
+  const activeField = document.querySelector<HTMLElement>('#staff-active-field')!;
+  const storeStaff = document.querySelector<HTMLInputElement>('#staff-store')!;
+  const storeField = document.querySelector<HTMLElement>('#staff-store-field')!;
+
+  let editingId: string | null = null;
+
+  function open(
+    heading: string,
+    id: string | null,
+    values: { name: string; email: string; overtime: boolean; active: boolean; storeStaff: boolean },
+  ) {
+    editingId = id;
+    title.textContent = heading;
+    name.value = values.name;
+    email.value = values.email;
+    overtime.checked = values.overtime;
+    active.checked = values.active;
+    storeStaff.checked = values.storeStaff;
+    activeField.hidden = id === null;
+    storeField.hidden = id === null;
+    pinLabel.textContent = id ? 'New clock PIN (leave blank to keep it)' : 'Clock PIN (4 to 8 digits)';
+    pin.value = '';
+    error.textContent = '';
+    dialog.showModal();
+  }
+
+  document.querySelector('#add-staff')!.addEventListener('click', () => {
+    open('Add employee', null, { name: '', email: '', overtime: true, active: true, storeStaff: false });
+  });
+
+  document.querySelector('#staff-cancel')!.addEventListener('click', () => dialog.close());
+
+  document.querySelectorAll<HTMLButtonElement>('[data-edit]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const data = button.dataset;
+      open(`Edit ${data.name}`, data.id!, {
+        name: data.name ?? '',
+        email: data.email ?? '',
+        overtime: Boolean(data.overtime),
+        active: Boolean(data.active),
+        storeStaff: Boolean(data.store),
+      });
+    });
+  });
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const { error: message } = await post('/api/admin/staff/', {
+      ...(editingId ? { id: editingId } : {}),
+      name: name.value,
+      email: email.value,
+      pin: pin.value,
+      overtimeEligible: overtime.checked,
+      active: active.checked,
+      storeStaff: storeStaff.checked,
+    });
+    if (message) error.textContent = message;
+    else location.reload();
+  });
+</script>

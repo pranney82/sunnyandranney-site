@@ -1,0 +1,388 @@
+---
+export const prerender = false;
+
+import AdminBase from '@/layouts/AdminBase.astro';
+import { connectionStatus } from '@/lib/gusto/connection.mjs';
+import { canSendHours } from '@/lib/gusto/mcp-oauth.mjs';
+import { gustoConfig } from '@/lib/gusto/oauth.mjs';
+import {
+  STORE_TIME_ZONE,
+  addDays,
+  isIsoDate,
+  localDate,
+  utcToLocalInput,
+  workweekStart,
+} from '@/lib/time-clock/hours.mjs';
+import { entriesForWeek, hoursByEntry, listStaff } from '@/lib/time-clock/store';
+
+if (Astro.locals.admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
+
+const db = Astro.locals.runtime.env.DB;
+// Hours are typed into Gusto by hand unless the MCP sign-in granted adding time sheets.
+const handEntry =
+  gustoConfig(Astro.locals.runtime.env)?.route === 'mcp' && !canSendHours(((await connectionStatus(db))?.scopes ?? '').split(' '));
+const today = localDate(new Date().toISOString());
+const requested = Astro.url.searchParams.get('week');
+const weekStart = workweekStart(isIsoDate(requested) ? (requested as string) : today);
+const currentWeek = workweekStart(today);
+
+const [entries, staff] = await Promise.all([entriesForWeek(db, weekStart), listStaff(db, true)]);
+const hours = hoursByEntry(entries);
+const myEmail = Astro.locals.admin.email;
+
+const dateLabel = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' });
+const shortDate = (date: string) => dateLabel.format(new Date(`${date}T00:00:00Z`));
+const timeLabel = new Intl.DateTimeFormat('en-US', { timeZone: STORE_TIME_ZONE, hour: 'numeric', minute: '2-digit' });
+const time = (iso: string) => timeLabel.format(new Date(iso));
+
+const hoursLabel = (minutes: number) => (minutes / 60).toFixed(2);
+const STATUS_LABELS = { pending: 'Needs review', approved: 'Approved', rejected: 'Rejected' };
+
+const LONG_SHIFT_MINUTES = 12 * 60;
+
+const people = new Map<
+  string,
+  { name: string; regular: number; overtime: number; isSelf: boolean; rows: Array<(typeof entries)[number]> }
+>();
+for (const entry of entries) {
+  const person = people.get(entry.staff_id) ?? {
+    name: entry.display_name,
+    regular: 0,
+    overtime: 0,
+    isSelf: entry.email?.toLowerCase() === myEmail,
+    rows: [],
+  };
+  const split = hours.get(entry.id);
+  person.regular += split?.regularMinutes ?? 0;
+  person.overtime += split?.overtimeMinutes ?? 0;
+  person.rows.push(entry);
+  people.set(entry.staff_id, person);
+}
+
+const canApprove = (entry: (typeof entries)[number], isSelf: boolean) =>
+  entry.status === 'pending' && Boolean(entry.clock_out_at) && !entry.push_state && !isSelf;
+
+const approvable = [...people.values()].flatMap((person) =>
+  person.rows.filter((entry) => canApprove(entry, person.isSelf)).map(({ id, version }) => ({ id, version })),
+);
+const openCount = entries.filter((entry) => !entry.clock_out_at && entry.status !== 'rejected').length;
+---
+
+<AdminBase title="Hours">
+  <div class="page-header">
+    <div>
+      <h1>Hours</h1>
+      <p class="muted">{shortDate(weekStart)} to {shortDate(addDays(weekStart, 6))}</p>
+    </div>
+    <div class="page-actions">
+      <a class="btn" href={`/admin/hours/?week=${addDays(weekStart, -7)}`}>Previous week</a>
+      {
+        weekStart < currentWeek && (
+          <a class="btn" href={`/admin/hours/?week=${addDays(weekStart, 7)}`}>
+            Next week
+          </a>
+        )
+      }
+      <a class="btn" href={handEntry ? '/admin/hours/for-gusto/' : '/admin/hours/send/'}>{handEntry ? 'Hours for Gusto' : 'Send to Gusto'}</a>
+      <button type="button" class="btn" id="add-shift" data-week={weekStart}>Add missed shift</button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        id="approve-all"
+        data-entries={JSON.stringify(approvable)}
+        disabled={approvable.length === 0}
+      >
+        Approve all ({approvable.length})
+      </button>
+    </div>
+  </div>
+
+  <p id="page-error" class="form-error" role="alert"></p>
+
+  {
+    openCount > 0 && (
+      <p class="notice">
+        {openCount === 1 ? '1 shift has' : `${openCount} shifts have`} no clock-out. Someone is still working, or they
+        forgot to clock out. Open shifts can't be approved until they have a clock-out time.
+      </p>
+    )
+  }
+
+  {
+    people.size === 0 && (
+      <div class="card empty">No shifts this week.</div>
+    )
+  }
+
+  {
+    [...people.entries()].map(([staffId, person]) => (
+      <section class="card">
+        <div class="person-header">
+          <h2>{person.name}</h2>
+          <p class="person-total">
+            {hoursLabel(person.regular + person.overtime)} hrs
+            {person.overtime > 0 && <span class="overtime">{hoursLabel(person.overtime)} overtime</span>}
+          </p>
+        </div>
+        {person.isSelf && <p class="muted self-note">These are your own hours, so another manager needs to review them.</p>}
+        <div>
+          <table class="shift-table">
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>In</th>
+                <th>Out</th>
+                <th class="num">Hours</th>
+                <th>Status</th>
+                <th><span class="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {person.rows.map((entry) => {
+                const split = hours.get(entry.id);
+                const total = (split?.regularMinutes ?? 0) + (split?.overtimeMinutes ?? 0);
+                const locked = Boolean(entry.push_state);
+                const rejected = entry.status === 'rejected';
+                return (
+                  <tr>
+                    <td class="c-day">
+                      {shortDate(localDate(entry.clock_in_at))}
+                      {entry.source === 'manual' && <span class="muted"> (added)</span>}
+                    </td>
+                    <td class="c-in">{time(entry.clock_in_at)}</td>
+                    <td class="c-out">{entry.clock_out_at ? time(entry.clock_out_at) : '—'}</td>
+                    <td class="num c-hours">
+                      {entry.clock_out_at && !rejected ? hoursLabel(total) : '—'}
+                      {total > LONG_SHIFT_MINUTES && !rejected && <span class="badge badge-pending">Long</span>}
+                    </td>
+                    <td class="c-status">
+                      {locked ? (
+                        <span class="badge badge-sent">{entry.push_state === 'pushed' ? 'Sent to Gusto' : 'Sending'}</span>
+                      ) : !entry.clock_out_at && !rejected ? (
+                        <span class="badge badge-open">Clocked in</span>
+                      ) : (
+                        <span class:list={['badge', `badge-${entry.status}`]}>{STATUS_LABELS[entry.status]}</span>
+                      )}
+                    </td>
+                    <td class="c-actions">
+                      {!locked && !person.isSelf && (
+                        <div class="row-actions">
+                          {entry.status === 'pending' && (
+                            <button
+                              type="button"
+                              class="btn"
+                              data-edit
+                              data-id={entry.id}
+                              data-version={entry.version}
+                              data-staff={staffId}
+                              data-name={person.name}
+                              data-in={utcToLocalInput(entry.clock_in_at)}
+                              data-out={entry.clock_out_at ? utcToLocalInput(entry.clock_out_at) : ''}
+                            >
+                              {entry.clock_out_at ? 'Edit' : 'Add clock-out'}
+                            </button>
+                          )}
+                          {canApprove(entry, person.isSelf) && (
+                            <button
+                              type="button"
+                              class="btn btn-primary"
+                              data-approve
+                              data-id={entry.id}
+                              data-version={entry.version}
+                            >
+                              Approve
+                            </button>
+                          )}
+                          {entry.status !== 'pending' && (
+                            <button
+                              type="button"
+                              class="btn"
+                              data-reopen
+                              data-id={entry.id}
+                              data-version={entry.version}
+                              data-staff={staffId}
+                            >
+                              Reopen
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    ))
+  }
+
+  <dialog id="shift-dialog" aria-labelledby="shift-title">
+    <form id="shift-form">
+      <h2 id="shift-title"></h2>
+      <p id="shift-error" class="form-error" role="alert"></p>
+      <div class="field" id="staff-field">
+        <label for="shift-staff">Employee</label>
+        <select id="shift-staff">
+          {staff.map((person) => <option value={person.id}>{person.display_name}</option>)}
+        </select>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="shift-in">Clock in</label>
+          <input id="shift-in" type="datetime-local" required />
+        </div>
+        <div class="field">
+          <label for="shift-out">Clock out</label>
+          <input id="shift-out" type="datetime-local" required />
+        </div>
+      </div>
+      <div class="field">
+        <label for="shift-reason">Reason for the change</label>
+        <input id="shift-reason" type="text" maxlength="500" required />
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-danger" id="shift-reject">Reject shift</button>
+        <button type="button" class="btn" id="shift-cancel">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+</AdminBase>
+
+<style>
+  .person-header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.25rem 1rem; margin-bottom: 0.5rem; }
+  .person-header h2 { font-size: 1.125rem; }
+  .person-total { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .overtime { margin-left: 0.5rem; color: var(--warning); font-size: 0.9375rem; }
+  .self-note { margin-bottom: 0.5rem; }
+  .row-actions { display: flex; gap: 0.375rem; justify-content: flex-end; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  /* On phones each shift stacks, so Edit and Approve stay on screen. */
+  @media (max-width: 640px) {
+    .shift-table thead { display: none; }
+    .shift-table tbody, .shift-table tr, .shift-table td { display: block; }
+    .shift-table tr {
+      display: grid;
+      grid-template-columns: auto auto 1fr auto;
+      align-items: center;
+      gap: 0.25rem 0.75rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .shift-table tr:last-child { border-bottom: 0; padding-bottom: 0; }
+    .shift-table td { padding: 0; border: 0; }
+    .c-day { grid-column: 1 / 4; font-weight: 600; }
+    .c-status { grid-column: 4; grid-row: 1; text-align: right; }
+    .c-in { grid-column: 1; }
+    .c-out { grid-column: 2; }
+    .c-in::before { content: 'In '; color: var(--text-muted); }
+    .c-out::before { content: 'Out '; color: var(--text-muted); }
+    .c-hours { grid-column: 3 / 5; }
+    .c-actions { grid-column: 1 / -1; }
+    .c-actions:empty { display: none; }
+    .row-actions { justify-content: stretch; margin-top: 0.375rem; }
+    .row-actions .btn { flex: 1; }
+  }
+</style>
+
+<script>
+  import { post } from '@/lib/time-clock/admin-client';
+
+  const pageError = document.querySelector<HTMLElement>('#page-error')!;
+  const dialog = document.querySelector<HTMLDialogElement>('#shift-dialog')!;
+  const form = document.querySelector<HTMLFormElement>('#shift-form')!;
+  const title = document.querySelector<HTMLElement>('#shift-title')!;
+  const formError = document.querySelector<HTMLElement>('#shift-error')!;
+  const staffField = document.querySelector<HTMLElement>('#staff-field')!;
+  // getElementById: Cloudflare's global Element type breaks querySelector<HTMLSelectElement>.
+  const staffSelect = document.getElementById('shift-staff') as unknown as HTMLSelectElement;
+  const clockIn = document.querySelector<HTMLInputElement>('#shift-in')!;
+  const clockOut = document.querySelector<HTMLInputElement>('#shift-out')!;
+  const reason = document.querySelector<HTMLInputElement>('#shift-reason')!;
+  const rejectButton = document.querySelector<HTMLButtonElement>('#shift-reject')!;
+
+  let editing: { id: string; version: number; staffId: string } | null = null;
+
+  async function send(body: object, errorTarget: HTMLElement): Promise<void> {
+    errorTarget.textContent = '';
+    const { error } = await post('/api/admin/hours/', body);
+    if (error) errorTarget.textContent = error;
+    else location.reload();
+  }
+
+  function openDialog(heading: string, entry: typeof editing, values: { in: string; out: string }) {
+    editing = entry;
+    title.textContent = heading;
+    staffField.hidden = entry !== null;
+    rejectButton.hidden = entry === null;
+    clockIn.value = values.in;
+    clockOut.value = values.out;
+    reason.value = '';
+    formError.textContent = '';
+    dialog.showModal();
+  }
+
+  document.querySelector<HTMLButtonElement>('#add-shift')!.addEventListener('click', () => {
+    openDialog('Add a missed shift', null, { in: '', out: '' });
+  });
+
+  document.querySelector('#shift-cancel')!.addEventListener('click', () => dialog.close());
+
+  document.querySelectorAll<HTMLButtonElement>('[data-edit]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const { id, version, staff, name, in: start, out } = button.dataset;
+      openDialog(`Edit shift: ${name}`, { id: id!, version: Number(version), staffId: staff! }, {
+        in: start ?? '',
+        out: out ?? '',
+      });
+    });
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('[data-approve]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const { id, version } = button.dataset;
+      button.disabled = true;
+      send({ action: 'approve', entries: [{ id, version: Number(version) }] }, pageError).finally(() => {
+        button.disabled = false;
+      });
+    });
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('[data-reopen]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const { id, version, staff } = button.dataset;
+      send({ action: 'reopen', id, version: Number(version), staffId: staff }, pageError);
+    });
+  });
+
+  const approveAll = document.querySelector<HTMLButtonElement>('#approve-all')!;
+  approveAll.addEventListener('click', () => {
+    approveAll.disabled = true;
+    send({ action: 'approve', entries: JSON.parse(approveAll.dataset.entries ?? '[]') }, pageError).finally(() => {
+      approveAll.disabled = false;
+    });
+  });
+
+  rejectButton.addEventListener('click', () => {
+    if (!editing) return;
+    if (!reason.value.trim()) {
+      formError.textContent = 'Add a short reason before rejecting this shift.';
+      reason.focus();
+      return;
+    }
+    send({ action: 'reject', id: editing.id, version: editing.version, reason: reason.value }, formError);
+  });
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const times = { clockIn: clockIn.value, clockOut: clockOut.value, reason: reason.value };
+    if (editing) {
+      send({ action: 'edit', id: editing.id, version: editing.version, staffId: editing.staffId, ...times }, formError);
+    } else {
+      send({ action: 'add', staffId: staffSelect.value, ...times }, formError);
+    }
+  });
+</script>

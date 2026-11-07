@@ -1,0 +1,161 @@
+---
+export const prerender = false;
+
+import AdminBase from '@/layouts/AdminBase.astro';
+import { liveGusto } from '@/lib/gusto/client.mjs';
+import { GustoError } from '@/lib/gusto/oauth.mjs';
+import { refreshPay } from '@/lib/gusto/pay-sync.mjs';
+import { groupPayRuns } from '@/lib/time-clock/gusto-pay.mjs';
+import { STORE_TIME_ZONE, addDays, isIsoDate, localDate } from '@/lib/time-clock/hours.mjs';
+import { storePayroll, type PayRow } from '@/lib/time-clock/store';
+
+if (Astro.locals.admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
+
+const today = localDate(new Date().toISOString());
+const fromParam = Astro.url.searchParams.get('from');
+const toParam = Astro.url.searchParams.get('to');
+const to = isIsoDate(toParam) ? (toParam as string) : today;
+const from = isIsoDate(fromParam) ? (fromParam as string) : addDays(to, -90);
+
+const env = Astro.locals.runtime.env;
+const db = env.DB;
+
+const gusto = await liveGusto(env);
+let gustoProblem = '';
+let unread = 0;
+if (gusto.client) {
+  try {
+    unread = (await refreshPay(db, gusto.client, { from, to, today })).remaining;
+  } catch (err) {
+    if (!(err instanceof GustoError)) throw err;
+    gustoProblem = err.message;
+  }
+}
+const isLive = Boolean(gusto.client) && !gustoProblem;
+
+const { rows, truncated } = await storePayroll(db, from, to);
+const { runs, uncounted, grossCents, workedHours } = groupPayRuns(rows);
+
+const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+const dollars = (cents: number) => money.format(cents / 100);
+const hours = (value: number) => value.toFixed(2);
+const dateLabel = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' });
+const day = (date: string | null) => (date ? dateLabel.format(new Date(`${date}T00:00:00Z`)) : 'unknown');
+const importLabel = new Intl.DateTimeFormat('en-US', { timeZone: STORE_TIME_ZONE, month: 'short', day: 'numeric', year: 'numeric' });
+const lastImport = rows.reduce((latest, row) => (row.imported_at > latest ? row.imported_at : latest), '');
+---
+
+<AdminBase title="Payroll">
+  <div class="page-header">
+    <div>
+      <h1>Payroll</h1>
+      <p class="muted">
+        Read-only gross pay and hours from Gusto for store staff.
+        {isLive ? 'Live from Gusto.' : lastImport && `Last updated ${importLabel.format(new Date(lastImport))}.`}
+      </p>
+    </div>
+  </div>
+
+  <form class="card filters" method="get">
+    <div class="field">
+      <label for="from">Paid from</label>
+      <input id="from" name="from" type="date" value={from} />
+    </div>
+    <div class="field">
+      <label for="to">Paid to</label>
+      <input id="to" name="to" type="date" value={to} />
+    </div>
+    <button class="btn btn-primary" type="submit">Show</button>
+  </form>
+
+  {gustoProblem && <p class="notice">Could not reach Gusto just now, so this may be out of date. {gustoProblem}</p>}
+  {gusto.state === 'reconnect' && <p class="notice">Gusto needs to be reconnected, so this may be out of date.</p>}
+  {unread > 0 && <p class="notice">{unread} older payrolls are still loading. Reload this page to read more.</p>}
+
+  {truncated && <p class="notice">Showing the newest 2,000 pay lines, so these totals are incomplete. Narrow the dates.</p>}
+
+  {
+    runs.length === 0 ? (
+      <div class="card empty">No payroll for these dates. Only people marked as store staff appear here.</div>
+    ) : (
+      <>
+        <p class="payroll-total" id="payroll-total">
+          {dollars(grossCents)} gross, {hours(workedHours)} hours worked, across {runs.length - uncounted}{' '}
+          {runs.length - uncounted === 1 ? 'payroll' : 'payrolls'}
+        </p>
+        {uncounted > 0 && (
+          <p class="notice">
+            {uncounted} {uncounted === 1 ? 'payroll involves' : 'payrolls involve'} a reversal and {uncounted === 1 ? 'is' : 'are'} not in
+            this total. Check those in Gusto.
+          </p>
+        )}
+        {runs.map((run) => (
+          <section class="card" data-run={run.payrollUuid}>
+            <div class="run-header">
+              <div>
+                <h2>Paid {day(run.checkDate)}</h2>
+                <p class="muted">Pay period {day(run.periodStart)} to {day(run.periodEnd)}</p>
+              </div>
+              <div class="run-badges">
+                {run.kind === 'off_cycle' && <span class="badge">Off-cycle</span>}
+                {run.kind === 'reversal' && <span class="badge badge-pending">Reversal</span>}
+                {run.reversed && <span class="badge badge-pending">Reversed</span>}
+              </div>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th class="num"><span class="label-wide">Regular</span><span class="label-narrow">Reg</span></th>
+                    <th class="num"><span class="label-wide">Overtime</span><span class="label-narrow">OT</span></th>
+                    <th class="num"><span class="label-wide">Time off</span><span class="label-narrow">Off</span></th>
+                    <th class="num">Gross</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {run.people.map((person: PayRow) => (
+                    <tr>
+                      <td>{person.display_name}</td>
+                      <td class="num">{hours(person.regular_hours)}</td>
+                      <td class="num">{hours(person.overtime_hours)}</td>
+                      <td class="num">{hours(person.time_off_hours)}</td>
+                      <td class="num">{dollars(person.gross_cents)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td>Total</td>
+                    <td class="num">{hours(run.regularHours)}</td>
+                    <td class="num">{hours(run.overtimeHours)}</td>
+                    <td class="num">{hours(run.timeOffHours)}</td>
+                    <td class="num">{dollars(run.grossCents)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </section>
+        ))}
+      </>
+    )
+  }
+</AdminBase>
+
+<style>
+  .payroll-total { font-weight: 600; margin-bottom: 1rem; }
+  .run-header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.25rem 1rem; margin-bottom: 0.5rem; }
+  .run-header h2 { font-size: 1.0625rem; }
+  .run-badges { display: flex; gap: 0.375rem; align-items: flex-start; }
+  tfoot td { font-weight: 600; border-top: 1px solid var(--border); border-bottom: 0; }
+
+  .label-narrow { display: none; }
+
+  @media (max-width: 480px) {
+    section[data-run] { padding: 0.75rem; }
+    table { font-size: 0.8125rem; }
+    th, td { padding: 0.375rem 0.1875rem; }
+    .label-wide { display: none; }
+    .label-narrow { display: inline; }
+  }
+</style>
