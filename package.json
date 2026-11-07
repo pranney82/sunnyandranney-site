@@ -8,6 +8,8 @@
     "build": "astro build && node scripts/copy-settings.js",
     "preview": "astro preview",
     "astro": "astro",
+    "test": "node --test src/lib",
+    "gusto": "node scripts/gusto-hours.mjs",
     "deploy:hours-sync": "wrangler deploy --config workers/hours-sync/wrangler.toml",
     "deploy:deploy-coordinator": "wrangler deploy --config workers/deploy-coordinator/wrangler.toml",
     "deploy:shop-redirect": "wrangler deploy --config workers/shop-redirect/wrangler.toml",

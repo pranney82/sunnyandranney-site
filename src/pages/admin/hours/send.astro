@@ -1,0 +1,211 @@
+---
+export const prerender = false;
+
+import AdminBase from '@/layouts/AdminBase.astro';
+import { liveGusto } from '@/lib/gusto/client.mjs';
+import { GustoError } from '@/lib/gusto/oauth.mjs';
+import { draftPayrolls, loadPlan } from '@/lib/gusto/send.mjs';
+import { STORE_TIME_ZONE, localDate } from '@/lib/time-clock/hours.mjs';
+
+const admin = Astro.locals.admin;
+if (admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
+
+const env = Astro.locals.runtime.env;
+const gusto = await liveGusto(env);
+if (gusto.readOnly) return Astro.redirect('/admin/hours/for-gusto/');
+// Through Gusto's MCP server, hours go into Gusto's own time tracking, which
+// payroll reads. Through the partner API they're time sheets synced onto the draft.
+const intoTimeTracking = gusto.client?.route === 'mcp';
+// With the payroll permission too, the admin also sets the hours on the draft payroll.
+const fillsPayroll = Boolean(gusto.client?.fillsPayroll);
+
+interface DraftPayroll {
+  uuid: string;
+  start: string;
+  end: string;
+}
+
+let payrolls: DraftPayroll[] = [];
+let selected: DraftPayroll | undefined;
+let plan: Awaited<ReturnType<typeof loadPlan>> | undefined;
+let gustoProblem = '';
+
+if (gusto.client) {
+  try {
+    payrolls = await draftPayrolls(gusto.client, localDate(new Date().toISOString()));
+    const wanted = Astro.url.searchParams.get('payroll');
+    selected = payrolls.find((payroll) => payroll.uuid === wanted) ?? (payrolls.length === 1 ? payrolls[0] : undefined);
+    if (selected) plan = await loadPlan(env.DB, gusto.client, selected, admin.email);
+  } catch (err) {
+    if (!(err instanceof GustoError)) throw err;
+    gustoProblem = err.message;
+  }
+}
+
+const dateLabel = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
+const day = (date: string) => dateLabel.format(new Date(`${date}T00:00:00Z`));
+const shiftLabel = new Intl.DateTimeFormat('en-US', { timeZone: STORE_TIME_ZONE, weekday: 'short', month: 'short', day: 'numeric' });
+const hours = (minutes: number) => (minutes / 60).toFixed(2);
+---
+
+<AdminBase title="Send to Gusto">
+  <div class="page-header">
+    <div>
+      <h1>Send to Gusto</h1>
+      <p class="muted">
+        {fillsPayroll
+          ? "Approved hours go into Gusto's time tracking and onto the draft payroll. Nobody is paid until someone submits payroll in Gusto."
+          : intoTimeTracking
+            ? "Approved hours go into Gusto's time tracking for the pay period. Nobody is paid until someone runs payroll in Gusto."
+            : 'Approved hours go onto the draft payroll. You still review and run payroll in Gusto.'}
+      </p>
+    </div>
+  </div>
+
+  {gustoProblem && <p class="notice">Could not reach Gusto. {gustoProblem}</p>}
+
+  {!gusto.client && <div class="card empty">Gusto is not connected, so hours can't be sent yet.</div>}
+
+  {gusto.client && !gustoProblem && payrolls.length === 0 && (
+    <div class="card empty">Gusto has no draft payroll open right now.</div>
+  )}
+
+  {payrolls.length > 1 && !selected && (
+    <section class="card">
+      <h2>Choose a pay period</h2>
+      <ul class="periods">
+        {payrolls.map((payroll) => (
+          <li><a href={`?payroll=${encodeURIComponent(payroll.uuid)}`}>{day(payroll.start)} to {day(payroll.end)}</a></li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  {selected && plan && (
+    <section class="card" id="send-card" data-payroll={selected.uuid}>
+      <h2>Pay period {day(selected.start)} to {day(selected.end)}</h2>
+      {plan.alreadySent > 0 && <p class="muted">{plan.alreadySent} shifts already sent.</p>}
+
+      {plan.blockers.length > 0 && (
+        <div class="notice" id="send-blockers">
+          <p>Fix these before sending. Nothing goes to Gusto until the whole period is ready.</p>
+          <ul>{plan.blockers.map((blocker: string) => <li>{blocker}</li>)}</ul>
+        </div>
+      )}
+
+      {plan.toSend.length === 0 && plan.blockers.length === 0 && <p class="muted">Nothing new to send.</p>}
+
+      <p id="send-error" class="form-error" role="alert"></p>
+      <p id="send-result" class="muted" role="status"></p>
+
+      {plan.toSend.length > 0 && (
+        <>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Day</th>
+                  <th class="num">Regular</th>
+                  <th class="num">Overtime</th>
+                </tr>
+              </thead>
+              <tbody>
+                {plan.toSend.map((entry: { id: string; display_name: string; clock_in_at: string; regularMinutes: number; overtimeMinutes: number }) => (
+                  <tr>
+                    <td>{entry.display_name}</td>
+                    <td>{shiftLabel.format(new Date(entry.clock_in_at))}</td>
+                    <td class="num">{hours(entry.regularMinutes)}</td>
+                    <td class="num">{hours(entry.overtimeMinutes)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <button type="button" class="btn btn-primary" id="send-button" disabled={plan.blockers.length > 0}>
+            Send {plan.toSend.length} {plan.toSend.length === 1 ? 'shift' : 'shifts'} to Gusto
+          </button>
+        </>
+      )}
+
+      {(!intoTimeTracking || fillsPayroll) && plan.toSend.length === 0 && plan.alreadySent > 0 && plan.blockers.length === 0 && (
+        <>
+          <p class="muted">If those hours aren't on the draft payroll in Gusto, you can add them again. Nothing is sent twice.</p>
+          <button type="button" class="btn" id="send-button">Add sent hours to the draft payroll</button>
+        </>
+      )}
+    </section>
+  )}
+</AdminBase>
+
+<style>
+  h2 { font-size: 1.0625rem; margin-bottom: 0.5rem; }
+  .periods { list-style: none; display: grid; gap: 0.375rem; }
+  #send-blockers ul { margin: 0.375rem 0 0 1.25rem; }
+  #send-error, #send-result { margin: 0.75rem 0; }
+  #send-error:empty, #send-result:empty { display: none; }
+  #send-button { margin-top: 0.75rem; }
+</style>
+
+<script>
+  import { post } from '@/lib/time-clock/admin-client';
+
+  interface SendResult {
+    sent: number;
+    remaining: number;
+    synced?: boolean;
+    syncError?: string;
+    inTimeTracking?: boolean;
+    warnings?: string[];
+    onPayroll?: boolean;
+    payrollNotes?: string[];
+    fillError?: string;
+  }
+
+  const card = document.querySelector<HTMLElement>('#send-card');
+  const button = document.querySelector<HTMLButtonElement>('#send-button');
+  const error = document.querySelector<HTMLElement>('#send-error');
+  const result = document.querySelector<HTMLElement>('#send-result');
+
+  button?.addEventListener('click', async () => {
+    button.disabled = true;
+    error!.textContent = '';
+    let sent = 0;
+    const warnings: string[] = [];
+
+    // Each call sends one batch, because a Worker can only make so many requests at once.
+    for (;;) {
+      result!.textContent = sent ? `Sent ${sent} so far...` : 'Sending...';
+      const { data, error: message } = await post<SendResult>('/api/admin/gusto/send/', { payrollUuid: card!.dataset.payroll });
+      if (message || !data) {
+        error!.textContent = message ?? 'Something went wrong. Try again.';
+        result!.textContent = '';
+        button.disabled = false;
+        return;
+      }
+      sent += data.sent;
+      warnings.push(...(data.warnings ?? []));
+      if (data.remaining > 0) continue;
+
+      button.hidden = true;
+      const done = sent ? `Sent ${sent} shifts.` : 'Nothing new to send.';
+      // Gusto's warnings mean hours landed but something else didn't, so they're shown as problems.
+      const problems = [...(warnings.length ? [`Gusto added the hours but warned: ${warnings.join(' ')}`] : []), ...(data.payrollNotes ?? [])];
+      if (problems.length) error!.textContent = `Check in Gusto: ${problems.join(' ')}`;
+      if (data.inTimeTracking) {
+        if (data.onPayroll) {
+          result!.textContent = `${done} The hours are on the draft payroll in Gusto. Check them there, then submit payroll.`;
+        } else if (data.fillError) {
+          result!.textContent = `${done} They're in Gusto's time tracking, but couldn't go on the payroll: ${data.fillError} In Gusto, open Time tracking and press Sync hours to payroll.`;
+        } else {
+          result!.textContent = `${done} They're in Gusto's time tracking now. In Gusto, open Time tracking, press Sync hours to payroll, and check the hours before running payroll.`;
+        }
+        return;
+      }
+      result!.textContent = data.synced
+        ? `${done} Gusto is adding the hours to the draft payroll now, so check them there before running it.`
+        : `${done} Gusto did not add them to the payroll: ${data.syncError}. Use Sync hours in Gusto's payroll screen.`;
+      return;
+    }
+  });
+</script>

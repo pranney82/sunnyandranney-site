@@ -1,0 +1,7 @@
+---
+export const prerender = false;
+
+const role = Astro.locals.admin?.role;
+if (!role) return new Response('Not authorized', { status: 403 });
+return Astro.redirect(role === 'manager' ? '/admin/hours/' : '/admin/clock/', 302);
+---

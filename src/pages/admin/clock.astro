@@ -1,0 +1,162 @@
+---
+export const prerender = false;
+
+import AdminBase from '@/layouts/AdminBase.astro';
+import { STORE_TIME_ZONE } from '@/lib/time-clock/hours.mjs';
+import { listStaff, openShiftsByStaff } from '@/lib/time-clock/store';
+
+if (!Astro.locals.admin) return new Response('Not authorized', { status: 403 });
+
+const db = Astro.locals.runtime.env.DB;
+const [staff, openShifts] = await Promise.all([listStaff(db, true), openShiftsByStaff(db)]);
+
+const formatTime = new Intl.DateTimeFormat('en-US', {
+  timeZone: STORE_TIME_ZONE,
+  weekday: 'short',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+
+const people = staff.map((person) => {
+  const openSince = openShifts.get(person.id);
+  return {
+    id: person.id,
+    name: person.display_name,
+    canClock: Boolean(person.pin_hash),
+    openSince: openSince ? formatTime.format(new Date(openSince)) : null,
+  };
+});
+---
+
+<AdminBase title="Time clock">
+  <div class="page-header">
+    <h1>Time clock</h1>
+  </div>
+
+  <p id="clock-result" class="clock-result" role="status" aria-live="polite"></p>
+
+  {
+    people.length === 0 ? (
+      <div class="card empty">No active staff yet. Add them on the Staff page.</div>
+    ) : (
+      <div class="clock-grid">
+        {people.map((person) => (
+          <button
+            type="button"
+            class="clock-person"
+            data-id={person.id}
+            data-name={person.name}
+            data-action={person.openSince ? 'out' : 'in'}
+            disabled={!person.canClock}
+          >
+            <span class="clock-name">{person.name}</span>
+            {person.openSince ? (
+              <span class="badge badge-open">In since {person.openSince}</span>
+            ) : (
+              <span class="badge">{person.canClock ? 'Out' : 'Needs a PIN'}</span>
+            )}
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  <dialog id="pin-dialog" aria-labelledby="pin-title">
+    <form id="pin-form">
+      <h2 id="pin-title"></h2>
+      <p id="pin-error" class="form-error" role="alert"></p>
+      <div class="field">
+        <label for="pin-input">PIN</label>
+        <input id="pin-input" type="password" inputmode="numeric" autocomplete="off" pattern="[0-9]{4,8}" required />
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="btn" id="pin-cancel">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="pin-submit"></button>
+      </div>
+    </form>
+  </dialog>
+</AdminBase>
+
+<style>
+  .clock-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0.75rem; }
+  .clock-person {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    min-height: 104px;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-card);
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .clock-person:hover:not(:disabled) { border-color: var(--accent); }
+  .clock-person:disabled { opacity: 0.6; cursor: not-allowed; }
+  .clock-name { font-size: 1.125rem; font-weight: 600; }
+  .clock-result { font-size: 1.0625rem; font-weight: 600; color: var(--success); margin-bottom: 1rem; }
+  .clock-result:empty { display: none; }
+</style>
+
+<script>
+  import { post } from '@/lib/time-clock/admin-client';
+
+  const dialog = document.querySelector<HTMLDialogElement>('#pin-dialog')!;
+  const form = document.querySelector<HTMLFormElement>('#pin-form')!;
+  const title = document.querySelector<HTMLElement>('#pin-title')!;
+  const error = document.querySelector<HTMLElement>('#pin-error')!;
+  const input = document.querySelector<HTMLInputElement>('#pin-input')!;
+  const submit = document.querySelector<HTMLButtonElement>('#pin-submit')!;
+  const result = document.querySelector<HTMLElement>('#clock-result')!;
+
+  let selected: { id: string; action: string } | null = null;
+
+  document.querySelectorAll<HTMLButtonElement>('.clock-person').forEach((button) => {
+    button.addEventListener('click', () => {
+      const { id, name, action } = button.dataset;
+      if (!id || !action) return;
+      selected = { id, action };
+      const verb = action === 'in' ? 'Clock in' : 'Clock out';
+      title.textContent = `${verb}: ${name}`;
+      submit.textContent = verb;
+      error.textContent = '';
+      input.value = '';
+      dialog.showModal();
+      input.focus();
+    });
+  });
+
+  document.querySelector('#pin-cancel')!.addEventListener('click', () => dialog.close());
+
+  // Clear the PIN however the dialog closes, including the Escape key.
+  dialog.addEventListener('close', () => {
+    input.value = '';
+    selected = null;
+  });
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!selected) return;
+    submit.disabled = true;
+    error.textContent = '';
+    const { data, error: message } = await post<{ name: string; action: string; at: string }>('/api/admin/clock/', {
+      staffId: selected.id,
+      action: selected.action,
+      pin: input.value,
+    });
+    submit.disabled = false;
+    if (!data) {
+      error.textContent = message;
+      input.value = '';
+      input.focus();
+      return;
+    }
+    dialog.close();
+    const at = new Date(data.at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    result.textContent = `${data.name} clocked ${data.action} at ${at}.`;
+    setTimeout(() => location.reload(), 2500);
+  });
+</script>

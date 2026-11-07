@@ -1,0 +1,128 @@
+---
+export const prerender = false;
+
+import AdminBase from '@/layouts/AdminBase.astro';
+import { liveGusto } from '@/lib/gusto/client.mjs';
+import { STORE_TIME_ZONE } from '@/lib/time-clock/hours.mjs';
+
+if (!Astro.locals.admin?.owner) return new Response('Not authorized', { status: 403 });
+
+const gusto = await liveGusto(Astro.locals.runtime.env);
+const { state, config, connection } = gusto;
+const mcp = config?.route === 'mcp';
+const sendsHours = state === 'ready' && !gusto.readOnly;
+const fillsPayroll = state === 'ready' && Boolean(gusto.client?.fillsPayroll);
+
+const ERRORS: Record<string, string> = {
+  state: 'That sign-in expired or did not start here. Try connecting again.',
+  denied: 'The Gusto sign-in was cancelled.',
+  company: 'Gusto did not return a company for that sign-in.',
+  failed: 'Gusto refused the connection. Try again.',
+  scopes:
+    'That sign-in kept write access the admin does not use, so it was not saved. Connect again and, under Write permissions, keep only Team data and Payment data.',
+};
+const params = Astro.url.searchParams;
+const error = ERRORS[params.get('error') ?? ''];
+const leftover = Boolean(error) && params.get('leftover') === '1';
+const disconnected = params.get('disconnected');
+// Gusto's MCP server won't let this site cancel a sign-in, so the owner does it in Gusto.
+const REMOVE_IN_GUSTO = mcp
+  ? 'In Gusto, open App directory, choose View connected apps, choose Manage on Gusto MCP, then choose Disconnect app. That may also disconnect any AI assistant connected to Gusto.'
+  : "In Gusto, open App directory, choose View connected apps, and disconnect this site's app.";
+const environmentLabel = config?.environment === 'production' ? 'Production' : 'Demo';
+const dateLabel = new Intl.DateTimeFormat('en-US', { timeZone: STORE_TIME_ZONE, month: 'short', day: 'numeric', year: 'numeric' });
+---
+
+<AdminBase title="Gusto">
+  <div class="page-header">
+    <div>
+      <h1>Gusto</h1>
+      <p class="muted">
+        {mcp && state === 'ready' && !sendsHours ? 'The read-only connection behind Staff and Payroll.' : 'The connection behind Staff, Payroll and Send to Gusto.'}
+      </p>
+    </div>
+  </div>
+
+  {error && <p class="notice">{error}</p>}
+  {leftover && (
+    <p class="notice">
+      Gusto still has that unused sign-in. {REMOVE_IN_GUSTO} If this site is connected now, that ends its connection too.
+    </p>
+  )}
+  {disconnected === 'cancelled' && <p class="notice">Disconnected. Gusto confirmed this site's access is cancelled.</p>}
+  {disconnected === 'here' && (
+    <p class="notice" id="gusto-finish">
+      Disconnected here, and this site deleted its copy of the Gusto sign-in. Gusto doesn't let this site cancel it, so
+      it still works at Gusto until you remove it there. {REMOVE_IN_GUSTO}
+    </p>
+  )}
+  <p id="gusto-error" class="form-error" role="alert"></p>
+
+  {state === 'unconfigured' && (
+    <section class="card">
+      <h2>Not set up</h2>
+      <p class="muted">This site needs its Gusto app keys before it can connect.</p>
+    </section>
+  )}
+
+  {(state === 'disconnected' || state === 'reconnect') && (
+    <section class="card">
+      <h2>{state === 'reconnect' ? 'Reconnect Gusto' : 'Connect Gusto'}</h2>
+      {state === 'reconnect' && <p class="notice">Gusto ended this sign-in, so nothing is updating until you connect again.</p>}
+      <p class="muted">Environment: {environmentLabel}. You'll sign in as a Gusto admin and choose the company.</p>
+      {mcp && (
+        <p class="notice">
+          Gusto ticks every permission for you. On its screen, under Write permissions keep only Team data and Payment data,
+          which let the admin put approved hours on payroll. Run payroll must be unticked. Under Read permissions, untick
+          bank, tax and benefits.
+        </p>
+      )}
+      {config?.environment === 'production' && !mcp && (
+        <p class="notice">
+          Connecting turns off Gusto's own time tracking and time-off requests for this company, and declines any open
+          time-off requests. Do this at the start of a pay period, once the store tablet is ready.
+        </p>
+      )}
+      <a class="btn btn-primary" id="gusto-connect" href="/api/admin/gusto/connect/">Connect Gusto</a>
+    </section>
+  )}
+
+  {state === 'ready' && (
+    <section class="card">
+      <h2>Connected</h2>
+      <dl class="details">
+        <dt>Company</dt>
+        <dd>{connection.company_name ?? connection.company_uuid}</dd>
+        <dt>Environment</dt>
+        <dd>{environmentLabel}</dd>
+        <dt>Access</dt>
+        <dd>{fillsPayroll ? 'Read, and put approved hours on payroll' : sendsHours ? 'Read, and add approved hours' : 'Read only'}</dd>
+        <dt>Connected by</dt>
+        <dd>{connection.connected_by}, {dateLabel.format(new Date(connection.connected_at))}</dd>
+      </dl>
+      <button type="button" class="btn btn-danger" id="gusto-disconnect">Disconnect</button>
+    </section>
+  )}
+</AdminBase>
+
+<style>
+  h2 { font-size: 1.0625rem; margin-bottom: 0.25rem; }
+  .card .muted { margin-bottom: 0.75rem; }
+  .details { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; margin: 0.75rem 0 1rem; }
+  .details dt { color: var(--text-muted); }
+  .details dd { overflow-wrap: anywhere; }
+</style>
+
+<script>
+  import { post } from '@/lib/time-clock/admin-client';
+
+  document.querySelector('#gusto-disconnect')?.addEventListener('click', async () => {
+    if (!confirm('Disconnect Gusto? Gusto data here stops updating until someone connects again.')) return;
+    const { data, error } = await post<{ revoked: boolean }>('/api/admin/gusto/disconnect/', {});
+    if (error || !data) {
+      document.querySelector('#gusto-error')!.textContent = error ?? 'Something went wrong. Try again.';
+      return;
+    }
+    location.assign(`/admin/gusto/?disconnected=${data.revoked ? 'cancelled' : 'here'}`);
+  });
+</script>

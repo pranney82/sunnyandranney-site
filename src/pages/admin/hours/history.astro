@@ -1,0 +1,89 @@
+---
+export const prerender = false;
+
+import AdminBase from '@/layouts/AdminBase.astro';
+import { STORE_TIME_ZONE, addDays, isIsoDate, localDate } from '@/lib/time-clock/hours.mjs';
+import { gustoHistory, listStaff } from '@/lib/time-clock/store';
+
+if (Astro.locals.admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
+
+const db = Astro.locals.runtime.env.DB;
+const today = localDate(new Date().toISOString());
+const fromParam = Astro.url.searchParams.get('from');
+const toParam = Astro.url.searchParams.get('to');
+const to = isIsoDate(toParam) ? (toParam as string) : today;
+const from = isIsoDate(fromParam) ? (fromParam as string) : addDays(to, -30);
+
+const [{ records, truncated }, staff] = await Promise.all([gustoHistory(db, from, to), listStaff(db)]);
+const nameByUuid = new Map(staff.map((person) => [person.gusto_employee_uuid, person.display_name]));
+
+const dateLabel = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+const timeLabel = new Intl.DateTimeFormat('en-US', { timeZone: STORE_TIME_ZONE, hour: 'numeric', minute: '2-digit' });
+const time = (iso: string | null) => (iso ? timeLabel.format(new Date(iso)) : '—');
+const day = (date: string | null) => (date ? dateLabel.format(new Date(`${date}T00:00:00Z`)) : 'Unknown date');
+
+const totalHours = records.reduce((sum, record) => sum + (record.hours ?? 0), 0);
+---
+
+<AdminBase title="Gusto history">
+  <div class="page-header">
+    <div>
+      <h1>Gusto history</h1>
+      <p class="muted">Read-only hours imported from Gusto for store staff. These never go back to payroll.</p>
+    </div>
+  </div>
+
+  <form class="card filters" method="get">
+    <div class="field">
+      <label for="from">From</label>
+      <input id="from" name="from" type="date" value={from} />
+    </div>
+    <div class="field">
+      <label for="to">To</label>
+      <input id="to" name="to" type="date" value={to} />
+    </div>
+    <button class="btn btn-primary" type="submit">Show</button>
+  </form>
+
+  {truncated && <p class="notice">Showing the newest 500 records. Narrow the dates to see the rest.</p>}
+
+  {
+    records.length === 0 ? (
+      <div class="card empty">No Gusto records for these dates. Only people marked as store staff appear here.</div>
+    ) : (
+      <section class="card">
+        <p class="history-total">{records.length} records, {totalHours.toFixed(2)} hours</p>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>Employee</th>
+                <th>In</th>
+                <th>Out</th>
+                <th class="num">Hours</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {records.map((record) => (
+                <tr>
+                  <td>{day(record.started_on)}</td>
+                  <td>{record.employee_name ?? nameByUuid.get(record.gusto_employee_uuid) ?? 'Unknown'}</td>
+                  <td>{time(record.started_at)}</td>
+                  <td>{time(record.ended_at)}</td>
+                  <td class="num">{record.hours === null ? '—' : record.hours.toFixed(2)}</td>
+                  <td>{record.status ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    )
+  }
+</AdminBase>
+
+<style>
+  .history-total { font-weight: 600; margin-bottom: 0.5rem; }
+</style>
