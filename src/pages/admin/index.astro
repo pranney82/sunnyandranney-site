@@ -1,7 +1,525 @@
 ---
 export const prerender = false;
 
-const role = Astro.locals.admin?.role;
-if (!role) return new Response('Not authorized', { status: 403 });
-return Astro.redirect(role === 'manager' ? '/admin/hours/' : '/admin/clock/', 302);
+import AdminBase from '@/layouts/AdminBase.astro';
+import { loadToday } from '@/lib/admin/today.mjs';
+import { initials, svg, tone } from '@/lib/admin-ui';
+import { STORE_TIME_ZONE, workweekStart, localDate, utcToLocalInput } from '@/lib/time-clock/hours.mjs';
+
+const admin = Astro.locals.admin;
+if (!admin) return new Response('Not authorized', { status: 403 });
+if (admin.role !== 'manager') return Astro.redirect('/admin/clock/', 302);
+
+const now = new Date().toISOString();
+const t = await loadToday(Astro.locals.runtime.env.DB, { now, myEmail: admin.email });
+
+const dayFmt = new Intl.DateTimeFormat('en-US', { timeZone: STORE_TIME_ZONE, weekday: 'long', month: 'long', day: 'numeric' });
+const shortDay = new Intl.DateTimeFormat('en-US', { timeZone: STORE_TIME_ZONE, weekday: 'short', month: 'short', day: 'numeric' });
+const weekdayFmt = new Intl.DateTimeFormat('en-US', { timeZone: STORE_TIME_ZONE, weekday: 'long' });
+const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: STORE_TIME_ZONE, hour: 'numeric', minute: '2-digit' });
+/** Hours to one decimal, without a trailing ".0". */
+const hrs = (minutes: number) => {
+  const tenths = Math.round(minutes / 6) / 10;
+  return Number.isInteger(tenths) ? String(tenths) : tenths.toFixed(1);
+};
+const minLabel = (m: number) => {
+  const h = Math.floor(m / 60) % 12 || 12;
+  return `${h}:${String(m % 60).padStart(2, '0')} ${m < 720 ? 'AM' : 'PM'}`;
+};
+const weekOf = (iso: string) => workweekStart(localDate(iso));
+const hoursLink = (item: { id: string; clockInAt: string }) => `/admin/hours/?week=${weekOf(item.clockInAt)}#e-${item.id}`;
+const readyMinutes = t.ready.reduce((sum: number, item: { minutes: number }) => sum + item.minutes, 0);
+const readyPeople = [...new Set(t.ready.map((item: { name: string }) => item.name))] as string[];
+const overtime = t.week.filter((p: { overtimeRisk: boolean }) => p.overtimeRisk);
+const attention = t.missedClockOuts.length + t.ready.length + t.needsLook.length + t.lateOrMissing.length + overtime.length;
+const weekScale = Math.max(40 * 60, ...t.week.map((p: { projectedMinutes: number }) => p.projectedMinutes));
+const pct = (minutes: number) => `${Math.min(100, (minutes / weekScale) * 100).toFixed(2)}%`;
+const fortyAt = pct(40 * 60);
+const listNames = (names: string[]) => (names.length <= 3 ? names.join(', ') : `${names.slice(0, 2).join(', ')} and ${names.length - 2} more`);
+
+interface Missed {
+  id: string;
+  version: number;
+  staffId: string;
+  name: string;
+  clockInAt: string;
+  isSelf: boolean;
+  suggestion: { at: string; local: string; source: 'schedule' | 'usual' } | null;
+}
 ---
+
+<AdminBase title="Today">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Today</p>
+      <h1>{dayFmt.format(new Date(now))}</h1>
+    </div>
+  </div>
+
+  <div class="today-grid" id="today-live">
+    <section class="needs" aria-labelledby="needs-title">
+      <h2 class="section-title" id="needs-title">Needs you</h2>
+
+      {t.missedClockOuts.map((item: Missed) => (
+        <article class="task task-urgent" id={`missed-${item.id}`}>
+          <span class="task-icon" aria-hidden="true"><Fragment set:html={svg('clock', 20)} /></span>
+          <div class="task-body">
+            <h3>{item.isSelf ? 'Your shift has no clock-out' : `${item.name} didn't clock out`}</h3>
+            <p>
+              In {shortDay.format(new Date(item.clockInAt))} at {timeFmt.format(new Date(item.clockInAt))}.
+              {item.isSelf
+                ? ' Another manager needs to add the clock-out.'
+                : item.suggestion?.source === 'schedule'
+                  ? ` Scheduled until ${timeFmt.format(new Date(item.suggestion.at))}.`
+                  : item.suggestion?.source === 'usual'
+                    ? ` Usually clocks out at ${timeFmt.format(new Date(item.suggestion.at))} on ${weekdayFmt.format(new Date(item.clockInAt))}s.`
+                    : ' Add the real clock-out before approving.'}
+            </p>
+          </div>
+          {!item.isSelf && (
+            <div class="task-actions">
+              {item.suggestion ? (
+                <>
+                  <a class="btn btn-small" href={hoursLink(item)}>Other time</a>
+                  <button
+                    type="button"
+                    class="btn btn-dark btn-small"
+                    data-clock-out
+                    data-id={item.id}
+                    data-version={item.version}
+                    data-staff={item.staffId}
+                    data-name={item.name}
+                    data-in={utcToLocalInput(item.clockInAt)}
+                    data-out={item.suggestion.local}
+                    data-label={timeFmt.format(new Date(item.suggestion.at))}
+                    data-source={item.suggestion.source}
+                  >
+                    Clock out {timeFmt.format(new Date(item.suggestion.at))}
+                  </button>
+                </>
+              ) : (
+                <a class="btn btn-dark btn-small" href={hoursLink(item)}>Fix</a>
+              )}
+            </div>
+          )}
+        </article>
+      ))}
+
+      {t.ready.length > 0 && (
+        <article class="task task-gold" id="ready-task">
+          <span class="task-icon" aria-hidden="true"><Fragment set:html={svg('check', 20)} /></span>
+          <div class="task-body">
+            <h3>{t.ready.length} {t.ready.length === 1 ? 'shift' : 'shifts'} ready to approve</h3>
+            <p>{listNames(readyPeople)} · {hrs(readyMinutes)} hours</p>
+          </div>
+          <div class="task-actions">
+            <a class="btn btn-small" href="/admin/hours/">Review</a>
+            <button
+              type="button"
+              class="btn btn-primary btn-small"
+              data-approve-ready
+              data-entries={JSON.stringify(t.ready.map(({ id, version }: { id: string; version: number }) => ({ id, version })))}
+            >
+              Approve all
+            </button>
+          </div>
+        </article>
+      )}
+
+      {t.needsLook.map((item: { id: string; name: string; clockInAt: string; minutes: number }) => (
+        <article class="task task-warn">
+          <span class="task-icon" aria-hidden="true"><Fragment set:html={svg('hours', 20)} /></span>
+          <div class="task-body">
+            <h3>{item.name} worked {hrs(item.minutes)} hours on {shortDay.format(new Date(item.clockInAt))}</h3>
+            <p>Over 12 hours is usually a missed clock-out, so Approve all leaves it out.</p>
+          </div>
+          <div class="task-actions">
+            <a class="btn btn-small" href={hoursLink(item)}>Check</a>
+          </div>
+        </article>
+      ))}
+
+      {t.lateOrMissing.map((p: { name: string; shift: { start_min: number | null } | null; status: { kind: string; minutes?: number } }) => (
+        <article class="task task-warn">
+          <span class="task-icon" aria-hidden="true"><Fragment set:html={svg('staff', 20)} /></span>
+          <div class="task-body">
+            <h3>{p.status.kind === 'no-show' ? `${p.name} hasn't clocked in` : `${p.name} clocked in ${p.status.minutes} minutes late`}</h3>
+            <p>Scheduled {p.shift?.start_min != null ? minLabel(p.shift.start_min) : ''} today.</p>
+          </div>
+        </article>
+      ))}
+
+      {overtime.map((p: { name: string; workedMinutes: number; scheduledMinutes: number; projectedMinutes: number }) => (
+        <article class="task task-warn">
+          <span class="task-icon" aria-hidden="true"><Fragment set:html={svg('payroll', 20)} /></span>
+          <div class="task-body">
+            <h3>{p.name} is on track for {hrs(p.projectedMinutes)} hours this week</h3>
+            <p>{hrs(p.workedMinutes)} worked and {hrs(p.scheduledMinutes)} still scheduled. Over 40 is paid as overtime.</p>
+          </div>
+          {t.hasSchedule && (
+            <div class="task-actions">
+              <a class="btn btn-small" href="/admin/schedule/">Schedule</a>
+            </div>
+          )}
+        </article>
+      ))}
+
+      <article class="task task-quiet" id="payroll-task" hidden aria-live="polite">
+        <span class="task-icon" aria-hidden="true"><Fragment set:html={svg('send', 20)} /></span>
+        <div class="task-body">
+          <h3 id="payroll-title"></h3>
+          <p id="payroll-detail"></p>
+        </div>
+        <div class="task-actions">
+          <a class="btn btn-small" id="payroll-link" href="/admin/hours/send/"></a>
+          <button type="button" class="btn btn-primary btn-small" id="payroll-send" hidden>Send to Gusto</button>
+        </div>
+      </article>
+
+      <p class="caught-up" id="caught-up" hidden={attention > 0}>
+        <span aria-hidden="true"><Fragment set:html={svg('check', 18)} /></span>
+        All caught up. Nothing needs you right now.
+      </p>
+    </section>
+
+    <aside class="side">
+      <section class="panel" aria-labelledby="floor-title">
+        <div class="panel-head">
+          <h2 class="section-title" id="floor-title">On the floor</h2>
+          {t.hasSchedule && <a class="panel-link" href="/admin/schedule/">Schedule</a>}
+        </div>
+        {t.floor.length === 0 ? (
+          <p class="panel-empty">Nobody is scheduled or clocked in yet today.</p>
+        ) : (
+          <ul class="floor">
+            {t.floor.map((p: { staffId: string; name: string; shift: { start_min: number | null; end_min: number | null } | null; status: { kind: string; minutes?: number; in?: number; out?: number | null; unscheduled?: boolean } }) => (
+              <li>
+                <span class="avatar" data-tone={tone(p.name)}>{initials(p.name)}</span>
+                <a class="floor-name" href={`/admin/staff/${encodeURIComponent(p.staffId)}/`}>{p.name}</a>
+                <span class:list={['floor-status', `is-${p.status.kind}`]}>
+                  {p.status.kind === 'working' && `In since ${minLabel(p.status.in!)}`}
+                  {p.status.kind === 'late' && `In ${minLabel(p.status.in!)}, ${p.status.minutes} min late`}
+                  {p.status.kind === 'no-show' && `Not in · due ${minLabel(p.shift!.start_min!)}`}
+                  {p.status.kind === 'scheduled' && (p.shift?.start_min != null ? `${minLabel(p.shift.start_min)}–${p.shift.end_min != null ? minLabel(p.shift.end_min) : '?'}` : 'Scheduled')}
+                  {p.status.kind === 'done' && `Done ${minLabel(p.status.in!)}–${minLabel(p.status.out!)}`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section class="panel" aria-labelledby="week-title">
+        <div class="panel-head">
+          <h2 class="section-title" id="week-title">This week</h2>
+          <a class="panel-link" href="/admin/hours/">Hours</a>
+        </div>
+        {t.week.length === 0 ? (
+          <p class="panel-empty">No hours yet this week.</p>
+        ) : (
+          <ul class="week" style={`--forty: ${fortyAt}`}>
+            {t.week.map((p: { staffId: string; name: string; workedMinutes: number; scheduledMinutes: number; projectedMinutes: number; overtimeRisk: boolean }) => (
+              <li>
+                <div class="week-row">
+                  <a class="week-name" href={`/admin/staff/${encodeURIComponent(p.staffId)}/`}>{p.name}</a>
+                  <span class:list={['week-hours', { risk: p.overtimeRisk }]}>
+                    {p.scheduledMinutes > 0 ? (
+                      <>
+                        <span class="week-plan">{hrs(p.workedMinutes)} of </span>{hrs(p.projectedMinutes)} h
+                      </>
+                    ) : (
+                      `${hrs(p.workedMinutes)} h`
+                    )}
+                  </span>
+                </div>
+                <div class="bar" role="img" aria-label={`${hrs(p.workedMinutes)} hours worked, ${hrs(p.scheduledMinutes)} more scheduled`}>
+                  <span class="bar-worked" style={`width: ${pct(p.workedMinutes)}`}></span>
+                  <span class="bar-planned" style={`width: ${pct(p.scheduledMinutes)}`}></span>
+                  <span class="bar-forty" aria-hidden="true"></span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        {t.week.length > 0 && <p class="week-key"><span class="key-worked"></span>Worked <span class="key-planned"></span>Scheduled <span class="key-forty"></span>40 hours</p>}
+      </section>
+    </aside>
+  </div>
+</AdminBase>
+
+<style>
+  .eyebrow { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--teal); margin-bottom: 0.25rem; }
+  .today-grid { display: grid; gap: 1.5rem; align-items: start; }
+  @media (min-width: 1100px) { .today-grid { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 2rem; } }
+
+  .section-title { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-3); }
+  .needs .section-title { margin-bottom: 0.75rem; }
+
+  /* Flex with wrap: when the buttons don't fit beside the text, they drop
+     below it, aligned right, instead of squeezing the text. */
+  .task {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.875rem 1rem;
+    padding: 1rem 1.125rem;
+    margin-bottom: 0.625rem;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-sm);
+    animation: rise 0.35s var(--ease) both;
+  }
+  .task:nth-of-type(2) { animation-delay: 30ms; }
+  .task:nth-of-type(3) { animation-delay: 60ms; }
+  .task:nth-of-type(4) { animation-delay: 90ms; }
+  /* Swapped-in cards after an action shouldn't replay the entrance. */
+  .today-grid.settled .task { animation: none; }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+  @media (prefers-reduced-motion: reduce) { .task { animation: none; } }
+  .task h3 { font-size: 1rem; font-weight: 700; letter-spacing: -0.01em; }
+  .task p { color: var(--ink-2); font-size: 0.9063rem; margin-top: 0.125rem; }
+  .task-icon { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--sunk); color: var(--ink-2); }
+  .task-body { flex: 1 1 15rem; min-width: 0; }
+  .task-actions { flex: 0 0 auto; margin-left: auto; display: flex; gap: 0.5rem; justify-content: flex-end; }
+  .task-actions .btn { white-space: nowrap; }
+  .task-urgent { border-color: color-mix(in srgb, var(--red) 35%, var(--line)); }
+  .task-urgent .task-icon { background: var(--red-soft); color: var(--red); }
+  .task-gold { background: var(--gold-soft); border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); }
+  .task-gold .task-icon { background: var(--gold); color: var(--on-gold); }
+  .task-warn .task-icon { background: var(--clay-soft); color: var(--clay); }
+  .task-quiet .task-icon { background: var(--teal-soft); color: var(--teal); }
+  .task-done { background: var(--sage-soft); border-color: color-mix(in srgb, var(--sage) 30%, var(--line)); }
+  .task-done .task-icon { background: var(--sage); color: var(--sage-soft); }
+  .task.busy { opacity: 0.6; pointer-events: none; transition: opacity 0.15s var(--ease); }
+  @media (max-width: 640px) {
+    .task { align-items: start; }
+    .task-body { flex-basis: calc(100% - 36px - 1rem); }
+    .task-icon { width: 36px; height: 36px; border-radius: 10px; }
+    .task-actions { flex: 1 1 100%; }
+    .task-actions .btn { flex: 1; }
+  }
+
+  .caught-up {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 1rem 1.125rem;
+    border-radius: var(--r-lg);
+    background: var(--sage-soft);
+    color: var(--sage);
+    font-weight: 600;
+  }
+
+  .side { display: grid; gap: 1rem; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 1.125rem 1.25rem; box-shadow: var(--shadow-sm); }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+  .panel-link { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal); text-decoration: none; }
+  .panel-link:hover { text-decoration: underline; }
+  .panel-empty { color: var(--ink-3); font-size: 0.9375rem; }
+
+  .floor { list-style: none; display: grid; gap: 0.25rem; }
+  .floor li { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.75rem; padding: 0.375rem 0; }
+  .floor .avatar { width: 32px; height: 32px; font-size: 0.75rem; }
+  .floor-name, .week-name { font-weight: 600; color: var(--ink); text-decoration: none; }
+  .floor-name:hover, .week-name:hover { text-decoration: underline; }
+  .floor-status { font-size: 0.8125rem; font-weight: 600; color: var(--ink-3); font-variant-numeric: tabular-nums; text-align: right; }
+  .floor-status.is-working { color: var(--sage); }
+  .floor-status.is-late { color: var(--clay); }
+  .floor-status.is-no-show { color: var(--red); }
+
+  .week { list-style: none; display: grid; gap: 0.875rem; }
+  .week-row { display: flex; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.375rem; font-size: 0.9375rem; }
+  .week-hours { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .week-hours.risk { color: var(--clay); }
+  .week-plan { color: var(--ink-3); font-weight: 600; }
+  .bar { position: relative; display: flex; height: 8px; border-radius: 999px; background: var(--sunk); overflow: visible; }
+  .bar-worked { background: var(--teal); border-radius: 999px 0 0 999px; }
+  .bar-planned { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--teal) 45%, transparent) 0 3px, transparent 3px 6px); }
+  .bar-forty { position: absolute; left: var(--forty); top: -3px; bottom: -3px; width: 2px; border-radius: 1px; background: var(--ink); opacity: 0.55; }
+  .week-key { display: flex; flex-wrap: wrap; align-items: center; gap: 0.375rem 0.875rem; margin-top: 0.875rem; font-size: 0.75rem; color: var(--ink-3); }
+  .week-key span { display: inline-block; width: 12px; height: 8px; border-radius: 2px; margin-right: -0.5rem; vertical-align: middle; }
+  .key-worked { background: var(--teal); }
+  .key-planned { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--teal) 45%, transparent) 0 3px, transparent 3px 6px); }
+  .key-forty { width: 2px !important; height: 12px !important; background: var(--ink); opacity: 0.55; }
+</style>
+
+<script>
+  import { post } from '@/lib/time-clock/admin-client';
+  import { refreshParts, toast } from '@/lib/admin/shell';
+  import { sendToGusto } from '@/lib/admin/send-client';
+
+  interface SendSummary {
+    shifts: number;
+    people: number;
+    minutes: number;
+    alreadySent: number;
+    blockers: string[];
+  }
+  interface TodayInfo {
+    connected: boolean;
+    sendsHours?: boolean;
+    error?: string;
+    payroll?: { uuid: string; start: string; end: string; checkDate: string | null; deadline: string | null } | null;
+    send?: SendSummary | null;
+  }
+
+  const hrs = (minutes: number) => {
+    const tenths = Math.round(minutes / 6) / 10;
+    return Number.isInteger(tenths) ? String(tenths) : tenths.toFixed(1);
+  };
+  const shortDate = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
+  const day = (date: string) => shortDate.format(new Date(`${date.slice(0, 10)}T00:00:00Z`));
+  let payrollCard: HTMLElement | null = null;
+
+  /** Re-renders the cards from the server, keeping the payroll card as it is until it refreshes. */
+  async function refresh(): Promise<void> {
+    const kept = document.querySelector<HTMLElement>('#payroll-task');
+    await refreshParts('#today-live');
+    const grid = document.querySelector('#today-live')!;
+    grid.classList.add('settled');
+    const fresh = document.querySelector<HTMLElement>('#payroll-task');
+    if (kept && fresh && !kept.hidden) fresh.replaceWith(kept);
+    updateCaughtUp();
+    void loadPayroll();
+  }
+
+  function updateCaughtUp() {
+    const open = document.querySelectorAll('.needs .task:not([hidden]):not(.task-done):not(.task-quiet)').length;
+    document.querySelector<HTMLElement>('#caught-up')!.hidden = open > 0;
+  }
+
+  document.addEventListener('click', async (event) => {
+    const target = event.target as HTMLElement;
+
+    // One-click clock-out at the scheduled end, or the usual time.
+    const fix = target.closest<HTMLButtonElement>('[data-clock-out]');
+    if (fix) {
+      const card = fix.closest<HTMLElement>('.task')!;
+      card.classList.add('busy');
+      const { id, version, staff, name, in: clockIn, out: clockOut, label, source } = fix.dataset;
+      const { error } = await post('/api/admin/hours/', {
+        action: 'edit',
+        id,
+        version: Number(version),
+        staffId: staff,
+        clockIn,
+        clockOut,
+        reason: source === 'schedule' ? 'Missed clock-out. Set to the scheduled end.' : 'Missed clock-out. Set to their usual clock-out time.',
+      });
+      card.classList.remove('busy');
+      if (error) return toast(error, 'error');
+      toast(`${name} clocked out at ${label}`);
+      await refresh();
+      return;
+    }
+
+    // Approve every clean shift at once.
+    const approve = target.closest<HTMLButtonElement>('[data-approve-ready]');
+    if (approve) {
+      const card = approve.closest<HTMLElement>('.task')!;
+      card.classList.add('busy');
+      const entries = JSON.parse(approve.dataset.entries ?? '[]');
+      const { data, error } = await post<{ approved: number; skipped: number }>('/api/admin/hours/', { action: 'approve', entries });
+      card.classList.remove('busy');
+      if (!data) return toast(error ?? 'Something went wrong. Try again.', 'error');
+      toast(
+        data.skipped
+          ? `Approved ${data.approved}. ${data.skipped} changed since you opened this page, so they're left for review.`
+          : `Approved ${data.approved} ${data.approved === 1 ? 'shift' : 'shifts'}`,
+      );
+      await refresh();
+      return;
+    }
+
+    // Send the pay period's approved hours to Gusto.
+    const send = target.closest<HTMLButtonElement>('#payroll-send');
+    if (send && payrollCard?.dataset.payroll) {
+      const title = payrollCard.querySelector('#payroll-title')!;
+      const detail = payrollCard.querySelector('#payroll-detail')!;
+      send.disabled = true;
+      payrollCard.classList.add('busy');
+      const outcome = await sendToGusto(payrollCard.dataset.payroll, (sent) => {
+        title.textContent = sent ? `Sending… ${sent} sent so far` : 'Sending to Gusto…';
+      });
+      payrollCard.classList.remove('busy');
+      if (!outcome.ok) {
+        send.disabled = false;
+        toast(outcome.message, 'error');
+        void loadPayroll();
+        return;
+      }
+      payrollCard.className = 'task task-done';
+      title.textContent = outcome.sent ? `Sent ${outcome.sent} ${outcome.sent === 1 ? 'shift' : 'shifts'} to Gusto` : 'Nothing new to send';
+      // The title already says how many went, so the detail starts with what to do next.
+      const next = outcome.message.replace(/^(Sent \d+ shifts?\.|Nothing new to send\.)\s*/, '');
+      detail.textContent = outcome.problems ? `${next} Check in Gusto: ${outcome.problems}` : next;
+      send.hidden = true;
+      updateCaughtUp();
+    }
+  });
+
+  /** The next payroll comes from Gusto, so it fills in after the page is up. */
+  async function loadPayroll(): Promise<void> {
+    let info: TodayInfo | null = null;
+    try {
+      const res = await fetch('/api/admin/today/', { headers: { Accept: 'application/json' } });
+      info = res.ok ? await res.json() : null;
+    } catch {
+      return;
+    }
+    const card = document.querySelector<HTMLElement>('#payroll-task');
+    if (!card || !info?.payroll) return;
+    payrollCard = card;
+    const { uuid, start, end, checkDate, deadline } = info.payroll;
+    const send = info.send;
+    const title = card.querySelector('#payroll-title')!;
+    const detail = card.querySelector('#payroll-detail')!;
+    const link = card.querySelector<HTMLAnchorElement>('#payroll-link')!;
+    const button = card.querySelector<HTMLButtonElement>('#payroll-send')!;
+    const period = `Pay period ${day(start)} to ${day(end)}`;
+    const due = deadline ? ` · run payroll by ${day(deadline)}` : checkDate ? ` · payday ${day(checkDate)}` : '';
+    card.dataset.payroll = uuid;
+    link.href = info.sendsHours ? `/admin/hours/send/?payroll=${encodeURIComponent(uuid)}` : `/admin/hours/for-gusto/?payroll=${encodeURIComponent(uuid)}`;
+    button.hidden = true;
+    button.disabled = false;
+    card.className = 'task task-quiet';
+
+    if (!info.sendsHours || !send) {
+      title.textContent = `Next payroll: ${day(start)} to ${day(end)}`;
+      detail.textContent = `${period}${due}.`;
+      link.textContent = info.sendsHours ? 'Send hours' : 'Hours for Gusto';
+    } else if (send.blockers.length > 0) {
+      const notApproved = send.blockers.filter((b) => b.endsWith(': not approved')).length;
+      const noClockOut = send.blockers.filter((b) => b.endsWith(': no clock-out')).length;
+      const other = send.blockers.length - notApproved - noClockOut;
+      const parts = [
+        notApproved && `${notApproved} ${notApproved === 1 ? 'shift' : 'shifts'} to approve`,
+        noClockOut && `${noClockOut} missing a clock-out`,
+        other && `${other} other ${other === 1 ? 'problem' : 'problems'}`,
+      ].filter(Boolean);
+      title.textContent = `Payroll ${day(start)} to ${day(end)} isn't ready to send`;
+      detail.textContent = `${parts.join(' · ')}${due}.`;
+      link.textContent = 'Details';
+    } else if (send.shifts > 0) {
+      card.className = 'task task-gold';
+      title.textContent = `Send ${hrs(send.minutes)} hours to Gusto`;
+      detail.textContent = `${send.shifts} ${send.shifts === 1 ? 'shift' : 'shifts'} for ${send.people} ${send.people === 1 ? 'person' : 'people'} · ${day(start)} to ${day(end)}${due}.`;
+      link.textContent = 'See shifts';
+      button.hidden = false;
+    } else if (send.alreadySent > 0) {
+      card.className = 'task task-done';
+      title.textContent = `Hours for ${day(start)} to ${day(end)} are in Gusto`;
+      detail.textContent = `Check them in Gusto and submit payroll${deadline ? ` by ${day(deadline)}` : ''}.`;
+      link.textContent = 'Details';
+    } else {
+      title.textContent = `Next payroll: ${day(start)} to ${day(end)}`;
+      detail.textContent = `No approved hours for this period yet${due}.`;
+      link.textContent = 'Details';
+    }
+    card.hidden = false;
+    updateCaughtUp();
+  }
+
+  void loadPayroll();
+</script>

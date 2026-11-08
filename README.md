@@ -143,6 +143,15 @@ Employees clock in on the store tablet, a manager reviews and approves hours,
 and approved hours go to Gusto once per pay period. Gusto stays the payroll
 system. It does not keep the time clock.
 
+`/admin/` is **Today**: what needs the manager now (missed clock-outs with a
+one-click fix at the scheduled end or the person's usual time, shifts ready to
+approve, shifts over 12 hours, late or missing people, overtime coming from the
+schedule) and the next payroll, which can be sent to Gusto from there. Pages
+render from the database only; anything from Gusto loads after the page is up
+(`/api/admin/today/`, `/api/admin/gusto/refresh/`, or a streamed section on
+Send to Gusto). On Hours a time can be typed straight into the row ("5p",
+Enter). ⌘K (Ctrl K) finds a page or a person, and `?` lists the shortcuts.
+
 Login is [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/applications/),
 using emailed one-time codes. Employees have no accounts: they sign in to the
 clock with a PIN, on a tablet logged in with the kiosk email. Without these
@@ -180,7 +189,7 @@ staff, so their past pay stays on Payroll, but Staff hides them unless "Show
 all" is on.
 
 An owner connects Gusto once at `/admin/gusto/`. After that, Staff and Payroll
-read Gusto when they open. There are two routes, and the MCP settings win if both
+check Gusto for changes each time they open, and update in place if there were any. There are two routes, and the MCP settings win if both
 are present.
 
 **Through Gusto's MCP server.** This is Gusto's route for a customer connecting

@@ -14,6 +14,8 @@ import {
   workweekStart,
 } from '@/lib/time-clock/hours.mjs';
 import { entriesForWeek, hoursByEntry, listStaff } from '@/lib/time-clock/store';
+import { localMinutes } from '@/lib/admin/today.mjs';
+import { formatMinutes } from '@/lib/admin/time-input.mjs';
 import { initials, svg, tone } from '@/lib/admin-ui';
 
 if (Astro.locals.admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
@@ -22,29 +24,43 @@ const db = Astro.locals.runtime.env.DB;
 // Hours are typed into Gusto by hand unless the MCP sign-in granted adding time sheets.
 const handEntry =
   gustoConfig(Astro.locals.runtime.env)?.route === 'mcp' && !canSendHours(((await connectionStatus(db))?.scopes ?? '').split(' '));
-const today = localDate(new Date().toISOString());
+const now = new Date().toISOString();
+const today = localDate(now);
 const requested = Astro.url.searchParams.get('week');
 const weekStart = workweekStart(isIsoDate(requested) ? (requested as string) : today);
 const currentWeek = workweekStart(today);
 
-const [entries, staff] = await Promise.all([entriesForWeek(db, weekStart), listStaff(db, true)]);
+const [entries, staff, schedule] = await Promise.all([
+  entriesForWeek(db, weekStart),
+  listStaff(db, true),
+  db
+    .prepare('SELECT staff_id, date, start_min, end_min, away FROM schedule_shifts WHERE date >= ? AND date <= ?')
+    .bind(weekStart, addDays(weekStart, 6))
+    .all<{ staff_id: string; date: string; start_min: number | null; end_min: number | null; away: number }>()
+    .then((r) => r.results)
+    .catch(() => []),
+]);
 const hours = hoursByEntry(entries);
 const myEmail = Astro.locals.admin.email;
+const scheduled = new Map(schedule.map((s) => [`${s.staff_id}|${s.date}`, s]));
 
 const dateLabel = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' });
 const shortDate = (date: string) => dateLabel.format(new Date(`${date}T00:00:00Z`));
 const timeLabel = new Intl.DateTimeFormat('en-US', { timeZone: STORE_TIME_ZONE, hour: 'numeric', minute: '2-digit' });
 const time = (iso: string) => timeLabel.format(new Date(iso));
-
 const hoursLabel = (minutes: number) => (minutes / 60).toFixed(2);
 const STATUS_LABELS = { pending: 'Needs review', approved: 'Approved', rejected: 'Rejected' };
-
 const LONG_SHIFT_MINUTES = 12 * 60;
+/** Clock times within this many minutes of the schedule aren't worth pointing out. */
+const ON_TIME_MINUTES = 5;
+const diffLabel = (minutes: number) => {
+  const abs = Math.abs(minutes);
+  const text = abs >= 60 ? `${Math.floor(abs / 60)}h${abs % 60 ? ` ${abs % 60}m` : ''}` : `${abs}m`;
+  return `${minutes > 0 ? '+' : '−'}${text}`;
+};
 
-const people = new Map<
-  string,
-  { name: string; regular: number; overtime: number; isSelf: boolean; rows: Array<(typeof entries)[number]> }
->();
+type Entry = (typeof entries)[number];
+const people = new Map<string, { name: string; regular: number; overtime: number; isSelf: boolean; rows: Entry[] }>();
 for (const entry of entries) {
   const person = people.get(entry.staff_id) ?? {
     name: entry.display_name,
@@ -60,12 +76,25 @@ for (const entry of entries) {
   people.set(entry.staff_id, person);
 }
 
-const canApprove = (entry: (typeof entries)[number], isSelf: boolean) =>
-  entry.status === 'pending' && Boolean(entry.clock_out_at) && !entry.push_state && !isSelf;
+const minutesOf = (entry: Entry) => {
+  const split = hours.get(entry.id);
+  return (split?.regularMinutes ?? 0) + (split?.overtimeMinutes ?? 0);
+};
+const canApprove = (entry: Entry, isSelf: boolean) =>
+  entry.status === 'pending' && Boolean(entry.clock_out_at) && !entry.push_state && !isSelf && minutesOf(entry) <= LONG_SHIFT_MINUTES;
+const editable = (entry: Entry, isSelf: boolean) => entry.status === 'pending' && !entry.push_state && !isSelf;
+const isProblem = (entry: Entry) =>
+  entry.status !== 'rejected' && ((!entry.clock_out_at && localDate(entry.clock_in_at) < today) || minutesOf(entry) > LONG_SHIFT_MINUTES);
 
-const approvable = [...people.values()].flatMap((person) =>
+// People with something wrong first, then anyone waiting on review, then the rest.
+const rank = (person: { rows: Entry[]; isSelf: boolean }) =>
+  person.rows.some(isProblem) ? 0 : person.rows.some((e) => canApprove(e, person.isSelf)) ? 1 : 2;
+const ordered = [...people.entries()].sort(([, a], [, b]) => rank(a) - rank(b) || a.name.localeCompare(b.name));
+
+const approvable = ordered.flatMap(([, person]) =>
   person.rows.filter((entry) => canApprove(entry, person.isSelf)).map(({ id, version }) => ({ id, version })),
 );
+const problems = entries.filter(isProblem).length;
 const openCount = entries.filter((entry) => !entry.clock_out_at && entry.status !== 'rejected').length;
 const weekRegular = [...people.values()].reduce((sum, person) => sum + person.regular, 0);
 const weekOvertime = [...people.values()].reduce((sum, person) => sum + person.overtime, 0);
@@ -73,202 +102,215 @@ const isThisWeek = weekStart === currentWeek;
 ---
 
 <AdminBase title="Hours">
-  <div class="page-header">
-    <div>
-      <h1>Hours</h1>
-      <p class="muted">{isThisWeek ? 'This week' : 'Week of'} · {shortDate(weekStart)} to {shortDate(addDays(weekStart, 6))}</p>
-    </div>
-    <div class="page-actions">
-      <div class="btn-group" role="group" aria-label="Week">
-        <a class="btn btn-icon" href={`/admin/hours/?week=${addDays(weekStart, -7)}`} aria-label="Previous week" title="Previous week">
-          <Fragment set:html={svg('left', 18)} />
-        </a>
-        {isThisWeek ? (
-          <span class="btn btn-label">This week</span>
-        ) : (
-          <a class="btn btn-label" href="/admin/hours/">Back to this week</a>
-        )}
-        {weekStart < currentWeek ? (
-          <a class="btn btn-icon" href={`/admin/hours/?week=${addDays(weekStart, 7)}`} aria-label="Next week" title="Next week">
-            <Fragment set:html={svg('right', 18)} />
+  <div id="hours-live">
+    <div class="page-header">
+      <div>
+        <h1>Hours</h1>
+        <p class="muted">{isThisWeek ? 'This week' : 'Week of'} · {shortDate(weekStart)} to {shortDate(addDays(weekStart, 6))}</p>
+      </div>
+      <div class="page-actions">
+        <div class="btn-group" role="group" aria-label="Week">
+          <a class="btn btn-icon" href={`/admin/hours/?week=${addDays(weekStart, -7)}`} aria-label="Previous week" title="Previous week">
+            <Fragment set:html={svg('left', 18)} />
           </a>
-        ) : (
-          <button type="button" class="btn btn-icon" disabled aria-label="Next week"><Fragment set:html={svg('right', 18)} /></button>
-        )}
-      </div>
-      <button type="button" class="btn" id="add-shift" data-add-shift data-week={weekStart}>
-        <Fragment set:html={svg('plus', 18)} />Add shift
-      </button>
-      <a class="btn" href={handEntry ? '/admin/hours/for-gusto/' : '/admin/hours/send/'}>
-        <Fragment set:html={svg('send', 18)} />{handEntry ? 'Hours for Gusto' : 'Send to Gusto'}
-      </a>
-      <button
-        type="button"
-        class="btn btn-primary"
-        id="approve-all"
-        data-entries={JSON.stringify(approvable)}
-        disabled={approvable.length === 0}
-      >
-        <Fragment set:html={svg('check', 18)} />Approve all{approvable.length > 0 && ` (${approvable.length})`}
-      </button>
-    </div>
-  </div>
-
-  <div class="stats">
-    <div class:list={['stat', { 'stat-accent': approvable.length > 0 }]}>
-      <p class="stat-label">Needs review</p>
-      <p class="stat-value">{approvable.length}</p>
-      <p class="stat-note">{approvable.length === 1 ? 'shift' : 'shifts'} ready to approve</p>
-    </div>
-    <div class="stat">
-      <p class="stat-label">Hours worked</p>
-      <p class="stat-value">{hoursLabel(weekRegular + weekOvertime)}</p>
-      <p class="stat-note">{people.size} {people.size === 1 ? 'person' : 'people'}</p>
-    </div>
-    <div class="stat">
-      <p class="stat-label">Overtime</p>
-      <p class="stat-value">{hoursLabel(weekOvertime)}</p>
-      <p class="stat-note">over 40 a week</p>
-    </div>
-    <div class="stat">
-      <p class="stat-label">Clocked in now</p>
-      <p class="stat-value">{openCount}</p>
-      <p class="stat-note">{openCount === 0 ? 'nobody on the clock' : 'still on the clock'}</p>
-    </div>
-  </div>
-
-  <p id="page-error" class="form-error" role="alert"></p>
-
-  {
-    openCount > 0 && (
-      <p class="notice">
-        {openCount === 1 ? '1 shift has' : `${openCount} shifts have`} no clock-out. Someone is still working, or they
-        forgot to clock out. Open shifts can't be approved until they have a clock-out time.
-      </p>
-    )
-  }
-
-  {
-    people.size === 0 && (
-      <div class="card empty">
-        <div class="empty-icon"><Fragment set:html={svg('hours', 24)} /></div>
-        <h2>No shifts this week</h2>
-        <p>Shifts show up here as people clock in on the store tablet. Add one by hand if someone forgot.</p>
-        <div class="empty-actions">
-          <button type="button" class="btn" data-add-shift><Fragment set:html={svg('plus', 18)} />Add shift</button>
+          {isThisWeek ? (
+            <span class="btn btn-label">This week</span>
+          ) : (
+            <a class="btn btn-label" href="/admin/hours/">Back to this week</a>
+          )}
+          {weekStart < currentWeek ? (
+            <a class="btn btn-icon" href={`/admin/hours/?week=${addDays(weekStart, 7)}`} aria-label="Next week" title="Next week">
+              <Fragment set:html={svg('right', 18)} />
+            </a>
+          ) : (
+            <button type="button" class="btn btn-icon" disabled aria-label="Next week"><Fragment set:html={svg('right', 18)} /></button>
+          )}
         </div>
+        <button type="button" class="btn" data-add-shift>
+          <Fragment set:html={svg('plus', 18)} />Add shift
+        </button>
+        <a class="btn" href={handEntry ? '/admin/hours/for-gusto/' : '/admin/hours/send/'}>
+          <Fragment set:html={svg('send', 18)} />{handEntry ? 'Hours for Gusto' : 'Send to Gusto'}
+        </a>
+        <button
+          type="button"
+          class="btn btn-primary"
+          data-approve-many
+          data-entries={JSON.stringify(approvable)}
+          disabled={approvable.length === 0}
+        >
+          <Fragment set:html={svg('check', 18)} />Approve all{approvable.length > 0 && ` (${approvable.length})`}
+        </button>
       </div>
-    )
-  }
+    </div>
 
-  {
-    [...people.entries()].map(([staffId, person]) => (
-      <section class="card">
-        <div class="person-header">
-          <div class="person">
-            <span class="avatar" data-tone={tone(person.name)}>{initials(person.name)}</span>
-            <h2>{person.name}</h2>
+    <div class="stats">
+      <div class:list={['stat', { 'stat-accent': approvable.length > 0 }]}>
+        <p class="stat-label">Ready to approve</p>
+        <p class="stat-value">{approvable.length}</p>
+        <p class="stat-note">{approvable.length === 1 ? 'shift' : 'shifts'}</p>
+      </div>
+      <div class:list={['stat', { 'stat-alert': problems > 0 }]}>
+        <p class="stat-label">Need a look</p>
+        <p class="stat-value">{problems}</p>
+        <p class="stat-note">{problems === 0 ? 'nothing odd' : 'no clock-out, or over 12 hours'}</p>
+      </div>
+      <div class="stat">
+        <p class="stat-label">Hours worked</p>
+        <p class="stat-value">{hoursLabel(weekRegular + weekOvertime)}</p>
+        <p class="stat-note">{people.size} {people.size === 1 ? 'person' : 'people'}{weekOvertime > 0 ? ` · ${hoursLabel(weekOvertime)} overtime` : ''}</p>
+      </div>
+      <div class="stat">
+        <p class="stat-label">Clocked in now</p>
+        <p class="stat-value">{openCount}</p>
+        <p class="stat-note">{openCount === 0 ? 'nobody on the clock' : 'still on the clock'}</p>
+      </div>
+    </div>
+
+    <p class="tip muted">Click a time to change it. Type it the way you'd say it, like <kbd>5p</kbd> or <kbd>9:30</kbd>, then press <kbd>Enter</kbd>.</p>
+
+    {
+      people.size === 0 && (
+        <div class="card empty">
+          <div class="empty-icon"><Fragment set:html={svg('hours', 24)} /></div>
+          <h2>No shifts this week</h2>
+          <p>Shifts show up here as people clock in on the store iPad. Add one by hand if someone forgot.</p>
+          <div class="empty-actions">
+            <button type="button" class="btn" data-add-shift><Fragment set:html={svg('plus', 18)} />Add shift</button>
           </div>
-          <p class="person-total">
-            <span class="person-hours">{hoursLabel(person.regular + person.overtime)}</span> hrs
-            {person.overtime > 0 && <span class="badge badge-warn">{hoursLabel(person.overtime)} overtime</span>}
-          </p>
         </div>
-        {person.isSelf && <p class="muted self-note">These are your own hours, so another manager needs to review them.</p>}
-        <div>
-          <table class="shift-table">
-            <thead>
-              <tr>
-                <th>Day</th>
-                <th>In</th>
-                <th>Out</th>
-                <th class="num">Hours</th>
-                <th>Status</th>
-                <th><span class="sr-only">Actions</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              {person.rows.map((entry) => {
-                const split = hours.get(entry.id);
-                const total = (split?.regularMinutes ?? 0) + (split?.overtimeMinutes ?? 0);
-                const locked = Boolean(entry.push_state);
-                const rejected = entry.status === 'rejected';
-                return (
-                  <tr>
-                    <td class="c-day">
-                      {shortDate(localDate(entry.clock_in_at))}
-                      {entry.source === 'manual' && <span class="muted"> (added)</span>}
-                    </td>
-                    <td class="c-in">{time(entry.clock_in_at)}</td>
-                    <td class="c-out">{entry.clock_out_at ? time(entry.clock_out_at) : '—'}</td>
-                    <td class="num c-hours">
-                      {entry.clock_out_at && !rejected ? hoursLabel(total) : '—'}
-                    </td>
-                    <td class="c-status">
-                      <div class="status-cell">
-                      {locked ? (
-                        <span class="badge badge-sent">{entry.push_state === 'pushed' ? 'Sent to Gusto' : 'Sending'}</span>
-                      ) : !entry.clock_out_at && !rejected ? (
-                        <span class="badge badge-open">Clocked in</span>
-                      ) : (
-                        <span class:list={['badge', `badge-${entry.status}`]}>{STATUS_LABELS[entry.status]}</span>
-                      )}
-                      {total > LONG_SHIFT_MINUTES && !rejected && <span class="badge badge-warn" title="Over 12 hours">Long</span>}
-                      </div>
-                    </td>
-                    <td class="c-actions">
-                      {!locked && !person.isSelf && (
-                        <div class="row-actions">
-                          {entry.status === 'pending' && (
-                            <button
-                              type="button"
-                              class="btn"
-                              data-edit
-                              data-id={entry.id}
-                              data-version={entry.version}
-                              data-staff={staffId}
-                              data-name={person.name}
-                              data-in={utcToLocalInput(entry.clock_in_at)}
-                              data-out={entry.clock_out_at ? utcToLocalInput(entry.clock_out_at) : ''}
-                            >
-                              {entry.clock_out_at ? 'Edit' : 'Add clock-out'}
-                            </button>
+      )
+    }
+
+    {
+      ordered.map(([staffId, person]) => {
+        const mine = person.rows.filter((entry) => canApprove(entry, person.isSelf)).map(({ id, version }) => ({ id, version }));
+        return (
+          <section class="card person-card">
+            <div class="person-header">
+              <a class="person" href={`/admin/staff/${encodeURIComponent(staffId)}/`}>
+                <span class="avatar" data-tone={tone(person.name)}>{initials(person.name)}</span>
+                <h2>{person.name}</h2>
+              </a>
+              <div class="person-total">
+                <span><span class="person-hours">{hoursLabel(person.regular + person.overtime)}</span> hrs</span>
+                {person.overtime > 0 && <span class="badge badge-warn">{hoursLabel(person.overtime)} overtime</span>}
+                {mine.length > 1 && (
+                  <button type="button" class="btn btn-small" data-approve-many data-entries={JSON.stringify(mine)}>
+                    Approve {mine.length}
+                  </button>
+                )}
+              </div>
+            </div>
+            {person.isSelf && <p class="muted self-note">These are your own hours, so another manager needs to review them.</p>}
+            <table class="shift-table">
+              <thead>
+                <tr>
+                  <th>Day</th>
+                  <th>In</th>
+                  <th>Out</th>
+                  <th class="num">Hours</th>
+                  <th>Status</th>
+                  <th><span class="sr-only">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {person.rows.map((entry) => {
+                  const total = minutesOf(entry);
+                  const locked = Boolean(entry.push_state);
+                  const rejected = entry.status === 'rejected';
+                  const day = localDate(entry.clock_in_at);
+                  const shift = scheduled.get(`${staffId}|${day}`);
+                  const plan = shift && !shift.away && shift.start_min !== null ? shift : null;
+                  const inDiff = plan ? localMinutes(entry.clock_in_at) - plan.start_min! : 0;
+                  const outDiff = plan && plan.end_min !== null && entry.clock_out_at && localDate(entry.clock_out_at) === day ? localMinutes(entry.clock_out_at) - plan.end_min : 0;
+                  const canEdit = editable(entry, person.isSelf) && !rejected;
+                  const long = total > LONG_SHIFT_MINUTES && !rejected;
+                  const missing = !entry.clock_out_at && !rejected && day < today;
+                  return (
+                    <tr
+                      id={`e-${entry.id}`}
+                      class:list={{ 'row-problem': long || missing }}
+                      data-id={entry.id}
+                      data-version={entry.version}
+                      data-staff={staffId}
+                      data-name={person.name}
+                      data-in={utcToLocalInput(entry.clock_in_at)}
+                      data-out={entry.clock_out_at ? utcToLocalInput(entry.clock_out_at) : ''}
+                      data-sched-end={plan?.end_min ?? ''}
+                    >
+                      <td class="c-day">
+                        <span class="day">{shortDate(day)}</span>
+                        {entry.source === 'manual' && <span class="muted"> (added)</span>}
+                        {plan && (
+                          <span class="sched">Scheduled {formatMinutes(plan.start_min!)}{plan.end_min !== null ? `–${formatMinutes(plan.end_min)}` : ''}</span>
+                        )}
+                      </td>
+                      <td class="c-in">
+                        {canEdit ? (
+                          <button type="button" class="time" data-time="in" aria-label={`Clock-in ${time(entry.clock_in_at)}. Change`}>{time(entry.clock_in_at)}</button>
+                        ) : (
+                          <span class="time-static">{time(entry.clock_in_at)}</span>
+                        )}
+                        {Math.abs(inDiff) > ON_TIME_MINUTES && <span class:list={['diff', { late: inDiff > 0 }]} title="Compared with the schedule">{diffLabel(inDiff)}</span>}
+                      </td>
+                      <td class="c-out">
+                        {canEdit ? (
+                          <button type="button" class:list={['time', { 'time-missing': !entry.clock_out_at }]} data-time="out" aria-label={entry.clock_out_at ? `Clock-out ${time(entry.clock_out_at)}. Change` : 'Add the clock-out'}>
+                            {entry.clock_out_at ? time(entry.clock_out_at) : missing ? 'Add' : 'Working'}
+                          </button>
+                        ) : (
+                          <span class="time-static">{entry.clock_out_at ? time(entry.clock_out_at) : '—'}</span>
+                        )}
+                        {Math.abs(outDiff) > ON_TIME_MINUTES && <span class="diff" title="Compared with the schedule">{diffLabel(outDiff)}</span>}
+                      </td>
+                      <td class="num c-hours">{entry.clock_out_at && !rejected ? hoursLabel(total) : '—'}</td>
+                      <td class="c-status">
+                        <div class="status-cell">
+                          {locked ? (
+                            <span class="badge badge-sent">{entry.push_state === 'pushed' ? 'Sent to Gusto' : 'Sending'}</span>
+                          ) : missing ? (
+                            <span class="badge badge-alert">No clock-out</span>
+                          ) : !entry.clock_out_at && !rejected ? (
+                            <span class="badge badge-open">Clocked in</span>
+                          ) : (
+                            <span class:list={['badge', `badge-${entry.status}`]}>{STATUS_LABELS[entry.status]}</span>
                           )}
-                          {canApprove(entry, person.isSelf) && (
-                            <button
-                              type="button"
-                              class="btn btn-primary"
-                              data-approve
-                              data-id={entry.id}
-                              data-version={entry.version}
-                            >
-                              Approve
-                            </button>
-                          )}
-                          {entry.status !== 'pending' && (
-                            <button
-                              type="button"
-                              class="btn"
-                              data-reopen
-                              data-id={entry.id}
-                              data-version={entry.version}
-                              data-staff={staffId}
-                            >
-                              Reopen
-                            </button>
-                          )}
+                          {long && <span class="badge badge-warn" title="Over 12 hours is usually a missed clock-out">Over 12 h</span>}
                         </div>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    ))
-  }
+                      </td>
+                      <td class="c-actions">
+                        {!locked && !person.isSelf && (
+                          <div class="row-actions">
+                            {entry.status === 'pending' && (
+                              <button type="button" class="btn" data-edit>{entry.clock_out_at ? 'More' : 'Edit'}</button>
+                            )}
+                            {canApprove(entry, person.isSelf) && (
+                              <button type="button" class="btn btn-primary" data-approve-many data-entries={JSON.stringify([{ id: entry.id, version: entry.version }])}>
+                                Approve
+                              </button>
+                            )}
+                            {long && entry.status === 'pending' && (
+                              <button type="button" class="btn" data-approve-many data-entries={JSON.stringify([{ id: entry.id, version: entry.version }])}>
+                                Approve anyway
+                              </button>
+                            )}
+                            {entry.status !== 'pending' && (
+                              <button type="button" class="btn" data-reopen>Reopen</button>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </section>
+        );
+      })
+    }
+  </div>
 
   <dialog id="shift-dialog" aria-labelledby="shift-title">
     <form id="shift-form">
@@ -304,58 +346,117 @@ const isThisWeek = weekStart === currentWeek;
 </AdminBase>
 
 <style>
+  .tip { margin: -0.5rem 0 1rem; font-size: 0.875rem; }
+
   .person-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; margin-bottom: 0.75rem; }
+  .person-header .person { color: var(--ink); text-decoration: none; }
+  .person-header .person:hover h2 { text-decoration: underline; }
   .person-header h2 { font-size: 1.0625rem; }
   .person-total { display: flex; align-items: center; gap: 0.625rem; color: var(--ink-3); font-weight: 600; font-variant-numeric: tabular-nums; }
-  .person-hours { color: var(--ink); font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; margin-right: -0.375rem; }
+  .person-hours { color: var(--ink); font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; }
+
   .shift-table { table-layout: fixed; }
-  .shift-table th:nth-child(1) { width: 24%; }
-  .shift-table th:nth-child(2), .shift-table th:nth-child(3) { width: 13%; }
+  .shift-table th:nth-child(1) { width: 25%; }
+  .shift-table th:nth-child(2), .shift-table th:nth-child(3) { width: 14%; }
   .shift-table th:nth-child(4) { width: 9%; }
-  .shift-table th:nth-child(5) { width: 23%; }
+  .shift-table th:nth-child(5) { width: 18%; }
   .shift-table th:nth-child(4), .shift-table td:nth-child(4) { padding-right: 1.25rem; }
   .status-cell { display: flex; flex-wrap: wrap; gap: 0.375rem; align-items: center; }
-  .c-day { font-weight: 600; }
+  /* A shift linked from Today is highlighted when the page opens on it. */
+  tr:target td { background: var(--gold-soft); }
+  tr:target td:first-child { box-shadow: inset 3px 0 0 var(--gold); }
+  tr { scroll-margin-top: 6rem; }
+  .row-problem td:first-child { position: relative; }
+  .row-problem td:first-child::before { content: ''; position: absolute; left: -0.875rem; top: 0.625rem; bottom: 0.625rem; width: 3px; border-radius: 2px; background: var(--red); }
+  .c-day .day { font-weight: 600; }
+  .sched { display: block; font-size: 0.75rem; color: var(--ink-3); margin-top: 0.125rem; }
   .c-in, .c-out { font-variant-numeric: tabular-nums; color: var(--ink-2); }
+
+  /* Times are buttons: click, type "5p", Enter. */
+  .time {
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    background: transparent;
+    border: 1px dashed transparent;
+    border-radius: 6px;
+    padding: 0.25rem 0.375rem;
+    margin-left: -0.375rem;
+    cursor: text;
+  }
+  .time:hover { border-color: var(--line); background: var(--sunk); }
+  .time-missing { color: var(--red); font-weight: 700; border-color: color-mix(in srgb, var(--red) 40%, transparent); }
+  .time-input {
+    width: 6.5rem;
+    max-width: 100%;
+    padding: 0.25rem 0.375rem;
+    margin-left: -0.375rem;
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+    border: 1.5px solid var(--teal);
+    border-radius: 6px;
+    background: var(--panel);
+    color: var(--ink);
+    box-shadow: 0 0 0 3px var(--teal-soft);
+    outline: none;
+  }
+  .time-input.bad { border-color: var(--red); box-shadow: 0 0 0 3px var(--red-soft); animation: nudge 0.25s; }
+  @keyframes nudge { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+  @media (prefers-reduced-motion: reduce) { .time-input.bad { animation: none; } }
+  .time-hint { display: block; font-size: 0.6875rem; color: var(--ink-3); margin-top: 0.125rem; }
+  .diff { display: block; font-size: 0.75rem; color: var(--ink-3); }
+  .diff.late { color: var(--clay); font-weight: 600; }
+  tr.saving { opacity: 0.55; transition: opacity 0.15s var(--ease); }
 
   .self-note { margin-bottom: 0.5rem; }
   .row-actions { display: flex; gap: 0.375rem; justify-content: flex-end; }
-  .row-actions .btn { min-height: 36px; padding: 0.375rem 0.75rem; font-size: 0.875rem; }
+  .row-actions .btn { min-height: 36px; padding: 0.375rem 0.75rem; font-size: 0.75rem; }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-  /* On phones each shift stacks, so Edit and Approve stay on screen. */
+  /* On phones each shift stacks, so the times and Approve stay on screen. */
   @media (max-width: 640px) {
+    .tip { display: none; }
     .shift-table thead { display: none; }
     .shift-table tbody, .shift-table tr, .shift-table td { display: block; }
     .shift-table tr {
       display: grid;
       grid-template-columns: auto auto 1fr auto;
-      align-items: center;
+      align-items: start;
       gap: 0.25rem 0.75rem;
       padding: 0.75rem 0;
       border-bottom: 1px solid var(--border);
     }
     .shift-table tr:last-child { border-bottom: 0; padding-bottom: 0; }
     .shift-table td { padding: 0; border: 0; }
-    .c-day { grid-column: 1 / 4; font-weight: 600; }
+    .row-problem td:first-child::before { display: none; }
+    .page-actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+    .page-actions .btn-group, .page-actions [data-approve-many] { grid-column: 1 / -1; }
+    .page-actions > .btn { padding-inline: 0.5rem; }
+    .row-problem .day { color: var(--red); }
+    .c-day { grid-column: 1 / 4; }
     .c-status { grid-column: 4; grid-row: 1; text-align: right; }
     .status-cell { justify-content: flex-end; }
     .c-in { grid-column: 1; }
     .c-out { grid-column: 2; }
-    .c-in::before { content: 'In '; color: var(--text-muted); }
-    .c-out::before { content: 'Out '; color: var(--text-muted); }
-    .c-hours { grid-column: 3 / 5; }
+    .c-in::before { content: 'In'; display: block; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); }
+    .c-out::before { content: 'Out'; display: block; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); }
+    .time, .time-input { margin-left: 0; min-height: 40px; }
+    .c-hours { grid-column: 3 / 5; align-self: end; }
     .c-actions { grid-column: 1 / -1; }
     .c-actions:empty { display: none; }
     .row-actions { justify-content: stretch; margin-top: 0.375rem; }
-    .row-actions .btn { flex: 1; }
+    .row-actions .btn { flex: 1; min-height: 44px; }
+    /* A finished shift only needs a small way back, not a big button. */
+    .row-actions:has(> [data-reopen]:only-child) { justify-content: flex-end; margin-top: -2.25rem; }
+    .row-actions > [data-reopen]:only-child { flex: 0 0 auto; min-height: 36px; }
   }
 </style>
 
 <script>
   import { post } from '@/lib/time-clock/admin-client';
+  import { refreshParts, toast } from '@/lib/admin/shell';
+  import { formatMinutes, parseTypedTime } from '@/lib/admin/time-input.mjs';
 
-  const pageError = document.querySelector<HTMLElement>('#page-error')!;
   const dialog = document.querySelector<HTMLDialogElement>('#shift-dialog')!;
   const form = document.querySelector<HTMLFormElement>('#shift-form')!;
   const title = document.querySelector<HTMLElement>('#shift-title')!;
@@ -368,16 +469,44 @@ const isThisWeek = weekStart === currentWeek;
   const reason = document.querySelector<HTMLInputElement>('#shift-reason')!;
   const rejectButton = document.querySelector<HTMLButtonElement>('#shift-reject')!;
 
-  let editing: { id: string; version: number; staffId: string } | null = null;
+  interface Row {
+    id: string;
+    version: number;
+    staffId: string;
+    name: string;
+    in: string;
+    out: string;
+  }
+  let editing: Row | null = null;
 
-  async function send(body: object, errorTarget: HTMLElement): Promise<void> {
-    errorTarget.textContent = '';
+  const rowOf = (el: Element): Row | null => {
+    const tr = el.closest<HTMLTableRowElement>('tr[data-id]');
+    if (!tr) return null;
+    const d = tr.dataset;
+    return { id: d.id!, version: Number(d.version), staffId: d.staff!, name: d.name!, in: d.in!, out: d.out ?? '' };
+  };
+  const minutesOf = (local: string) => {
+    const [h, m] = local.split('T')[1].split(':').map(Number);
+    return h * 60 + m;
+  };
+  const addDay = (date: string) => {
+    const d = new Date(`${date}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + 1);
+    return d.toISOString().slice(0, 10);
+  };
+  const localAt = (date: string, minutes: number) =>
+    `${date}T${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+
+  /** Saves, then re-renders the list from the server. Returns the error, if any. */
+  async function act(body: object, success: string): Promise<string | null> {
     const { error } = await post('/api/admin/hours/', body);
-    if (error) errorTarget.textContent = error;
-    else location.reload();
+    if (error) return error;
+    toast(success);
+    await refreshParts('#hours-live');
+    return null;
   }
 
-  function openDialog(heading: string, entry: typeof editing, values: { in: string; out: string }) {
+  function openDialog(heading: string, entry: Row | null, values: { in: string; out: string }) {
     editing = entry;
     title.textContent = heading;
     staffField.hidden = entry !== null;
@@ -389,64 +518,167 @@ const isThisWeek = weekStart === currentWeek;
     dialog.showModal();
   }
 
-  document.querySelectorAll<HTMLButtonElement>('[data-add-shift]').forEach((button) => {
-    button.addEventListener('click', () => openDialog('Add a missed shift', null, { in: '', out: '' }));
+  // ── Times typed straight into the row ───────────────────────
+
+  function startTimeEdit(button: HTMLButtonElement) {
+    const row = rowOf(button)!;
+    const which = button.dataset.time as 'in' | 'out';
+    const cell = button.parentElement!;
+    const tr = button.closest('tr')!;
+    const schedEnd = tr.dataset.schedEnd ? Number(tr.dataset.schedEnd) : null;
+    // What "5" should lean toward: the time already there, or for a missing clock-out, the scheduled end or 8 hours in.
+    const near = which === 'in' ? minutesOf(row.in) : row.out ? minutesOf(row.out) : (schedEnd ?? Math.min(minutesOf(row.in) + 8 * 60, 23 * 60));
+    const original = which === 'in' ? formatMinutes(minutesOf(row.in)) : row.out ? formatMinutes(minutesOf(row.out)) : '';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'time-input';
+    input.value = original;
+    input.setAttribute('aria-label', which === 'in' ? `Clock-in for ${row.name}` : `Clock-out for ${row.name}`);
+    input.setAttribute('enterkeyhint', 'done');
+    input.autocomplete = 'off';
+    const hint = document.createElement('span');
+    hint.className = 'time-hint';
+    hint.textContent = 'Enter to save · Esc to cancel';
+    button.hidden = true;
+    cell.insertBefore(hint, cell.firstChild);
+    cell.insertBefore(input, hint);
+    input.focus();
+    input.select();
+
+    const close = () => {
+      input.remove();
+      hint.remove();
+      button.hidden = false;
+    };
+
+    input.addEventListener('keydown', async (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        close();
+        button.focus();
+        return;
+      }
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      const minutes = parseTypedTime(input.value, near);
+      if (minutes === null) {
+        input.classList.remove('bad');
+        void input.offsetWidth;
+        input.classList.add('bad');
+        hint.textContent = 'Try 5p, 5:30 pm or 17:30';
+        return;
+      }
+      const date = row.in.slice(0, 10);
+      let newIn = row.in;
+      let newOut = row.out;
+      if (which === 'in') newIn = localAt(date, minutes);
+      else newOut = localAt(minutes <= minutesOf(row.in) ? addDay(date) : date, minutes);
+      if (newIn === row.in && newOut === row.out) return close();
+      if (!newOut) {
+        // Changing the clock-in of someone still working needs the dialog, which takes both times.
+        close();
+        openDialog(`Edit shift: ${row.name}`, row, { in: newIn, out: '' });
+        return;
+      }
+      const from = which === 'in' ? formatMinutes(minutesOf(row.in)) : row.out ? formatMinutes(minutesOf(row.out)) : '';
+      const label = which === 'in' ? 'Clock-in' : 'Clock-out';
+      tr.classList.add('saving');
+      input.disabled = true;
+      const error = await act(
+        {
+          action: 'edit',
+          id: row.id,
+          version: row.version,
+          staffId: row.staffId,
+          clockIn: newIn,
+          clockOut: newOut,
+          reason: from ? `${label} changed from ${from} to ${formatMinutes(minutes)} on the Hours page.` : `Missed clock-out. Added ${formatMinutes(minutes)} on the Hours page.`,
+        },
+        `${row.name}: ${label.toLowerCase()} ${formatMinutes(minutes)}`,
+      );
+      if (error) {
+        // Keep what was typed, so nothing is lost.
+        tr.classList.remove('saving');
+        input.disabled = false;
+        input.classList.add('bad');
+        hint.textContent = error;
+        input.focus();
+      }
+    });
+
+    // Leaving the field keeps what was typed rather than throwing it away,
+    // unless nothing changed.
+    input.addEventListener('blur', () => {
+      if (input.value.trim() === original) setTimeout(() => input.isConnected && document.activeElement !== input && close(), 0);
+    });
+  }
+
+  // ── Everything else, delegated so re-rendered rows keep working ──
+
+  document.addEventListener('click', async (event) => {
+    const target = event.target as HTMLElement;
+
+    const timeButton = target.closest<HTMLButtonElement>('[data-time]');
+    if (timeButton) return startTimeEdit(timeButton);
+
+    if (target.closest('[data-add-shift]')) return openDialog('Add a missed shift', null, { in: '', out: '' });
+
+    const edit = target.closest<HTMLButtonElement>('[data-edit]');
+    if (edit) {
+      const row = rowOf(edit)!;
+      return openDialog(`Edit shift: ${row.name}`, row, { in: row.in, out: row.out });
+    }
+
+    const approve = target.closest<HTMLButtonElement>('[data-approve-many]');
+    if (approve) {
+      const entries = JSON.parse(approve.dataset.entries ?? '[]');
+      approve.disabled = true;
+      approve.closest('tr')?.classList.add('saving');
+      const { data, error } = await post<{ approved: number; skipped: number }>('/api/admin/hours/', { action: 'approve', entries });
+      if (!data) {
+        approve.disabled = false;
+        approve.closest('tr')?.classList.remove('saving');
+        return toast(error ?? 'Something went wrong. Try again.', 'error');
+      }
+      toast(data.skipped ? `Approved ${data.approved}. ${data.skipped} changed, so they're left for review.` : `Approved ${data.approved} ${data.approved === 1 ? 'shift' : 'shifts'}`);
+      await refreshParts('#hours-live');
+      return;
+    }
+
+    const reopen = target.closest<HTMLButtonElement>('[data-reopen]');
+    if (reopen) {
+      const row = rowOf(reopen)!;
+      reopen.disabled = true;
+      const error = await act({ action: 'reopen', id: row.id, version: row.version, staffId: row.staffId }, `Reopened ${row.name}'s shift`);
+      if (error) {
+        reopen.disabled = false;
+        toast(error, 'error');
+      }
+    }
   });
 
   document.querySelector('#shift-cancel')!.addEventListener('click', () => dialog.close());
 
-  document.querySelectorAll<HTMLButtonElement>('[data-edit]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const { id, version, staff, name, in: start, out } = button.dataset;
-      openDialog(`Edit shift: ${name}`, { id: id!, version: Number(version), staffId: staff! }, {
-        in: start ?? '',
-        out: out ?? '',
-      });
-    });
-  });
-
-  document.querySelectorAll<HTMLButtonElement>('[data-approve]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const { id, version } = button.dataset;
-      button.disabled = true;
-      send({ action: 'approve', entries: [{ id, version: Number(version) }] }, pageError).finally(() => {
-        button.disabled = false;
-      });
-    });
-  });
-
-  document.querySelectorAll<HTMLButtonElement>('[data-reopen]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const { id, version, staff } = button.dataset;
-      send({ action: 'reopen', id, version: Number(version), staffId: staff }, pageError);
-    });
-  });
-
-  const approveAll = document.querySelector<HTMLButtonElement>('#approve-all')!;
-  approveAll.addEventListener('click', () => {
-    approveAll.disabled = true;
-    send({ action: 'approve', entries: JSON.parse(approveAll.dataset.entries ?? '[]') }, pageError).finally(() => {
-      approveAll.disabled = false;
-    });
-  });
-
-  rejectButton.addEventListener('click', () => {
+  rejectButton.addEventListener('click', async () => {
     if (!editing) return;
     if (!reason.value.trim()) {
       formError.textContent = 'Add a short reason before rejecting this shift.';
       reason.focus();
       return;
     }
-    send({ action: 'reject', id: editing.id, version: editing.version, reason: reason.value }, formError);
+    const error = await act({ action: 'reject', id: editing.id, version: editing.version, reason: reason.value }, `Rejected ${editing.name}'s shift`);
+    if (error) formError.textContent = error;
+    else dialog.close();
   });
 
-  form.addEventListener('submit', (event) => {
+  form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const times = { clockIn: clockIn.value, clockOut: clockOut.value, reason: reason.value };
-    if (editing) {
-      send({ action: 'edit', id: editing.id, version: editing.version, staffId: editing.staffId, ...times }, formError);
-    } else {
-      send({ action: 'add', staffId: staffSelect.value, ...times }, formError);
-    }
+    const error = editing
+      ? await act({ action: 'edit', id: editing.id, version: editing.version, staffId: editing.staffId, ...times }, `Saved ${editing.name}'s shift`)
+      : await act({ action: 'add', staffId: staffSelect.value, ...times }, 'Shift added');
+    if (error) formError.textContent = error;
+    else dialog.close();
   });
 </script>

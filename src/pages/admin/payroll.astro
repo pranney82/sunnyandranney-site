@@ -3,8 +3,6 @@ export const prerender = false;
 
 import AdminBase from '@/layouts/AdminBase.astro';
 import { liveGusto } from '@/lib/gusto/client.mjs';
-import { GustoError } from '@/lib/gusto/oauth.mjs';
-import { refreshPay } from '@/lib/gusto/pay-sync.mjs';
 import { groupPayRuns } from '@/lib/time-clock/gusto-pay.mjs';
 import { STORE_TIME_ZONE, addDays, isIsoDate, localDate } from '@/lib/time-clock/hours.mjs';
 import { storePayroll, type PayRow } from '@/lib/time-clock/store';
@@ -21,18 +19,9 @@ const from = isIsoDate(fromParam) ? (fromParam as string) : addDays(to, -90);
 const env = Astro.locals.runtime.env;
 const db = env.DB;
 
+// Shown at once from what's already been read from Gusto. The page script then
+// asks Gusto for anything newer, and re-renders the list only if there was some.
 const gusto = await liveGusto(env);
-let gustoProblem = '';
-let unread = 0;
-if (gusto.client) {
-  try {
-    unread = (await refreshPay(db, gusto.client, { from, to, today })).remaining;
-  } catch (err) {
-    if (!(err instanceof GustoError)) throw err;
-    gustoProblem = err.message;
-  }
-}
-const isLive = Boolean(gusto.client) && !gustoProblem;
 
 const { rows, truncated } = await storePayroll(db, from, to);
 const { runs, uncounted, grossCents, workedHours } = groupPayRuns(rows);
@@ -53,7 +42,9 @@ const lastImport = rows.reduce((latest, row) => (row.imported_at > latest ? row.
       <h1>Payroll</h1>
       <p class="muted">
         Gross pay and hours for store staff, read from Gusto.
-        {isLive ? <span class="live"><span class="live-dot" aria-hidden="true"></span>Live</span> : lastImport && `Last updated ${importLabel.format(new Date(lastImport))}.`}
+        <span class="live" id="pay-status" data-connected={gusto.client ? '1' : ''} data-from={from} data-to={to}>
+          {gusto.client ? 'Checking Gusto…' : lastImport && `Last updated ${importLabel.format(new Date(lastImport))}.`}
+        </span>
       </p>
     </div>
   </div>
@@ -70,9 +61,10 @@ const lastImport = rows.reduce((latest, row) => (row.imported_at > latest ? row.
     <button class="btn btn-dark" type="submit">Show</button>
   </form>
 
-  {gustoProblem && <p class="notice">Could not reach Gusto just now, so this may be out of date. {gustoProblem}</p>}
+  <p class="notice" id="pay-problem" hidden></p>
   {gusto.state === 'reconnect' && <p class="notice">Gusto needs to be reconnected, so this may be out of date.</p>}
-  {unread > 0 && <p class="notice">{unread} older payrolls are still loading. Reload this page to read more.</p>}
+
+  <div id="pay-live">
 
   {truncated && <p class="notice">Showing the newest 2,000 pay lines, so these totals are incomplete. Narrow the dates.</p>}
 
@@ -173,11 +165,13 @@ const lastImport = rows.reduce((latest, row) => (row.imported_at > latest ? row.
       </>
     )
   }
+  </div>
 </AdminBase>
 
 <style>
-  .live { display: inline-flex; align-items: center; gap: 0.375rem; margin-left: 0.375rem; color: var(--sage); font-weight: 600; }
-  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--sage); box-shadow: 0 0 0 3px var(--sage-soft); }
+  .live { display: inline-flex; align-items: center; gap: 0.375rem; margin-left: 0.375rem; color: var(--ink-3); font-weight: 600; }
+  .live.is-live { color: var(--sage); }
+  .live.is-live::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--sage); box-shadow: 0 0 0 3px var(--sage-soft); }
   .run-header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.25rem 1rem; margin-bottom: 0.75rem; }
   .run-header h2 { font-size: 1.0625rem; }
   .filters { margin-bottom: 1.25rem; }
@@ -195,3 +189,33 @@ const lastImport = rows.reduce((latest, row) => (row.imported_at > latest ? row.
     .label-narrow { display: inline; }
   }
 </style>
+
+<script>
+  import { post } from '@/lib/time-clock/admin-client';
+  import { refreshParts } from '@/lib/admin/shell';
+
+  const status = document.querySelector<HTMLElement>('#pay-status')!;
+  const problem = document.querySelector<HTMLElement>('#pay-problem')!;
+
+  /** Reads any payrolls Gusto has that this page hasn't, a few at a time. */
+  async function catchUp(): Promise<void> {
+    const { from, to } = status.dataset;
+    for (let round = 0; round < 10; round++) {
+      const { data, error } = await post<{ changed: boolean; remaining?: number; error?: string }>('/api/admin/gusto/refresh/', { what: 'pay', from, to });
+      const message = error ?? data?.error;
+      if (message || !data) {
+        status.textContent = '';
+        problem.textContent = `Could not reach Gusto just now, so this may be out of date. ${message ?? ''}`;
+        problem.hidden = false;
+        return;
+      }
+      if (data.changed) await refreshParts('#pay-live');
+      if (!data.remaining) break;
+      status.textContent = `Reading older payrolls from Gusto… ${data.remaining} left`;
+    }
+    status.textContent = 'Live';
+    status.classList.add('is-live');
+  }
+
+  if (status.dataset.connected) void catchUp();
+</script>

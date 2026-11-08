@@ -186,9 +186,24 @@ export async function draftPayrolls(client, today) {
       end: payroll.pay_period?.end_date,
       payScheduleUuid: payroll.pay_period?.pay_schedule_uuid ?? payroll.pay_schedule_uuid,
       checkDate: payroll.check_date ?? null,
+      // When Gusto needs the payroll submitted, if it says.
+      deadline: payroll.payroll_deadline ?? null,
     }))
     // Only the partner API's payroll sync needs the pay schedule.
     .filter((payroll) => payroll.uuid && isIsoDate(payroll.start) && isIsoDate(payroll.end) && (client.route === 'mcp' || payroll.payScheduleUuid));
+}
+
+/**
+ * The draft payroll to work on now: the latest period that has ended (its hours
+ * are due), or else the one running today, or else the next one.
+ */
+export function payrollToWorkOn(drafts, today) {
+  return (
+    [...drafts].reverse().find((payroll) => payroll.end < today) ??
+    drafts.find((payroll) => payroll.start <= today && payroll.end >= today) ??
+    drafts[0] ??
+    null
+  );
 }
 
 async function loadEntries(db, start, end) {
