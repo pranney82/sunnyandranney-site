@@ -1,0 +1,38 @@
+---
+export const prerender = false;
+
+import ScheduleApp from '@/components/schedule/ScheduleApp';
+import '@/components/schedule/schedule.css';
+import AdminBase from '@/layouts/AdminBase.astro';
+import { loadWeek } from '@/lib/schedule/store';
+import { isIsoDate, localDate, workweekStart } from '@/lib/time-clock/hours.mjs';
+
+const admin = Astro.locals.admin;
+if (!admin) return new Response('Not authorized', { status: 403 });
+
+const db = Astro.locals.runtime.env.DB;
+const requested = Astro.url.searchParams.get('week');
+const week = workweekStart(isIsoDate(requested) ? (requested as string) : localDate(new Date().toISOString()));
+// The store tablet sees only what's been published, and can't change anything.
+const initial = await loadWeek(db, week, { readOnly: admin.role !== 'manager' });
+
+// Calendar links are served from the store's address: Cloudflare Access guards
+// the admin host, and a phone's calendar app can't sign in to it.
+const feedOrigin = Astro.url.hostname === 'admin.sunnyandranney.com' ? 'https://sunnyandranney.com' : Astro.url.origin;
+
+const props = { initial, feedOrigin };
+// The page's JSON can't close its own script tag.
+const data = JSON.stringify(props).replace(/</g, '\\u003c');
+---
+
+<AdminBase title="Schedule">
+  <div id="schedule-root"><ScheduleApp {...props} /></div>
+  <script type="application/json" id="schedule-data" set:html={data} />
+</AdminBase>
+
+<script>
+  // Imports keep this script bundled: the admin's Content-Security-Policy blocks inline scripts.
+  import { mountSchedule } from '@/components/schedule/mount';
+
+  mountSchedule();
+</script>
