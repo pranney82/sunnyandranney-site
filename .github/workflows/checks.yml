@@ -1,0 +1,35 @@
+# Every pull request and every push to main runs the tests. "Tests" is the
+# status main's branch protection requires.
+#
+# The build isn't repeated here: it reads live Shopify data with the store's
+# keys, so Cloudflare Pages builds it on deploy, and a failed build there keeps
+# the last good version live.
+
+name: Checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          # Cloudflare Pages build image v3 runs Node 22.
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
