@@ -18,6 +18,7 @@ const ICONS: Record<string, string> = {
   payroll: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
   history: '<polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>',
   gusto: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  more: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
 };
 
 interface NavLink {
@@ -25,6 +26,8 @@ interface NavLink {
   label: string;
   short: string;
   icon: string;
+  /** False keeps a rarely used page off the phone tab bar; it's under More instead. */
+  tab?: boolean;
 }
 
 const sections: Array<{ heading: string; links: NavLink[] }> =
@@ -42,11 +45,11 @@ const sections: Array<{ heading: string; links: NavLink[] }> =
           heading: 'Pay',
           links: [
             { href: '/admin/payroll/', label: 'Payroll', short: 'Payroll', icon: 'payroll' },
-            { href: '/admin/hours/history/', label: 'Gusto history', short: 'History', icon: 'history' },
+            { href: '/admin/hours/history/', label: 'Gusto history', short: 'History', icon: 'history', tab: false },
           ],
         },
         ...(admin?.owner
-          ? [{ heading: 'Settings', links: [{ href: '/admin/gusto/', label: 'Gusto', short: 'Gusto', icon: 'gusto' }] }]
+          ? [{ heading: 'Settings', links: [{ href: '/admin/gusto/', label: 'Gusto', short: 'Gusto', icon: 'gusto', tab: false }] }]
           : []),
       ]
     : [];
@@ -55,6 +58,9 @@ const links = sections.flatMap((section) => section.links);
 const currentHref = links
   .filter((link) => path.startsWith(link.href))
   .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+const tabLinks = links.filter((link) => link.tab !== false);
+const moreLinks = links.filter((link) => link.tab === false);
+const moreCurrent = moreLinks.some((link) => link.href === currentHref);
 const roleLabel = admin?.owner ? 'Owner' : role === 'manager' ? 'Manager' : role === 'kiosk' ? 'Store tablet' : '';
 const icon = (name: string) =>
   `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
@@ -130,12 +136,28 @@ const icon = (name: string) =>
     {
       links.length > 0 && (
         <nav class="tabbar" aria-label="Admin">
-          {links.map((link) => (
+          {tabLinks.map((link) => (
             <a href={link.href} class="tab" aria-current={link.href === currentHref ? 'page' : undefined}>
               <Fragment set:html={icon(link.icon)} />
               <span>{link.short}</span>
             </a>
           ))}
+          {moreLinks.length > 0 && (
+            <details class="tab-more">
+              <summary class:list={['tab', { 'tab-current': moreCurrent }]}>
+                <Fragment set:html={icon('more')} />
+                <span>More</span>
+              </summary>
+              <div class="more-sheet">
+                {moreLinks.map((link) => (
+                  <a href={link.href} class="more-link" aria-current={link.href === currentHref ? 'page' : undefined}>
+                    <Fragment set:html={icon(link.icon)} />
+                    <span>{link.label}</span>
+                  </a>
+                ))}
+              </div>
+            </details>
+          )}
         </nav>
       )
     }
@@ -312,8 +334,35 @@ const icon = (name: string) =>
     font-weight: 600;
     border-radius: var(--r-sm);
   }
-  .tab[aria-current='page'] { color: var(--ink); }
-  .tab[aria-current='page'] svg { color: var(--ink); stroke-width: 2.25; }
+  .tab[aria-current='page'], .tab-current { color: var(--ink); }
+  .tab[aria-current='page'] svg, .tab-current svg { color: var(--ink); stroke-width: 2.25; }
+
+  .tab-more summary { list-style: none; cursor: pointer; }
+  .tab-more summary::-webkit-details-marker { display: none; }
+  .tab-more[open] summary { color: var(--ink); }
+  .more-sheet {
+    position: fixed;
+    right: 0.5rem;
+    bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+    min-width: 13rem;
+    padding: 0.375rem;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow);
+  }
+  .more-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0.875rem;
+    border-radius: 10px;
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .more-link svg { color: var(--ink-3); }
+  .more-link:hover, .more-link[aria-current='page'] { background: var(--sunk); }
 
   @media (min-width: 1024px) {
     .shell { display: grid; grid-template-columns: var(--sidebar) 1fr; }

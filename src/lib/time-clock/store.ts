@@ -11,6 +11,9 @@ export interface StaffRow {
   overtime_eligible: number;
   active: number;
   store_staff: number;
+  /** Copied from Gusto on every sync. "Sunny & Ranney" means store staff. */
+  gusto_department: string | null;
+  gusto_terminated: number;
 }
 
 export interface TimeEntryRow {
@@ -138,6 +141,8 @@ export async function updateStaff(
 ): Promise<boolean> {
   const current = await getStaff(db, id);
   if (!current) return false;
+  // For someone in Gusto, the Gusto department decides, so a stale form can't override it.
+  const storeStaff = current.gusto_employee_uuid ? current.store_staff === 1 : input.storeStaff;
 
   const update = db
     .prepare(
@@ -150,7 +155,7 @@ export async function updateStaff(
       input.email,
       input.overtimeEligible ? 1 : 0,
       input.active ? 1 : 0,
-      input.storeStaff ? 1 : 0,
+      storeStaff ? 1 : 0,
       input.pin?.hash ?? null,
       input.pin?.salt ?? null,
       nowIso(),
@@ -158,10 +163,10 @@ export async function updateStaff(
     );
 
   const statements = [update];
-  if (input.storeStaff && !current.store_staff) {
+  if (storeStaff && !current.store_staff) {
     // Their past pay wasn't read, so every payroll needs reading again.
     statements.push(db.prepare('DELETE FROM gusto_pay_read'));
-  } else if (!input.storeStaff && current.store_staff && current.gusto_employee_uuid) {
+  } else if (!storeStaff && current.store_staff && current.gusto_employee_uuid) {
     statements.push(db.prepare('DELETE FROM gusto_pay_records WHERE gusto_employee_uuid = ?').bind(current.gusto_employee_uuid));
   }
   const [result] = await db.batch(statements);

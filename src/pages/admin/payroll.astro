@@ -83,7 +83,7 @@ const lastImport = rows.reduce((latest, row) => (row.imported_at > latest ? row.
         <h2>No payroll for these dates</h2>
         <p>
           {gusto.state === 'ready'
-            ? 'Only people marked as store staff appear here. Try a wider date range, or mark people as store staff on the Staff page.'
+            ? 'Only store staff appear here: people in the Sunny & Ranney department in Gusto. Try a wider date range.'
             : 'Payroll comes from Gusto. Once Gusto is connected, paid payrolls for store staff show up here.'}
         </p>
         <div class="empty-actions">

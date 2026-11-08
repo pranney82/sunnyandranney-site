@@ -22,9 +22,16 @@ if (gusto.client) {
   }
 }
 
-const staff = await listStaff(env.DB);
+const everyone = await listStaff(env.DB);
 const isOwner = Boolean(Astro.locals.admin?.owner);
 const connected = gusto.state === 'ready';
+// The Gusto company also holds the charity's staff, and people who have left.
+// By default this page shows the store: Gusto's store department, plus anyone added by hand.
+const showAll = Astro.url.searchParams.get('all') === '1';
+const isStorePerson = (person: (typeof everyone)[number]) =>
+  !person.gusto_terminated && (person.store_staff === 1 || !person.gusto_employee_uuid);
+const staff = showAll ? everyone : everyone.filter(isStorePerson);
+const hiddenCount = everyone.length - everyone.filter(isStorePerson).length;
 const counts = {
   onClock: staff.filter((person) => person.active && person.pin_hash).length,
   needPin: staff.filter((person) => person.active && !person.pin_hash).length,
@@ -36,7 +43,11 @@ const counts = {
   <div class="page-header">
     <div>
       <h1>Staff</h1>
-      <p class="muted">{connected ? 'Kept in step with Gusto. Mark who works at the store and give them a clock PIN.' : 'Who can use the time clock, and who counts as store staff.'}</p>
+      <p class="muted">
+        {connected
+          ? 'Store staff come from the Sunny & Ranney department in Gusto. Give each person a clock PIN.'
+          : 'Who can use the time clock, and who counts as store staff.'}
+      </p>
     </div>
     <div class="page-actions">
       <button type="button" class="btn btn-primary" id="add-staff" data-add-staff><Fragment set:html={svg('plus', 18)} />Add employee</button>
@@ -44,7 +55,19 @@ const counts = {
   </div>
 
   {
-    staff.length > 0 && (
+    hiddenCount > 0 && (
+      <p class="view-toggle">
+        {showAll ? (
+          <>Showing everyone in Gusto, including the charity and people who have left. <a href="/admin/staff/">Show store staff only</a></>
+        ) : (
+          <>Showing store staff. <a href="/admin/staff/?all=1">Show all {everyone.length} people from Gusto</a></>
+        )}
+      </p>
+    )
+  }
+
+  {
+    staff.length > 0 && !showAll && (
       <div class="stats">
         <div class="stat">
           <p class="stat-label">On the time clock</p>
@@ -71,11 +94,13 @@ const counts = {
     staff.length === 0 ? (
       <div class="card empty">
         <div class="empty-icon"><Fragment set:html={svg('staff', 24)} /></div>
-        <h2>No staff yet</h2>
+        <h2>{hiddenCount > 0 ? 'No store staff in Gusto yet' : 'No staff yet'}</h2>
         <p>
-          {connected
-            ? 'Gusto has no employees to bring in yet.'
-            : 'Connect Gusto and your team comes in automatically, or add someone by hand.'}
+          {hiddenCount > 0
+            ? `None of the ${everyone.length} people from Gusto are in the Sunny & Ranney department. Put store staff in that department in Gusto, then reload this page.`
+            : connected
+              ? 'Gusto has no employees to bring in yet.'
+              : 'Connect Gusto and your team comes in automatically, or add someone by hand.'}
         </p>
         <div class="empty-actions">
           {!connected && isOwner && <a class="btn btn-primary" href="/admin/gusto/"><Fragment set:html={svg('gusto', 18)} />Connect Gusto</a>}
@@ -90,7 +115,7 @@ const counts = {
               <tr class="staff-head">
                 <th>Name</th>
                 <th>Time clock</th>
-                <th class="wide-only">Gusto</th>
+                <th class="wide-only">Gusto department</th>
                 <th class="wide-only">Overtime</th>
                 <th>Store staff</th>
                 <th><span class="sr-only">Actions</span></th>
@@ -115,12 +140,14 @@ const counts = {
                     )}
                   </td>
                   <td class="wide-only">
-                    {person.gusto_employee_uuid && person.gusto_job_uuid ? (
-                      <span class="quiet">Linked</span>
+                    {person.gusto_terminated ? (
+                      <span class="badge">Left the company</span>
+                    ) : person.gusto_employee_uuid && !person.gusto_job_uuid ? (
+                      <span class="badge badge-pending">Needs a job in Gusto</span>
                     ) : person.gusto_employee_uuid ? (
-                      <span class="badge badge-pending">Needs a job</span>
+                      <span class="quiet">{person.gusto_department ?? 'No department'}</span>
                     ) : (
-                      <span class="badge badge-pending">Not linked</span>
+                      <span class="quiet faint">Added by hand</span>
                     )}
                   </td>
                   <td class="wide-only"><span class="quiet">{person.overtime_eligible ? 'Eligible' : 'Exempt'}</span></td>
@@ -136,6 +163,7 @@ const counts = {
                       data-overtime={person.overtime_eligible ? '1' : ''}
                       data-active={person.active ? '1' : ''}
                       data-store={person.store_staff ? '1' : ''}
+                      data-linked={person.gusto_employee_uuid ? '1' : ''}
                     >
                       Edit
                     </button>
@@ -173,6 +201,7 @@ const counts = {
       </div>
       <div class="field" id="staff-store-field">
         <label class="check"><input id="staff-store" type="checkbox" /> Store staff (shows on Payroll and Gusto history)</label>
+        <p class="field-note" id="staff-store-note" hidden>Set by Gusto: people in the Sunny &amp; Ranney department are store staff.</p>
       </div>
       <div class="dialog-actions">
         <button type="button" class="btn" id="staff-cancel">Cancel</button>
@@ -186,6 +215,8 @@ const counts = {
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
   .quiet { color: var(--ink-2); font-weight: 500; }
+  .view-toggle { margin: -0.5rem 0 1.25rem; color: var(--ink-3); font-size: 0.9375rem; }
+  .field-note { margin: 0.375rem 0 0 1.875rem; color: var(--ink-3); font-size: 0.8125rem; }
   .faint { color: var(--ink-3); }
 
   @media (max-width: 640px) {
@@ -228,13 +259,14 @@ const counts = {
   const activeField = document.querySelector<HTMLElement>('#staff-active-field')!;
   const storeStaff = document.querySelector<HTMLInputElement>('#staff-store')!;
   const storeField = document.querySelector<HTMLElement>('#staff-store-field')!;
+  const storeNote = document.querySelector<HTMLElement>('#staff-store-note')!;
 
   let editingId: string | null = null;
 
   function open(
     heading: string,
     id: string | null,
-    values: { name: string; email: string; overtime: boolean; active: boolean; storeStaff: boolean },
+    values: { name: string; email: string; overtime: boolean; active: boolean; storeStaff: boolean; linked?: boolean },
   ) {
     editingId = id;
     title.textContent = heading;
@@ -245,6 +277,8 @@ const counts = {
     storeStaff.checked = values.storeStaff;
     activeField.hidden = id === null;
     storeField.hidden = id === null;
+    storeStaff.disabled = Boolean(values.linked);
+    storeNote.hidden = !values.linked;
     pinLabel.textContent = id ? 'New clock PIN (leave blank to keep it)' : 'Clock PIN (4 to 8 digits)';
     pin.value = '';
     error.textContent = '';
@@ -268,6 +302,7 @@ const counts = {
         overtime: Boolean(data.overtime),
         active: Boolean(data.active),
         storeStaff: Boolean(data.store),
+        linked: Boolean(data.linked),
       });
     });
   });
