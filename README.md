@@ -170,6 +170,15 @@ managers").
 
 ### Gusto connection
 
+**Who counts as store staff.** Gusto holds the store and the charity as one
+company, Sunshine on a Ranney Day Incorporated. Its **Sunny & Ranney**
+department is the store. Every employee sync copies each person's department and
+whether they've left, sets store staff from the department, puts people joining
+the store on the time clock and takes people leaving the store or the company
+off it. Other clock choices a manager makes stay. People who leave stay store
+staff, so their past pay stays on Payroll, but Staff hides them unless "Show
+all" is on.
+
 An owner connects Gusto once at `/admin/gusto/`. After that, Staff and Payroll
 read Gusto when they open. There are two routes, and the MCP settings win if both
 are present.
