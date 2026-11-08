@@ -10,15 +10,18 @@ interface Props {
   description: string;
   heading: string;
   updated: string;
+  /** Small label above the heading. */
+  label?: string;
+  noindex?: boolean;
 }
 
-const { title, description, heading, updated } = Astro.props;
+const { title, description, heading, updated, label = 'Store Policy', noindex } = Astro.props;
 ---
 
-<Base title={title} description={description}>
+<Base title={title} description={description} noindex={noindex}>
   <section class="policy">
     <div class="container policy__inner">
-      <span class="label">Store Policy</span>
+      <span class="label">{label}</span>
       <h1 class="policy__title">{heading}</h1>
       <p class="policy__updated">Last updated {updated}</p>
       <div class="policy__content">

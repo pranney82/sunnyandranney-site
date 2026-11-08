@@ -1,0 +1,249 @@
+---
+/**
+ * The written consent employees sign before they get schedule texts. Staci
+ * prints it; the 10DLC campaign links to it as the opt-in form.
+ */
+import PolicyPage from '@/components/PolicyPage.astro';
+---
+
+<PolicyPage
+  title="Schedule Text Consent — Sunny & Ranney"
+  description="The form Sunny & Ranney employees sign to get their work schedule by text message."
+  heading="Schedule Text Consent"
+  label="For Employees"
+  updated="November 8, 2026"
+  noindex
+>
+  <div class="intro screen-only">
+    <p class="policy__intro">
+      Sunny &amp; Ranney texts employees their work schedule only after they sign this form. Ask the store manager for a
+      copy, or print this page.
+    </p>
+    <button type="button" class="btn btn--outline" data-print>Print this form</button>
+  </div>
+
+  <article class="consent" aria-labelledby="consent-title">
+    <header class="consent__head">
+      <h2 id="consent-title">Sunny &amp; Ranney Schedule Texts</h2>
+      <p>Employee consent</p>
+    </header>
+
+    <p class="consent__agree">
+      I agree to receive recurring text messages from <strong>Sunny &amp; Ranney</strong>, operated by Sunshine On A
+      Ranney Day Incorporated, at the mobile number below.
+    </p>
+
+    <dl class="consent__terms">
+      <div>
+        <dt>What</dt>
+        <dd>My work schedule: my shifts when a week's schedule is published, and a new text if my shifts change. No marketing.</dd>
+      </div>
+      <div>
+        <dt>How often</dt>
+        <dd>Usually 1–2 messages a week.</dd>
+      </div>
+      <div>
+        <dt>Cost</dt>
+        <dd>Message and data rates may apply.</dd>
+      </div>
+      <div>
+        <dt>Stop or help</dt>
+        <dd>
+          Reply <strong>STOP</strong> to any text to cancel, or <strong>HELP</strong> for help. Or call 678.888.5140 or email
+          info@sunnyandranney.com.
+        </dd>
+      </div>
+      <div>
+        <dt>Your choice</dt>
+        <dd>Agreeing is not a condition of employment. My schedule is always available at the store.</dd>
+      </div>
+    </dl>
+
+    <p class="consent__links">
+      Full terms: sunnyandranney.com/terms/#sms-terms · Privacy: sunnyandranney.com/privacy/#text-messages
+    </p>
+
+    <div class="consent__fields">
+      <div class="field field--wide"><span class="field__label">Employee name (print)</span></div>
+      <div class="field"><span class="field__label">Mobile number</span></div>
+      <div class="field field--wide"><span class="field__label">Signature</span></div>
+      <div class="field"><span class="field__label">Date</span></div>
+    </div>
+
+    <div class="consent__office">
+      <p class="consent__office-title">Store manager</p>
+      <div class="consent__fields">
+        <div class="field field--wide"><span class="field__label">Number entered in staff system on (date)</span></div>
+        <div class="field"><span class="field__label">Manager initials</span></div>
+      </div>
+    </div>
+  </article>
+</PolicyPage>
+
+<script>
+  function wirePrint() {
+    document.querySelectorAll<HTMLButtonElement>('[data-print]').forEach((button) => {
+      button.onclick = () => window.print();
+    });
+  }
+  document.addEventListener('astro:page-load', wirePrint);
+</script>
+
+<style>
+  .intro {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-sm);
+  }
+
+  .consent {
+    background: var(--color-warm-white);
+    border: 1px solid var(--color-charcoal);
+    border-radius: 8px;
+    padding: var(--space-md);
+    color: var(--color-charcoal);
+    line-height: 1.6;
+  }
+
+  .consent__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.25rem var(--space-sm);
+    padding-bottom: var(--space-xs);
+    margin-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--color-charcoal);
+  }
+
+  .consent__head h2 {
+    font-family: var(--font-body);
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+
+  .consent__head p,
+  .consent__office-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-stone);
+  }
+
+  .consent__agree {
+    color: var(--color-charcoal);
+  }
+
+  .consent__terms {
+    margin: var(--space-sm) 0;
+    display: grid;
+    gap: 0.4rem;
+  }
+
+  .consent__terms div {
+    display: grid;
+    grid-template-columns: 7.5rem 1fr;
+    gap: var(--space-sm);
+  }
+
+  .consent__terms dt {
+    font-weight: 600;
+  }
+
+  .consent__links {
+    font-size: 0.85rem;
+    color: var(--color-stone);
+    overflow-wrap: anywhere;
+  }
+
+  .consent__fields {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--space-md) var(--space-md);
+    margin-top: var(--space-md);
+  }
+
+  .field {
+    padding-top: 2.75rem;
+    border-bottom: 1px solid var(--color-charcoal);
+    position: relative;
+  }
+
+  .field__label {
+    position: absolute;
+    top: calc(100% + 0.2rem);
+    left: 0;
+    font-size: 0.75rem;
+    color: var(--color-stone);
+    white-space: nowrap;
+  }
+
+  .consent__office {
+    margin-top: calc(var(--space-lg) + 0.5rem);
+    padding-top: var(--space-sm);
+    padding-bottom: 1.25rem;
+    border-top: 1px dashed var(--color-stone);
+  }
+
+  .consent__office .consent__fields {
+    margin-top: 0;
+  }
+
+  @media (max-width: 560px) {
+    .consent {
+      padding: var(--space-sm);
+    }
+
+    .consent__terms div {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+
+    .consent__fields {
+      grid-template-columns: 1fr;
+      gap: var(--space-lg);
+    }
+  }
+</style>
+
+<style is:global>
+  @media print {
+    body > :not(main),
+    .screen-only,
+    .policy__inner > .label,
+    .policy__title,
+    .policy__updated {
+      display: none !important;
+    }
+
+    body {
+      background: #fff !important;
+    }
+
+    #main-content {
+      margin-top: 0 !important;
+    }
+
+    .policy {
+      padding: 0 !important;
+    }
+
+    .policy__inner {
+      max-width: none !important;
+      padding: 0 !important;
+    }
+
+    .consent {
+      background: #fff !important;
+      border-radius: 0 !important;
+      break-inside: avoid;
+    }
+
+    @page {
+      size: letter;
+      margin: 0.6in;
+    }
+  }
+</style>
