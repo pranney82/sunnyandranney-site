@@ -1,0 +1,110 @@
+---
+/**
+ * Layout for the store's policy pages (privacy, terms). Matches the look of
+ * the Return Policy page.
+ */
+import Base from '@/layouts/Base.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  heading: string;
+  updated: string;
+}
+
+const { title, description, heading, updated } = Astro.props;
+---
+
+<Base title={title} description={description}>
+  <section class="policy">
+    <div class="container policy__inner">
+      <span class="label">Store Policy</span>
+      <h1 class="policy__title">{heading}</h1>
+      <p class="policy__updated">Last updated {updated}</p>
+      <div class="policy__content">
+        <slot />
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .policy {
+    padding: var(--space-2xl) 0 var(--space-3xl);
+  }
+
+  .policy__inner {
+    max-width: 680px;
+  }
+
+  .policy__title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 400;
+    line-height: 1.15;
+    margin-top: var(--space-sm);
+    margin-bottom: var(--space-xs);
+  }
+
+  .policy__updated {
+    color: var(--color-stone);
+    font-size: 0.9rem;
+    margin-bottom: var(--space-lg);
+  }
+
+  .policy__content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+  }
+
+  .policy__content :global(.policy__intro) {
+    font-size: 1.1rem;
+    color: var(--color-stone);
+    line-height: 1.7;
+  }
+
+  .policy__content :global(section h2) {
+    font-family: var(--font-body);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: var(--space-xs);
+  }
+
+  .policy__content :global(section h3) {
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 600;
+    margin: var(--space-sm) 0 0.25rem;
+  }
+
+  .policy__content :global(section p) {
+    color: var(--color-stone);
+    line-height: 1.7;
+  }
+
+  .policy__content :global(section p + p) {
+    margin-top: var(--space-xs);
+  }
+
+  .policy__content :global(section ul) {
+    margin-top: var(--space-xs);
+    padding-left: 1.25rem;
+    color: var(--color-stone);
+    line-height: 1.8;
+  }
+
+  .policy__content :global(section li) {
+    margin-bottom: 0.35rem;
+  }
+
+  .policy__content :global(a) {
+    color: var(--color-link);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .policy__content :global(strong) {
+    color: var(--color-charcoal);
+  }
+</style>
