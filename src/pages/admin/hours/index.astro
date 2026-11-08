@@ -14,6 +14,7 @@ import {
   workweekStart,
 } from '@/lib/time-clock/hours.mjs';
 import { entriesForWeek, hoursByEntry, listStaff } from '@/lib/time-clock/store';
+import { initials, svg, tone } from '@/lib/admin-ui';
 
 if (Astro.locals.admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
 
@@ -66,25 +67,41 @@ const approvable = [...people.values()].flatMap((person) =>
   person.rows.filter((entry) => canApprove(entry, person.isSelf)).map(({ id, version }) => ({ id, version })),
 );
 const openCount = entries.filter((entry) => !entry.clock_out_at && entry.status !== 'rejected').length;
+const weekRegular = [...people.values()].reduce((sum, person) => sum + person.regular, 0);
+const weekOvertime = [...people.values()].reduce((sum, person) => sum + person.overtime, 0);
+const isThisWeek = weekStart === currentWeek;
 ---
 
 <AdminBase title="Hours">
   <div class="page-header">
     <div>
       <h1>Hours</h1>
-      <p class="muted">{shortDate(weekStart)} to {shortDate(addDays(weekStart, 6))}</p>
+      <p class="muted">{isThisWeek ? 'This week' : 'Week of'} · {shortDate(weekStart)} to {shortDate(addDays(weekStart, 6))}</p>
     </div>
     <div class="page-actions">
-      <a class="btn" href={`/admin/hours/?week=${addDays(weekStart, -7)}`}>Previous week</a>
-      {
-        weekStart < currentWeek && (
-          <a class="btn" href={`/admin/hours/?week=${addDays(weekStart, 7)}`}>
-            Next week
+      <div class="btn-group" role="group" aria-label="Week">
+        <a class="btn btn-icon" href={`/admin/hours/?week=${addDays(weekStart, -7)}`} aria-label="Previous week" title="Previous week">
+          <Fragment set:html={svg('left', 18)} />
+        </a>
+        {isThisWeek ? (
+          <span class="btn btn-label">This week</span>
+        ) : (
+          <a class="btn btn-label" href="/admin/hours/">Back to this week</a>
+        )}
+        {weekStart < currentWeek ? (
+          <a class="btn btn-icon" href={`/admin/hours/?week=${addDays(weekStart, 7)}`} aria-label="Next week" title="Next week">
+            <Fragment set:html={svg('right', 18)} />
           </a>
-        )
-      }
-      <a class="btn" href={handEntry ? '/admin/hours/for-gusto/' : '/admin/hours/send/'}>{handEntry ? 'Hours for Gusto' : 'Send to Gusto'}</a>
-      <button type="button" class="btn" id="add-shift" data-week={weekStart}>Add missed shift</button>
+        ) : (
+          <button type="button" class="btn btn-icon" disabled aria-label="Next week"><Fragment set:html={svg('right', 18)} /></button>
+        )}
+      </div>
+      <button type="button" class="btn" id="add-shift" data-add-shift data-week={weekStart}>
+        <Fragment set:html={svg('plus', 18)} />Add shift
+      </button>
+      <a class="btn" href={handEntry ? '/admin/hours/for-gusto/' : '/admin/hours/send/'}>
+        <Fragment set:html={svg('send', 18)} />{handEntry ? 'Hours for Gusto' : 'Send to Gusto'}
+      </a>
       <button
         type="button"
         class="btn btn-primary"
@@ -92,8 +109,31 @@ const openCount = entries.filter((entry) => !entry.clock_out_at && entry.status 
         data-entries={JSON.stringify(approvable)}
         disabled={approvable.length === 0}
       >
-        Approve all ({approvable.length})
+        <Fragment set:html={svg('check', 18)} />Approve all{approvable.length > 0 && ` (${approvable.length})`}
       </button>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class:list={['stat', { 'stat-accent': approvable.length > 0 }]}>
+      <p class="stat-label">Needs review</p>
+      <p class="stat-value">{approvable.length}</p>
+      <p class="stat-note">{approvable.length === 1 ? 'shift' : 'shifts'} ready to approve</p>
+    </div>
+    <div class="stat">
+      <p class="stat-label">Hours worked</p>
+      <p class="stat-value">{hoursLabel(weekRegular + weekOvertime)}</p>
+      <p class="stat-note">{people.size} {people.size === 1 ? 'person' : 'people'}</p>
+    </div>
+    <div class="stat">
+      <p class="stat-label">Overtime</p>
+      <p class="stat-value">{hoursLabel(weekOvertime)}</p>
+      <p class="stat-note">over 40 a week</p>
+    </div>
+    <div class="stat">
+      <p class="stat-label">Clocked in now</p>
+      <p class="stat-value">{openCount}</p>
+      <p class="stat-note">{openCount === 0 ? 'nobody on the clock' : 'still on the clock'}</p>
     </div>
   </div>
 
@@ -110,7 +150,14 @@ const openCount = entries.filter((entry) => !entry.clock_out_at && entry.status 
 
   {
     people.size === 0 && (
-      <div class="card empty">No shifts this week.</div>
+      <div class="card empty">
+        <div class="empty-icon"><Fragment set:html={svg('hours', 24)} /></div>
+        <h2>No shifts this week</h2>
+        <p>Shifts show up here as people clock in on the store tablet. Add one by hand if someone forgot.</p>
+        <div class="empty-actions">
+          <button type="button" class="btn" data-add-shift><Fragment set:html={svg('plus', 18)} />Add shift</button>
+        </div>
+      </div>
     )
   }
 
@@ -118,10 +165,13 @@ const openCount = entries.filter((entry) => !entry.clock_out_at && entry.status 
     [...people.entries()].map(([staffId, person]) => (
       <section class="card">
         <div class="person-header">
-          <h2>{person.name}</h2>
+          <div class="person">
+            <span class="avatar" data-tone={tone(person.name)}>{initials(person.name)}</span>
+            <h2>{person.name}</h2>
+          </div>
           <p class="person-total">
-            {hoursLabel(person.regular + person.overtime)} hrs
-            {person.overtime > 0 && <span class="overtime">{hoursLabel(person.overtime)} overtime</span>}
+            <span class="person-hours">{hoursLabel(person.regular + person.overtime)}</span> hrs
+            {person.overtime > 0 && <span class="badge badge-warn">{hoursLabel(person.overtime)} overtime</span>}
           </p>
         </div>
         {person.isSelf && <p class="muted self-note">These are your own hours, so another manager needs to review them.</p>}
@@ -153,9 +203,9 @@ const openCount = entries.filter((entry) => !entry.clock_out_at && entry.status 
                     <td class="c-out">{entry.clock_out_at ? time(entry.clock_out_at) : '—'}</td>
                     <td class="num c-hours">
                       {entry.clock_out_at && !rejected ? hoursLabel(total) : '—'}
-                      {total > LONG_SHIFT_MINUTES && !rejected && <span class="badge badge-pending">Long</span>}
                     </td>
                     <td class="c-status">
+                      <div class="status-cell">
                       {locked ? (
                         <span class="badge badge-sent">{entry.push_state === 'pushed' ? 'Sent to Gusto' : 'Sending'}</span>
                       ) : !entry.clock_out_at && !rejected ? (
@@ -163,6 +213,8 @@ const openCount = entries.filter((entry) => !entry.clock_out_at && entry.status 
                       ) : (
                         <span class:list={['badge', `badge-${entry.status}`]}>{STATUS_LABELS[entry.status]}</span>
                       )}
+                      {total > LONG_SHIFT_MINUTES && !rejected && <span class="badge badge-warn" title="Over 12 hours">Long</span>}
+                      </div>
                     </td>
                     <td class="c-actions">
                       {!locked && !person.isSelf && (
@@ -252,12 +304,23 @@ const openCount = entries.filter((entry) => !entry.clock_out_at && entry.status 
 </AdminBase>
 
 <style>
-  .person-header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.25rem 1rem; margin-bottom: 0.5rem; }
-  .person-header h2 { font-size: 1.125rem; }
-  .person-total { font-weight: 600; font-variant-numeric: tabular-nums; }
-  .overtime { margin-left: 0.5rem; color: var(--warning); font-size: 0.9375rem; }
+  .person-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; margin-bottom: 0.75rem; }
+  .person-header h2 { font-size: 1.0625rem; }
+  .person-total { display: flex; align-items: center; gap: 0.625rem; color: var(--ink-3); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .person-hours { color: var(--ink); font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; margin-right: -0.375rem; }
+  .shift-table { table-layout: fixed; }
+  .shift-table th:nth-child(1) { width: 24%; }
+  .shift-table th:nth-child(2), .shift-table th:nth-child(3) { width: 13%; }
+  .shift-table th:nth-child(4) { width: 9%; }
+  .shift-table th:nth-child(5) { width: 23%; }
+  .shift-table th:nth-child(4), .shift-table td:nth-child(4) { padding-right: 1.25rem; }
+  .status-cell { display: flex; flex-wrap: wrap; gap: 0.375rem; align-items: center; }
+  .c-day { font-weight: 600; }
+  .c-in, .c-out { font-variant-numeric: tabular-nums; color: var(--ink-2); }
+
   .self-note { margin-bottom: 0.5rem; }
   .row-actions { display: flex; gap: 0.375rem; justify-content: flex-end; }
+  .row-actions .btn { min-height: 36px; padding: 0.375rem 0.75rem; font-size: 0.875rem; }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
   /* On phones each shift stacks, so Edit and Approve stay on screen. */
@@ -276,6 +339,7 @@ const openCount = entries.filter((entry) => !entry.clock_out_at && entry.status 
     .shift-table td { padding: 0; border: 0; }
     .c-day { grid-column: 1 / 4; font-weight: 600; }
     .c-status { grid-column: 4; grid-row: 1; text-align: right; }
+    .status-cell { justify-content: flex-end; }
     .c-in { grid-column: 1; }
     .c-out { grid-column: 2; }
     .c-in::before { content: 'In '; color: var(--text-muted); }
@@ -325,8 +389,8 @@ const openCount = entries.filter((entry) => !entry.clock_out_at && entry.status 
     dialog.showModal();
   }
 
-  document.querySelector<HTMLButtonElement>('#add-shift')!.addEventListener('click', () => {
-    openDialog('Add a missed shift', null, { in: '', out: '' });
+  document.querySelectorAll<HTMLButtonElement>('[data-add-shift]').forEach((button) => {
+    button.addEventListener('click', () => openDialog('Add a missed shift', null, { in: '', out: '' }));
   });
 
   document.querySelector('#shift-cancel')!.addEventListener('click', () => dialog.close());

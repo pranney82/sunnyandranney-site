@@ -159,8 +159,11 @@ The admin lives at **https://admin.sunnyandranney.com**. The store's own DNS
 records (`sunnyandranney.com`, `www`) are DNS-only, so Access can't guard them;
 `admin` is a proxied CNAME to the Pages project, and the Access application
 "Sunny & Ranney Admin" covers that whole host, plus `/admin*` and `/api/admin*`
-on the `.pages.dev` hosts. `src/lib/admin-host.mjs` opens the admin host on
-`/admin/` and sends admin pages asked for on the store's addresses there. The
+on the `.pages.dev` hosts. A zone redirect rule sends `admin.sunnyandranney.com/`
+to `/admin/`, because the home page is prebuilt and Pages serves it without
+running any code. `src/lib/admin-host.mjs` does the same for server-rendered
+pages on the admin host, and sends admin pages asked for on the store's
+addresses there. The
 app also verifies the Access token itself, so an address Access misses still
 denies everyone. Sessions last a month (policy "Sunny & Ranney Admin
 managers").

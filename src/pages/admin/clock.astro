@@ -4,6 +4,7 @@ export const prerender = false;
 import AdminBase from '@/layouts/AdminBase.astro';
 import { STORE_TIME_ZONE } from '@/lib/time-clock/hours.mjs';
 import { listStaff, openShiftsByStaff } from '@/lib/time-clock/store';
+import { initials, svg, tone } from '@/lib/admin-ui';
 
 if (!Astro.locals.admin) return new Response('Not authorized', { status: 403 });
 
@@ -30,14 +31,27 @@ const people = staff.map((person) => {
 
 <AdminBase title="Time clock">
   <div class="page-header">
-    <h1>Time clock</h1>
+    <div>
+      <h1>Time clock</h1>
+      <p class="muted">Tap your name, then enter your PIN.</p>
+    </div>
+    <p class="clock-now" id="clock-now" aria-hidden="true"></p>
   </div>
 
   <p id="clock-result" class="clock-result" role="status" aria-live="polite"></p>
 
   {
     people.length === 0 ? (
-      <div class="card empty">No active staff yet. Add them on the Staff page.</div>
+      <div class="card empty">
+        <div class="empty-icon"><Fragment set:html={svg('clock', 24)} /></div>
+        <h2>Nobody is on the time clock yet</h2>
+        <p>Turn people on and give them a PIN on the Staff page, and they'll appear here.</p>
+        {Astro.locals.admin?.role === 'manager' && (
+          <div class="empty-actions">
+            <a class="btn" href="/admin/staff/"><Fragment set:html={svg('staff', 18)} />Staff</a>
+          </div>
+        )}
+      </div>
     ) : (
       <div class="clock-grid">
         {people.map((person) => (
@@ -49,11 +63,12 @@ const people = staff.map((person) => {
             data-action={person.openSince ? 'out' : 'in'}
             disabled={!person.canClock}
           >
+            <span class="avatar clock-avatar" data-tone={tone(person.name)}>{initials(person.name)}</span>
             <span class="clock-name">{person.name}</span>
             {person.openSince ? (
               <span class="badge badge-open">In since {person.openSince}</span>
             ) : (
-              <span class="badge">{person.canClock ? 'Out' : 'Needs a PIN'}</span>
+              <span class="badge">{person.canClock ? 'Clocked out' : 'Needs a PIN'}</span>
             )}
           </button>
         ))}
@@ -67,7 +82,7 @@ const people = staff.map((person) => {
       <p id="pin-error" class="form-error" role="alert"></p>
       <div class="field">
         <label for="pin-input">PIN</label>
-        <input id="pin-input" type="password" inputmode="numeric" autocomplete="off" pattern="[0-9]{4,8}" required />
+        <input id="pin-input" class="pin-input" type="password" inputmode="numeric" autocomplete="off" pattern="[0-9]{4,8}" required />
       </div>
       <div class="dialog-actions">
         <button type="button" class="btn" id="pin-cancel">Cancel</button>
@@ -78,27 +93,42 @@ const people = staff.map((person) => {
 </AdminBase>
 
 <style>
-  .clock-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0.75rem; }
+  .clock-now { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+  .clock-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.875rem; }
   .clock-person {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.5rem;
-    min-height: 104px;
-    padding: 1rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--bg-card);
-    color: var(--text);
+    gap: 0.625rem;
+    min-height: 148px;
+    padding: 1.125rem;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--panel);
+    color: var(--ink);
     font: inherit;
     text-align: left;
     cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.12s var(--ease), border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
   }
-  .clock-person:hover:not(:disabled) { border-color: var(--accent); }
-  .clock-person:disabled { opacity: 0.6; cursor: not-allowed; }
-  .clock-name { font-size: 1.125rem; font-weight: 600; }
-  .clock-result { font-size: 1.0625rem; font-weight: 600; color: var(--success); margin-bottom: 1rem; }
+  .clock-person:hover:not(:disabled) { border-color: color-mix(in srgb, var(--ink) 30%, var(--line)); box-shadow: 0 6px 18px rgba(28, 27, 25, 0.08); }
+  .clock-person:active:not(:disabled) { transform: scale(0.98); }
+  .clock-person:disabled { opacity: 0.55; cursor: not-allowed; }
+  .clock-person[data-action='out'] { border-color: color-mix(in srgb, var(--teal) 35%, var(--line)); }
+  .clock-avatar { width: 48px; height: 48px; font-size: 1rem; }
+  .clock-name { font-size: 1.1875rem; font-weight: 700; letter-spacing: -0.01em; margin-top: auto; }
+  .clock-result {
+    font-size: 1.0625rem;
+    font-weight: 600;
+    color: var(--sage);
+    background: var(--sage-soft);
+    border-radius: var(--r-md);
+    padding: 0.875rem 1rem;
+    margin-bottom: 1rem;
+  }
   .clock-result:empty { display: none; }
+  .pin-input { font-size: 1.75rem; letter-spacing: 0.5em; text-align: center; min-height: 64px; }
 </style>
 
 <script>
@@ -111,6 +141,12 @@ const people = staff.map((person) => {
   const input = document.querySelector<HTMLInputElement>('#pin-input')!;
   const submit = document.querySelector<HTMLButtonElement>('#pin-submit')!;
   const result = document.querySelector<HTMLElement>('#clock-result')!;
+  const now = document.querySelector<HTMLElement>('#clock-now');
+  const tick = () => {
+    if (now) now.textContent = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' });
+  };
+  tick();
+  setInterval(tick, 15_000);
 
   let selected: { id: string; action: string } | null = null;
 

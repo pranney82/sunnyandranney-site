@@ -8,6 +8,7 @@ import { refreshPay } from '@/lib/gusto/pay-sync.mjs';
 import { groupPayRuns } from '@/lib/time-clock/gusto-pay.mjs';
 import { STORE_TIME_ZONE, addDays, isIsoDate, localDate } from '@/lib/time-clock/hours.mjs';
 import { storePayroll, type PayRow } from '@/lib/time-clock/store';
+import { initials, svg, tone } from '@/lib/admin-ui';
 
 if (Astro.locals.admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
 
@@ -38,7 +39,8 @@ const { runs, uncounted, grossCents, workedHours } = groupPayRuns(rows);
 
 const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 const dollars = (cents: number) => money.format(cents / 100);
-const hours = (value: number) => value.toFixed(2);
+const hourFormat = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const hours = (value: number) => hourFormat.format(value);
 const dateLabel = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' });
 const day = (date: string | null) => (date ? dateLabel.format(new Date(`${date}T00:00:00Z`)) : 'unknown');
 const importLabel = new Intl.DateTimeFormat('en-US', { timeZone: STORE_TIME_ZONE, month: 'short', day: 'numeric', year: 'numeric' });
@@ -50,8 +52,8 @@ const lastImport = rows.reduce((latest, row) => (row.imported_at > latest ? row.
     <div>
       <h1>Payroll</h1>
       <p class="muted">
-        Read-only gross pay and hours from Gusto for store staff.
-        {isLive ? 'Live from Gusto.' : lastImport && `Last updated ${importLabel.format(new Date(lastImport))}.`}
+        Gross pay and hours for store staff, read from Gusto.
+        {isLive ? <span class="live"><span class="live-dot" aria-hidden="true"></span>Live</span> : lastImport && `Last updated ${importLabel.format(new Date(lastImport))}.`}
       </p>
     </div>
   </div>
@@ -65,7 +67,7 @@ const lastImport = rows.reduce((latest, row) => (row.imported_at > latest ? row.
       <label for="to">Paid to</label>
       <input id="to" name="to" type="date" value={to} />
     </div>
-    <button class="btn btn-primary" type="submit">Show</button>
+    <button class="btn btn-dark" type="submit">Show</button>
   </form>
 
   {gustoProblem && <p class="notice">Could not reach Gusto just now, so this may be out of date. {gustoProblem}</p>}
@@ -76,13 +78,39 @@ const lastImport = rows.reduce((latest, row) => (row.imported_at > latest ? row.
 
   {
     runs.length === 0 ? (
-      <div class="card empty">No payroll for these dates. Only people marked as store staff appear here.</div>
+      <div class="card empty">
+        <div class="empty-icon"><Fragment set:html={svg('payroll', 24)} /></div>
+        <h2>No payroll for these dates</h2>
+        <p>
+          {gusto.state === 'ready'
+            ? 'Only people marked as store staff appear here. Try a wider date range, or mark people as store staff on the Staff page.'
+            : 'Payroll comes from Gusto. Once Gusto is connected, paid payrolls for store staff show up here.'}
+        </p>
+        <div class="empty-actions">
+          {gusto.state === 'ready' ? (
+            <a class="btn" href="/admin/staff/"><Fragment set:html={svg('staff', 18)} />Staff</a>
+          ) : (
+            Astro.locals.admin?.owner && <a class="btn btn-primary" href="/admin/gusto/"><Fragment set:html={svg('gusto', 18)} />Connect Gusto</a>
+          )}
+        </div>
+      </div>
     ) : (
       <>
-        <p class="payroll-total" id="payroll-total">
-          {dollars(grossCents)} gross, {hours(workedHours)} hours worked, across {runs.length - uncounted}{' '}
-          {runs.length - uncounted === 1 ? 'payroll' : 'payrolls'}
-        </p>
+        <div class="stats" id="payroll-total">
+          <div class="stat">
+            <p class="stat-label">Gross pay</p>
+            <p class="stat-value">{dollars(grossCents)}</p>
+          </div>
+          <div class="stat">
+            <p class="stat-label">Hours worked</p>
+            <p class="stat-value">{hours(workedHours)}</p>
+          </div>
+          <div class="stat">
+            <p class="stat-label">Payrolls</p>
+            <p class="stat-value">{runs.length - uncounted}</p>
+            {uncounted > 0 && <p class="stat-note">plus {uncounted} not counted</p>}
+          </div>
+        </div>
         {uncounted > 0 && (
           <p class="notice">
             {uncounted} {uncounted === 1 ? 'payroll involves' : 'payrolls involve'} a reversal and {uncounted === 1 ? 'is' : 'are'} not in
@@ -116,7 +144,12 @@ const lastImport = rows.reduce((latest, row) => (row.imported_at > latest ? row.
                 <tbody>
                   {run.people.map((person: PayRow) => (
                     <tr>
-                      <td>{person.display_name}</td>
+                      <td>
+                        <span class="person">
+                          <span class="avatar" data-tone={tone(person.display_name)}>{initials(person.display_name)}</span>
+                          {person.display_name}
+                        </span>
+                      </td>
                       <td class="num">{hours(person.regular_hours)}</td>
                       <td class="num">{hours(person.overtime_hours)}</td>
                       <td class="num">{hours(person.time_off_hours)}</td>
@@ -143,16 +176,19 @@ const lastImport = rows.reduce((latest, row) => (row.imported_at > latest ? row.
 </AdminBase>
 
 <style>
-  .payroll-total { font-weight: 600; margin-bottom: 1rem; }
-  .run-header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.25rem 1rem; margin-bottom: 0.5rem; }
+  .live { display: inline-flex; align-items: center; gap: 0.375rem; margin-left: 0.375rem; color: var(--sage); font-weight: 600; }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--sage); box-shadow: 0 0 0 3px var(--sage-soft); }
+  .run-header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.25rem 1rem; margin-bottom: 0.75rem; }
   .run-header h2 { font-size: 1.0625rem; }
+  .filters { margin-bottom: 1.25rem; }
   .run-badges { display: flex; gap: 0.375rem; align-items: flex-start; }
   tfoot td { font-weight: 600; border-top: 1px solid var(--border); border-bottom: 0; }
 
   .label-narrow { display: none; }
 
   @media (max-width: 480px) {
-    section[data-run] { padding: 0.75rem; }
+    section[data-run] { padding: 0.875rem; }
+    .avatar { display: none; }
     table { font-size: 0.8125rem; }
     th, td { padding: 0.375rem 0.1875rem; }
     .label-wide { display: none; }

@@ -10,7 +10,8 @@ const ADMIN_PATH = /^\/(api\/)?admin(\/|$)/i;
 
 /**
  * Where to send a request instead, or null to handle it here.
- * - The admin host opens on the admin, and the store's pages aren't served from it.
+ * - The admin host opens on the admin. Prebuilt pages, the home page included,
+ *   never reach this code, so a zone redirect rule covers `/` on that host.
  * - An admin page asked for on a store address goes to the admin host.
  * API calls and form posts are never redirected; they get the usual refusal.
  */

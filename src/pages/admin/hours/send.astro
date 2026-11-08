@@ -2,6 +2,7 @@
 export const prerender = false;
 
 import AdminBase from '@/layouts/AdminBase.astro';
+import { svg } from '@/lib/admin-ui';
 import { liveGusto } from '@/lib/gusto/client.mjs';
 import { GustoError } from '@/lib/gusto/oauth.mjs';
 import { draftPayrolls, loadPlan } from '@/lib/gusto/send.mjs';
@@ -64,10 +65,25 @@ const hours = (minutes: number) => (minutes / 60).toFixed(2);
 
   {gustoProblem && <p class="notice">Could not reach Gusto. {gustoProblem}</p>}
 
-  {!gusto.client && <div class="card empty">Gusto is not connected, so hours can't be sent yet.</div>}
+  {!gusto.client && (
+    <div class="card empty">
+      <div class="empty-icon"><Fragment set:html={svg('gusto', 24)} /></div>
+      <h2>Gusto isn't connected</h2>
+      <p>Connect it to send approved hours straight onto the payroll.</p>
+      {Astro.locals.admin?.owner && (
+        <div class="empty-actions">
+          <a class="btn btn-primary" href="/admin/gusto/"><Fragment set:html={svg('gusto', 18)} />Connect Gusto</a>
+        </div>
+      )}
+    </div>
+  )}
 
   {gusto.client && !gustoProblem && payrolls.length === 0 && (
-    <div class="card empty">Gusto has no draft payroll open right now.</div>
+    <div class="card empty">
+      <div class="empty-icon"><Fragment set:html={svg('payroll', 24)} /></div>
+      <h2>No draft payroll open</h2>
+      <p>Gusto opens the next payroll ahead of payday. Check back then.</p>
+    </div>
   )}
 
   {payrolls.length > 1 && !selected && (
@@ -75,7 +91,7 @@ const hours = (minutes: number) => (minutes / 60).toFixed(2);
       <h2>Choose a pay period</h2>
       <ul class="periods">
         {payrolls.map((payroll) => (
-          <li><a href={`?payroll=${encodeURIComponent(payroll.uuid)}`}>{day(payroll.start)} to {day(payroll.end)}</a></li>
+          <li><a class="period" href={`?payroll=${encodeURIComponent(payroll.uuid)}`}><span>{day(payroll.start)} to {day(payroll.end)}</span><Fragment set:html={svg('right', 18)} /></a></li>
         ))}
       </ul>
     </section>

@@ -2,6 +2,7 @@
 export const prerender = false;
 
 import AdminBase from '@/layouts/AdminBase.astro';
+import { svg } from '@/lib/admin-ui';
 import { STORE_TIME_ZONE, addDays, isIsoDate, localDate } from '@/lib/time-clock/hours.mjs';
 import { gustoHistory, listStaff } from '@/lib/time-clock/store';
 
@@ -42,14 +43,18 @@ const totalHours = records.reduce((sum, record) => sum + (record.hours ?? 0), 0)
       <label for="to">To</label>
       <input id="to" name="to" type="date" value={to} />
     </div>
-    <button class="btn btn-primary" type="submit">Show</button>
+    <button class="btn btn-dark" type="submit">Show</button>
   </form>
 
   {truncated && <p class="notice">Showing the newest 500 records. Narrow the dates to see the rest.</p>}
 
   {
     records.length === 0 ? (
-      <div class="card empty">No Gusto records for these dates. Only people marked as store staff appear here.</div>
+      <div class="card empty">
+        <div class="empty-icon"><Fragment set:html={svg('history', 24)} /></div>
+        <h2>No Gusto records for these dates</h2>
+        <p>These are past clock-ins from Gusto's own clock, for people marked as store staff. Try a wider date range.</p>
+      </div>
     ) : (
       <section class="card">
         <p class="history-total">{records.length} records, {totalHours.toFixed(2)} hours</p>
