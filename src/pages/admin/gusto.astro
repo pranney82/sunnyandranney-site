@@ -4,6 +4,7 @@ export const prerender = false;
 import AdminBase from '@/layouts/AdminBase.astro';
 import { liveGusto } from '@/lib/gusto/client.mjs';
 import { STORE_TIME_ZONE } from '@/lib/time-clock/hours.mjs';
+import { svg } from '@/lib/admin-ui';
 
 if (!Astro.locals.admin?.owner) return new Response('Not authorized', { status: 403 });
 
@@ -66,16 +67,22 @@ const dateLabel = new Intl.DateTimeFormat('en-US', { timeZone: STORE_TIME_ZONE, 
   )}
 
   {(state === 'disconnected' || state === 'reconnect') && (
-    <section class="card">
-      <h2>{state === 'reconnect' ? 'Reconnect Gusto' : 'Connect Gusto'}</h2>
+    <section class="card connect-card">
+      <div class="status-row">
+        <span class="status-dot status-off" aria-hidden="true"></span>
+        <div>
+          <h2>{state === 'reconnect' ? 'Reconnect Gusto' : 'Not connected'}</h2>
+          <p class="muted">{environmentLabel} · You'll sign in as a Gusto admin and choose the company.</p>
+        </div>
+      </div>
       {state === 'reconnect' && <p class="notice">Gusto ended this sign-in, so nothing is updating until you connect again.</p>}
-      <p class="muted">Environment: {environmentLabel}. You'll sign in as a Gusto admin and choose the company.</p>
       {mcp && (
-        <p class="notice">
-          Gusto ticks every permission for you. On its screen, under Write permissions keep only Team data and Payment data,
-          which let the admin put approved hours on payroll. Run payroll must be unticked. Under Read permissions, untick
-          bank, tax and benefits.
-        </p>
+        <ol class="steps">
+          <li><strong>Sign in to Gusto</strong> as an admin of the store's company.</li>
+          <li><strong>Under Write permissions, keep only Team data and Payment data.</strong> They let the admin put approved hours on payroll. Leave Run payroll unticked.</li>
+          <li><strong>Under Read permissions, untick bank, tax and benefits.</strong> The admin doesn't need them.</li>
+          <li><strong>Click Authorize.</strong> You'll come back here, connected.</li>
+        </ol>
       )}
       {config?.environment === 'production' && !mcp && (
         <p class="notice">
@@ -83,13 +90,19 @@ const dateLabel = new Intl.DateTimeFormat('en-US', { timeZone: STORE_TIME_ZONE, 
           time-off requests. Do this at the start of a pay period, once the store tablet is ready.
         </p>
       )}
-      <a class="btn btn-primary" id="gusto-connect" href="/api/admin/gusto/connect/">Connect Gusto</a>
+      <a class="btn btn-primary" id="gusto-connect" href="/api/admin/gusto/connect/"><Fragment set:html={svg('gusto', 18)} />Connect Gusto</a>
     </section>
   )}
 
   {state === 'ready' && (
     <section class="card">
-      <h2>Connected</h2>
+      <div class="status-row">
+        <span class="status-dot status-on" aria-hidden="true"></span>
+        <div>
+          <h2>Connected</h2>
+          <p class="muted">Staff and Payroll read Gusto when they open.</p>
+        </div>
+      </div>
       <dl class="details">
         <dt>Company</dt>
         <dd>{connection.company_name ?? connection.company_uuid}</dd>
@@ -106,11 +119,31 @@ const dateLabel = new Intl.DateTimeFormat('en-US', { timeZone: STORE_TIME_ZONE, 
 </AdminBase>
 
 <style>
-  h2 { font-size: 1.0625rem; margin-bottom: 0.25rem; }
-  .card .muted { margin-bottom: 0.75rem; }
-  .details { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; margin: 0.75rem 0 1rem; }
-  .details dt { color: var(--text-muted); }
-  .details dd { overflow-wrap: anywhere; }
+  .status-row { display: flex; align-items: flex-start; gap: 0.875rem; margin-bottom: 1rem; }
+  .status-row h2 { font-size: 1.125rem; }
+  .status-row .muted { margin-top: 0.125rem; }
+  .status-dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 0.45rem; flex: none; }
+  .status-on { background: var(--sage); box-shadow: 0 0 0 4px var(--sage-soft); }
+  .status-off { background: var(--ink-3); box-shadow: 0 0 0 4px var(--sunk); }
+  .steps { list-style: none; counter-reset: step; display: grid; gap: 0.625rem; margin: 0 0 1.25rem; padding: 1rem; background: var(--sunk); border-radius: var(--r-md); }
+  .steps li { counter-increment: step; display: grid; grid-template-columns: 28px 1fr; gap: 0.625rem; align-items: start; color: var(--ink-2); }
+  .steps li::before {
+    content: counter(step);
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--panel);
+    box-shadow: inset 0 0 0 1px var(--line);
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 0.8125rem;
+  }
+  .steps strong { color: var(--ink); font-weight: 600; }
+  .details { display: grid; grid-template-columns: max-content 1fr; gap: 0.5rem 1.5rem; margin: 0 0 1.25rem; padding: 1rem; background: var(--sunk); border-radius: var(--r-md); }
+  .details dt { color: var(--ink-3); font-size: 0.875rem; font-weight: 600; }
+  .details dd { overflow-wrap: anywhere; font-weight: 500; }
 </style>
 
 <script>

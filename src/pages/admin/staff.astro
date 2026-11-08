@@ -6,6 +6,7 @@ import { liveGusto } from '@/lib/gusto/client.mjs';
 import { syncEmployeesIfStale } from '@/lib/gusto/employees.mjs';
 import { GustoError } from '@/lib/gusto/oauth.mjs';
 import { listStaff } from '@/lib/time-clock/store';
+import { initials, svg, tone } from '@/lib/admin-ui';
 
 if (Astro.locals.admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
 
@@ -22,27 +23,71 @@ if (gusto.client) {
 }
 
 const staff = await listStaff(env.DB);
+const isOwner = Boolean(Astro.locals.admin?.owner);
+const connected = gusto.state === 'ready';
+const counts = {
+  onClock: staff.filter((person) => person.active && person.pin_hash).length,
+  needPin: staff.filter((person) => person.active && !person.pin_hash).length,
+  store: staff.filter((person) => person.store_staff).length,
+};
 ---
 
 <AdminBase title="Staff">
   <div class="page-header">
-    <h1>Staff</h1>
+    <div>
+      <h1>Staff</h1>
+      <p class="muted">{connected ? 'Kept in step with Gusto. Mark who works at the store and give them a clock PIN.' : 'Who can use the time clock, and who counts as store staff.'}</p>
+    </div>
     <div class="page-actions">
-      <button type="button" class="btn btn-primary" id="add-staff">Add employee</button>
+      <button type="button" class="btn btn-primary" id="add-staff" data-add-staff><Fragment set:html={svg('plus', 18)} />Add employee</button>
     </div>
   </div>
+
+  {
+    staff.length > 0 && (
+      <div class="stats">
+        <div class="stat">
+          <p class="stat-label">On the time clock</p>
+          <p class="stat-value">{counts.onClock}</p>
+          <p class="stat-note">active with a PIN</p>
+        </div>
+        <div class:list={['stat', { 'stat-accent': counts.needPin > 0 }]}>
+          <p class="stat-label">Need a PIN</p>
+          <p class="stat-value">{counts.needPin}</p>
+          <p class="stat-note">can't clock in yet</p>
+        </div>
+        <div class="stat">
+          <p class="stat-label">Store staff</p>
+          <p class="stat-value">{counts.store}</p>
+          <p class="stat-note">shown on Payroll</p>
+        </div>
+      </div>
+    )
+  }
 
   {gustoProblem && <p class="notice">Could not update the list from Gusto. {gustoProblem}</p>}
 
   {
     staff.length === 0 ? (
-      <div class="card empty">No staff yet.</div>
+      <div class="card empty">
+        <div class="empty-icon"><Fragment set:html={svg('staff', 24)} /></div>
+        <h2>No staff yet</h2>
+        <p>
+          {connected
+            ? 'Gusto has no employees to bring in yet.'
+            : 'Connect Gusto and your team comes in automatically, or add someone by hand.'}
+        </p>
+        <div class="empty-actions">
+          {!connected && isOwner && <a class="btn btn-primary" href="/admin/gusto/"><Fragment set:html={svg('gusto', 18)} />Connect Gusto</a>}
+          <button type="button" class="btn" data-add-staff><Fragment set:html={svg('plus', 18)} />Add employee</button>
+        </div>
+      </div>
     ) : (
       <section class="card">
         <div class="table-scroll">
-          <table>
+          <table class="staff-table">
             <thead>
-              <tr>
+              <tr class="staff-head">
                 <th>Name</th>
                 <th>Time clock</th>
                 <th class="wide-only">Gusto</th>
@@ -54,8 +99,13 @@ const staff = await listStaff(env.DB);
             <tbody>
               {staff.map((person) => (
                 <tr>
-                  <td>{person.display_name}</td>
-                  <td>
+                  <td class="c-name">
+                    <span class="person">
+                      <span class="avatar" data-tone={tone(person.display_name)}>{initials(person.display_name)}</span>
+                      {person.display_name}
+                    </span>
+                  </td>
+                  <td class="c-clock">
                     {!person.active ? (
                       <span class="badge">Inactive</span>
                     ) : person.pin_hash ? (
@@ -66,19 +116,19 @@ const staff = await listStaff(env.DB);
                   </td>
                   <td class="wide-only">
                     {person.gusto_employee_uuid && person.gusto_job_uuid ? (
-                      <span class="badge badge-approved">Linked</span>
+                      <span class="quiet">Linked</span>
                     ) : person.gusto_employee_uuid ? (
                       <span class="badge badge-pending">Needs a job</span>
                     ) : (
                       <span class="badge badge-pending">Not linked</span>
                     )}
                   </td>
-                  <td class="wide-only">{person.overtime_eligible ? 'Eligible' : 'Exempt'}</td>
-                  <td>{person.store_staff ? 'Yes' : 'No'}</td>
-                  <td class="num">
+                  <td class="wide-only"><span class="quiet">{person.overtime_eligible ? 'Eligible' : 'Exempt'}</span></td>
+                  <td class="c-store">{person.store_staff ? <span class="quiet">Yes</span> : <span class="quiet faint">No</span>}</td>
+                  <td class="num c-edit">
                     <button
                       type="button"
-                      class="btn"
+                      class="btn btn-small"
                       data-edit
                       data-id={person.id}
                       data-name={person.display_name}
@@ -135,8 +185,30 @@ const staff = await listStaff(env.DB);
 <style>
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-  @media (max-width: 480px) {
+  .quiet { color: var(--ink-2); font-weight: 500; }
+  .faint { color: var(--ink-3); }
+
+  @media (max-width: 640px) {
     .wide-only { display: none; }
+    /* Each person becomes one compact row, so Edit stays on screen. */
+    .staff-table, .staff-table tbody, .staff-table td { display: block; }
+    .staff-table thead, .staff-table td.wide-only { display: none; }
+    .staff-table tr {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 0.375rem 0.75rem;
+      padding: 0.875rem 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .staff-table tbody tr:last-child { border-bottom: 0; }
+    .staff-table td { padding: 0; border: 0; }
+    .c-name { grid-column: 1; grid-row: 1; }
+    .c-edit { grid-column: 2; grid-row: 1 / 3; }
+    .c-clock, .c-store { grid-column: 1; padding-left: 3rem !important; }
+    .c-clock { grid-row: 2; display: flex !important; gap: 0.5rem; align-items: center; }
+    .c-store { grid-row: 3; font-size: 0.875rem; }
+    .c-store::before { content: 'Store staff: '; color: var(--ink-3); }
   }
 </style>
 
@@ -179,9 +251,11 @@ const staff = await listStaff(env.DB);
     dialog.showModal();
   }
 
-  document.querySelector('#add-staff')!.addEventListener('click', () => {
-    open('Add employee', null, { name: '', email: '', overtime: true, active: true, storeStaff: false });
-  });
+  document.querySelectorAll('[data-add-staff]').forEach((button) =>
+    button.addEventListener('click', () => {
+      open('Add employee', null, { name: '', email: '', overtime: true, active: true, storeStaff: false });
+    }),
+  );
 
   document.querySelector('#staff-cancel')!.addEventListener('click', () => dialog.close());
 
