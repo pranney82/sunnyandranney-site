@@ -1,0 +1,455 @@
+---
+export const prerender = false;
+
+/**
+ * One month's Georgia sales tax return, laid out in the Georgia Tax Center's own order (dor.georgia.gov/node/57651):
+ * Determine Form, ST-3 Long Form (Part A), Calculate Total Sales Tax (Part B), Calculate Total Use Tax, Review, Submit.
+ * Every number to type has a copy button, and every number the Tax Center works out is shown to check against.
+ * The first manager to open it and the time it's marked filed are kept, which says how long filing took.
+ */
+
+import AdminBase from '@/layouts/AdminBase.astro';
+import { SALES_COLUMNS, SALES_LABELS, countyName, daysIn, dueDate, gtcReturn, money, monthName, pct, plainCents as plain } from '@/lib/sales-tax/figures.mjs';
+import { TAX_CENTER, TAX_CENTER_PHONE, daysLeftWords, daysUntil, isMonth, monthRecord, taxCenterLogin } from '@/lib/sales-tax/status.mjs';
+
+const admin = Astro.locals.admin;
+if (admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
+const month = Astro.params.month ?? '';
+if (!isMonth(month)) return Astro.redirect('/admin/sales-tax/', 302);
+const rec = await monthRecord(Astro.locals.runtime.env.DB, month, { viewer: admin.email });
+if (!rec) return Astro.redirect('/admin/sales-tax/', 302);
+
+const f = rec.figures;
+const r = f.ret;
+const g = gtcReturn(r);
+const name = monthName(month);
+const short = name.split(' ')[0];
+const due = dueDate(month);
+const daysLeft = daysUntil(due.iso, Date.now());
+const [y, m] = month.split('-');
+const periodEnd = `${m}/${daysIn(month)}/${y.slice(2)}`;
+const when = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+const left = daysLeftWords(daysLeft);
+const minutes = rec.filed && rec.opened ? Math.max(0, Math.round((Date.parse(rec.filed.at) - Date.parse(rec.opened.at)) / 60000)) : null;
+const took = minutes === null ? '' : minutes < 1 ? 'under a minute after this page was first opened' : minutes < 120 ? `${minutes} minute${minutes === 1 ? '' : 's'} after this page was first opened` : '';
+const login = await taxCenterLogin(Astro.locals.runtime.env.DB);
+const fileUrl = (kind: string) => `/api/admin/sales-tax/file/?month=${month}&kind=${kind}`;
+---
+
+<AdminBase title={`${name} sales tax`}>
+  <div class="filing">
+    <div class="page-header">
+      <div>
+        <p class="crumb"><a href="/admin/sales-tax/">Sales tax</a></p>
+        <h1>{name}</h1>
+        <p class="muted">Georgia sales and use tax return (ST-3), due {due.words}.</p>
+      </div>
+    </div>
+
+    <div class="stats" id="filing-tiles">
+      <div class="stat stat-accent">
+        <p class="stat-label">To pay</p>
+        <p class="stat-value">{money(r.pay)}</p>
+        <p class="stat-note">after {money(r.comp)} for filing on time</p>
+      </div>
+      <div class="stat">
+        <p class="stat-label">Due</p>
+        <p class="stat-value due">{due.words.replace(/^\w+, /, '')}</p>
+        <p class="stat-note">{rec.filed ? due.words.split(',')[0] : left}</p>
+      </div>
+      <div class="stat">
+        <p class="stat-label">Return</p>
+        <p class="stat-value due">{rec.filed ? 'Filed' : 'Not filed'}</p>
+        <p class="stat-note">{rec.filed ? when.format(new Date(rec.filed.at)).replace(/^\w+, /, '') : 'Mark it filed in step 6'}</p>
+      </div>
+    </div>
+
+    {f.notes.map((n: string) => (
+      <div class="notice" role="note"><div><strong>Check in Shopify before filing.</strong> {n}</div></div>
+    ))}
+
+    <ol class="steps">
+      <li class="card step" id="taxcenter-login">
+        <div class="step-head"><span class="step-num" aria-hidden="true">1</span><div><h2>Sign in to the Georgia Tax Center</h2><p class="muted">Then open the Sales &amp; Use Tax account, choose <strong>File Return</strong> for the period ending {periodEnd}, and answer the Determine Form questions as usual.</p></div></div>
+        <div class="signin">
+          <a class="btn btn-primary" href={TAX_CENTER} target="_blank" rel="noopener noreferrer">
+            Sign in to the Tax Center
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          </a>
+          <dl class="signin-list">
+            {login.username && (
+              <div class="signin-row">
+                <dt>Username</dt>
+                <dd><span class="signin-value">{login.username}</span></dd>
+                <button type="button" class="btn copy" data-copy={login.username} data-what="the username" aria-label={`Copy the username, ${login.username}`}><span class="copy-label">Copy</span></button>
+              </div>
+            )}
+            <div class="signin-row">
+              <dt>Password</dt>
+              <dd>Saved in your browser or password manager.<small>The admin never keeps it.</small></dd>
+            </div>
+            {login.codeNote && (
+              <div class="signin-row">
+                <dt>Code</dt>
+                <dd>{login.codeNote}<small>After the password, the Tax Center asks for a two-step code.</small></dd>
+              </div>
+            )}
+            {login.stn && (
+              <div class="signin-row">
+                <dt>Tax number</dt>
+                <dd><span class="signin-value">{login.stn}</span><small>The store’s sales and use tax number, to pick the right account.</small></dd>
+                <button type="button" class="btn copy" data-copy={login.stn} data-what="the tax number" aria-label={`Copy the tax number, ${login.stn}`}><span class="copy-label">Copy</span></button>
+              </div>
+            )}
+          </dl>
+          <p class="step-note">
+            Forgot the username or password? Use <strong>Forgot username or password?</strong> on the Tax Center’s sign-in page; the reset link it emails lasts 60 minutes. Still stuck: call the Tax Center at <a href={`tel:+1${TAX_CENTER_PHONE.replace(/-/g, '')}`}>{TAX_CENTER_PHONE}</a>.
+          </p>
+          <details class="edit-login" open={!login.username}>
+            <summary>{login.username ? 'Change these sign-in details' : 'Save the store’s sign-in details here, once'}</summary>
+            <form id="login-form" class="login-form" autocomplete="off">
+              <div class="field">
+                <label for="gtc-username">Tax Center username</label>
+                <input id="gtc-username" name="username" value={login.username} maxlength="64" autocapitalize="none" spellcheck="false" />
+              </div>
+              <div class="field">
+                <label for="gtc-stn">Sales tax number</label>
+                <input id="gtc-stn" name="stn" value={login.stn} maxlength="20" inputmode="numeric" placeholder="123-456789" />
+              </div>
+              <div class="field field-wide">
+                <label for="gtc-code">Who gets the two-step code</label>
+                <input id="gtc-code" name="codeNote" value={login.codeNote} maxlength="80" placeholder="Staci’s phone, authenticator app" />
+              </div>
+              <p class="muted field-wide">Not the password. It stays in your browser or password manager.</p>
+              <button type="submit" class="btn btn-dark">Save sign-in details</button>
+            </form>
+            {login.updatedBy && login.updatedAt && <p class="muted saved-by">Last saved by {login.updatedBy}, {when.format(new Date(login.updatedAt))}.</p>}
+          </details>
+        </div>
+      </li>
+
+      <li class="card step">
+        <div class="step-head"><span class="step-num" aria-hidden="true">2</span><div><h2>ST-3 Long Form</h2><p class="muted">Part A. Type these three; the Tax Center works out the rest.</p></div></div>
+        <ul class="lines">
+          <li class="line">
+            <span class="line-no">Line 1</span><span class="line-name">Total state sales</span>
+            <span class="line-amt num">{money(r.totalSales)}</span>
+            <button type="button" class="btn copy" data-copy={plain(r.totalSales)} data-what="Line 1" aria-label={`Copy line 1, ${plain(r.totalSales)}`}><span class="copy-label">Copy</span></button>
+          </li>
+          <li class="line">
+            <span class="line-no">Line 2</span><span class="line-name">Total exempt state sales</span>
+            <span class="line-amt num">{money(r.exempt)}</span>
+            <button type="button" class="btn copy" data-copy={plain(r.exempt)} data-what="Line 2" aria-label={`Copy line 2, ${plain(r.exempt)}`}><span class="copy-label">Copy</span></button>
+          </li>
+          <li class="line">
+            <span class="line-no">Line 7</span><span class="line-name">Tax collected, from your records</span>
+            <span class="line-amt num">{money(r.collected)}</span>
+            <button type="button" class="btn copy" data-copy={plain(r.collected)} data-what="Line 7" aria-label={`Copy line 7, ${plain(r.collected)}`}><span class="copy-label">Copy</span></button>
+          </li>
+        </ul>
+        <p class="step-note">Line 3, taxable state sales, comes out to <strong class="num">{money(g.line3)}</strong>.</p>
+      </li>
+
+      <li class="card step">
+        <div class="step-head"><span class="step-num" aria-hidden="true">3</span><div><h2>Calculate Total Sales Tax</h2><p class="muted">Part B. One row for each place the sales were sourced to.</p></div></div>
+        <ul class="lines">
+          <li class="line">
+            <span class="line-no">000</span><span class="line-name">Georgia, at {pct(g.state.rate)}<small>If it isn’t filled in already, it’s line 3.</small></span>
+            <span class="line-amt num">{money(g.state.taxable)}</span>
+            <button type="button" class="btn copy" data-copy={plain(g.state.taxable)} data-what="Georgia taxable sales" aria-label={`Copy Georgia taxable sales, ${plain(g.state.taxable)}`}><span class="copy-label">Copy</span></button>
+          </li>
+          {g.counties.map((c: { name: string; code: string | null; rate: number; taxable: number }) => (
+            <li class="line">
+              <span class="line-no">{c.code ?? '???'}</span>
+              <span class="line-name">
+                {countyName(c)}, at {pct(c.rate)}
+                {c.code ? <button type="button" class="link-copy copy" data-copy={c.code} data-what={`${c.name}’s code`} aria-label={`Copy ${c.name}’s code, ${c.code}`}><span class="copy-label">Copy code</span></button> : <small>Look up its code on Georgia’s rate chart.</small>}
+              </span>
+              <span class="line-amt num">{money(c.taxable)}</span>
+              <button type="button" class="btn copy" data-copy={plain(c.taxable)} data-what={`${c.name} taxable sales`} aria-label={`Copy ${c.name} taxable sales, ${plain(c.taxable)}`}><span class="copy-label">Copy</span></button>
+            </li>
+          ))}
+        </ul>
+        <p class="step-note">
+          The Tax Center works out {g.counties.length ? 'the tax on each row' : 'the tax'}:
+          {[{ name: 'Georgia', due: g.state.due }, ...g.counties].map((c, i) => <span>{`${i ? ', ' : ''}${c.name} `}<span class="num">{money(c.due)}</span></span>)}.
+        </p>
+      </li>
+
+      <li class="card step">
+        <div class="step-head"><span class="step-num" aria-hidden="true">4</span><div><h2>Calculate Total Use Tax</h2><p class="muted">Nothing from Shopify. Leave it empty unless the store bought something for its own use without paying sales tax on it.</p></div></div>
+      </li>
+
+      <li class="card step">
+        <div class="step-head"><span class="step-num" aria-hidden="true">5</span><div><h2>Vendor’s Compensation, then Review</h2><p class="muted">The Tax Center shows its Vendor’s Compensation Calculations, then the whole return. Before you submit, check it shows these. If one is different, stop and ask before submitting.</p></div></div>
+        <ul class="checks">
+          <li><span>Line 4, total sales tax</span><span class="num">{money(g.line4)}</span></li>
+          <li><span>Line 9, excess tax collected</span><span class="num">{money(Math.max(g.excess, 0))}</span></li>
+          <li><span>Line 10, vendor’s compensation</span><span class="num">{money(g.comp)}</span></li>
+          <li class="total"><span>Line 13, total amount due</span><span class="num">{money(g.pay)}</span></li>
+        </ul>
+      </li>
+
+      <li class="card step" id="filing-status">
+        <div class="step-head"><span class="step-num" aria-hidden="true">6</span><div><h2>Submit, pay, and mark it filed</h2><p class="muted">Submit, note the confirmation number, then pay {money(g.pay)} by {due.words}. The store keeps the {money(g.comp)} only if the return and the payment are both on time.</p></div></div>
+        {rec.filed ? (
+          <div class="filed">
+            <p><span class="badge badge-approved">Filed</span> {when.format(new Date(rec.filed.at))}{rec.filed.by ? `, by ${rec.filed.by}` : ''}.</p>
+            {rec.filed.confirmation && <p class="muted">Confirmation <strong class="num">{rec.filed.confirmation}</strong></p>}
+            {took && <p class="muted">Marked filed {took}.</p>}
+            <button type="button" class="btn btn-ghost btn-small" data-unfile={month}>Not filed after all</button>
+          </div>
+        ) : (
+          <form class="file-form" id="file-form" data-month={month}>
+            <div class="field">
+              <label for="confirmation">Confirmation number</label>
+              <input id="confirmation" name="confirmation" autocomplete="off" inputmode="text" maxlength="64" placeholder="From the Tax Center, after you submit" />
+            </div>
+            <button type="submit" class="btn btn-dark">Mark {short} filed</button>
+          </form>
+        )}
+      </li>
+    </ol>
+
+    <details class="card shopify">
+      <summary><h2>Shopify’s numbers for {short}</h2><span class="muted">Taxes collected and the total sales breakdown</span></summary>
+      <div class="shopify-grid">
+        <table>
+          <thead><tr><th scope="col">Tax</th><th scope="col" class="num">Collected</th></tr></thead>
+          <tbody>
+            {f.taxes.map((t: { name: string; rate: number; tax: number }) => (
+              <tr><td>{t.name} ({pct(t.rate)})</td><td class="num">{money(t.tax)}</td></tr>
+            ))}
+          </tbody>
+          <tfoot><tr><td>Total</td><td class="num">{money(f.taxes.reduce((a: number, t: { tax: number }) => a + t.tax, 0))}</td></tr></tfoot>
+        </table>
+        <table>
+          <thead><tr><th scope="col">Total sales breakdown</th><th scope="col" class="num">{short}</th></tr></thead>
+          <tbody>
+            {SALES_COLUMNS.map((k: string) => (
+              <tr class:list={[{ strong: k === 'net_sales' || k === 'total_sales' }]}><td>{SALES_LABELS[k as keyof typeof SALES_LABELS]}</td><td class="num">{money(f.breakdown[k])}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="muted downloads">
+        Shopify’s report, every day of {short}:
+        {rec.files.pdf ? <a href={fileUrl('pdf')} download>PDF</a> : 'PDF not kept'} ·
+        {rec.files.csv ? <a href={fileUrl('csv')} download>spreadsheet</a> : 'spreadsheet not kept'}.
+        Taxable sales are the tax Shopify collected divided by its rate, so they can be a few dollars off Shopify’s own figures.
+      </p>
+    </details>
+  </div>
+</AdminBase>
+
+<style>
+  .filing { max-width: 880px; }
+  .crumb { font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.25rem; }
+  .crumb a { color: var(--ink-3); text-decoration: none; }
+  .crumb a:hover { color: var(--ink); text-decoration: underline; }
+  .stat-value.due { font-size: 1.375rem; line-height: 1.3; }
+
+  .signin { margin: 0.875rem 0 0 calc(30px + 0.875rem); }
+  .signin > .btn svg { margin-left: 0.125rem; }
+  .signin-list { margin-top: 0.875rem; border-top: 1px solid var(--line); }
+  .signin-row { display: grid; grid-template-columns: 7rem 1fr auto; align-items: center; gap: 0.25rem 1rem; min-height: 56px; padding: 0.5rem 0; border-bottom: 1px solid var(--line); }
+  .signin-row dt { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+  .signin-row dd { margin: 0; min-width: 0; font-weight: 500; }
+  .signin-row dd small { display: block; font-size: 0.8125rem; color: var(--ink-3); font-weight: 400; }
+  .signin-value { font-weight: 700; font-size: 1.0625rem; overflow-wrap: anywhere; }
+  .signin .step-note { margin-left: 0; }
+  .edit-login { margin-top: 0.5rem; }
+  .edit-login summary { display: inline-flex; align-items: center; min-height: 44px; list-style: none; cursor: pointer; font-weight: 600; color: var(--teal); }
+  .edit-login summary::-webkit-details-marker { display: none; }
+  .edit-login summary:hover { text-decoration: underline; text-underline-offset: 2px; }
+  .login-form { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; margin-top: 0.25rem; }
+  .login-form .field-wide { grid-column: 1 / -1; }
+  .login-form p.muted { margin-bottom: 0.75rem; font-size: 0.875rem; }
+  .login-form .btn { justify-self: start; }
+  .saved-by { font-size: 0.8125rem; margin-top: 0.5rem; }
+
+  .steps { list-style: none; counter-reset: none; }
+  .step { padding: 1.25rem 1.375rem; }
+  .step-head { display: flex; gap: 0.875rem; align-items: flex-start; }
+  .step-head h2 { margin-bottom: 0.125rem; }
+  .step-head strong { color: var(--ink); }
+  .step-num {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--sunk);
+    box-shadow: inset 0 0 0 1px var(--line);
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .step-note { margin: 0.75rem 0 0 calc(30px + 0.875rem); font-size: 0.875rem; color: var(--ink-3); }
+  .step-note strong { color: var(--ink-2); font-weight: 600; }
+
+  .lines { list-style: none; margin: 0.875rem 0 0 calc(30px + 0.875rem); border-top: 1px solid var(--line); }
+  .line {
+    display: grid;
+    grid-template-columns: 3.75rem 1fr auto auto;
+    align-items: center;
+    gap: 0.25rem 1rem;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .line-no { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .line-name { font-weight: 500; min-width: 0; }
+  .line-name small { display: block; font-size: 0.8125rem; color: var(--ink-3); font-weight: 400; }
+  .line-amt { font-size: 1.125rem; font-weight: 700; letter-spacing: -0.01em; }
+  .copy { min-width: 5.25rem; }
+  .copy.is-copied { background: var(--sage-soft); border-color: color-mix(in srgb, var(--sage) 35%, var(--line)); color: var(--sage); }
+  .link-copy {
+    /* A small link to look at, a full 44px to tap */
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+    min-height: 44px;
+    margin: -0.75rem 0 -0.75rem 0.25rem;
+    padding: 0 0.375rem;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--teal);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+  .link-copy.is-copied { background: none; color: var(--sage); }
+
+  .checks { list-style: none; margin: 0.875rem 0 0 calc(30px + 0.875rem); border-top: 1px solid var(--line); }
+  .checks li { display: flex; justify-content: space-between; gap: 1rem; padding: 0.625rem 0; border-bottom: 1px solid var(--line); }
+  .checks .total { font-weight: 700; border-bottom: 0; border-top: 1px solid var(--ink); margin-top: -1px; }
+
+  .file-form, .filed { margin: 0.875rem 0 0 calc(30px + 0.875rem); }
+  .file-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.75rem; }
+  .file-form .field { flex: 1 1 260px; margin: 0; }
+  .filed p + p { margin-top: 0.25rem; }
+  .filed .btn { margin-top: 0.625rem; }
+
+  .shopify summary { list-style: none; cursor: pointer; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.75rem; }
+  .shopify summary::-webkit-details-marker { display: none; }
+  .shopify summary::after { content: '+'; margin-left: auto; font-size: 1.25rem; line-height: 1; color: var(--ink-3); transition: transform 0.2s var(--ease); }
+  .shopify[open] summary::after { transform: rotate(45deg); }
+  .shopify-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem 2rem; margin-top: 1rem; }
+  .shopify .strong td { font-weight: 700; }
+  .downloads { margin-top: 1rem; font-size: 0.875rem; }
+
+  @media (max-width: 640px) {
+    .step { padding: 1rem; }
+    .lines, .checks, .step-note, .file-form, .filed, .signin { margin-left: 0; }
+    .signin > .btn { width: 100%; }
+    .signin-row { grid-template-columns: 1fr auto; }
+    .signin-row dt { grid-column: 1 / -1; }
+    .login-form { grid-template-columns: 1fr; }
+    .login-form .btn { justify-self: stretch; }
+    .line { grid-template-columns: 1fr auto; grid-template-areas: 'no no' 'name name' 'amt copy'; gap: 0.125rem 0.75rem; }
+    .line-no { grid-area: no; }
+    .line-name { grid-area: name; }
+    .line-amt { grid-area: amt; font-size: 1.25rem; }
+    .line .copy:not(.link-copy) { grid-area: copy; }
+    .file-form .btn { flex: 1 1 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .shopify summary::after { transition: none; }
+  }
+</style>
+
+<script>
+  import { post } from '@/lib/time-clock/admin-client';
+  import { notify as toast, refresh as refreshParts } from '@/lib/sales-tax/page-client';
+
+  /** Copies a number the way the Tax Center takes it: digits and a point, no dollar sign or commas */
+  async function copy(text: string): Promise<boolean> {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      const box = document.createElement('textarea');
+      box.value = text;
+      box.setAttribute('readonly', '');
+      box.style.position = 'fixed';
+      box.style.opacity = '0';
+      document.body.appendChild(box);
+      box.select();
+      const ok = document.execCommand('copy');
+      box.remove();
+      return ok;
+    }
+  }
+
+  document.addEventListener('click', async (event) => {
+    const target = event.target as HTMLElement;
+    const button = target.closest<HTMLButtonElement>('button.copy');
+    if (button) {
+      const value = button.dataset.copy ?? '';
+      const label = button.querySelector<HTMLElement>('.copy-label');
+      if (!(await copy(value))) {
+        toast('Couldn’t copy. Select the number and copy it by hand.', 'error');
+        return;
+      }
+      const was = label?.textContent ?? 'Copy';
+      button.classList.add('is-copied');
+      if (label) label.textContent = 'Copied';
+      toast(`Copied ${button.dataset.what}: ${value}`);
+      setTimeout(() => {
+        button.classList.remove('is-copied');
+        if (label) label.textContent = was;
+      }, 1800);
+      return;
+    }
+    const undo = target.closest<HTMLButtonElement>('button[data-unfile]');
+    if (undo) {
+      undo.disabled = true;
+      const { error } = await post('/api/admin/sales-tax/', { month: undo.dataset.unfile, filed: false });
+      if (error) {
+        undo.disabled = false;
+        toast(error, 'error');
+        return;
+      }
+      toast('Marked not filed');
+      await refreshParts('#filing-status', '#filing-tiles');
+    }
+  });
+
+  document.addEventListener('submit', async (event) => {
+    const login = (event.target as HTMLElement).closest<HTMLFormElement>('form#login-form');
+    if (login) {
+      event.preventDefault();
+      const save = login.querySelector<HTMLButtonElement>('button[type="submit"]');
+      if (save) save.disabled = true;
+      const data = Object.fromEntries(new FormData(login));
+      const { error } = await post('/api/admin/sales-tax/login/', data);
+      if (save) save.disabled = false;
+      if (error) {
+        toast(error, 'error');
+        return;
+      }
+      toast('Sign-in details saved');
+      await refreshParts('#taxcenter-login');
+      return;
+    }
+    const form = (event.target as HTMLElement).closest<HTMLFormElement>('form#file-form');
+    if (!form) return;
+    event.preventDefault();
+    const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+    if (submit) submit.disabled = true;
+    const confirmation = new FormData(form).get('confirmation');
+    const { error } = await post('/api/admin/sales-tax/', { month: form.dataset.month, filed: true, confirmation: typeof confirmation === 'string' ? confirmation : '' });
+    if (error) {
+      if (submit) submit.disabled = false;
+      toast(error, 'error');
+      return;
+    }
+    toast('Marked filed');
+    await refreshParts('#filing-status', '#filing-tiles');
+  });
+</script>

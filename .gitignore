@@ -36,3 +36,7 @@ public/reviews/
 .wrangler/
 .dev.vars
 .dev.vars.*
+
+# The SOARD session's sales tax hand-off: staff addresses and the store's real
+# October figures. Kept on this Mac, never in this public repo.
+docs/sales-tax-handoff/
