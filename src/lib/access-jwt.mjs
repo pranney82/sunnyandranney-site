@@ -24,7 +24,7 @@ function decodeJson(segment) {
  *   getKeys: (kid: string) => Promise<Array<JsonWebKey & { kid?: string }>>,
  *   nowSeconds?: number,
  * }} options
- * @returns {Promise<{ email: string } | null>} null on any failure, never throws
+ * @returns {Promise<{ email: string } | { serviceToken: string } | null>} null on any failure, never throws
  */
 export async function verifyAccessJwt(token, { teamDomain, audience, getKeys, nowSeconds }) {
   if (!token || !teamDomain || !audience) return null;
@@ -55,10 +55,15 @@ export async function verifyAccessJwt(token, { teamDomain, audience, getKeys, no
     if (!audiences.includes(audience)) return null;
     if (typeof payload.exp !== 'number' || payload.exp <= now) return null;
     if (typeof payload.nbf === 'number' && payload.nbf > now) return null;
-    // Service tokens have no email, so they can never reach a role.
-    if (typeof payload.email !== 'string' || !payload.email) return null;
-
-    return { email: payload.email.trim().toLowerCase() };
+    if (typeof payload.email === 'string' && payload.email) {
+      return { email: payload.email.trim().toLowerCase() };
+    }
+    // A service token, used by a store iPad, has no email: only its client ID, as
+    // common_name. The caller decides whether that ID may do anything.
+    if (typeof payload.common_name === 'string' && payload.common_name) {
+      return { serviceToken: payload.common_name };
+    }
+    return null;
   } catch {
     return null;
   }

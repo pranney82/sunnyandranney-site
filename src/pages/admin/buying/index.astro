@@ -1,0 +1,289 @@
+---
+export const prerender = false;
+
+import AdminBase from '@/layouts/AdminBase.astro';
+import { svg } from '@/lib/admin-ui';
+import { STATUS, money, whenLabel, daysUntil, type PurchaseOrderSummary, type Vendor } from '@/lib/buying';
+import { MedusaProblem, medusaConfigured, medusaJson } from '@/lib/medusa-admin';
+
+if (Astro.locals.admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
+
+const env = Astro.locals.runtime.env;
+const VIEWS = {
+  open: { label: 'Open', status: 'ordered,partially_received' },
+  draft: { label: 'Drafts', status: 'draft' },
+  received: { label: 'Received', status: 'received' },
+  all: { label: 'All', status: '' },
+} as const;
+type View = keyof typeof VIEWS;
+const view = (Astro.url.searchParams.get('view') ?? 'open') as View;
+const current = VIEWS[view] ?? VIEWS.open;
+
+let orders: PurchaseOrderSummary[] = [];
+let everything: PurchaseOrderSummary[] = [];
+let vendors: Vendor[] = [];
+let problem = '';
+if (!medusaConfigured(env)) {
+  problem = 'not-connected';
+} else {
+  try {
+    const [all, list] = await Promise.all([
+      medusaJson<{ purchase_orders: PurchaseOrderSummary[] }>(env, 'purchasing/orders'),
+      medusaJson<{ vendors: Vendor[] }>(env, 'purchasing/vendors'),
+    ]);
+    everything = all.purchase_orders;
+    vendors = list.vendors.filter((v) => v.active && v.kind !== 'house').sort((a, b) => a.name.localeCompare(b.name));
+    orders = current.status ? everything.filter((o) => current.status.split(',').includes(o.status)) : everything;
+  } catch (err) {
+    if (!(err instanceof MedusaProblem)) throw err;
+    problem = err.message;
+  }
+}
+
+const open = everything.filter((o) => o.status === 'ordered' || o.status === 'partially_received');
+const openValue = open.reduce((sum, o) => sum + o.total_cents, 0);
+const thisWeek = open.filter((o) => {
+  const n = daysUntil(o.expected_on);
+  return n !== null && n >= 0 && n <= 7;
+});
+const late = open.filter((o) => (daysUntil(o.expected_on) ?? 1) < 0);
+const drafts = everything.filter((o) => o.status === 'draft');
+const counts: Record<View, number> = {
+  open: open.length,
+  draft: drafts.length,
+  received: everything.filter((o) => o.status === 'received').length,
+  all: everything.length,
+};
+---
+
+<AdminBase title="Purchase orders">
+  <div class="page-header">
+    <div>
+      <h1>Purchase orders</h1>
+      <p class="muted">Order from a vendor's suggestions, track what's coming, and receive it.</p>
+    </div>
+    {
+      !problem && (
+        <div class="page-actions">
+          <a class="btn" href="/admin/receiving/">
+            <Fragment set:html={svg('history', 18)} />
+            Receive a delivery
+          </a>
+          <button type="button" class="btn btn-primary" data-start-order>
+            <Fragment set:html={svg('plus', 18)} />
+            Start an order
+          </button>
+        </div>
+      )
+    }
+  </div>
+
+  {
+    problem === 'not-connected' && (
+      <div class="notice">
+        <span>
+          Buying runs on the new Medusa backend, which this admin isn't connected to yet. It needs <code>MEDUSA_BACKEND_URL</code> and
+          <code>MEDUSA_ADMIN_KEY</code> once Medusa Cloud is set up.
+        </span>
+      </div>
+    )
+  }
+  {problem && problem !== 'not-connected' && <div class="notice"><span>Couldn't load purchase orders: {problem}</span></div>}
+
+  {
+    !problem && (
+      <>
+        <div class="stats">
+          <div class="stat">
+            <p class="stat-label">On order</p>
+            <p class="stat-value">{money(openValue, { whole: true })}</p>
+            <p class="stat-note">
+              {open.length} open order{open.length === 1 ? '' : 's'}
+            </p>
+          </div>
+          <div class="stat">
+            <p class="stat-label">Arriving this week</p>
+            <p class="stat-value">{thisWeek.length}</p>
+            <p class="stat-note">{thisWeek.reduce((sum, o) => sum + (o.units - o.received), 0)} units</p>
+          </div>
+          <div class:list={['stat', { 'stat-accent': late.length > 0 }]}>
+            <p class="stat-label">Late</p>
+            <p class="stat-value">{late.length}</p>
+            <p class="stat-note">past their expected day</p>
+          </div>
+          <div class="stat">
+            <p class="stat-label">Drafts</p>
+            <p class="stat-value">{drafts.length}</p>
+            <p class="stat-note">not sent yet</p>
+          </div>
+        </div>
+
+        <nav class="views" aria-label="Which orders">
+          {(Object.keys(VIEWS) as View[]).map((key) => (
+            <a href={key === 'open' ? '/admin/buying/' : `/admin/buying/?view=${key}`} class="view-chip" aria-current={key === view ? 'page' : undefined}>
+              {VIEWS[key].label}
+              <span class="view-count">{counts[key]}</span>
+            </a>
+          ))}
+        </nav>
+
+        {orders.length === 0 ? (
+          <div class="card empty">
+            <div class="empty-icon">
+              <Fragment set:html={svg('history', 24)} />
+            </div>
+            <h2>{view === 'open' ? 'Nothing on order' : 'No orders here'}</h2>
+            <p>
+              Start an order from a vendor and it begins from their suggested order: what sold in the last twelve weeks, or the same weeks last
+              year if that was busier, less what's on hand and already coming.
+            </p>
+            <div class="empty-actions">
+              <button type="button" class="btn btn-primary" data-start-order>
+                Start an order
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div class="card">
+            <div class="table-scroll">
+              <table class="po-table">
+                <thead>
+                  <tr>
+                    <th>Order</th>
+                    <th>Vendor</th>
+                    <th>Status</th>
+                    <th>Expected</th>
+                    <th class="num">Received</th>
+                    <th class="num">Cost</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map((o) => {
+                    const when = o.status === 'received' || o.status === 'cancelled' ? null : whenLabel(o.expected_on);
+                    return (
+                      <tr data-href={`/admin/buying/${o.id}/`}>
+                        <td>
+                          <a class="po-link" href={`/admin/buying/${o.id}/`}>
+                            {o.display_number}
+                          </a>
+                        </td>
+                        <td>
+                          <span class="vendor-name">{o.vendor_name}</span>
+                          {o.vendor_code && <span class="code">{o.vendor_code}</span>}
+                        </td>
+                        <td>
+                          <span class={STATUS[o.status].badge}>{STATUS[o.status].label}</span>
+                        </td>
+                        <td class:list={{ late: when?.late }}>{when ? when.text : '—'}</td>
+                        <td class="num">
+                          {o.received} of {o.units}
+                        </td>
+                        <td class="num">{money(o.total_cents)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </>
+    )
+  }
+
+  <dialog id="vendor-picker" aria-labelledby="vendor-picker-title">
+    <h2 id="vendor-picker-title">Order from which vendor?</h2>
+    <input id="vendor-search" type="search" placeholder="Vendor name or code, like JFN" autocomplete="off" />
+    <ul class="vendor-list" id="vendor-list"></ul>
+    <div class="dialog-actions">
+      <button type="button" class="btn btn-ghost" data-close>Cancel</button>
+    </div>
+  </dialog>
+  <script type="application/json" id="vendors-data" set:html={JSON.stringify(vendors.map((v) => ({ id: v.id, name: v.name, code: v.code, lead: v.lead_days })))} />
+</AdminBase>
+
+<script>
+  const dialog = document.getElementById('vendor-picker') as HTMLDialogElement;
+  const search = document.getElementById('vendor-search') as HTMLInputElement;
+  const list = document.getElementById('vendor-list') as HTMLUListElement;
+  const vendors = JSON.parse(document.getElementById('vendors-data')?.textContent || '[]') as { id: string; name: string; code: string | null; lead: number | null }[];
+
+  function render(q: string) {
+    const term = q.trim().toLowerCase();
+    const hits = vendors.filter((v) => !term || v.name.toLowerCase().includes(term) || (v.code ?? '').toLowerCase() === term).slice(0, 60);
+    list.replaceChildren(
+      ...hits.map((v) => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = `/admin/buying/new/?vendor=${encodeURIComponent(v.id)}`;
+        a.className = 'vendor-row';
+        const name = document.createElement('span');
+        name.textContent = v.name;
+        const meta = document.createElement('span');
+        meta.className = 'muted';
+        meta.textContent = [v.code, v.lead ? `${v.lead}-day lead` : null].filter(Boolean).join(' · ');
+        a.appendChild(name);
+        a.appendChild(meta);
+        li.appendChild(a);
+        return li;
+      }),
+    );
+    if (!hits.length) {
+      const li = document.createElement('li');
+      li.className = 'muted';
+      li.textContent = 'No vendor by that name.';
+      list.appendChild(li);
+    }
+  }
+
+  document.querySelectorAll('[data-start-order]').forEach((button) =>
+    button.addEventListener('click', () => {
+      search.value = '';
+      render('');
+      dialog.showModal();
+      search.focus();
+    }),
+  );
+  search.addEventListener('input', () => render(search.value));
+  search.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      const first = list.querySelector('a');
+      if (first) window.location.href = first.getAttribute('href')!;
+    }
+  });
+  dialog.querySelector('[data-close]')?.addEventListener('click', () => dialog.close());
+
+  // Whole rows open their order.
+  document.querySelectorAll<HTMLTableRowElement>('tr[data-href]').forEach((row) =>
+    row.addEventListener('click', (event) => {
+      if ((event.target as HTMLElement).closest('a')) return;
+      window.location.href = row.dataset.href!;
+    }),
+  );
+</script>
+
+<style>
+  .views { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+  .view-chip {
+    display: inline-flex; align-items: center; gap: 0.5rem; min-height: 40px; padding: 0 0.875rem;
+    border-radius: 999px; background: var(--sunk); color: var(--ink-2); font-weight: 600; font-size: 0.9375rem;
+    text-decoration: none; box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .view-chip[aria-current='page'] { background: var(--ink); color: var(--bg); box-shadow: none; }
+  .view-count { font-size: 0.8125rem; opacity: 0.7; font-variant-numeric: tabular-nums; }
+  .po-table tbody tr { cursor: pointer; transition: background-color 0.12s var(--ease); }
+  .po-table tbody tr:hover { background: var(--sunk); }
+  .po-link { font-weight: 700; color: var(--ink); text-decoration: none; font-variant-numeric: tabular-nums; }
+  .vendor-name { font-weight: 600; }
+  .code { margin-left: 0.5rem; font-size: 0.8125rem; color: var(--ink-3); font-weight: 600; }
+  .late { color: var(--clay); font-weight: 600; }
+  .vendor-list { list-style: none; max-height: 50vh; overflow-y: auto; margin: 0.75rem 0 0; display: grid; gap: 2px; }
+  .vendor-row {
+    display: flex; justify-content: space-between; gap: 1rem; align-items: center; min-height: 48px; padding: 0 0.75rem;
+    border-radius: 10px; color: var(--ink); text-decoration: none; font-weight: 600;
+  }
+  .vendor-row:hover, .vendor-row:focus-visible { background: var(--sunk); }
+  .vendor-row .muted { font-size: 0.8125rem; font-weight: 500; }
+  dialog { width: min(520px, calc(100vw - 2rem)); }
+  code { font-size: 0.85em; background: color-mix(in srgb, var(--ink) 8%, transparent); padding: 0.05em 0.35em; border-radius: 5px; }
+</style>

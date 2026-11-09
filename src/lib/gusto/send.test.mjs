@@ -6,6 +6,7 @@ import {
   handEntryTotals,
   othersWithHours,
   payrollHourUpdates,
+  payrollToWorkOn,
   periodTotals,
   planSend,
   recordTimeArgs,
@@ -278,4 +279,17 @@ test('store staff with hours on the draft but no shifts here are called out, suc
     { display_name: 'Zed', gusto_employee_uuid: 'zero' },
   ];
   assert.deepEqual(othersWithHours(roster, storeStaff, [{ employeeUuid: 'emp' }]), ['Ian has hours on the Gusto draft but no approved shifts here.']);
+});
+
+test('payrollToWorkOn picks the period whose hours are due, then the current one', () => {
+  const drafts = [
+    { uuid: 'old', start: '2026-10-11', end: '2026-10-24' },
+    { uuid: 'ended', start: '2026-10-25', end: '2026-11-07' },
+    { uuid: 'now', start: '2026-11-08', end: '2026-11-21' },
+    { uuid: 'next', start: '2026-11-22', end: '2026-12-05' },
+  ];
+  assert.equal(payrollToWorkOn(drafts, '2026-11-08').uuid, 'ended');
+  assert.equal(payrollToWorkOn(drafts.slice(2), '2026-11-08').uuid, 'now');
+  assert.equal(payrollToWorkOn(drafts.slice(3), '2026-11-08').uuid, 'next');
+  assert.equal(payrollToWorkOn([], '2026-11-08'), null);
 });

@@ -16,6 +16,7 @@ declare namespace Cloudflare {
     CF_ACCESS_AUD?: string;
     ADMIN_MANAGER_EMAILS?: string;
     ADMIN_KIOSK_EMAILS?: string;
+    ADMIN_KIOSK_SERVICE_TOKENS?: string;
     ADMIN_OWNER_EMAILS?: string;
     ADMIN_DEV_EMAIL?: string;
     GUSTO_ENV?: string;
@@ -24,6 +25,9 @@ declare namespace Cloudflare {
     GUSTO_MCP_CLIENT_ID?: string;
     GUSTO_MCP_CLIENT_SECRET?: string;
     GUSTO_TOKEN_KEY?: string;
+    /** The Medusa backend the buying and warehouse pages call, and its secret admin key. */
+    MEDUSA_BACKEND_URL?: string;
+    MEDUSA_ADMIN_KEY?: string;
   }
 }
 

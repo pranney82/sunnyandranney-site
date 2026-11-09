@@ -1,0 +1,167 @@
+---
+export const prerender = false;
+
+import AdminBase from '@/layouts/AdminBase.astro';
+import { money } from '@/lib/sales-tax/figures.mjs';
+import { daysLeftWords, daysUntil, monthRecord, salesTaxFacts } from '@/lib/sales-tax/status.mjs';
+
+if (Astro.locals.admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
+
+// The sales-tax worker (workers/sales-tax) sends each month; this page shows where each one stands.
+const db = Astro.locals.runtime.env.DB;
+const facts = await salesTaxFacts(db, { now: Date.now() });
+// The month to file, read without noting it opened: only its own page counts as opening it
+const toFile = facts.toFile ? await monthRecord(db, facts.toFile.month) : null;
+
+const when = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+const day = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' });
+const dueDay = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
+const at = (iso: string | null | undefined) => (iso ? when.format(new Date(iso)) : '');
+const left = (n: number) => daysLeftWords(n).toLowerCase();
+// What goes next: the due month while it hasn't gone, else next month's on the 1st
+const next = facts.problem
+  ? { name: facts.problem.name, when: 'Trying again every 30 minutes' }
+  : facts.waiting
+    ? { name: facts.dueName, when: 'Within 30 minutes' }
+    : { name: new Date(`${facts.next.month}-15T12:00:00Z`).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }), when: facts.next.words };
+const now = Date.now();
+---
+
+<AdminBase title="Sales tax">
+  <div class="page-header">
+    <div>
+      <h1>Sales tax</h1>
+      <p class="muted">Georgia’s return for each month, ready to file from 8 AM Eastern on the 1st. The store is emailed when it’s ready, and reminded three days before it’s due if it isn’t marked filed.</p>
+    </div>
+  </div>
+
+  {
+    facts.unreadable && (
+      <div class="notice" role="status">
+        <div><strong>The sales tax records couldn’t be read just now.</strong> Reload the page in a minute. Nothing here changes what the worker sends.</div>
+      </div>
+    )
+  }
+
+  {
+    facts.problem ? (
+      <div class="notice" role="status">
+        <div>
+          <strong>{facts.problem.name}’s numbers haven’t gone out.</strong> {facts.problem.error}
+          <span class="muted status-line">
+            Last tried {at(facts.problem.at)}, {facts.problem.tries} {facts.problem.tries === 1 ? 'try' : 'tries'} so far. It tries again every 30 minutes.
+          </span>
+        </div>
+      </div>
+    ) : facts.waiting ? (
+      <div class="notice notice-info" role="status">
+        <div>
+          <strong>{facts.dueName}’s numbers go out on the next run,</strong> within 30 minutes.
+        </div>
+      </div>
+    ) : null
+  }
+
+  {
+    facts.toFile && toFile && (
+      <a class="card ready" href={`/admin/sales-tax/${facts.toFile.month}/`}>
+        <div>
+          <p class="ready-label">Ready to file</p>
+          <p class="ready-title">{facts.toFile.name}</p>
+          <p class="muted">
+            <strong class="num">{money(toFile.figures.ret.pay)}</strong> by {facts.toFile.dueWords}, {left(facts.toFile.daysLeft)}
+          </p>
+        </div>
+        <span class="btn btn-primary">Open the numbers</span>
+      </a>
+    )
+  }
+
+  <section class="card">
+    <div class="status">
+      <div class="status-item">
+        <p class="status-label">Last sent</p>
+        <p class="status-value">{facts.last ? facts.last.name : 'Nothing yet'}</p>
+        {facts.last && <p class="muted">{at(facts.last.at)}</p>}
+      </div>
+      <div class="status-item">
+        <p class="status-label">Next</p>
+        <p class="status-value">{next.name}</p>
+        <p class="muted">{next.when}</p>
+      </div>
+    </div>
+  </section>
+
+  {
+    facts.months.length > 0 && (
+      <section class="card">
+        <h2>Each month</h2>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Month</th>
+                <th scope="col">Return</th>
+                <th scope="col">Due</th>
+              </tr>
+            </thead>
+            <tbody>
+              {facts.months.map((m) => (
+                <tr>
+                  <td>{m.state === 'sent' ? <a href={`/admin/sales-tax/${m.month}/`}>{m.name}</a> : m.name}</td>
+                  <td>
+                    {m.state !== 'sent' ? (
+                      <span class="badge badge-failed">Not sent</span>
+                    ) : m.filed ? (
+                      <span class="badge badge-approved">Filed {day.format(new Date(m.filed.at))}</span>
+                    ) : daysUntil(m.due, now) < 0 ? (
+                      <span class="badge badge-failed">Not marked filed</span>
+                    ) : (
+                      <span class="badge badge-pending">Ready to file</span>
+                    )}
+                  </td>
+                  <td class="muted">{dueDay.format(new Date(`${m.due}T12:00:00Z`))}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    )
+  }
+</AdminBase>
+
+<style>
+  .ready {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem 1.5rem;
+    background: var(--gold-soft);
+    border-color: color-mix(in srgb, var(--gold) 45%, var(--line));
+    color: var(--ink);
+    text-decoration: none;
+    transition: border-color 0.15s var(--ease), transform 0.15s var(--ease);
+  }
+  .ready:hover { border-color: color-mix(in srgb, var(--gold) 80%, var(--ink)); }
+  .ready:active { transform: translateY(1px); }
+  .ready .muted { color: var(--ink-2); }
+  .ready-label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2); }
+  .ready-title { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; margin: 0.125rem 0 0.25rem; }
+  .status { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem 1.5rem; }
+  .status-label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); }
+  .status-value { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; margin-top: 0.25rem; }
+  .status-line { display: block; margin-top: 0.25rem; }
+  section h2 { margin-bottom: 0.5rem; }
+  /* The shared badge-rejected strikes its text through, which is for a rejected shift */
+  .badge-failed { background: var(--red-soft); color: var(--red); }
+  td { white-space: nowrap; }
+  @media (max-width: 640px) {
+    .ready .btn { flex: 1 1 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ready { transition: none; }
+    .ready:active { transform: none; }
+  }
+</style>

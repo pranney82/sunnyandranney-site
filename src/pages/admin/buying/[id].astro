@@ -1,0 +1,354 @@
+---
+export const prerender = false;
+
+import AdminBase from '@/layouts/AdminBase.astro';
+import { svg } from '@/lib/admin-ui';
+import { STATUS, day, money, whenLabel, type PurchaseOrder } from '@/lib/buying';
+import { MedusaProblem, medusaConfigured, medusaJson } from '@/lib/medusa-admin';
+
+if (Astro.locals.admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
+
+const env = Astro.locals.runtime.env;
+const id = Astro.params.id ?? '';
+type Detail = Omit<PurchaseOrder, 'receipts'> & {
+  receipts: (PurchaseOrder['receipts'][number] & { label_run_id: string | null; labels_printed_at: string | null })[];
+};
+let po: Detail | null = null;
+let locations: { id: string; name: string }[] = [];
+let problem = medusaConfigured(env) ? '' : 'The admin isn’t connected to Medusa yet.';
+if (!problem) {
+  try {
+    const [detail, l] = await Promise.all([
+      medusaJson<{ purchase_order: Detail }>(env, `purchasing/orders/${encodeURIComponent(id)}`),
+      medusaJson<{ locations: typeof locations }>(env, 'purchasing/locations'),
+    ]);
+    po = detail.purchase_order;
+    locations = l.locations;
+  } catch (err) {
+    if (!(err instanceof MedusaProblem)) throw err;
+    if (err.status === 404) return new Response('No such purchase order', { status: 404 });
+    problem = err.message;
+  }
+}
+
+const lines = po?.lines ?? [];
+const units = lines.reduce((sum, l) => sum + l.quantity_ordered - l.quantity_cancelled, 0);
+const received = lines.reduce((sum, l) => sum + l.quantity_received, 0);
+const total = lines.reduce((sum, l) => sum + (l.quantity_ordered - l.quantity_cancelled) * l.unit_cost_cents, 0);
+const outstanding = lines.reduce((sum, l) => sum + l.outstanding, 0);
+const when = po && (po.status === 'ordered' || po.status === 'partially_received') ? whenLabel(po.expected_on) : null;
+const location = locations.find((l) => l.id === po?.location_id)?.name ?? '—';
+const editable = po?.status === 'draft';
+---
+
+<AdminBase title={po ? `${po.display_number} · ${po.vendor.name}` : 'Purchase order'}>
+  <div class="page-header">
+    <div>
+      <a class="back" href="/admin/buying/"><Fragment set:html={svg('left', 16)} />Purchase orders</a>
+      {
+        po && (
+          <>
+            <h1>
+              {po.display_number} <span class="vendor">· {po.vendor.name}</span>
+            </h1>
+            <p class="status-line">
+              <span class={STATUS[po.status].badge}>{STATUS[po.status].label}</span>
+              {when && <span class:list={['when', { late: when.late }]}>{when.text}</span>}
+            </p>
+          </>
+        )
+      }
+    </div>
+    {
+      po && (
+        <div class="page-actions no-print">
+          <button type="button" class="btn btn-ghost" data-print>
+            Print or save as PDF
+          </button>
+          {po.status === 'draft' && (
+            <>
+              <button type="button" class="btn btn-danger" data-act="cancel" data-confirm="Cancel this draft? Nothing has been ordered.">
+                Cancel draft
+              </button>
+              <button type="button" class="btn btn-primary" data-act="send">
+                Mark as sent to {po.vendor.name}
+              </button>
+            </>
+          )}
+          {(po.status === 'ordered' || po.status === 'partially_received') && (
+            <>
+              <button type="button" class="btn" data-open="confirm-dialog">
+                {po.vendor_confirmation ? 'Change confirmation' : 'Record their confirmation'}
+              </button>
+              <button type="button" class="btn btn-danger" data-act="cancel" data-confirm={`Cancel the ${outstanding} unit${outstanding === 1 ? '' : 's'} still to come?`}>
+                Cancel what's left
+              </button>
+              <a class="btn btn-primary" href={`/admin/receiving/${po.id}/`}>
+                Receive
+              </a>
+            </>
+          )}
+        </div>
+      )
+    }
+  </div>
+
+  {problem && <div class="notice"><span>{problem}</span></div>}
+  <p class="form-error" id="error"></p>
+
+  {
+    po && (
+      <>
+        <div class="stats">
+          <div class="stat">
+            <p class="stat-label">Cost</p>
+            <p class="stat-value">{money(total)}</p>
+            <p class="stat-note">
+              {units} unit{units === 1 ? '' : 's'} on {lines.length} line{lines.length === 1 ? '' : 's'}
+            </p>
+          </div>
+          <div class="stat">
+            <p class="stat-label">Received</p>
+            <p class="stat-value">
+              {received}
+              <small>of {units}</small>
+            </p>
+            <p class="stat-note">{outstanding ? `${outstanding} still to come` : po.status === 'draft' ? 'not ordered yet' : 'all here'}</p>
+          </div>
+          <div class="stat">
+            <p class="stat-label">Ordered</p>
+            <p class="stat-value small-value">{po.ordered_at ? day(po.ordered_at) : 'Not yet'}</p>
+            <p class="stat-note">{po.vendor_confirmation ? `Confirmed: ${po.vendor_confirmation}` : po.ordered_at ? 'No confirmation from them yet' : 'Draft'}</p>
+          </div>
+          <div class="stat">
+            <p class="stat-label">Deliver to</p>
+            <p class="stat-value small-value">{location}</p>
+            <p class="stat-note">{po.terms_days ? `Pay within ${po.terms_days} days of invoice` : 'Terms not set'}</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-scroll">
+            <table class="lines">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th class="num">Ordered</th>
+                  <th class="num">Here</th>
+                  <th class="num">To come</th>
+                  <th class="num">Cost</th>
+                  <th class="num">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lines.map((l) => (
+                  <tr data-line={l.id}>
+                    <td>
+                      <div class="item">
+                        {l.thumbnail ? <img src={l.thumbnail} alt="" width="44" height="44" loading="lazy" /> : <span class="no-photo" />}
+                        <div>
+                          <div class="item-title">{l.title}</div>
+                          <div class="item-sub">{[l.vendor_sku && `Their SKU ${l.vendor_sku}`, l.barcode].filter(Boolean).join(' · ')}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="num">
+                      {editable ? (
+                        <input class="qty" type="number" min="0" inputmode="numeric" value={l.quantity_ordered} data-field="quantity_ordered" aria-label={`How many ${l.title}`} />
+                      ) : (
+                        <>
+                          {l.quantity_ordered - l.quantity_cancelled}
+                          {l.quantity_cancelled > 0 && <span class="cancelled"> ({l.quantity_cancelled} cancelled)</span>}
+                        </>
+                      )}
+                    </td>
+                    <td class="num">
+                      {l.quantity_received}
+                      {l.quantity_refused > 0 && <span class="cancelled"> ({l.quantity_refused} refused)</span>}
+                    </td>
+                    <td class="num">{l.outstanding || '—'}</td>
+                    <td class="num">
+                      {editable ? (
+                        <input class="cost" type="text" inputmode="decimal" value={(l.unit_cost_cents / 100).toFixed(2)} data-field="unit_cost_cents" aria-label={`Unit cost of ${l.title}`} />
+                      ) : (
+                        money(l.unit_cost_cents)
+                      )}
+                    </td>
+                    <td class="num">{money((l.quantity_ordered - l.quantity_cancelled) * l.unit_cost_cents)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td>Total</td>
+                  <td class="num">{units}</td>
+                  <td class="num">{received}</td>
+                  <td class="num">{outstanding || '—'}</td>
+                  <td />
+                  <td class="num">{money(total)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          {editable && (
+            <div class="edit-bar no-print">
+              <p class="muted">Changes to a draft save when you press Save. Set a line to 0 to drop it.</p>
+              <button type="button" class="btn btn-dark" id="save-lines">
+                Save changes
+              </button>
+            </div>
+          )}
+        </div>
+
+        {po.notes && (
+          <div class="card">
+            <h2>Note</h2>
+            <p class="note-text">{po.notes}</p>
+          </div>
+        )}
+
+        {po.receipts.length > 0 && (
+          <div class="card">
+            <h2>Deliveries</h2>
+            <ul class="receipts">
+              {po.receipts.map((r) => {
+                const accepted = r.lines.reduce((sum, l) => sum + l.accepted, 0);
+                const damaged = r.lines.reduce((sum, l) => sum + l.damaged, 0);
+                const refused = r.lines.reduce((sum, l) => sum + l.refused, 0);
+                return (
+                  <li>
+                    <div>
+                      <b>{day(r.received_at)}</b> <span class="muted">by {r.received_by}</span>
+                      <div class="muted">
+                        {accepted} accepted{damaged ? `, ${damaged} damaged` : ''}
+                        {refused ? `, ${refused} refused` : ''}
+                        {r.freight_cents ? `, ${money(r.freight_cents)} freight` : ''}
+                      </div>
+                    </div>
+                    {r.label_run_id && (
+                      <a class="btn btn-small no-print" href={`/admin/receiving/labels/${r.label_run_id}/`}>
+                        {r.labels_printed_at ? 'Labels printed' : 'Print labels'}
+                      </a>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
+        <dialog id="confirm-dialog" aria-labelledby="confirm-title">
+          <h2 id="confirm-title">{po.vendor.name}'s confirmation</h2>
+          <div class="field">
+            <label for="conf-number">Their confirmation or order number</label>
+            <input id="conf-number" type="text" value={po.vendor_confirmation ?? ''} autocomplete="off" />
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="conf-on">Confirmed on</label>
+              <input id="conf-on" type="date" value={po.confirmed_on ?? new Date().toISOString().slice(0, 10)} />
+            </div>
+            <div class="field">
+              <label for="conf-expected">They'll deliver by</label>
+              <input id="conf-expected" type="date" value={po.expected_on ?? ''} />
+            </div>
+          </div>
+          <div class="dialog-actions">
+            <button type="button" class="btn btn-ghost" data-close>
+              Cancel
+            </button>
+            <button type="button" class="btn btn-dark" id="save-confirmation">
+              Save
+            </button>
+          </div>
+        </dialog>
+        <script type="application/json" id="po-data" set:html={JSON.stringify({ id: po.id, lines: po.lines.map((l) => ({ id: l.id, q: l.quantity_ordered, c: l.unit_cost_cents })) })} />
+      </>
+    )
+  }
+</AdminBase>
+
+<script>
+  const dataEl = document.getElementById('po-data');
+  const error = document.getElementById('error')!;
+  if (dataEl) {
+    const data = JSON.parse(dataEl.textContent || '{}') as { id: string; lines: { id: string; q: number; c: number }[] };
+    const base = `/api/admin/medusa/purchasing/orders/${encodeURIComponent(data.id)}`;
+
+    async function post(path: string, body: unknown, button?: HTMLButtonElement | null) {
+      error.textContent = '';
+      if (button) button.disabled = true;
+      try {
+        const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) throw new Error(json.error ?? 'That didn’t work. Try again.');
+        window.location.reload();
+      } catch (err) {
+        error.textContent = err instanceof Error ? err.message : 'That didn’t work.';
+        if (button) button.disabled = false;
+      }
+    }
+
+    document.querySelectorAll<HTMLButtonElement>('[data-act]').forEach((button) =>
+      button.addEventListener('click', () => {
+        if (button.dataset.confirm && !window.confirm(button.dataset.confirm)) return;
+        post(`${base}/${button.dataset.act}/`, {}, button);
+      }),
+    );
+
+    const dialog = document.getElementById('confirm-dialog') as HTMLDialogElement | null;
+    document.querySelector('[data-open="confirm-dialog"]')?.addEventListener('click', () => dialog?.showModal());
+    dialog?.querySelector('[data-close]')?.addEventListener('click', () => dialog.close());
+    document.getElementById('save-confirmation')?.addEventListener('click', (event) => {
+      const value = (id: string) => (document.getElementById(id) as HTMLInputElement).value.trim() || null;
+      post(`${base}/`, { vendor_confirmation: value('conf-number'), confirmed_on: value('conf-on'), expected_on: value('conf-expected') }, event.currentTarget as HTMLButtonElement);
+    });
+
+    document.getElementById('save-lines')?.addEventListener('click', (event) => {
+      const changes = data.lines
+        .map((line) => {
+          const row = document.querySelector(`tr[data-line="${line.id}"]`)!;
+          const q = Math.max(0, Math.floor(Number((row.querySelector('[data-field="quantity_ordered"]') as HTMLInputElement).value) || 0));
+          const dollars = parseFloat((row.querySelector('[data-field="unit_cost_cents"]') as HTMLInputElement).value.replace(/[^0-9.]/g, ''));
+          const c = Number.isFinite(dollars) ? Math.round(dollars * 100) : line.c;
+          if (q === 0) return { id: line.id, remove: true };
+          return q !== line.q || c !== line.c ? { id: line.id, quantity_ordered: q, unit_cost_cents: c } : null;
+        })
+        .filter(Boolean);
+      if (!changes.length) {
+        error.textContent = 'Nothing changed.';
+        return;
+      }
+      post(`${base}/`, { lines: changes }, event.currentTarget as HTMLButtonElement);
+    });
+  }
+  document.querySelector('[data-print]')?.addEventListener('click', () => window.print());
+</script>
+
+<style>
+  .back { display: inline-flex; align-items: center; gap: 0.25rem; color: var(--ink-3); font-weight: 600; font-size: 0.875rem; text-decoration: none; margin-bottom: 0.5rem; }
+  .back:hover { color: var(--ink); }
+  .vendor { color: var(--ink-2); font-weight: 600; }
+  .status-line { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.5rem; }
+  .when { font-weight: 600; color: var(--ink-2); font-size: 0.9375rem; }
+  .when.late { color: var(--clay); }
+  .small-value { font-size: 1.125rem; line-height: 1.4; }
+  .item { display: flex; align-items: center; gap: 0.75rem; min-width: 260px; }
+  .item img { border-radius: 8px; object-fit: cover; background: #fff; }
+  .no-photo { width: 44px; height: 44px; border-radius: 8px; background: var(--sunk); flex: none; }
+  .item-title { font-weight: 600; line-height: 1.25; }
+  .item-sub { font-size: 0.8125rem; color: var(--ink-3); }
+  .cancelled { color: var(--ink-3); font-size: 0.8125rem; }
+  .qty { width: 4.5rem; text-align: center; font-weight: 700; min-height: 36px; }
+  .cost { width: 6.5rem; text-align: right; min-height: 36px; }
+  .edit-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-top: 1rem; }
+  .note-text { margin-top: 0.5rem; white-space: pre-wrap; }
+  .receipts { list-style: none; display: grid; gap: 0.75rem; margin-top: 0.75rem; }
+  .receipts li { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.75rem 0; border-top: 1px solid var(--line); }
+  .receipts li:first-child { border-top: 0; padding-top: 0; }
+  @media print {
+    :global(.sidebar), :global(.tabbar), .no-print, .back { display: none !important; }
+    :global(.main) { margin: 0 !important; }
+    :global(.card), :global(.stat) { box-shadow: none !important; break-inside: avoid; }
+  }
+</style>

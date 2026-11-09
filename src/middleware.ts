@@ -13,7 +13,9 @@ const SECURITY_HEADERS: Record<string, string> = {
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'same-origin',
   'Content-Security-Policy':
-    "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
+    // Images may also come from the store's own Cloudflare Images account (the logo), and from
+    // the store's own Shopify files, where product photos live until they move to Cloudflare Images.
+    "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ/ https://cdn.shopify.com/s/files/1/0930/2117/6092/; font-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
 };
 
 function decodedPath(pathname: string): string {

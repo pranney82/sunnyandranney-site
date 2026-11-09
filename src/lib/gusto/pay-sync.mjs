@@ -69,12 +69,12 @@ function payStatements(db, run, compensations, wanted, now) {
   return statements;
 }
 
-/** @returns how many payrolls in the range are still unread after this load */
+/** @returns how many payrolls this read, and how many in the range are still unread */
 export async function refreshPay(db, client, { from, to, today }) {
   const { results: staff } = await db
     .prepare('SELECT gusto_employee_uuid FROM staff WHERE store_staff = 1 AND gusto_employee_uuid IS NOT NULL')
     .all();
-  if (staff.length === 0) return { remaining: 0 };
+  if (staff.length === 0) return { remaining: 0, read: 0 };
   const wanted = new Set(staff.map((person) => person.gusto_employee_uuid));
 
   const runs = await listRuns(client, from, to, today);
@@ -116,5 +116,8 @@ export async function refreshPay(db, client, { from, to, today }) {
   }
   if (upkeep.length > 0) await db.batch(upkeep);
 
-  return { remaining: Math.max(0, unread.length - MAX_READS_PER_LOAD) };
+  return {
+    read: Math.min(unread.length, MAX_READS_PER_LOAD),
+    remaining: Math.max(0, unread.length - MAX_READS_PER_LOAD),
+  };
 }

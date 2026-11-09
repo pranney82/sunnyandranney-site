@@ -1,0 +1,162 @@
+---
+/**
+ * What a pay period will send to Gusto. Its own component so the page around
+ * it streams to the browser first, and Gusto's response time only holds up this part.
+ */
+import { svg } from '@/lib/admin-ui';
+import { GustoError } from '@/lib/gusto/oauth.mjs';
+import { draftPayrolls, loadPlan, payrollToWorkOn } from '@/lib/gusto/send.mjs';
+import { STORE_TIME_ZONE, localDate } from '@/lib/time-clock/hours.mjs';
+
+interface Props {
+  client: any;
+  intoTimeTracking: boolean;
+  fillsPayroll: boolean;
+}
+
+const { client, intoTimeTracking, fillsPayroll } = Astro.props;
+const env = Astro.locals.runtime.env;
+const admin = Astro.locals.admin!;
+
+interface DraftPayroll {
+  uuid: string;
+  start: string;
+  end: string;
+}
+
+let payrolls: DraftPayroll[] = [];
+let selected: DraftPayroll | undefined;
+let plan: Awaited<ReturnType<typeof loadPlan>> | undefined;
+let gustoProblem = '';
+
+try {
+  const today = localDate(new Date().toISOString());
+  payrolls = await draftPayrolls(client, today);
+  const wanted = Astro.url.searchParams.get('payroll');
+  // Without a choice, the period whose hours are due.
+  selected = payrolls.find((payroll) => payroll.uuid === wanted) ?? payrollToWorkOn(payrolls, today) ?? undefined;
+  if (selected) plan = await loadPlan(env.DB, client, selected, admin.email);
+} catch (err) {
+  if (!(err instanceof GustoError)) throw err;
+  gustoProblem = err.message;
+}
+
+const dateLabel = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
+const day = (date: string) => dateLabel.format(new Date(`${date}T00:00:00Z`));
+const shiftLabel = new Intl.DateTimeFormat('en-US', { timeZone: STORE_TIME_ZONE, weekday: 'short', month: 'short', day: 'numeric' });
+const hours = (minutes: number) => (minutes / 60).toFixed(2);
+const totalMinutes = (plan?.toSend ?? []).reduce(
+  (sum: number, entry: { regularMinutes: number; overtimeMinutes: number }) => sum + entry.regularMinutes + entry.overtimeMinutes,
+  0,
+);
+---
+
+<div class="streamed">
+  {gustoProblem && <p class="notice">Could not reach Gusto. {gustoProblem}</p>}
+
+  {!gustoProblem && payrolls.length === 0 && (
+    <div class="card empty">
+      <div class="empty-icon"><Fragment set:html={svg('payroll', 24)} /></div>
+      <h2>No draft payroll open</h2>
+      <p>Gusto opens the next payroll ahead of payday. Check back then.</p>
+    </div>
+  )}
+
+  {payrolls.length > 1 && (
+    <nav class="period-tabs" aria-label="Pay period">
+      {payrolls.map((payroll) => (
+        <a
+          class="period-tab"
+          href={`?payroll=${encodeURIComponent(payroll.uuid)}`}
+          aria-current={payroll.uuid === selected?.uuid ? 'page' : undefined}
+        >
+          {day(payroll.start)} to {day(payroll.end)}
+        </a>
+      ))}
+    </nav>
+  )}
+
+  {selected && plan && (
+    <section class="card" id="send-card" data-payroll={selected.uuid}>
+      <div class="send-head">
+        <div>
+          <h2>Pay period {day(selected.start)} to {day(selected.end)}</h2>
+          <p class="muted">
+            {plan.toSend.length > 0
+              ? `${plan.toSend.length} ${plan.toSend.length === 1 ? 'shift' : 'shifts'} · ${hours(totalMinutes)} hours to send`
+              : 'Nothing new to send.'}
+            {plan.alreadySent > 0 && ` · ${plan.alreadySent} already sent`}
+          </p>
+        </div>
+        {plan.toSend.length > 0 && (
+          <button type="button" class="btn btn-primary" id="send-button" disabled={plan.blockers.length > 0}>
+            <Fragment set:html={svg('send', 18)} />Send to Gusto
+          </button>
+        )}
+        {(!intoTimeTracking || fillsPayroll) && plan.toSend.length === 0 && plan.alreadySent > 0 && plan.blockers.length === 0 && (
+          <button type="button" class="btn" id="send-button">Add sent hours to the draft payroll</button>
+        )}
+      </div>
+
+      {plan.blockers.length > 0 && (
+        <div class="notice" id="send-blockers">
+          <p>Fix these before sending. Nothing goes to Gusto until the whole period is ready.</p>
+          <ul>{plan.blockers.map((blocker: string) => <li>{blocker}</li>)}</ul>
+          <p><a href="/admin/hours/">Go to Hours</a></p>
+        </div>
+      )}
+
+      {(!intoTimeTracking || fillsPayroll) && plan.toSend.length === 0 && plan.alreadySent > 0 && plan.blockers.length === 0 && (
+        <p class="muted">If those hours aren't on the draft payroll in Gusto, you can add them again. Nothing is sent twice.</p>
+      )}
+
+      <p id="send-result" class="send-result" role="status"></p>
+
+      {plan.toSend.length > 0 && (
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Day</th>
+                <th class="num">Regular</th>
+                <th class="num">Overtime</th>
+              </tr>
+            </thead>
+            <tbody>
+              {plan.toSend.map((entry: { id: string; display_name: string; clock_in_at: string; regularMinutes: number; overtimeMinutes: number }) => (
+                <tr>
+                  <td>{entry.display_name}</td>
+                  <td>{shiftLabel.format(new Date(entry.clock_in_at))}</td>
+                  <td class="num">{hours(entry.regularMinutes)}</td>
+                  <td class="num">{hours(entry.overtimeMinutes)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  )}
+</div>
+
+<style>
+  .send-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1rem; margin-bottom: 0.75rem; }
+  .send-head h2 { margin-bottom: 0.125rem; }
+  #send-blockers { margin: 0.75rem 0; }
+  #send-blockers ul { margin: 0.375rem 0 0.5rem 1.25rem; }
+  .send-result { margin: 0.75rem 0; padding: 0.75rem 1rem; border-radius: var(--r-md); background: var(--sage-soft); color: var(--ink); font-weight: 600; }
+  .send-result:empty { display: none; }
+  .period-tabs { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-bottom: 1rem; }
+  .period-tab {
+    padding: 0.5rem 0.875rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--panel);
+    color: var(--ink-2);
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-decoration: none;
+  }
+  .period-tab[aria-current='page'] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+</style>

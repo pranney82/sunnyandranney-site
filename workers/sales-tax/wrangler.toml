@@ -1,0 +1,38 @@
+name = "sales-tax"
+main = "src/index.ts"
+compatibility_date = "2026-01-14"
+# Nothing to call from outside: no workers.dev address, no preview URLs, no routes.
+workers_dev = false
+preview_urls = false
+
+# Every 30 minutes. The run waits for 8 AM Eastern on the 1st, sends last month
+# once, and after a failure tries again every 30 minutes until it goes.
+[triggers]
+crons = ["*/30 * * * *"]
+
+[observability]
+enabled = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "sunnyandranney-db"
+database_id = "a3fbfba9-569c-4dae-af1a-4a1f290963f7"
+
+# Cloudflare Email Service. mail.sunnyandranney.com is onboarded to Email Sending
+# with its own bounce, DKIM and DMARC records, so the store's Google Workspace
+# mail on sunnyandranney.com is untouched.
+[[send_email]]
+name = "EMAIL"
+allowed_sender_addresses = ["reports@mail.sunnyandranney.com"]
+
+[vars]
+SALES_TAX_REPLY_NAME = "Holly"
+
+# Secrets: npx wrangler secret put <NAME> --config workers/sales-tax/wrangler.toml
+#   SHOPIFY_CLIENT_ID      the Shopify app that reads reports (read_reports only)
+#   SHOPIFY_CLIENT_SECRET
+#   SALES_TAX_TO           the store manager
+#   SALES_TAX_CC           copied, comma-separated
+#   SALES_TAX_REPLY_TO     where a reply goes
+#   SALES_TAX_ALERT_TO     who hears when a month fails for 2 hours
+# The addresses are secrets only to keep them out of this public repo.

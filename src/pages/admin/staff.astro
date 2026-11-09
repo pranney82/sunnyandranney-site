@@ -3,24 +3,15 @@ export const prerender = false;
 
 import AdminBase from '@/layouts/AdminBase.astro';
 import { liveGusto } from '@/lib/gusto/client.mjs';
-import { syncEmployeesIfStale } from '@/lib/gusto/employees.mjs';
-import { GustoError } from '@/lib/gusto/oauth.mjs';
 import { listStaff } from '@/lib/time-clock/store';
 import { initials, svg, tone } from '@/lib/admin-ui';
 
 if (Astro.locals.admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
 
 const env = Astro.locals.runtime.env;
+// Shown at once from the store's database. The page script then asks Gusto for
+// changes, and re-renders the list only if there were any.
 const gusto = await liveGusto(env);
-let gustoProblem = '';
-if (gusto.client) {
-  try {
-    await syncEmployeesIfStale(env.DB, gusto.client, gusto.connection);
-  } catch (err) {
-    if (!(err instanceof GustoError)) throw err;
-    gustoProblem = err.message;
-  }
-}
 
 const everyone = await listStaff(env.DB);
 const isOwner = Boolean(Astro.locals.admin?.owner);
@@ -54,6 +45,9 @@ const counts = {
     </div>
   </div>
 
+  <p class="notice" id="staff-problem" hidden></p>
+
+  <div id="staff-live" data-connected={gusto.client ? '1' : ''}>
   {
     hiddenCount > 0 && (
       <p class="view-toggle">
@@ -88,7 +82,6 @@ const counts = {
     )
   }
 
-  {gustoProblem && <p class="notice">Could not update the list from Gusto. {gustoProblem}</p>}
 
   {
     staff.length === 0 ? (
@@ -125,10 +118,10 @@ const counts = {
               {staff.map((person) => (
                 <tr>
                   <td class="c-name">
-                    <span class="person">
+                    <a class="person person-link" href={`/admin/staff/${encodeURIComponent(person.id)}/`}>
                       <span class="avatar" data-tone={tone(person.display_name)}>{initials(person.display_name)}</span>
                       {person.display_name}
-                    </span>
+                    </a>
                   </td>
                   <td class="c-clock">
                     {!person.active ? (
@@ -176,6 +169,7 @@ const counts = {
       </section>
     )
   }
+  </div>
 
   <dialog id="staff-dialog" aria-labelledby="staff-title">
     <form id="staff-form">
@@ -218,6 +212,8 @@ const counts = {
   .view-toggle { margin: -0.5rem 0 1.25rem; color: var(--ink-3); font-size: 0.9375rem; }
   .field-note { margin: 0.375rem 0 0 1.875rem; color: var(--ink-3); font-size: 0.8125rem; }
   .faint { color: var(--ink-3); }
+  .person-link { color: var(--ink); text-decoration: none; font-weight: 600; }
+  .person-link:hover { text-decoration: underline; }
 
   @media (max-width: 640px) {
     .wide-only { display: none; }
@@ -245,6 +241,7 @@ const counts = {
 
 <script>
   import { post } from '@/lib/time-clock/admin-client';
+  import { refreshParts, toast } from '@/lib/admin/shell';
 
   const dialog = document.querySelector<HTMLDialogElement>('#staff-dialog')!;
   const form = document.querySelector<HTMLFormElement>('#staff-form')!;
@@ -285,25 +282,25 @@ const counts = {
     dialog.showModal();
   }
 
-  document.querySelectorAll('[data-add-staff]').forEach((button) =>
-    button.addEventListener('click', () => {
-      open('Add employee', null, { name: '', email: '', overtime: true, active: true, storeStaff: false });
-    }),
-  );
-
   document.querySelector('#staff-cancel')!.addEventListener('click', () => dialog.close());
 
-  document.querySelectorAll<HTMLButtonElement>('[data-edit]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const data = button.dataset;
-      open(`Edit ${data.name}`, data.id!, {
-        name: data.name ?? '',
-        email: data.email ?? '',
-        overtime: Boolean(data.overtime),
-        active: Boolean(data.active),
-        storeStaff: Boolean(data.store),
-        linked: Boolean(data.linked),
-      });
+  // Delegated, so rows re-rendered after a save or a Gusto update still work.
+  document.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement;
+    if (target.closest('[data-add-staff]')) {
+      open('Add employee', null, { name: '', email: '', overtime: true, active: true, storeStaff: false });
+      return;
+    }
+    const button = target.closest<HTMLButtonElement>('[data-edit]');
+    if (!button) return;
+    const data = button.dataset;
+    open(`Edit ${data.name}`, data.id!, {
+      name: data.name ?? '',
+      email: data.email ?? '',
+      overtime: Boolean(data.overtime),
+      active: Boolean(data.active),
+      storeStaff: Boolean(data.store),
+      linked: Boolean(data.linked),
     });
   });
 
@@ -318,7 +315,29 @@ const counts = {
       active: active.checked,
       storeStaff: storeStaff.checked,
     });
-    if (message) error.textContent = message;
-    else location.reload();
+    if (message) {
+      error.textContent = message;
+      return;
+    }
+    dialog.close();
+    toast(editingId ? `Saved ${name.value}` : `Added ${name.value}`);
+    await refreshParts('#staff-live');
   });
+
+  // A person's page links here to edit them.
+  const editId = new URLSearchParams(location.search).get('edit');
+  if (editId) document.querySelector<HTMLButtonElement>(`[data-edit][data-id="${CSS.escape(editId)}"]`)?.click();
+
+  // Bring in changes from Gusto after the page is up.
+  const live = document.querySelector<HTMLElement>('#staff-live');
+  if (live?.dataset.connected) {
+    post<{ changed: boolean; error?: string }>('/api/admin/gusto/refresh/', { what: 'staff' }).then(({ data, error: message }) => {
+      const problem = message ?? data?.error;
+      if (problem) {
+        const notice = document.querySelector<HTMLElement>('#staff-problem')!;
+        notice.textContent = `Could not update the list from Gusto. ${problem}`;
+        notice.hidden = false;
+      } else if (data?.changed) void refreshParts('#staff-live');
+    });
+  }
 </script>

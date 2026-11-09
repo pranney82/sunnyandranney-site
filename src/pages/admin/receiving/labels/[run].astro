@@ -1,0 +1,205 @@
+---
+export const prerender = false;
+
+import AdminBase from '@/layouts/AdminBase.astro';
+import { svg } from '@/lib/admin-ui';
+import { day, money, type PurchaseOrder } from '@/lib/buying';
+import { MedusaProblem, medusaConfigured, medusaJson } from '@/lib/medusa-admin';
+
+if (Astro.locals.admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
+
+interface RunLine {
+  id: string;
+  kind: 'price' | 'rfid';
+  copies: number;
+  barcode: string;
+  title: string;
+  price_cents: number | null;
+  sku: string | null;
+  vendor_code: string | null;
+  damaged: boolean;
+}
+interface Run {
+  id: string;
+  created_at: string;
+  printed_at: string | null;
+  printed_by: string | null;
+  lines: RunLine[];
+  price_labels: number;
+  rfid_tags: number;
+}
+
+const env = Astro.locals.runtime.env;
+const runId = Astro.params.run ?? '';
+const poId = Astro.url.searchParams.get('po') ?? '';
+let run: Run | null = null;
+let po: PurchaseOrder | null = null;
+let problem = medusaConfigured(env) ? '' : 'The admin isn’t connected to Medusa yet.';
+if (!problem) {
+  try {
+    run = (await medusaJson<{ label_run: Run }>(env, `labels/runs/${encodeURIComponent(runId)}`)).label_run;
+    if (poId) po = (await medusaJson<{ purchase_order: PurchaseOrder }>(env, `purchasing/orders/${encodeURIComponent(poId)}`)).purchase_order;
+  } catch (err) {
+    if (!(err instanceof MedusaProblem)) throw err;
+    if (err.status === 404) return new Response('No such label run', { status: 404 });
+    problem = err.message;
+  }
+}
+const fileName = `labels-${po ? po.display_number : runId.slice(-6)}.zpl`;
+---
+
+<AdminBase title="Labels">
+  <div class="page-header">
+    <div>
+      <a class="back" href={po ? `/admin/buying/${po.id}/` : '/admin/receiving/'}><Fragment set:html={svg('left', 16)} />{po ? po.display_number : 'Receiving'}</a>
+      <h1>{run?.printed_at ? 'Labels printed' : 'Labels are ready'}</h1>
+      {
+        run && (
+          <p class="muted">
+            {po ? `From ${po.vendor.name}'s delivery, ${day(run.created_at)}.` : `Made ${day(run.created_at)}.`}
+            {run.printed_at ? ` Printed ${day(run.printed_at)} by ${run.printed_by}.` : ''}
+          </p>
+        )
+      }
+    </div>
+  </div>
+  {problem && <div class="notice"><span>{problem}</span></div>}
+  {
+    run && (
+      <>
+        <div class="stats">
+          <div class="stat">
+            <p class="stat-label">Price labels</p>
+            <p class="stat-value">{run.price_labels}</p>
+            <p class="stat-note">one for each unit that arrived good</p>
+          </div>
+          <div class:list={['stat', { 'stat-accent': run.rfid_tags > 0 }]}>
+            <p class="stat-label">RFID tags</p>
+            <p class="stat-value">{run.rfid_tags}</p>
+            <p class="stat-note">one for each furniture carton</p>
+          </div>
+        </div>
+
+        <div class="card print">
+          <div class="field-row">
+            <div class="field">
+              <label for="stock">Label size</label>
+              <select id="stock">
+                <option value="2x1">2 × 1 in, price labels</option>
+                <option value="4x2">4 × 2 in, cartons</option>
+                <option value="4x6">4 × 6 in, shipping size</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="dpi">Printer</label>
+              <select id="dpi">
+                <option value="203">ZD621R at 203 dpi</option>
+                <option value="300">300 dpi model</option>
+              </select>
+            </div>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn btn-primary" id="download" data-file={fileName} data-run={run.id}>
+              Download for the Zebra printer
+            </button>
+            {!run.printed_at && (
+              <button type="button" class="btn" id="printed" data-run={run.id}>
+                Mark as printed
+              </button>
+            )}
+          </div>
+          <p class="muted small">
+            The file is ZPL, the Zebra's own language, so it prints exactly as laid out. Printing straight from this page gets set up with the printer
+            at the warehouse.
+          </p>
+          <p class="form-error" id="error"></p>
+        </div>
+
+        <div class="card">
+          <h2>What prints</h2>
+          <ul class="labels">
+            {run.lines.map((l) => (
+              <li class:list={['label', l.kind]}>
+                <div class="label-face">
+                  <div class="label-title">{l.title}</div>
+                  {l.kind === 'price' ? (
+                    <>
+                      <div class="label-price">{l.price_cents === null ? 'No price' : money(l.price_cents)}</div>
+                      <div class="label-code">{l.barcode}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div class="label-carton">RFID · carton tags</div>
+                      <div class="label-code">{l.damaged ? 'DAMAGED · ' : ''}{l.vendor_code ?? ''}</div>
+                    </>
+                  )}
+                </div>
+                <div class="copies">
+                  × <b>{l.copies}</b>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </>
+    )
+  }
+</AdminBase>
+
+<script>
+  const error = document.getElementById('error');
+  const download = document.getElementById('download') as HTMLButtonElement | null;
+  download?.addEventListener('click', async () => {
+    if (error) error.textContent = '';
+    const [w, h] = (document.getElementById('stock') as unknown as HTMLSelectElement).value.split('x');
+    const dpi = (document.getElementById('dpi') as unknown as HTMLSelectElement).value;
+    download.disabled = true;
+    try {
+      const res = await fetch(`/api/admin/medusa/labels/runs/${encodeURIComponent(download.dataset.run!)}/zpl/?dpi=${dpi}&width=${w}&height=${h}`);
+      if (!res.ok) throw new Error(((await res.json().catch(() => ({}))) as { error?: string }).error ?? 'The labels didn’t download.');
+      const blob = new Blob([await res.text()], { type: 'application/octet-stream' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = download.dataset.file!;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    } catch (err) {
+      if (error) error.textContent = err instanceof Error ? err.message : 'The labels didn’t download.';
+    } finally {
+      download.disabled = false;
+    }
+  });
+  const printed = document.getElementById('printed') as HTMLButtonElement | null;
+  printed?.addEventListener('click', async () => {
+    printed.disabled = true;
+    const res = await fetch(`/api/admin/medusa/labels/runs/${encodeURIComponent(printed.dataset.run!)}/printed/`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    if (res.ok) window.location.reload();
+    else {
+      if (error) error.textContent = ((await res.json().catch(() => ({}))) as { error?: string }).error ?? 'That didn’t save.';
+      printed.disabled = false;
+    }
+  });
+</script>
+
+<style>
+  .back { display: inline-flex; align-items: center; gap: 0.25rem; color: var(--ink-3); font-weight: 600; font-size: 0.875rem; text-decoration: none; margin-bottom: 0.5rem; }
+  .print { display: grid; gap: 0.75rem; }
+  .print .field { margin: 0; }
+  .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .small { font-size: 0.875rem; }
+  .labels { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem; margin-top: 0.75rem; }
+  .label { display: flex; align-items: center; gap: 0.75rem; }
+  .label-face {
+    flex: 1; min-width: 0; aspect-ratio: 2 / 1; padding: 0.625rem 0.75rem; border-radius: 6px; background: #fff; color: #1d1d1b;
+    box-shadow: 0 0 0 1px #d9d3c8, 0 1px 2px rgba(0, 0, 0, 0.06); display: grid; align-content: space-between; gap: 0.25rem;
+  }
+  .label.rfid .label-face { background: repeating-linear-gradient(-45deg, #fff, #fff 10px, #faf7f2 10px, #faf7f2 20px); }
+  .label-title { font-size: 0.75rem; font-weight: 600; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .label-price { font-size: 1.375rem; font-weight: 700; letter-spacing: -0.02em; }
+  .label-carton { font-size: 0.9375rem; font-weight: 700; }
+  .label-code { font-family: ui-monospace, Menlo, monospace; font-size: 0.75rem; letter-spacing: 0.08em; color: #55534f; }
+  .copies { font-size: 0.9375rem; color: var(--ink-3); white-space: nowrap; }
+  .copies b { font-size: 1.125rem; color: var(--ink); }
+</style>

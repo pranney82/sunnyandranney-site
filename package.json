@@ -13,6 +13,7 @@
     "deploy:hours-sync": "wrangler deploy --config workers/hours-sync/wrangler.toml",
     "deploy:deploy-coordinator": "wrangler deploy --config workers/deploy-coordinator/wrangler.toml",
     "deploy:shop-redirect": "wrangler deploy --config workers/shop-redirect/wrangler.toml",
+    "deploy:sales-tax": "wrangler deploy --config workers/sales-tax/wrangler.toml",
     "sync-redirects": "node scripts/sync-shopify-redirects.mjs"
   },
   "dependencies": {
@@ -21,10 +22,12 @@
     "@astrojs/sitemap": "^3.2.0",
     "astro": "^5.0.0",
     "lightningcss": "^1.29.1",
+    "pdf-lib": "^1.17.1",
     "preact": "^10.29.2"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
+    "miniflare": "^4.20260114.0",
     "playwright": "^1.59.1",
     "puppeteer": "^24.40.0",
     "typescript": "^5.9.3",

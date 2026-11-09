@@ -1,0 +1,242 @@
+---
+export const prerender = false;
+
+import AdminBase from '@/layouts/AdminBase.astro';
+import { initials, svg, tone } from '@/lib/admin-ui';
+import { STORE_TIME_ZONE, addDays, classifyEntries, localDate, localInputToUtc, workweekStart, workedMinutes } from '@/lib/time-clock/hours.mjs';
+import { getStaff, type TimeEntryRow } from '@/lib/time-clock/store';
+
+if (Astro.locals.admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
+
+const db = Astro.locals.runtime.env.DB;
+const person = await getStaff(db, Astro.params.id ?? '');
+if (!person) return new Response('Not found', { status: 404 });
+
+const now = new Date().toISOString();
+const today = localDate(now);
+const weekStart = workweekStart(today);
+// Four full weeks before this one, for a usual week, plus this week.
+const historyFrom = addDays(weekStart, -28);
+
+const [{ results: shifts }, { results: pay }, schedule] = await Promise.all([
+  db
+    .prepare(
+      `SELECT e.*, s.display_name, s.email, s.overtime_eligible
+       FROM time_entries e JOIN staff s ON s.id = e.staff_id
+       WHERE e.staff_id = ? AND e.clock_in_at >= ?
+       ORDER BY e.clock_in_at DESC`,
+    )
+    .bind(person.id, localInputToUtc(`${historyFrom}T00:00`))
+    .all<TimeEntryRow>(),
+  person.gusto_employee_uuid
+    ? db
+        .prepare(
+          `SELECT payroll_uuid, check_date, period_start, period_end, kind, reversed, gross_cents, regular_hours, overtime_hours, time_off_hours
+           FROM gusto_pay_records WHERE gusto_employee_uuid = ? ORDER BY check_date DESC LIMIT 8`,
+        )
+        .bind(person.gusto_employee_uuid)
+        .all<{ payroll_uuid: string; check_date: string; period_start: string | null; period_end: string | null; kind: string; reversed: number; gross_cents: number; regular_hours: number; overtime_hours: number; time_off_hours: number }>()
+    : Promise.resolve({ results: [] }),
+  db
+    .prepare('SELECT date, start_min, end_min, label, away FROM schedule_shifts WHERE staff_id = ? AND date >= ? AND date <= ? ORDER BY date')
+    .bind(person.id, today, addDays(today, 13))
+    .all<{ date: string; start_min: number | null; end_min: number | null; label: string; away: number }>()
+    .then((r) => r.results)
+    .catch(() => null),
+]);
+
+const live = shifts.filter((s) => s.status !== 'rejected');
+const split = classifyEntries(live.filter((s) => s.clock_out_at));
+const minutesOf = (s: TimeEntryRow) => {
+  const part = split.get(s.id);
+  return part ? part.regularMinutes + part.overtimeMinutes : 0;
+};
+const LONG_SHIFT_MINUTES = 12 * 60;
+/** Still open from an earlier day, or for over 12 hours: a forgotten clock-out, not someone at work. */
+const forgotten = (s: TimeEntryRow) => !s.clock_out_at && (localDate(s.clock_in_at) < today || workedMinutes(s.clock_in_at, now) > LONG_SHIFT_MINUTES);
+const missed = live.find(forgotten);
+const openShift = live.find((s) => !s.clock_out_at && !forgotten(s));
+const thisWeek = live.filter((s) => localDate(s.clock_in_at) >= weekStart);
+const thisWeekMinutes =
+  thisWeek.reduce((sum, s) => sum + minutesOf(s), 0) + (openShift ? workedMinutes(openShift.clock_in_at, now) : 0);
+const pastWeeks = live.filter((s) => localDate(s.clock_in_at) < weekStart && s.clock_out_at);
+const usualWeek = pastWeeks.reduce((sum, s) => sum + minutesOf(s), 0) / 4;
+const toReview = live.filter((s) => s.status === 'pending' && s.clock_out_at && !s.push_state).length;
+const lastPay = pay.find((p) => p.kind !== 'reversal' && !p.reversed);
+
+const hrs = (minutes: number) => {
+  const tenths = Math.round(minutes / 6) / 10;
+  return Number.isInteger(tenths) ? String(tenths) : tenths.toFixed(1);
+};
+const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+const dayLabel = new Intl.DateTimeFormat('en-US', { timeZone: STORE_TIME_ZONE, weekday: 'short', month: 'short', day: 'numeric' });
+const dateLabel = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' });
+const plainDate = (date: string) => dateLabel.format(new Date(`${date}T00:00:00Z`));
+const time = new Intl.DateTimeFormat('en-US', { timeZone: STORE_TIME_ZONE, hour: 'numeric', minute: '2-digit' });
+const minLabel = (m: number) => {
+  const h = Math.floor(m / 60) % 12 || 12;
+  return `${h}:${String(m % 60).padStart(2, '0')} ${m < 720 || m === 1440 ? 'AM' : 'PM'}`;
+};
+const STATUS = { pending: 'Needs review', approved: 'Approved', rejected: 'Rejected' } as const;
+---
+
+<AdminBase title={person.display_name}>
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/admin/staff/">Staff</a> <span aria-hidden="true">/</span> {person.display_name}</nav>
+
+  <div class="page-header">
+    <div class="who-head">
+      <span class="avatar avatar-lg" data-tone={tone(person.display_name)}>{initials(person.display_name)}</span>
+      <div>
+        <h1>{person.display_name}</h1>
+        <p class="tags">
+          {person.gusto_terminated ? <span class="badge">Left the company</span> : person.store_staff ? <span class="badge badge-approved">Store staff</span> : <span class="badge">Not store staff</span>}
+          {!person.active ? <span class="badge">Off the time clock</span> : person.pin_hash ? <span class="badge">Clock PIN set</span> : <span class="badge badge-pending">Needs a clock PIN</span>}
+          <span class="badge">{person.overtime_eligible ? 'Overtime eligible' : 'Overtime exempt'}</span>
+          {person.gusto_employee_uuid && <span class="badge">{person.gusto_department ?? 'No department'} in Gusto</span>}
+        </p>
+      </div>
+    </div>
+    <div class="page-actions">
+      <a class="btn" href={`/admin/staff/?edit=${encodeURIComponent(person.id)}`}>Edit</a>
+      <a class="btn" href={`/admin/hours/`}><Fragment set:html={svg('hours', 18)} />Hours</a>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class:list={['stat', { 'stat-accent': openShift && !missed, 'stat-alert': missed }]}>
+      <p class="stat-label">This week</p>
+      <p class="stat-value">{hrs(thisWeekMinutes)}<small>h</small></p>
+      <p class="stat-note">
+        {missed ? (
+          <a href={`/admin/hours/?week=${workweekStart(localDate(missed.clock_in_at))}#e-${missed.id}`}>No clock-out on {dayLabel.format(new Date(missed.clock_in_at))}</a>
+        ) : openShift ? (
+          `On the clock since ${time.format(new Date(openShift.clock_in_at))}`
+        ) : thisWeekMinutes > 40 * 60 ? (
+          'Over 40: overtime'
+        ) : (
+          'worked so far'
+        )}
+      </p>
+    </div>
+    <div class="stat">
+      <p class="stat-label">Usual week</p>
+      <p class="stat-value">{hrs(usualWeek)}<small>h</small></p>
+      <p class="stat-note">average of the last 4 weeks</p>
+    </div>
+    <div class:list={['stat', { 'stat-accent': toReview > 0 }]}>
+      <p class="stat-label">To review</p>
+      <p class="stat-value">{toReview}</p>
+      <p class="stat-note">{toReview === 1 ? 'shift' : 'shifts'} waiting</p>
+    </div>
+    <div class="stat">
+      <p class="stat-label">Last paycheck</p>
+      <p class="stat-value">{lastPay ? money.format(lastPay.gross_cents / 100) : '—'}</p>
+      <p class="stat-note">{lastPay ? `gross, paid ${plainDate(lastPay.check_date)}` : 'nothing read from Gusto yet'}</p>
+    </div>
+  </div>
+
+  <div class="profile-grid">
+    <section class="card">
+      <h2>Shifts, last 5 weeks</h2>
+      {shifts.length === 0 ? (
+        <p class="muted">No shifts yet.</p>
+      ) : (
+        <div class="table-scroll">
+          <table class="shifts">
+            <thead>
+              <tr><th>Day</th><th>In</th><th>Out</th><th class="num">Hours</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              {shifts.map((s) => (
+                <tr>
+                  <td><a href={`/admin/hours/?week=${workweekStart(localDate(s.clock_in_at))}#e-${s.id}`}>{dayLabel.format(new Date(s.clock_in_at))}</a></td>
+                  <td class="t">{time.format(new Date(s.clock_in_at))}</td>
+                  <td class="t">{s.clock_out_at ? time.format(new Date(s.clock_out_at)) : '—'}</td>
+                  <td class="num">{s.clock_out_at && s.status !== 'rejected' ? hrs(minutesOf(s)) : '—'}</td>
+                  <td>
+                    {s.push_state === 'pushed' ? <span class="badge badge-sent">Sent to Gusto</span>
+                      : forgotten(s) && s.status !== 'rejected' ? <span class="badge badge-alert">No clock-out</span>
+                      : !s.clock_out_at && s.status !== 'rejected' ? <span class="badge badge-open">Clocked in</span>
+                      : <span class:list={['badge', `badge-${s.status}`]}>{STATUS[s.status]}</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+
+    <div class="side">
+      {schedule !== null && (
+        <section class="card">
+          <h2>Next two weeks</h2>
+          {schedule.length === 0 ? (
+            <p class="muted">Nothing scheduled.</p>
+          ) : (
+            <ul class="sched">
+              {schedule.map((shift) => (
+                <li>
+                  <span class="sched-day">{plainDate(shift.date)}</span>
+                  <span class="sched-time">
+                    {shift.start_min === null ? shift.label || 'Task' : `${minLabel(shift.start_min)}–${shift.end_min === null ? '?' : minLabel(shift.end_min)}`}
+                    {shift.away ? ' · away' : ''}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
+      <section class="card">
+        <h2>Pay from Gusto</h2>
+        {!person.gusto_employee_uuid ? (
+          <p class="muted">Not linked to anyone in Gusto, so there's no pay to show.</p>
+        ) : pay.length === 0 ? (
+          <p class="muted">No payrolls read yet. They come in when Payroll is opened.</p>
+        ) : (
+          <ul class="pay">
+            {pay.map((p) => (
+              <li>
+                <span>
+                  <span class="pay-date">{plainDate(p.check_date)}</span>
+                  <span class="pay-hours">{hrs((p.regular_hours + p.overtime_hours) * 60)} h{p.overtime_hours > 0 ? ` · ${hrs(p.overtime_hours * 60)} OT` : ''}{p.kind === 'off_cycle' ? ' · off-cycle' : ''}{p.reversed ? ' · reversed' : ''}</span>
+                </span>
+                <span class="pay-gross">{money.format(p.gross_cents / 100)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {person.gusto_employee_uuid && <a class="panel-link" href="/admin/payroll/">All payroll</a>}
+      </section>
+    </div>
+  </div>
+</AdminBase>
+
+<style>
+  .crumbs { font-size: 0.875rem; color: var(--ink-3); margin-bottom: 0.75rem; }
+  .crumbs a { color: var(--ink-3); }
+  .who-head { display: flex; align-items: center; gap: 1rem; }
+  .avatar-lg { width: 56px; height: 56px; font-size: 1.125rem; }
+  .tags { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-top: 0.5rem; }
+  .profile-grid { display: grid; gap: 1rem; align-items: start; }
+  @media (min-width: 1100px) { .profile-grid { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 1.5rem; } }
+  .profile-grid h2 { margin-bottom: 0.75rem; }
+  .side { display: grid; gap: 1rem; }
+  .shifts td a { color: var(--ink); font-weight: 600; text-decoration: none; }
+  .shifts td a:hover { text-decoration: underline; }
+  .t { font-variant-numeric: tabular-nums; color: var(--ink-2); }
+  .sched, .pay { list-style: none; display: grid; }
+  .sched li, .pay li { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid var(--line); }
+  .sched li:last-child, .pay li:last-child { border-bottom: 0; }
+  .sched-day, .pay-date { font-weight: 600; }
+  .sched-time { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .pay li > span:first-child { display: grid; }
+  .pay-hours { color: var(--ink-3); font-size: 0.8125rem; }
+  .pay-gross { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .panel-link { display: inline-block; margin-top: 0.75rem; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal); text-decoration: none; }
+  @media (max-width: 640px) {
+    .shifts th:nth-child(5), .shifts td:nth-child(5) { display: none; }
+  }
+</style>

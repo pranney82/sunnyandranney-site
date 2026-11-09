@@ -1,0 +1,361 @@
+---
+export const prerender = false;
+
+import AdminBase from '@/layouts/AdminBase.astro';
+import { svg } from '@/lib/admin-ui';
+import { money } from '@/lib/buying';
+import { MedusaProblem, medusaConfigured, medusaJson } from '@/lib/medusa-admin';
+
+if (Astro.locals.admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
+
+// Gifts and round-ups taken at checkout on the register, from the Medusa ledger.
+// See spec/donations in sunnyandranney-medusa.
+
+interface Counts {
+  sales: number;
+  sales_with_gift: number;
+  gift_only_sales: number;
+  gave_rate: number | null;
+  card_sales: number;
+  reader_asked: number;
+  reader_yes: number;
+  reader_no: number;
+  reader_unanswered: number;
+  reader_yes_rate: number | null;
+  reader_round_up_cents: number;
+  counter_sales: number;
+  counter_gave: number;
+  counter_gave_rate: number | null;
+  counter_cents: number;
+  gifts: number;
+  gifts_cents: number;
+  round_ups: number;
+  round_ups_cents: number;
+}
+interface Bucket {
+  gifts: number;
+  cents: number;
+}
+interface Baseline {
+  sales: number;
+  with_gift: number;
+  gift_only: number;
+  gift_cents: number;
+  rate: number | null;
+  since: string | null;
+  until: string | null;
+}
+interface Giving {
+  month: string;
+  shopify: { overall: Baseline; same_month_last_year: (Baseline & { month: string }) | null } | null;
+  giving: Counts & {
+    refunded_cents: number;
+    given_cents: number;
+    by_cashier: Array<Counts & { staff_id: string; name: string }>;
+  };
+  zeffy: {
+    configured: boolean;
+    pending: Bucket;
+    recorded: Bucket;
+    review: Bucket;
+    removed: Bucket;
+    waiting_since: string | null;
+    problems: Array<{
+      client_sale_id: string;
+      receipt_number: string | null;
+      occurred_at: string;
+      amount_cents: number;
+      email: string | null;
+      refunded: boolean;
+      reason: string | null;
+    }>;
+  };
+}
+
+const env = Astro.locals.runtime.env;
+const thisMonth = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit' }).format(new Date());
+const asked = Astro.url.searchParams.get('month');
+const month = asked && /^\d{4}-(0[1-9]|1[0-2])$/.test(asked) ? asked : thisMonth;
+
+let data: Giving | null = null;
+let problem = medusaConfigured(env) ? '' : 'The admin isn’t connected to Medusa yet.';
+if (!problem) {
+  try {
+    data = await medusaJson<Giving>(env, 'reports/giving', { search: `?month=${month}` });
+  } catch (err) {
+    if (!(err instanceof MedusaProblem)) throw err;
+    problem = err.message;
+  }
+}
+
+const shift = (m: string, by: number) => {
+  const [y, n] = m.split('-').map(Number);
+  const d = new Date(Date.UTC(y, n - 1 + by, 1));
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+};
+const monthName = (m: string) => new Date(`${m}-15T12:00:00Z`).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+// Small rates keep a decimal: Shopify's 2.3% shouldn't read as 2%.
+const pct = (rate: number | null) =>
+  rate === null ? '—' : rate > 0 && rate < 0.1 ? `${(rate * 100).toFixed(1)}%` : `${Math.round(rate * 100)}%`;
+const when = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+const day = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' });
+const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString('en-US')} ${n === 1 ? one : many}`;
+
+const g = data?.giving;
+const z = data?.zeffy;
+const shop = data?.shopify;
+// Whether this month beats Shopify's whole-history rate, once there's anything to compare.
+const ahead = g && shop?.overall.rate !== null && shop?.overall.rate !== undefined && g.gave_rate !== null && g.sales > 0
+  ? g.gave_rate > shop.overall.rate
+  : null;
+const short = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', month: 'short', year: 'numeric' });
+---
+
+<AdminBase title="Donations">
+  <div class="page-header">
+    <div>
+      <h1>Donations</h1>
+      <p class="muted">Round-ups and gifts for Sunshine on a Ranney Day, taken at checkout on the register. Gifts go to Zeffy, which emails the tax receipt.</p>
+    </div>
+    <nav class="months" aria-label="Month">
+      <a class="step" href={`/admin/donations/?month=${shift(month, -1)}`} aria-label={`Back to ${monthName(shift(month, -1))}`}>
+        <Fragment set:html={svg('left', 18)} />
+      </a>
+      <span class="month" aria-current="page">{monthName(month)}</span>
+      {
+        month < thisMonth ? (
+          <a class="step" href={`/admin/donations/?month=${shift(month, 1)}`} aria-label={`On to ${monthName(shift(month, 1))}`}>
+            <Fragment set:html={svg('right', 18)} />
+          </a>
+        ) : (
+          <span class="step off" aria-hidden="true">
+            <Fragment set:html={svg('right', 18)} />
+          </span>
+        )
+      }
+    </nav>
+  </div>
+
+  {problem && <div class="notice"><span>{problem}</span></div>}
+
+  {
+    z && !z.configured && z.pending.gifts > 0 && (
+      <div class="notice notice-info" role="status">
+        <div>
+          <strong>Zeffy isn’t connected yet,</strong> so {plural(z.pending.gifts, 'gift')} ({money(z.pending.cents)}) {z.pending.gifts === 1 ? 'is' : 'are'} waiting
+          {z.waiting_since && <> since {day.format(new Date(z.waiting_since))}</>}. They go to Zeffy, receipts and all, within a minute of it being connected.
+        </div>
+      </div>
+    )
+  }
+  {
+    z && z.review.gifts > 0 && (
+      <div class="notice" role="status">
+        <div>
+          <strong>{plural(z.review.gifts, 'gift')} need{z.review.gifts === 1 ? 's' : ''} a person.</strong> Zeffy refused {z.review.gifts === 1 ? 'it' : 'them'}, or couldn’t tell whether it already had {z.review.gifts === 1 ? 'it' : 'them'}. They’re listed below.
+        </div>
+      </div>
+    )
+  }
+
+  {
+    g && z && (
+      <>
+        <div class="stats">
+          <div class="stat">
+            <p class="stat-label">Given</p>
+            <p class="stat-value">{money(g.given_cents)}</p>
+            <p class="stat-note">
+              {plural(g.gifts, 'gift')}{g.gift_only_sales > 0 && ` (${g.gift_only_sales.toLocaleString('en-US')} on ${g.gift_only_sales === 1 ? 'its' : 'their'} own)`} and {plural(g.round_ups, 'round-up')}
+              {g.refunded_cents > 0 && <>, less {money(g.refunded_cents)} refunded</>}
+            </p>
+          </div>
+          <div class:list={['stat', { 'stat-good': ahead === true }]}>
+            <p class="stat-label">Sales that gave</p>
+            <p class="stat-value">{pct(g.gave_rate)}</p>
+            <p class="stat-note">
+              {g.sales ? <>{g.sales_with_gift.toLocaleString('en-US')} of {plural(g.sales, 'sale')}</> : 'No sales yet'}
+              {shop && <> · Shopify {pct(shop.overall.rate)}</>}
+            </p>
+          </div>
+          <div class="stat">
+            <p class="stat-label">Reader yes rate</p>
+            <p class="stat-value">{pct(g.reader_yes_rate)}</p>
+            <p class="stat-note">
+              {g.reader_asked ? <>{g.reader_yes.toLocaleString('en-US')} of {plural(g.reader_asked, 'card customer')} rounded up</> : 'No card customer asked yet'}
+            </p>
+          </div>
+          <div class:list={['stat', { 'stat-accent': z.review.gifts > 0 }]}>
+            <p class="stat-label">In Zeffy</p>
+            <p class="stat-value">{z.recorded.gifts.toLocaleString('en-US')}</p>
+            <p class="stat-note">
+              {z.pending.gifts.toLocaleString('en-US')} waiting · {z.review.gifts.toLocaleString('en-US')} need a person
+            </p>
+          </div>
+        </div>
+
+        {
+          shop && (
+            <p class="baseline">
+              <strong>Against Shopify:</strong> {shop.overall.with_gift.toLocaleString('en-US')} of {plural(shop.overall.sales, 'sale')} that bought something
+              ({pct(shop.overall.rate)}) included a gift, plus {plural(shop.overall.gift_only, 'gift')} on {shop.overall.gift_only === 1 ? 'its' : 'their'} own:
+              {' '}{money(shop.overall.gift_cents)} from {shop.overall.since && short.format(new Date(shop.overall.since))} to {shop.overall.until && short.format(new Date(shop.overall.until))}.
+              {shop.same_month_last_year && (
+                <>
+                  {' '}{monthName(shop.same_month_last_year.month)}: {shop.same_month_last_year.with_gift.toLocaleString('en-US')} of {plural(shop.same_month_last_year.sales, 'sale')} ({pct(shop.same_month_last_year.rate)}), {money(shop.same_month_last_year.gift_cents)}.
+                </>
+              )}
+            </p>
+          )
+        }
+
+        <section class="card">
+          <h2>By cashier</h2>
+          {
+            g.by_cashier.length === 0 ? (
+              <p class="muted empty">No sales rung in {monthName(month)} yet.</p>
+            ) : (
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Cashier</th>
+                      <th class="num">Reader</th>
+                      <th class="num">Counter</th>
+                      <th class="num">Given</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {g.by_cashier.map((c) => (
+                      <tr>
+                        <td>
+                          <div class="name">{c.name}</div>
+                          <div class="sub">{plural(c.sales, 'sale')}</div>
+                        </td>
+                        <td class="num">
+                          <div class="name">{pct(c.reader_yes_rate)}</div>
+                          <div class="sub">{c.reader_yes.toLocaleString('en-US')} of {c.reader_asked.toLocaleString('en-US')} yes</div>
+                        </td>
+                        <td class="num">
+                          <div class="name">{c.counter_gave.toLocaleString('en-US')}</div>
+                          <div class="sub">of {c.counter_sales.toLocaleString('en-US')} gave</div>
+                        </td>
+                        <td class="num">
+                          <div class="name">{money(c.gifts_cents + c.round_ups_cents)}</div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
+          }
+          <p class="muted how">
+            The card reader asks every card customer the same question before they tap, so its yes rate is exact. Cash and check customers are asked by the cashier, and only a yes is recorded, so that side shows how many gave. Sales that were only a gift aren’t counted as sales.
+          </p>
+        </section>
+
+        {
+          z.problems.length > 0 && (
+            <section class="card">
+              <h2>Needs a person</h2>
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>When</th>
+                      <th>Receipt</th>
+                      <th class="num">Gift</th>
+                      <th>Donor</th>
+                      <th>What Zeffy said</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {z.problems.map((p) => (
+                      <tr>
+                        <td>{when.format(new Date(p.occurred_at))}</td>
+                        <td>{p.receipt_number ?? '—'}</td>
+                        <td class="num">{money(p.amount_cents)}</td>
+                        <td>{p.email ?? <span class="muted">Anonymous</span>}</td>
+                        <td>
+                          {p.reason ?? '—'}
+                          {p.refunded && <span class="muted"> · refunded at the register since</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )
+        }
+      </>
+    )
+  }
+</AdminBase>
+
+<style>
+  .months {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .month {
+    min-width: 9.5em;
+    text-align: center;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .step {
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    color: var(--ink);
+  }
+  a.step:hover {
+    background: var(--sunk);
+  }
+  a.step:focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 2px;
+  }
+  .step.off {
+    opacity: 0.25;
+  }
+  .name {
+    font-weight: 600;
+  }
+  .sub {
+    color: var(--ink-3);
+    font-size: 0.8125rem;
+    margin-top: 2px;
+  }
+  .card h2 {
+    margin: 0 0 12px;
+    font-size: 1.05rem;
+  }
+  .card + .card {
+    margin-top: 16px;
+  }
+  .how {
+    margin: 14px 0 0;
+    font-size: 0.875rem;
+  }
+  .baseline {
+    margin: 0 0 16px;
+    color: var(--ink-2);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+  }
+  .baseline strong {
+    color: var(--ink);
+  }
+  .stat-good .stat-value {
+    color: var(--sage);
+  }
+  .empty {
+    margin: 0;
+  }
+</style>
