@@ -1,0 +1,531 @@
+---
+export const prerender = false;
+
+import AdminBase from '@/layouts/AdminBase.astro';
+import { svg } from '@/lib/admin-ui';
+import { day, money, type AwaitingCost, type Vendor } from '@/lib/buying';
+import { MedusaProblem, medusaConfigured, medusaJson } from '@/lib/medusa-admin';
+
+if (Astro.locals.admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
+
+const env = Astro.locals.runtime.env;
+const vendorId = Astro.url.searchParams.get('vendor') ?? '';
+if (!vendorId) return Astro.redirect('/admin/buying/');
+
+interface SuggestionLine {
+  variant_id: string;
+  title: string | null;
+  sku: string | null;
+  barcode: string | null;
+  thumbnail: string | null;
+  price_cents: number | null;
+  recent_rate: number;
+  last_year_rate: number | null;
+  driven_by: 'recent' | 'last_year';
+  needed: number;
+  on_hand: number;
+  on_order: number;
+  suggested: number;
+  unit_cost_cents: number | null;
+}
+interface Suggestion {
+  vendor: { id: string; name: string; lead_days: number | null; minimum_order_cents: number | null };
+  cover_days: number;
+  window: { recent_from: string; last_year_from: string; last_year_to: string; last_year_used: boolean };
+  lines: SuggestionLine[];
+  dead: { variant_id: string; title: string | null; on_hand: number; last_sold_at: string | null }[];
+  total_cents: number;
+  unpriced: number;
+}
+
+let suggestion: Suggestion | null = null;
+let specials: AwaitingCost[] = [];
+let vendor: Vendor | null = null;
+let locations: { id: string; name: string; warehouse: boolean }[] = [];
+let problem = medusaConfigured(env) ? '' : 'The admin isn’t connected to Medusa yet.';
+if (!problem) {
+  try {
+    const [s, v, l, w] = await Promise.all([
+      medusaJson<Suggestion>(env, 'purchasing/suggestions', { search: `?vendor_id=${encodeURIComponent(vendorId)}` }),
+      medusaJson<{ vendors: Vendor[] }>(env, 'purchasing/vendors'),
+      medusaJson<{ locations: typeof locations }>(env, 'purchasing/locations'),
+      medusaJson<{ lines: AwaitingCost[] }>(env, 'purchasing/costs-to-match', { search: `?special=1&vendor_id=${encodeURIComponent(vendorId)}` }),
+    ]);
+    suggestion = s;
+    // Special orders still to buy: this vendor's, and any not yet tied to a vendor.
+    specials = w.lines.filter((line) => line.needs_po > 0);
+    vendor = v.vendors.find((x) => x.id === vendorId) ?? null;
+    locations = l.locations;
+  } catch (err) {
+    if (!(err instanceof MedusaProblem)) throw err;
+    problem = err.message;
+  }
+}
+const lead = suggestion?.vendor.lead_days ?? 14;
+const expected = new Date(Date.now() + lead * 86_400_000).toISOString().slice(0, 10);
+const perWeek = (rate: number) => Math.round(rate * 7 * 10) / 10;
+const data = suggestion
+  ? {
+      vendor_id: vendorId,
+      minimum: suggestion.vendor.minimum_order_cents,
+      lines: suggestion.lines.map((l) => ({
+        variant_id: l.variant_id,
+        title: l.title ?? 'Unnamed item',
+        sku: l.sku,
+        thumbnail: l.thumbnail,
+        on_hand: l.on_hand,
+        on_order: l.on_order,
+        per_week: perWeek(Math.max(l.recent_rate, l.last_year_rate ?? 0)),
+        last_year: l.driven_by === 'last_year',
+        qty: l.suggested,
+        suggested: l.suggested,
+        cost: l.unit_cost_cents,
+      })),
+      specials: specials.map((x) => ({
+        for_sale_line: x.for_sale_line,
+        variant_id: x.variant_id,
+        title: x.title,
+        sku: x.sku,
+        quantity: x.needs_po,
+        label: `Special order ${x.receipt_number}${x.promise_date ? `, promised ${day(x.promise_date)}` : ''}`,
+      })),
+      // From Costs to match: add this one straight away.
+      start_with: Astro.url.searchParams.get('special'),
+    }
+  : null;
+---
+
+<AdminBase title={vendor ? `New order · ${vendor.name}` : 'New order'}>
+  <div class="page-header">
+    <div>
+      <a class="back" href="/admin/buying/"><Fragment set:html={svg('left', 16)} />Purchase orders</a>
+      <h1>New order{vendor ? ` from ${vendor.name}` : ''}</h1>
+      {
+        suggestion && (
+          <p class="muted">
+            {`Suggested from what sold since ${day(suggestion.window.recent_from)}${
+              suggestion.window.last_year_used ? `, and from ${day(suggestion.window.last_year_from)} to ${day(suggestion.window.last_year_to)} last year where that was busier` : ''
+            }.`}
+          </p>
+        )
+      }
+    </div>
+  </div>
+
+  {problem && <div class="notice"><span>{problem}</span></div>}
+
+  {
+    suggestion && data && (
+      <>
+        <div class="cover card">
+          <div class="cover-math">
+            <span class="cover-part"><b>{lead}</b> days for it to arrive</span>
+            <span class="cover-op">+</span>
+            <span class="cover-part"><b>14</b> days to the next order</span>
+            <span class="cover-op">+</span>
+            <span class="cover-part"><b>7</b> days of safety</span>
+            <span class="cover-op">=</span>
+            <span class="cover-part cover-total"><b>{suggestion.cover_days}</b> days to cover</span>
+          </div>
+          <p class="muted">
+            Each item orders what it sells in {suggestion.cover_days} days, less what's on hand and already coming, rounded up to whole cases.
+            {suggestion.vendor.lead_days === null ? ' This vendor has no lead time on file, so 14 days is assumed; set it on the vendor.' : ''}
+          </p>
+        </div>
+
+        {specials.length > 0 && (
+          <div class="card specials">
+            <h2>Special orders waiting to be bought</h2>
+            <p class="muted">
+              Sold and paid for, not on a PO yet. Added here, each is tied to its sale, so its cost and pickup follow when it's received.
+            </p>
+            <ul class="special-list">
+              {specials.map((x) => (
+                <li>
+                  <div>
+                    <div class="item-title">{x.title}</div>
+                    <div class="muted">
+                      {x.needs_po} for {x.receipt_number}, sold {day(x.sold_at)}
+                      {x.promise_date ? `, promised ${day(x.promise_date)}` : ''}
+                      {x.variant_id ? '' : '. Rung with no product, so choose the item it is'}
+                    </div>
+                  </div>
+                  <button type="button" class="btn btn-small" data-special={x.for_sale_line}>
+                    {x.variant_id ? 'Add to this order' : 'Choose the item'}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div class="card">
+          <div class="lines-head">
+            <h2>
+              {data.lines.length ? `${data.lines.length} item${data.lines.length === 1 ? '' : 's'} to order` : 'Nothing needs ordering right now'}
+            </h2>
+            <div class="add">
+              <input id="add-search" type="search" placeholder={`Add something else from ${suggestion.vendor.name}`} autocomplete="off" />
+              <ul id="add-results" class="add-results" hidden></ul>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="order-table">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th class="num">On hand</th>
+                  <th class="num">Coming</th>
+                  <th class="num">Sells a week</th>
+                  <th class="num">Order</th>
+                  <th class="num">Cost</th>
+                  <th class="num">Total</th>
+                  <th><span class="sr-only">Remove</span></th>
+                </tr>
+              </thead>
+              <tbody id="lines"></tbody>
+            </table>
+          </div>
+          <p id="no-lines" class="muted empty-lines" hidden>
+            No items yet. Search above to add what you want from this vendor.
+          </p>
+        </div>
+
+        {suggestion.dead.length > 0 && (
+          <details class="card dead">
+            <summary>
+              {suggestion.dead.length} item{suggestion.dead.length === 1 ? '' : 's'} from {suggestion.vendor.name} sat six months or more without a
+              sale, so none are suggested
+            </summary>
+            <ul>
+              {suggestion.dead.slice(0, 40).map((d) => (
+                <li>
+                  <span>{d.title ?? d.variant_id}</span>
+                  <span class="muted">
+                    {d.on_hand} on hand · {d.last_sold_at ? `last sold ${day(d.last_sold_at)}` : 'never sold here'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+
+        <div class="checkout card">
+          <div class="field">
+            <label for="location">Deliver to</label>
+            <select id="location">
+              {locations.map((l) => (
+                <option value={l.id}>{l.warehouse ? `${l.name} (warehouse)` : l.name}</option>
+              ))}
+            </select>
+          </div>
+          <div class="field">
+            <label for="expected">Expected</label>
+            <input id="expected" type="date" value={expected} />
+          </div>
+          <div class="field notes">
+            <label for="notes">Note to keep with the order</label>
+            <input id="notes" type="text" placeholder="Ship with the rest of the fall order" />
+          </div>
+          <div class="sum">
+            <p class="muted" id="sum-label">Order total</p>
+            <p class="sum-value" id="sum-value">{money(suggestion.total_cents)}</p>
+            <p class="muted" id="sum-note"></p>
+          </div>
+          <div class="go">
+            <p class="form-error" id="error"></p>
+            <button type="button" class="btn btn-primary" id="save">Save as a draft</button>
+          </div>
+        </div>
+        <script type="application/json" id="order-data" set:html={JSON.stringify(data)} />
+      </>
+    )
+  }
+</AdminBase>
+
+<script>
+  type Line = {
+    variant_id: string;
+    title: string;
+    sku: string | null;
+    thumbnail: string | null;
+    on_hand: number | null;
+    on_order: number | null;
+    per_week: number | null;
+    last_year?: boolean;
+    qty: number;
+    suggested?: number;
+    cost: number | null;
+    /** The special-order sale line this is bought for. */
+    for_sale_line?: string;
+    special?: string;
+  };
+  type Special = { for_sale_line: string; variant_id: string | null; title: string; sku: string | null; quantity: number; label: string };
+  const dataEl = document.getElementById('order-data');
+  if (dataEl) {
+    const data = JSON.parse(dataEl.textContent || '{}') as {
+      vendor_id: string;
+      minimum: number | null;
+      lines: Line[];
+      specials: Special[];
+      start_with: string | null;
+    };
+    const lines: Line[] = data.lines;
+    const body = document.getElementById('lines')!;
+    const empty = document.getElementById('no-lines')!;
+    const sumValue = document.getElementById('sum-value')!;
+    const sumNote = document.getElementById('sum-note')!;
+    const save = document.getElementById('save') as HTMLButtonElement;
+    const error = document.getElementById('error')!;
+    const money = (c: number) => `$${Math.floor(c / 100).toLocaleString('en-US')}.${String(c % 100).padStart(2, '0')}`;
+    const esc = (s: string) => s.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]!);
+
+    function row(line: Line, index: number): string {
+      const total = line.cost === null ? null : line.cost * line.qty;
+      const photo = line.thumbnail ? `<img src="${esc(line.thumbnail)}" alt="" loading="lazy" width="44" height="44">` : `<span class="no-photo"></span>`;
+      return `<tr data-i="${index}">
+        <td><div class="item">${photo}<div><div class="item-title">${esc(line.title)}</div><div class="item-sub">${[line.special, line.sku, line.last_year ? 'Last year’s pace' : null].filter(Boolean).map((x) => esc(String(x))).join(' · ')}</div></div></div></td>
+        <td class="num">${line.on_hand ?? '—'}</td>
+        <td class="num">${line.on_order ?? '—'}</td>
+        <td class="num">${line.per_week ?? '—'}</td>
+        <td class="num"><div class="qty"><button type="button" class="btn btn-small btn-ghost" data-step="-1" aria-label="One fewer">−</button><input type="number" min="0" inputmode="numeric" value="${line.qty}" data-qty aria-label="How many of ${esc(line.title)}"><button type="button" class="btn btn-small btn-ghost" data-step="1" aria-label="One more">+</button></div></td>
+        <td class="num"><input class="cost${line.cost === null ? ' missing' : ''}" type="text" inputmode="decimal" data-cost value="${line.cost === null ? '' : (line.cost / 100).toFixed(2)}" placeholder="Cost" aria-label="Unit cost of ${esc(line.title)}"></td>
+        <td class="num">${total === null ? '—' : money(total)}</td>
+        <td><button type="button" class="btn btn-small btn-ghost" data-remove aria-label="Remove ${esc(line.title)}">×</button></td>
+      </tr>`;
+    }
+
+    function render() {
+      body.innerHTML = lines.map(row).join('');
+      empty.hidden = lines.length > 0;
+      totals();
+    }
+    function totals() {
+      const kept = lines.filter((l) => l.qty > 0);
+      const total = kept.reduce((sum, l) => sum + (l.cost ?? 0) * l.qty, 0);
+      const unpriced = kept.filter((l) => l.cost === null).length;
+      const units = kept.reduce((sum, l) => sum + l.qty, 0);
+      sumValue.textContent = money(total);
+      const notes: string[] = [`${units} unit${units === 1 ? '' : 's'} of ${kept.length} item${kept.length === 1 ? '' : 's'}`];
+      if (data.minimum && total < data.minimum) notes.push(`under the ${money(data.minimum)} minimum`);
+      if (unpriced) notes.push(`${unpriced} still need${unpriced === 1 ? 's' : ''} a cost`);
+      sumNote.textContent = notes.join(' · ');
+      sumNote.classList.toggle('warn', Boolean((data.minimum && total < data.minimum) || unpriced));
+      sumNote.classList.toggle('jump', unpriced > 0);
+      save.disabled = kept.length === 0 || unpriced > 0;
+    }
+
+    body.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement;
+      const tr = target.closest('tr');
+      if (!tr) return;
+      const i = Number(tr.dataset.i);
+      if (target.closest('[data-remove]')) {
+        lines.splice(i, 1);
+        render();
+        return;
+      }
+      const step = target.closest<HTMLElement>('[data-step]');
+      if (step) {
+        lines[i].qty = Math.max(0, lines[i].qty + Number(step.dataset.step));
+        (tr.querySelector('[data-qty]') as HTMLInputElement).value = String(lines[i].qty);
+        const total = lines[i].cost === null ? null : lines[i].cost! * lines[i].qty;
+        tr.children[6].textContent = total === null ? '—' : money(total);
+        totals();
+      }
+    });
+    body.addEventListener('input', (event) => {
+      const input = event.target as HTMLInputElement;
+      if (!input.matches('[data-qty], [data-cost]')) return;
+      const tr = input.closest('tr')!;
+      const i = Number(tr.dataset.i);
+      if (input.matches('[data-cost]')) {
+        const dollars = parseFloat(input.value.replace(/[^0-9.]/g, ''));
+        lines[i].cost = Number.isFinite(dollars) && dollars > 0 ? Math.round(dollars * 100) : null;
+        input.classList.toggle('missing', lines[i].cost === null);
+      } else {
+        lines[i].qty = Math.max(0, Math.floor(Number(input.value) || 0));
+      }
+      const total = lines[i].cost === null ? null : lines[i].cost! * lines[i].qty;
+      tr.children[6].textContent = total === null ? '—' : money(total);
+      totals();
+    });
+
+    // The note that a cost is missing takes you to it.
+    sumNote.addEventListener('click', () => {
+      const missing = body.querySelector<HTMLInputElement>('.cost.missing');
+      if (!missing) return;
+      missing.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      missing.focus({ preventScroll: true });
+    });
+
+    // Adding by hand, from what this vendor sells.
+    const search = document.getElementById('add-search') as HTMLInputElement;
+    const searchHint = search.placeholder;
+    let choosingFor: Special | null = null;
+
+    /** A line bought for one sale line: its own row, never merged with stock buying. */
+    function addSpecial(special: Special, item?: { variant_id: string; title: string; sku: string | null; thumbnail: string | null; cost: number | null }) {
+      if (lines.some((l) => l.for_sale_line === special.for_sale_line)) return;
+      const variant = item?.variant_id ?? special.variant_id;
+      if (!variant) return;
+      // The vendor's cost for it, when this order already knows it.
+      const known = lines.find((l) => l.variant_id === variant && l.cost !== null)?.cost ?? null;
+      lines.unshift({
+        variant_id: variant,
+        title: item?.title ?? special.title,
+        sku: item?.sku ?? special.sku,
+        thumbnail: item?.thumbnail ?? null,
+        on_hand: null,
+        on_order: null,
+        per_week: null,
+        qty: special.quantity,
+        cost: item?.cost ?? known,
+        for_sale_line: special.for_sale_line,
+        special: special.label,
+      });
+      document.querySelector<HTMLButtonElement>(`[data-special="${CSS.escape(special.for_sale_line)}"]`)?.closest('li')?.remove();
+      render();
+    }
+
+    document.querySelectorAll<HTMLButtonElement>('[data-special]').forEach((button) =>
+      button.addEventListener('click', () => {
+        const special = data.specials.find((x) => x.for_sale_line === button.dataset.special);
+        if (!special) return;
+        if (special.variant_id) return addSpecial(special);
+        choosingFor = special;
+        search.placeholder = `Which item is “${special.title}”?`;
+        search.focus();
+      }),
+    );
+    const results = document.getElementById('add-results') as HTMLUListElement;
+    let timer = 0;
+    let seq = 0;
+    search.addEventListener('input', () => {
+      clearTimeout(timer);
+      const q = search.value.trim();
+      if (!q) { results.hidden = true; return; }
+      timer = window.setTimeout(async () => {
+        const mine = ++seq;
+        const res = await fetch(`/api/admin/medusa/purchasing/vendors/${encodeURIComponent(data.vendor_id)}/items/?q=${encodeURIComponent(q)}`);
+        if (mine !== seq) return;
+        const json = (await res.json()) as { items?: { variant_id: string; title: string; sku: string | null; thumbnail: string | null; unit_cost_cents: number | null; pack_size: number }[] };
+        const items = json.items ?? [];
+        results.innerHTML = items.length
+          ? items.map((it, n) => `<li><button type="button" data-n="${n}">${it.thumbnail ? `<img src="${esc(it.thumbnail)}" alt="" width="36" height="36">` : '<span class="no-photo small"></span>'}<span>${esc(it.title)}</span><span class="muted">${it.unit_cost_cents === null ? 'no cost' : money(it.unit_cost_cents)}</span></button></li>`).join('')
+          : '<li class="muted">Nothing from this vendor matches.</li>';
+        results.hidden = false;
+        results.onclick = (event) => {
+          const button = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-n]');
+          if (!button) return;
+          const it = items[Number(button.dataset.n)];
+          if (choosingFor) {
+            // The item a special order rung with no product turns out to be.
+            addSpecial(choosingFor, { variant_id: it.variant_id, title: it.title, sku: it.sku, thumbnail: it.thumbnail, cost: it.unit_cost_cents });
+            choosingFor = null;
+            search.placeholder = searchHint;
+          } else {
+            const existing = lines.find((l) => l.variant_id === it.variant_id && !l.for_sale_line);
+            if (existing) existing.qty += Math.max(1, it.pack_size);
+            else lines.push({ variant_id: it.variant_id, title: it.title, sku: it.sku, thumbnail: it.thumbnail, on_hand: null, on_order: null, per_week: null, qty: Math.max(1, it.pack_size), cost: it.unit_cost_cents });
+          }
+          search.value = '';
+          results.hidden = true;
+          render();
+        };
+      }, 160);
+    });
+
+    const clientId = crypto.randomUUID();
+    save.addEventListener('click', async () => {
+      error.textContent = '';
+      save.disabled = true;
+      save.textContent = 'Saving…';
+      const kept = lines.filter((l) => l.qty > 0);
+      try {
+        const res = await fetch('/api/admin/medusa/purchasing/orders/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client_id: clientId,
+            vendor_id: data.vendor_id,
+            location_id: (document.getElementById('location') as unknown as HTMLSelectElement).value,
+            expected_on: (document.getElementById('expected') as HTMLInputElement).value || null,
+            notes: (document.getElementById('notes') as HTMLInputElement).value.trim() || null,
+            lines: kept.map((l) => ({ variant_id: l.variant_id, quantity: l.qty, unit_cost_cents: l.cost, for_sale_line: l.for_sale_line ?? null })),
+          }),
+        });
+        const json = (await res.json()) as { error?: string; purchase_order?: { id: string } };
+        if (!res.ok || !json.purchase_order) throw new Error(json.error ?? 'The order didn’t save.');
+        window.location.href = `/admin/buying/${json.purchase_order.id}/`;
+      } catch (err) {
+        error.textContent = err instanceof Error ? err.message : 'The order didn’t save.';
+        save.disabled = false;
+        save.textContent = 'Save as a draft';
+      }
+    });
+
+    render();
+    const startWith = data.specials.find((x) => x.for_sale_line === data.start_with);
+    if (startWith) document.querySelector<HTMLButtonElement>(`[data-special="${CSS.escape(startWith.for_sale_line)}"]`)?.click();
+  }
+</script>
+
+<style>
+  .back { display: inline-flex; align-items: center; gap: 0.25rem; color: var(--ink-3); font-weight: 600; font-size: 0.875rem; text-decoration: none; margin-bottom: 0.5rem; }
+  .back:hover { color: var(--ink); }
+  .cover { display: grid; gap: 0.5rem; }
+  .cover-math { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+  .cover-part { padding: 0.375rem 0.75rem; border-radius: 999px; background: var(--sunk); font-size: 0.9375rem; color: var(--ink-2); }
+  .cover-part b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .cover-total { background: var(--gold-soft); color: var(--ink); }
+  .cover-op { color: var(--ink-3); font-weight: 700; }
+  .lines-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.75rem; }
+  .add { position: relative; flex: 0 1 380px; min-width: 0; }
+  .add-results {
+    position: absolute; z-index: 5; left: 0; right: 0; top: calc(100% + 4px); list-style: none; max-height: 340px; overflow-y: auto;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); padding: 4px;
+  }
+  .add-results li.muted { padding: 0.75rem; }
+  :global(.add-results button) {
+    display: grid; grid-template-columns: 36px 1fr auto; align-items: center; gap: 0.75rem; width: 100%; min-height: 48px;
+    padding: 0.375rem 0.5rem; border: 0; background: none; border-radius: 8px; font: inherit; color: var(--ink); text-align: left; cursor: pointer;
+  }
+  :global(.add-results button:hover) { background: var(--sunk); }
+  :global(.add-results img), :global(.order-table img) { border-radius: 8px; object-fit: cover; background: #fff; }
+  :global(.order-table .item) { display: flex; align-items: center; gap: 0.75rem; min-width: 300px; }
+  :global(.order-table .item-title) { font-weight: 600; line-height: 1.25; }
+  :global(.order-table .item-sub) { font-size: 0.8125rem; color: var(--ink-3); }
+  :global(.no-photo) { width: 44px; height: 44px; border-radius: 8px; background: var(--sunk); flex: none; }
+  :global(.no-photo.small) { width: 36px; height: 36px; }
+  :global(.order-table .qty) { display: inline-flex; align-items: center; gap: 0.125rem; }
+  :global(.order-table .qty input) { width: 4.25rem; text-align: center; font-variant-numeric: tabular-nums; font-weight: 700; min-height: 36px; padding: 0.25rem; }
+  :global(.order-table .cost) { width: 6.5rem; text-align: right; min-height: 36px; padding: 0.25rem 0.5rem; font-variant-numeric: tabular-nums; }
+  :global(.order-table .cost.missing) { border-color: color-mix(in srgb, var(--clay) 60%, var(--line)); background: var(--clay-soft); }
+  .empty-lines { padding: 1rem 0 0.25rem; }
+  .specials { border: 1px solid color-mix(in srgb, var(--gold) 45%, var(--line)); background: color-mix(in srgb, var(--gold-soft) 45%, var(--panel)); }
+  .specials h2 { margin-bottom: 0.25rem; }
+  .special-list { list-style: none; display: grid; gap: 0.5rem; margin-top: 0.75rem; }
+  .special-list li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.625rem 0.75rem; border-radius: 10px; background: var(--panel); }
+  .special-list .item-title { font-weight: 600; }
+  .special-list .muted { font-size: 0.875rem; }
+  .dead summary { cursor: pointer; font-weight: 600; color: var(--ink-2); }
+  .dead ul { list-style: none; margin-top: 0.75rem; display: grid; gap: 0.375rem; }
+  .dead li { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.9375rem; }
+  .checkout {
+    position: sticky; bottom: 0.75rem; z-index: 4; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(0, 1.4fr) auto auto;
+    gap: 0.75rem 1rem; align-items: end; box-shadow: var(--shadow);
+  }
+  .checkout .field { margin: 0; }
+  .sum { text-align: right; }
+  .sum-value { font-size: 1.625rem; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  :global(#sum-note.warn) { color: var(--clay); font-weight: 600; }
+  :global(#sum-note.jump) { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+  .go { display: grid; gap: 0.5rem; justify-items: end; }
+  .go .form-error { margin: 0; }
+  @media (max-width: 960px) {
+    .checkout { grid-template-columns: 1fr 1fr; }
+    .notes { grid-column: 1 / -1; }
+    .sum { text-align: left; }
+  }
+</style>

@@ -14,6 +14,8 @@ interface AdminEnv {
   CF_ACCESS_AUD?: string;
   ADMIN_MANAGER_EMAILS?: string;
   ADMIN_KIOSK_EMAILS?: string;
+  /** Access service token client IDs that act as a store tablet, like the registers' time clock. */
+  ADMIN_KIOSK_SERVICE_TOKENS?: string;
   ADMIN_OWNER_EMAILS?: string;
   ADMIN_DEV_EMAIL?: string;
 }
@@ -82,5 +84,13 @@ export async function authenticate(request: Request, env: AdminEnv): Promise<Adm
   });
   if (!verified) return null;
 
+  if ('serviceToken' in verified) {
+    // A service token is only ever a store tablet: it can use the time clock and
+    // nothing a manager does, whatever else is configured.
+    const allowed = (env.ADMIN_KIOSK_SERVICE_TOKENS ?? '').split(',').map((id) => id.trim()).filter(Boolean);
+    return allowed.includes(verified.serviceToken)
+      ? { email: `service-token:${verified.serviceToken}`, role: 'kiosk', owner: false }
+      : null;
+  }
   return identityFor(verified.email, env);
 }

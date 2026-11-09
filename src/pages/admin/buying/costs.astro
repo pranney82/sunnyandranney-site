@@ -1,0 +1,476 @@
+---
+export const prerender = false;
+
+import AdminBase from '@/layouts/AdminBase.astro';
+import { svg } from '@/lib/admin-ui';
+import { day, money, poNumber, type AwaitingCost } from '@/lib/buying';
+import { MedusaProblem, medusaConfigured, medusaJson } from '@/lib/medusa-admin';
+
+if (Astro.locals.admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
+
+const env = Astro.locals.runtime.env;
+let lines: AwaitingCost[] = [];
+let problem = medusaConfigured(env) ? '' : 'not-connected';
+if (!problem) {
+  try {
+    lines = (await medusaJson<{ lines: AwaitingCost[] }>(env, 'purchasing/costs-to-match')).lines;
+  } catch (err) {
+    if (!(err instanceof MedusaProblem)) throw err;
+    problem = err.message;
+  }
+}
+
+const special = lines.filter((l) => l.fulfillment_method === 'special');
+const toBuy = special.filter((l) => l.needs_po > 0);
+const coming = special.filter((l) => l.needs_po === 0);
+// Rung with no product: its cost comes from the product it turned out to be, or the PO line it came from.
+const custom = lines.filter((l) => l.fulfillment_method !== 'special' && !l.variant_id);
+const matchable = [...special, ...custom];
+// A product with no cost on file is fixed once, on the product, not sale by sale.
+const products = Object.values(
+  lines
+    .filter((l) => l.fulfillment_method !== 'special' && l.variant_id)
+    .reduce<Record<string, { title: string; sales: number; units: number; last: string }>>((acc, l) => {
+      const p = (acc[l.variant_id!] ??= { title: l.title, sales: 0, units: 0, last: l.sold_at });
+      p.sales += 1;
+      p.units += l.needs_cost;
+      if (l.sold_at > p.last) p.last = l.sold_at;
+      return acc;
+    }, {}),
+).sort((a, b) => b.units - a.units);
+const ageDays = (iso: string) => Math.floor((Date.now() - Date.parse(iso)) / 86_400_000);
+
+function standing(line: AwaitingCost): { text: string; badge: string } {
+  if (line.fulfillment_method !== 'special') return { text: 'Sold without a cost', badge: 'badge' };
+  if (line.needs_po > 0) return { text: 'Needs a PO', badge: 'badge badge-warn' };
+  const open = line.po_lines.filter((p) => p.received < p.quantity);
+  return { text: open.length ? `On ${open.map((p) => poNumber(p.number)).join(', ')}, not in yet` : 'On order', badge: 'badge badge-sent' };
+}
+---
+
+<AdminBase title="Costs to match">
+  <div class="page-header">
+    <div>
+      <a class="back" href="/admin/buying/"><Fragment set:html={svg('left', 16)} />Purchase orders</a>
+      <h1>Costs to match</h1>
+      <p class="muted">
+        Sales still waiting for their cost. Costs only ever come from a PO line or a product's stock, never typed in. A special order gets its
+        cost when the PO line bought for it is received. A custom sale gets it from the product it was.
+      </p>
+    </div>
+  </div>
+
+  {
+    problem === 'not-connected' && (
+      <div class="notice">
+        <span>Costs come from the new Medusa backend, which this admin isn't connected to yet.</span>
+      </div>
+    )
+  }
+  {problem && problem !== 'not-connected' && <div class="notice"><span>Couldn't load costs to match: {problem}</span></div>}
+
+  {
+    !problem && (
+      <>
+        <div class="stats">
+          <div class:list={['stat', { 'stat-accent': toBuy.length > 0 }]}>
+            <p class="stat-label">Special orders to buy</p>
+            <p class="stat-value">{toBuy.length}</p>
+            <p class="stat-note">sold, not on a PO yet</p>
+          </div>
+          <div class="stat">
+            <p class="stat-label">On order</p>
+            <p class="stat-value">{coming.length}</p>
+            <p class="stat-note">costed when they arrive</p>
+          </div>
+          <div class="stat">
+            <p class="stat-label">Custom sales without a cost</p>
+            <p class="stat-value">{custom.length}</p>
+            <p class="stat-note">name the product each one was</p>
+          </div>
+          <div class="stat">
+            <p class="stat-label">Products without a cost</p>
+            <p class="stat-value">{products.length}</p>
+            <p class="stat-note">give each a cost once</p>
+          </div>
+        </div>
+
+        {matchable.length === 0 ? (
+          <div class="card empty">
+            <div class="empty-icon">
+              <Fragment set:html={svg('check', 24)} />
+            </div>
+            <h2>Nothing to match</h2>
+            <p>Special orders and custom sales appear here when they're sold, and leave once they have a cost.</p>
+          </div>
+        ) : (
+          <div class="card">
+            <div class="table-scroll">
+              <table class="cost-table">
+                <thead>
+                  <tr>
+                    <th>Sold</th>
+                    <th>Sale</th>
+                    <th>Item</th>
+                    <th class="num">Units</th>
+                    <th>Where it stands</th>
+                    <th>
+                      <span class="sr-only">Actions</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {matchable.map((line) => {
+                    const where = standing(line);
+                    const age = ageDays(line.sold_at);
+                    return (
+                      <tr>
+                        <td class="nowrap">
+                          {day(line.sold_at)}
+                          <div class:list={['sub', { late: line.needs_po > 0 && age >= 3 }]}>
+                            {age === 0 ? 'today' : `${age} day${age === 1 ? '' : 's'} ago`}
+                          </div>
+                        </td>
+                        <td class="num-text nowrap">{line.receipt_number}</td>
+                        <td>
+                          <div class="item-title">{line.title}</div>
+                          <div class="sub">
+                            {[line.sku, money(line.unit_price_cents) + ' each', line.promise_date ? `promised ${day(line.promise_date)}` : null]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </div>
+                        </td>
+                        <td class="num">{line.needs_cost}</td>
+                        <td>
+                          <span class={where.badge}>{where.text}</span>
+                        </td>
+                        <td>
+                          <div class="actions">
+                            {line.fulfillment_method !== 'special' && (
+                              <button type="button" class="btn btn-small" data-product={line.for_sale_line} data-title={line.title}>
+                                It was this product
+                              </button>
+                            )}
+                            {line.fulfillment_method === 'special' && line.needs_po > 0 && line.vendor_id && (
+                              <a class="btn btn-small" href={`/admin/buying/new/?vendor=${encodeURIComponent(line.vendor_id)}&special=${encodeURIComponent(line.for_sale_line)}`}>
+                                Start a PO
+                              </a>
+                            )}
+                            <button type="button" class="btn btn-small btn-ghost" data-link={line.for_sale_line} data-title={line.title}>
+                              Tie to a PO line
+                            </button>
+                            {line.fulfillment_method === 'special' && (
+                              <button
+                                type="button"
+                                class="btn btn-small btn-ghost"
+                                data-product={line.for_sale_line}
+                                data-title={line.title}
+                                data-variant={line.variant_id ?? ''}
+                                data-special
+                              >
+                                Take it from stock
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {products.length > 0 && (
+          <details class="card products">
+            <summary>
+              {products.length} product{products.length === 1 ? '' : 's'} sold without a cost on file
+            </summary>
+            <p class="muted">
+              Give each a cost on its vendor (in Shopify until the switch), and its next sales carry it. Received on a PO, it gets one
+              automatically.
+            </p>
+            <ul>
+              {products.slice(0, 40).map((p) => (
+                <li>
+                  <span class="item-title">{p.title}</span>
+                  <span class="muted">
+                    {p.units} unit{p.units === 1 ? '' : 's'} in {p.sales} sale{p.sales === 1 ? '' : 's'}, last {day(p.last)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+      </>
+    )
+  }
+
+  <dialog id="product-dialog" aria-labelledby="product-title">
+    <h2 id="product-title">It was this product</h2>
+    <p class="muted" id="product-detail"></p>
+    <label class="sr-only" for="product-search">Search products</label>
+    <input id="product-search" type="search" placeholder="Name, SKU, barcode or vendor" autocomplete="off" />
+    <ul class="candidates" id="products" aria-live="polite"></ul>
+    <p class="form-error" id="product-error"></p>
+    <div class="dialog-actions">
+      <button type="button" class="btn btn-ghost" data-close>Cancel</button>
+    </div>
+  </dialog>
+
+  <dialog id="link-dialog" aria-labelledby="link-title">
+    <h2 id="link-title">Tie to a PO line</h2>
+    <p class="muted" id="link-detail"></p>
+    <ul class="candidates" id="candidates"></ul>
+    <p class="form-error" id="link-error"></p>
+    <div class="dialog-actions">
+      <button type="button" class="btn btn-ghost" data-close>Cancel</button>
+    </div>
+  </dialog>
+</AdminBase>
+
+<script>
+  const dialog = document.getElementById('link-dialog') as HTMLDialogElement;
+  const list = document.getElementById('candidates') as HTMLUListElement;
+  const detail = document.getElementById('link-detail')!;
+  const error = document.getElementById('link-error')!;
+  const money = (c: number) => `$${Math.floor(c / 100).toLocaleString('en-US')}.${String(c % 100).padStart(2, '0')}`;
+  const po = (n: number) => `PO-${String(n).padStart(4, '0')}`;
+  type Candidate = {
+    purchase_order_line_id: string;
+    title: string;
+    unit_cost_cents: number;
+    quantity: number;
+    quantity_received: number;
+    number: number;
+    status: string;
+    vendor_name: string;
+    same_item: boolean;
+  };
+
+  async function open(forSaleLine: string, title: string) {
+    error.textContent = '';
+    detail.textContent = `Which PO line was bought for “${title}”? Its cost comes from what that line cost to receive.`;
+    list.replaceChildren();
+    const loading = document.createElement('li');
+    loading.className = 'muted';
+    loading.textContent = 'Finding PO lines…';
+    list.appendChild(loading);
+    dialog.showModal();
+    const res = await fetch(`/api/admin/medusa/purchasing/costs-to-match/candidates/?for_sale_line=${encodeURIComponent(forSaleLine)}`);
+    const json = (await res.json()) as { candidates?: Candidate[]; error?: string; message?: string };
+    list.replaceChildren();
+    const candidates = json.candidates ?? [];
+    if (!candidates.length) {
+      const none = document.createElement('li');
+      none.className = 'muted';
+      none.textContent = 'No PO line to tie it to. If it was bought without a PO, receive it with no PO first, then tie it here.';
+      list.appendChild(none);
+      return;
+    }
+    for (const c of candidates) {
+      const li = document.createElement('li');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'candidate';
+      const left = document.createElement('span');
+      const name = document.createElement('b');
+      name.textContent = c.title;
+      const sub = document.createElement('span');
+      sub.className = 'muted';
+      sub.textContent = `${po(c.number)} · ${c.vendor_name} · ${c.quantity_received} of ${c.quantity} received${c.same_item ? ' · same item' : ''}`;
+      left.appendChild(name);
+      left.appendChild(sub);
+      const cost = document.createElement('span');
+      cost.className = 'cost';
+      cost.textContent = money(c.unit_cost_cents);
+      button.appendChild(left);
+      button.appendChild(cost);
+      button.addEventListener('click', async () => {
+        button.disabled = true;
+        const res = await fetch('/api/admin/medusa/purchasing/costs-to-match/link/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ purchase_order_line_id: c.purchase_order_line_id, for_sale_line: forSaleLine }),
+        });
+        const result = (await res.json()) as { costed?: number; error?: string; message?: string };
+        if (!res.ok) {
+          error.textContent = result.error ?? result.message ?? 'That didn’t link.';
+          button.disabled = false;
+          return;
+        }
+        window.location.reload();
+      });
+      li.appendChild(button);
+      list.appendChild(li);
+    }
+  }
+
+  document.querySelectorAll<HTMLButtonElement>('[data-link]').forEach((button) =>
+    button.addEventListener('click', () => open(button.dataset.link!, button.dataset.title ?? 'this sale')),
+  );
+  dialog.querySelector('[data-close]')?.addEventListener('click', () => dialog.close());
+
+  // "It was this product": the cost comes from that product's own stock, never typed in.
+  const productDialog = document.getElementById('product-dialog') as HTMLDialogElement;
+  const productList = document.getElementById('products') as HTMLUListElement;
+  const productTitle = document.getElementById('product-title')!;
+  const productDetail = document.getElementById('product-detail')!;
+  const productError = document.getElementById('product-error')!;
+  const search = document.getElementById('product-search') as HTMLInputElement;
+  type Product = {
+    variant_id: string;
+    title: string;
+    variant_title: string | null;
+    sku: string | null;
+    vendor: string | null;
+    unit_cost_cents: number;
+    on_hand: number;
+    locations: { location_id: string; name: string; quantity: number }[];
+  };
+  let choosing: { forSaleLine: string; special: boolean; variant: string } | null = null;
+  let searchTimer = 0;
+  let searchRun = 0;
+
+  const note = (text: string) => {
+    const li = document.createElement('li');
+    li.className = 'muted';
+    li.textContent = text;
+    productList.replaceChildren(li);
+  };
+
+  async function findProducts() {
+    if (!choosing) return;
+    const q = search.value.trim();
+    if (!choosing.variant && q.length < 2) {
+      note('Type at least two letters of its name, SKU, barcode or vendor.');
+      return;
+    }
+    const run = ++searchRun;
+    note('Searching…');
+    const params = new URLSearchParams(choosing.variant ? { variant_id: choosing.variant, q: q || ' ' } : { q });
+    const res = await fetch(`/api/admin/medusa/purchasing/costs-to-match/products/?${params}`);
+    const json = (await res.json().catch(() => ({}))) as { products?: Product[]; error?: string; message?: string };
+    if (run !== searchRun) return;
+    if (!res.ok) {
+      note(json.error ?? json.message ?? 'The search didn’t work. Try again.');
+      return;
+    }
+    const products = json.products ?? [];
+    if (!products.length) {
+      note(
+        choosing.variant
+          ? 'It isn’t in stock with a cost, so it has to come on a PO.'
+          : 'No product with a cost matches. Products only appear once they’ve been received at a cost.',
+      );
+      return;
+    }
+    productList.replaceChildren(
+      ...products.map((p) => {
+        const li = document.createElement('li');
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'candidate';
+        const left = document.createElement('span');
+        const name = document.createElement('b');
+        name.textContent = p.variant_title && p.variant_title !== 'Default' ? `${p.title}, ${p.variant_title}` : p.title;
+        const sub = document.createElement('span');
+        sub.className = 'muted';
+        const where = p.locations.length
+          ? p.locations.map((l) => `${l.quantity} at ${l.name}`).join(', ')
+          : 'none on hand, so the cost it last came in at';
+        sub.textContent = [p.sku, p.vendor, where].filter(Boolean).join(' · ');
+        left.appendChild(name);
+        left.appendChild(sub);
+        const cost = document.createElement('span');
+        cost.className = 'cost';
+        const amount = document.createElement('b');
+        amount.textContent = money(p.unit_cost_cents);
+        const each = document.createElement('span');
+        each.className = 'muted';
+        each.textContent = 'cost each';
+        cost.appendChild(amount);
+        cost.appendChild(each);
+        button.appendChild(left);
+        button.appendChild(cost);
+        button.addEventListener('click', () => choose(p, button));
+        li.appendChild(button);
+        return li;
+      }),
+    );
+  }
+
+  async function choose(product: Product, button: HTMLButtonElement) {
+    if (!choosing) return;
+    productError.textContent = '';
+    button.disabled = true;
+    const res = await fetch('/api/admin/medusa/purchasing/costs-to-match/from-stock/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ for_sale_line: choosing.forSaleLine, variant_id: product.variant_id }),
+    });
+    const result = (await res.json().catch(() => ({}))) as { costed?: number; error?: string; message?: string };
+    if (!res.ok) {
+      productError.textContent = result.error ?? result.message ?? 'That didn’t take.';
+      button.disabled = false;
+      return;
+    }
+    window.location.reload();
+  }
+
+  document.querySelectorAll<HTMLButtonElement>('[data-product]').forEach((button) =>
+    button.addEventListener('click', () => {
+      const special = button.dataset.special !== undefined;
+      choosing = { forSaleLine: button.dataset.product!, special, variant: button.dataset.variant ?? '' };
+      const title = button.dataset.title ?? 'this sale';
+      productTitle.textContent = special ? 'Take it from stock' : 'It was this product';
+      productDetail.textContent = special
+        ? `Found one for “${title}”? It comes out of stock at what it cost there, and waits for the customer as a pickup.`
+        : `Which product was “${title}”? Its cost comes from that product’s stock, at what one unit costs there now, and the sale counts as that product from here on.`;
+      productError.textContent = '';
+      search.value = '';
+      search.hidden = !!choosing.variant;
+      productDialog.showModal();
+      if (choosing.variant) findProducts();
+      else {
+        note('Type at least two letters of its name, SKU, barcode or vendor.');
+        search.focus();
+      }
+    }),
+  );
+  search.addEventListener('input', () => {
+    window.clearTimeout(searchTimer);
+    searchTimer = window.setTimeout(findProducts, 200);
+  });
+  productDialog.querySelector('[data-close]')?.addEventListener('click', () => productDialog.close());
+</script>
+
+<style>
+  .back { display: inline-flex; align-items: center; gap: 0.25rem; color: var(--ink-3); font-weight: 600; font-size: 0.875rem; text-decoration: none; margin-bottom: 0.5rem; }
+  .back:hover { color: var(--ink); }
+  .cost-table .item-title { font-weight: 600; }
+  .cost-table td:nth-child(3) { min-width: 200px; }
+  .cost-table .sub { font-size: 0.8125rem; color: var(--ink-3); }
+  .cost-table .sub.late { color: var(--clay); font-weight: 600; }
+  .num-text { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .actions { display: flex; flex-direction: column; gap: 0.375rem; align-items: flex-end; white-space: nowrap; }
+  .nowrap { white-space: nowrap; }
+  .products summary { cursor: pointer; font-weight: 600; color: var(--ink-2); }
+  .products > p { margin: 0.75rem 0 0; }
+  .products ul { list-style: none; margin-top: 0.75rem; display: grid; gap: 0.375rem; }
+  .products li { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.9375rem; }
+  dialog { width: min(620px, calc(100vw - 2rem)); }
+  #product-search { width: 100%; margin-top: 0.75rem; }
+  .candidates { list-style: none; display: grid; gap: 4px; margin: 0.75rem 0 0; max-height: 52vh; overflow-y: auto; }
+  .candidates .muted { padding: 0.75rem 0.25rem; }
+  :global(.candidate) {
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem; width: 100%; min-height: 56px;
+    padding: 0.5rem 0.75rem; border: 0; border-radius: 10px; background: none; font: inherit; color: var(--ink); text-align: left; cursor: pointer;
+  }
+  :global(.candidate:hover), :global(.candidate:focus-visible) { background: var(--sunk); }
+  :global(.candidate > span:first-child) { display: grid; gap: 2px; }
+  :global(.candidate .muted) { font-size: 0.8125rem; }
+  :global(.candidate .cost) { font-weight: 700; font-variant-numeric: tabular-nums; display: grid; justify-items: end; gap: 2px; white-space: nowrap; }
+  :global(.candidate .cost .muted) { font-weight: 500; font-size: 0.75rem; }
+</style>

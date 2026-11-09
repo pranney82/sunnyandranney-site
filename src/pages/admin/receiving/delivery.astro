@@ -1,0 +1,48 @@
+---
+export const prerender = false;
+
+import AdminBase from '@/layouts/AdminBase.astro';
+import ReceiveDesk from '@/components/buying/ReceiveDesk.astro';
+import { svg } from '@/lib/admin-ui';
+import type { Vendor } from '@/lib/buying';
+import { MedusaProblem, medusaConfigured, medusaJson } from '@/lib/medusa-admin';
+
+if (Astro.locals.admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
+
+const env = Astro.locals.runtime.env;
+const vendorId = Astro.url.searchParams.get('vendor') ?? '';
+if (!vendorId) return Astro.redirect('/admin/receiving/');
+let vendor: Vendor | null = null;
+let locations: { id: string; name: string; warehouse: boolean }[] = [];
+let problem = medusaConfigured(env) ? '' : 'The admin isn’t connected to Medusa yet.';
+if (!problem) {
+  try {
+    const [v, l] = await Promise.all([
+      medusaJson<{ vendors: Vendor[] }>(env, 'purchasing/vendors'),
+      medusaJson<{ locations: typeof locations }>(env, 'purchasing/locations'),
+    ]);
+    vendor = v.vendors.find((x) => x.id === vendorId) ?? null;
+    locations = l.locations;
+  } catch (err) {
+    if (!(err instanceof MedusaProblem)) throw err;
+    problem = err.message;
+  }
+}
+if (!problem && !vendor) return new Response('No such vendor', { status: 404 });
+---
+
+<AdminBase title={vendor ? `Delivery from ${vendor.name}` : 'Delivery'}>
+  <div class="page-header">
+    <div>
+      <a class="back" href="/admin/receiving/"><Fragment set:html={svg('left', 16)} />Receiving</a>
+      <h1>Delivery from {vendor?.name}</h1>
+      <p class="muted">No order to check it against, so scan everything that came. An order is made for it when you finish.</p>
+    </div>
+  </div>
+  {problem && <div class="notice"><span>{problem}</span></div>}
+  {vendor && <ReceiveDesk poId={null} vendorId={vendor.id} vendorName={vendor.name} lines={[]} locations={locations} locationId={locations[0]?.id ?? null} />}
+</AdminBase>
+
+<style>
+  .back { display: inline-flex; align-items: center; gap: 0.25rem; color: var(--ink-3); font-weight: 600; font-size: 0.875rem; text-decoration: none; margin-bottom: 0.5rem; }
+</style>

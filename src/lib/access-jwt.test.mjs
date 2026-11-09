@@ -87,9 +87,17 @@ test('rejects expired, not-yet-valid, and exp-less tokens', async () => {
   assert.equal(await verifyAccessJwt(await sign(trusted, noExp), options), null);
 });
 
-test('rejects a token with no email, such as a service token', async () => {
+test('rejects a token with neither an email nor a service token ID', async () => {
   const { email: _email, ...noEmail } = goodClaims;
   assert.equal(await verifyAccessJwt(await sign(trusted, noEmail), options), null);
+});
+
+test('names a service token by its client ID, and never as a person', async () => {
+  const { email: _email, ...noEmail } = goodClaims;
+  const token = await sign(trusted, { ...noEmail, common_name: 'register-1.access' });
+  assert.deepEqual(await verifyAccessJwt(token, options), { serviceToken: 'register-1.access' });
+  // A forged service token fails the signature like anything else.
+  assert.equal(await verifyAccessJwt(await sign(attacker, { ...noEmail, common_name: 'register-1.access' }), options), null);
 });
 
 test('fails closed when unconfigured or when keys cannot be fetched', async () => {

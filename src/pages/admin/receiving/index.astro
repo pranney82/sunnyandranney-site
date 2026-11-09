@@ -1,0 +1,161 @@
+---
+export const prerender = false;
+
+import AdminBase from '@/layouts/AdminBase.astro';
+import { svg } from '@/lib/admin-ui';
+import { daysUntil, whenLabel, type PurchaseOrderSummary, type Vendor } from '@/lib/buying';
+import { MedusaProblem, medusaConfigured, medusaJson } from '@/lib/medusa-admin';
+
+if (Astro.locals.admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
+
+const env = Astro.locals.runtime.env;
+let incoming: PurchaseOrderSummary[] = [];
+let vendors: Vendor[] = [];
+let problem = medusaConfigured(env) ? '' : 'The admin isn’t connected to Medusa yet.';
+if (!problem) {
+  try {
+    const [orders, list] = await Promise.all([
+      medusaJson<{ purchase_orders: PurchaseOrderSummary[] }>(env, 'purchasing/orders', { search: '?status=ordered,partially_received' }),
+      medusaJson<{ vendors: Vendor[] }>(env, 'purchasing/vendors'),
+    ]);
+    // Late first, then soonest, then the ones with no date.
+    incoming = orders.purchase_orders.sort((a, b) => (daysUntil(a.expected_on) ?? 9999) - (daysUntil(b.expected_on) ?? 9999));
+    vendors = list.vendors.filter((v) => v.active).sort((a, b) => a.name.localeCompare(b.name));
+  } catch (err) {
+    if (!(err instanceof MedusaProblem)) throw err;
+    problem = err.message;
+  }
+}
+---
+
+<AdminBase title="Receiving">
+  <div class="page-header">
+    <div>
+      <h1>Receiving</h1>
+      <p class="muted">Count what came off the truck. Price labels and RFID tags are ready to print the moment you finish.</p>
+    </div>
+    {
+      !problem && (
+        <div class="page-actions">
+          <button type="button" class="btn" data-no-po>
+            A delivery with no order
+          </button>
+        </div>
+      )
+    }
+  </div>
+
+  {problem && <div class="notice"><span>{problem}</span></div>}
+
+  {
+    !problem && incoming.length === 0 && (
+      <div class="card empty">
+        <div class="empty-icon">
+          <Fragment set:html={svg('history', 24)} />
+        </div>
+        <h2>Nothing is on its way</h2>
+        <p>Orders show up here once they're marked as sent. A delivery that arrives without one can still be received.</p>
+        <div class="empty-actions">
+          <a class="btn btn-primary" href="/admin/buying/">
+            Purchase orders
+          </a>
+        </div>
+      </div>
+    )
+  }
+
+  {
+    incoming.length > 0 && (
+      <ul class="arrivals">
+        {incoming.map((o) => {
+          const when = whenLabel(o.expected_on);
+          const toCome = o.units - o.received;
+          return (
+            <li class="arrival card">
+              <div class="who">
+                <span class="vendor">{o.vendor_name}</span>
+                <span class="muted">
+                  {o.display_number}
+                  {o.vendor_confirmation ? ` · their #${o.vendor_confirmation}` : ''}
+                </span>
+              </div>
+              <div class:list={['when', { late: when.late }]}>{when.text}</div>
+              <div class="count">
+                <b>{toCome}</b> unit{toCome === 1 ? '' : 's'} to come
+                {o.received > 0 && <span class="muted"> · {o.received} here already</span>}
+              </div>
+              <a class="btn btn-primary" href={`/admin/receiving/${o.id}/`}>
+                Receive
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    )
+  }
+
+  <dialog id="no-po" aria-labelledby="no-po-title">
+    <h2 id="no-po-title">Who is the delivery from?</h2>
+    <p class="muted">It's received anyway, and a purchase order is made for it so the books and the vendor's invoice match up.</p>
+    <input id="no-po-search" type="search" placeholder="Vendor name or code" autocomplete="off" />
+    <ul class="vendor-list" id="no-po-list"></ul>
+    <div class="dialog-actions">
+      <button type="button" class="btn btn-ghost" data-close>Cancel</button>
+    </div>
+  </dialog>
+  <script type="application/json" id="vendors-data" set:html={JSON.stringify(vendors.map((v) => ({ id: v.id, name: v.name, code: v.code })))} />
+</AdminBase>
+
+<script>
+  const dialog = document.getElementById('no-po') as HTMLDialogElement;
+  const search = document.getElementById('no-po-search') as HTMLInputElement;
+  const list = document.getElementById('no-po-list') as HTMLUListElement;
+  const vendors = JSON.parse(document.getElementById('vendors-data')?.textContent || '[]') as { id: string; name: string; code: string | null }[];
+  function render(q: string) {
+    const term = q.trim().toLowerCase();
+    const hits = vendors.filter((v) => !term || v.name.toLowerCase().includes(term) || (v.code ?? '').toLowerCase() === term).slice(0, 50);
+    list.replaceChildren(
+      ...hits.map((v) => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.className = 'vendor-row';
+        a.href = `/admin/receiving/delivery/?vendor=${encodeURIComponent(v.id)}`;
+        a.textContent = v.name;
+        if (v.code) {
+          const code = document.createElement('span');
+          code.className = 'muted';
+          code.textContent = v.code;
+          a.appendChild(code);
+        }
+        li.appendChild(a);
+        return li;
+      }),
+    );
+  }
+  document.querySelector('[data-no-po]')?.addEventListener('click', () => {
+    search.value = '';
+    render('');
+    dialog.showModal();
+    search.focus();
+  });
+  search?.addEventListener('input', () => render(search.value));
+  dialog?.querySelector('[data-close]')?.addEventListener('click', () => dialog.close());
+</script>
+
+<style>
+  .arrivals { list-style: none; display: grid; gap: 0.75rem; }
+  .arrival { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) auto; gap: 0.75rem 1.25rem; align-items: center; margin: 0; }
+  .who { display: grid; gap: 0.125rem; min-width: 0; }
+  .vendor { font-weight: 700; font-size: 1.0625rem; }
+  .when { font-weight: 600; color: var(--ink-2); }
+  .when.late { color: var(--clay); }
+  .count b { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+  .vendor-list { list-style: none; max-height: 50vh; overflow-y: auto; margin-top: 0.75rem; display: grid; gap: 2px; }
+  :global(.vendor-row) { display: flex; justify-content: space-between; align-items: center; min-height: 48px; padding: 0 0.75rem; border-radius: 10px; color: var(--ink); text-decoration: none; font-weight: 600; }
+  :global(.vendor-row:hover) { background: var(--sunk); }
+  dialog p.muted { margin: -0.5rem 0 0.75rem; }
+  @media (max-width: 720px) {
+    .arrival { grid-template-columns: 1fr auto; }
+    .arrival .btn { grid-column: 1 / -1; }
+  }
+</style>

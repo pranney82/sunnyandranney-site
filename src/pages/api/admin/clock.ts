@@ -1,11 +1,25 @@
 import type { APIRoute } from 'astro';
 import { dbOf, json, readJson, requireRole } from '@/lib/admin-http';
 import { verifyPin } from '@/lib/time-clock/pin.mjs';
-import { clockIn, clockOut, countPinAttempt, getStaff } from '@/lib/time-clock/store';
+import { clockIn, clockOut, countPinAttempt, getStaff, listStaff, openShiftsByStaff } from '@/lib/time-clock/store';
 
 export const prerender = false;
 
 const WRONG_PIN = 'That PIN did not match. Try again or ask a manager.';
+
+/** Who can clock in, and since when anyone is clocked in, for a register's time clock button. */
+export const GET: APIRoute = async (context) => {
+  const admin = requireRole(context.locals, 'manager', 'kiosk');
+  if (admin instanceof Response) return admin;
+
+  const db = dbOf(context);
+  const [staff, open] = await Promise.all([listStaff(db, true), openShiftsByStaff(db)]);
+  return json({
+    people: staff
+      .filter((person) => person.pin_hash)
+      .map((person) => ({ id: person.id, name: person.display_name, clocked_in_at: open.get(person.id) ?? null })),
+  });
+};
 
 export const POST: APIRoute = async (context) => {
   const admin = requireRole(context.locals, 'manager', 'kiosk');

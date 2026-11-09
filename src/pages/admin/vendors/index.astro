@@ -1,0 +1,248 @@
+---
+export const prerender = false;
+
+import AdminBase from '@/layouts/AdminBase.astro';
+import { svg } from '@/lib/admin-ui';
+import { money, type Vendor } from '@/lib/buying';
+import { MedusaProblem, medusaConfigured, medusaJson } from '@/lib/medusa-admin';
+
+if (Astro.locals.admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
+
+const env = Astro.locals.runtime.env;
+let vendors: Vendor[] = [];
+let problem = medusaConfigured(env) ? '' : 'The admin isn’t connected to Medusa yet.';
+if (!problem) {
+  try {
+    vendors = (await medusaJson<{ vendors: Vendor[] }>(env, 'purchasing/vendors')).vendors;
+  } catch (err) {
+    if (!(err instanceof MedusaProblem)) throw err;
+    problem = err.message;
+  }
+}
+const wholesale = vendors.filter((v) => v.kind === 'wholesale' && v.active);
+const coded = wholesale.filter((v) => v.code);
+const noLead = wholesale.filter((v) => v.lead_days === null);
+const KIND = { wholesale: 'Wholesale', retail: 'Bought retail', house: 'House' } as const;
+---
+
+<AdminBase title="Vendors">
+  <div class="page-header">
+    <div>
+      <h1>Vendors</h1>
+      <p class="muted">Built from the vendor names in Shopify. Lead times and minimums decide what suggested orders ask for.</p>
+    </div>
+    {
+      !problem && (
+        <div class="page-actions">
+          <button type="button" class="btn btn-primary" data-edit="">
+            <Fragment set:html={svg('plus', 18)} />
+            Add a vendor
+          </button>
+        </div>
+      )
+    }
+  </div>
+  {problem && <div class="notice"><span>{problem}</span></div>}
+  {
+    !problem && (
+      <>
+        <div class="stats">
+          <div class="stat">
+            <p class="stat-label">Wholesale vendors</p>
+            <p class="stat-value">{wholesale.length}</p>
+            <p class="stat-note">{vendors.length - wholesale.length} retail, house or inactive</p>
+          </div>
+          <div class="stat">
+            <p class="stat-label">With a title code</p>
+            <p class="stat-value">{coded.length}</p>
+            <p class="stat-note">like JFN at the end of product names</p>
+          </div>
+          <div class:list={['stat', { 'stat-accent': noLead.length > 0 }]}>
+            <p class="stat-label">No lead time</p>
+            <p class="stat-value">{noLead.length}</p>
+            <p class="stat-note">suggestions assume 14 days</p>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <input id="filter" type="search" placeholder="Find a vendor, code or contact" autocomplete="off" aria-label="Find a vendor" />
+          <label class="check">
+            <input type="checkbox" id="missing" /> Only those missing a lead time
+          </label>
+        </div>
+
+        <div class="card">
+          <div class="table-scroll">
+            <table class="vendors">
+              <thead>
+                <tr>
+                  <th>Vendor</th>
+                  <th>Code</th>
+                  <th class="num">Lead time</th>
+                  <th class="num">Terms</th>
+                  <th class="num">Minimum</th>
+                  <th>Contact</th>
+                </tr>
+              </thead>
+              <tbody>
+                {vendors.map((v) => (
+                  <tr
+                    data-edit={v.id}
+                    data-search={[v.name, v.code, ...v.aliases, v.contact_name, v.email].filter(Boolean).join(' ').toLowerCase()}
+                    data-missing={v.kind === 'wholesale' && v.active && v.lead_days === null ? '1' : '0'}
+                    class:list={{ inactive: !v.active }}
+                  >
+                    <td>
+                      <div class="name">{v.name}</div>
+                      <div class="sub">
+                        {[v.kind !== 'wholesale' ? KIND[v.kind] : null, !v.active ? 'Inactive' : null, v.aliases.length ? `Also ${v.aliases.slice(0, 2).join(', ')}${v.aliases.length > 2 ? '…' : ''}` : null]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </div>
+                    </td>
+                    <td>{v.code ? <span class="code">{v.code}</span> : <span class="muted">—</span>}</td>
+                    <td class:list={['num', { gap: v.kind === 'wholesale' && v.lead_days === null }]}>{v.lead_days === null ? 'Not set' : `${v.lead_days} days`}</td>
+                    <td class="num">{v.terms_days === null ? '—' : `Net ${v.terms_days}`}</td>
+                    <td class="num">{v.minimum_order_cents === null ? '—' : money(v.minimum_order_cents, { whole: true })}</td>
+                    <td>{v.contact_name || v.email || v.phone || <span class="muted">—</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p class="muted none" id="none" hidden>No vendor matches.</p>
+        </div>
+      </>
+    )
+  }
+
+  <dialog id="vendor-dialog" aria-labelledby="vendor-title">
+    <h2 id="vendor-title">Vendor</h2>
+    <p class="form-error" id="error"></p>
+    <div class="field"><label for="v-name">Name</label><input id="v-name" type="text" autocomplete="off" /></div>
+    <div class="field-row">
+      <div class="field"><label for="v-code">Title code</label><input id="v-code" type="text" maxlength="5" placeholder="JFN" autocomplete="off" /></div>
+      <div class="field"><label for="v-account">Our account number</label><input id="v-account" type="text" autocomplete="off" /></div>
+    </div>
+    <div class="field-row three">
+      <div class="field"><label for="v-lead">Lead time, days</label><input id="v-lead" type="number" min="0" inputmode="numeric" /></div>
+      <div class="field"><label for="v-terms">Pay within, days</label><input id="v-terms" type="number" min="0" inputmode="numeric" /></div>
+      <div class="field"><label for="v-min">Order minimum</label><input id="v-min" type="text" inputmode="decimal" placeholder="$0" /></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label for="v-contact">Contact</label><input id="v-contact" type="text" autocomplete="off" /></div>
+      <div class="field"><label for="v-phone">Phone</label><input id="v-phone" type="tel" autocomplete="off" /></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label for="v-email">Email for orders</label><input id="v-email" type="email" autocomplete="off" /></div>
+      <div class="field"><label for="v-web">Website or portal</label><input id="v-web" type="text" autocomplete="off" /></div>
+    </div>
+    <div class="field"><label for="v-notes">Notes</label><textarea id="v-notes" rows="2"></textarea></div>
+    <label class="check"><input type="checkbox" id="v-active" checked /> We still buy from them</label>
+    <div class="dialog-actions">
+      <button type="button" class="btn btn-ghost" data-close>Cancel</button>
+      <button type="button" class="btn btn-dark" id="v-save">Save</button>
+    </div>
+  </dialog>
+  <script type="application/json" id="vendors-data" set:html={JSON.stringify(vendors)} />
+</AdminBase>
+
+<script>
+  type Vendor = {
+    id: string; name: string; code: string | null; account_number: string | null; lead_days: number | null; terms_days: number | null;
+    minimum_order_cents: number | null; contact_name: string | null; phone: string | null; email: string | null; website: string | null;
+    notes: string | null; active: boolean;
+  };
+  const vendors = JSON.parse(document.getElementById('vendors-data')?.textContent || '[]') as Vendor[];
+  const filter = document.getElementById('filter') as HTMLInputElement | null;
+  const missing = document.getElementById('missing') as HTMLInputElement | null;
+  const rows = [...document.querySelectorAll<HTMLTableRowElement>('tbody tr')];
+  const none = document.getElementById('none');
+  function apply() {
+    const term = filter?.value.trim().toLowerCase() ?? '';
+    let shown = 0;
+    for (const row of rows) {
+      const ok = (!term || row.dataset.search!.includes(term)) && (!missing?.checked || row.dataset.missing === '1');
+      row.hidden = !ok;
+      if (ok) shown++;
+    }
+    if (none) none.hidden = shown > 0;
+  }
+  filter?.addEventListener('input', apply);
+  missing?.addEventListener('change', apply);
+
+  const dialog = document.getElementById('vendor-dialog') as HTMLDialogElement;
+  const error = document.getElementById('error')!;
+  const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
+  let editing: string | null = null;
+  function open(id: string) {
+    const v = vendors.find((x) => x.id === id);
+    editing = v ? v.id : null;
+    error.textContent = '';
+    (document.getElementById('vendor-title') as HTMLElement).textContent = v ? v.name : 'New vendor';
+    $('v-name').value = v?.name ?? '';
+    $('v-code').value = v?.code ?? '';
+    $('v-account').value = v?.account_number ?? '';
+    $('v-lead').value = v?.lead_days?.toString() ?? '';
+    $('v-terms').value = v?.terms_days?.toString() ?? '';
+    $('v-min').value = v?.minimum_order_cents ? (v.minimum_order_cents / 100).toString() : '';
+    $('v-contact').value = v?.contact_name ?? '';
+    $('v-phone').value = v?.phone ?? '';
+    $('v-email').value = v?.email ?? '';
+    $('v-web').value = v?.website ?? '';
+    ($('v-notes') as unknown as HTMLTextAreaElement).value = v?.notes ?? '';
+    $('v-active').checked = v ? v.active : true;
+    dialog.showModal();
+    (v ? $('v-lead') : $('v-name')).focus();
+  }
+  document.querySelectorAll<HTMLElement>('[data-edit]').forEach((el) => el.addEventListener('click', () => open(el.dataset.edit ?? '')));
+  dialog.querySelector('[data-close]')?.addEventListener('click', () => dialog.close());
+  document.getElementById('v-save')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget as HTMLButtonElement;
+    const text = (id: string) => $(id).value.trim() || null;
+    const whole = (id: string) => ($(id).value.trim() === '' ? null : Math.max(0, Math.floor(Number($(id).value))));
+    const dollars = parseFloat($('v-min').value.replace(/[^0-9.]/g, ''));
+    const body = {
+      ...(editing ? { id: editing } : {}),
+      name: $('v-name').value.trim(),
+      code: text('v-code')?.toUpperCase() ?? null,
+      account_number: text('v-account'),
+      lead_days: whole('v-lead'),
+      terms_days: whole('v-terms'),
+      minimum_order_cents: Number.isFinite(dollars) && dollars > 0 ? Math.round(dollars * 100) : null,
+      contact_name: text('v-contact'),
+      phone: text('v-phone'),
+      email: text('v-email'),
+      website: text('v-web'),
+      notes: ($('v-notes') as unknown as HTMLTextAreaElement).value.trim() || null,
+      active: $('v-active').checked,
+    };
+    if (!body.name) {
+      error.textContent = 'A vendor needs a name.';
+      return;
+    }
+    button.disabled = true;
+    const res = await fetch('/api/admin/medusa/purchasing/vendors/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (res.ok) window.location.reload();
+    else {
+      error.textContent = ((await res.json().catch(() => ({}))) as { error?: string }).error ?? 'That didn’t save.';
+      button.disabled = false;
+    }
+  });
+</script>
+
+<style>
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.25rem; margin-bottom: 1rem; }
+  .toolbar input[type='search'] { flex: 1 1 280px; max-width: 420px; }
+  .vendors tbody tr { cursor: pointer; transition: background-color 0.12s var(--ease); }
+  .vendors tbody tr:hover { background: var(--sunk); }
+  .vendors tr.inactive { opacity: 0.55; }
+  .name { font-weight: 600; }
+  .sub { font-size: 0.8125rem; color: var(--ink-3); }
+  .code { font-weight: 700; font-size: 0.8125rem; letter-spacing: 0.04em; padding: 0.125rem 0.5rem; border-radius: 6px; background: var(--sunk); }
+  .gap { color: var(--clay); font-weight: 600; }
+  .none { padding: 1rem 0 0; }
+  dialog { width: min(560px, calc(100vw - 2rem)); }
+  .three { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 480px) { .three { grid-template-columns: 1fr; } }
+</style>

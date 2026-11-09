@@ -19,17 +19,6 @@
   position: relative;
 }
 
-@media (prefers-color-scheme: dark) {
-  .sched {
-    --p0: #7bbfd6; --p0-soft: #15313b; --p0-ink: #b5deec;
-    --p1: #ffd400; --p1-soft: #3d3300; --p1-ink: #ffe680;
-    --p2: #a8c79a; --p2-soft: #1d2a19; --p2-ink: #cfe3c5;
-    --p3: #cfa6e0; --p3-soft: #2c2033; --p3-ink: #e6cfef;
-    --p4: #eba684; --p4-soft: #3a241a; --p4-ink: #f5ccb6;
-    --p5: #f0a3bb; --p5-soft: #3a1c26; --p5-ink: #f8c9d7;
-  }
-}
-
 .sched .c0 { --pc: var(--p0); --pc-soft: var(--p0-soft); --pc-ink: var(--p0-ink); }
 .sched .c1 { --pc: var(--p1); --pc-soft: var(--p1-soft); --pc-ink: var(--p1-ink); }
 .sched .c2 { --pc: var(--p2); --pc-soft: var(--p2-soft); --pc-ink: var(--p2-ink); }

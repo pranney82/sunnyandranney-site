@@ -1,0 +1,367 @@
+---
+/**
+ * Counting a delivery: scan or tap each unit as good, damaged or refused, then
+ * finish, and the labels are made. Used for a purchase order and for a delivery
+ * that came without one. Counts stay on this device until the delivery is
+ * finished, so a phone that sleeps loses nothing.
+ */
+import type { PoLine } from '@/lib/buying';
+
+interface Props {
+  /** The order being received, or null for a delivery with no order. */
+  poId: string | null;
+  vendorId: string;
+  vendorName: string;
+  lines: PoLine[];
+  locations: { id: string; name: string; warehouse: boolean }[];
+  locationId: string | null;
+}
+
+const { poId, vendorId, vendorName, lines, locations, locationId } = Astro.props;
+const data = {
+  po_id: poId,
+  vendor_id: vendorId,
+  vendor_name: vendorName,
+  location_id: locationId,
+  lines: lines
+    .filter((l) => l.outstanding > 0 || l.quantity_received === 0)
+    .map((l) => ({
+      key: l.id,
+      po_line_id: l.id,
+      variant_id: l.variant_id,
+      title: l.title,
+      sub: [l.vendor_sku && `Their SKU ${l.vendor_sku}`, l.barcode].filter(Boolean).join(' · '),
+      barcode: l.barcode,
+      thumbnail: l.thumbnail,
+      to_come: l.outstanding,
+      cost: l.unit_cost_cents,
+      extra: false,
+    })),
+};
+---
+
+<div class="desk" data-desk>
+  <div class="scanbar card">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true">
+      <path d="M4 7V5.5A1.5 1.5 0 0 1 5.5 4H7M17 4h1.5A1.5 1.5 0 0 1 20 5.5V7M20 17v1.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H5.5A1.5 1.5 0 0 1 4 18.5V17M8 8v8M11 8v8M14 8v8M17 8v8" />
+    </svg>
+    <input id="scan" type="search" inputmode="search" autocomplete="off" placeholder={`Scan a barcode, or type to find something from ${vendorName}`} aria-label="Scan or search" />
+    <p id="scan-feedback" class="feedback" role="status" aria-live="polite"></p>
+  </div>
+  <p class="resume" id="resume" hidden>
+    Picked up the counts you'd started on this device. <button type="button" class="link" id="start-over">Start over</button>
+  </p>
+
+  <ul class="lines" id="lines"></ul>
+  <p class="muted none" id="none" hidden>Scan the first item, or search for it above.</p>
+
+  <div class="finish card">
+    {
+      !poId && (
+        <div class="field">
+          <label for="location">Received at</label>
+          <select id="location">
+            {locations.map((l) => (
+              <option value={l.id}>{l.name}</option>
+            ))}
+          </select>
+        </div>
+      )
+    }
+    <div class="field">
+      <label for="freight">Freight on this delivery</label>
+      <input id="freight" type="text" inputmode="decimal" placeholder="$0.00" />
+    </div>
+    <div class="field">
+      <label for="reference">Packing slip or bill of lading</label>
+      <input id="reference" type="text" placeholder="Optional" autocomplete="off" />
+    </div>
+    <div class="tally">
+      <p class="tally-main" id="tally">Nothing counted yet</p>
+      <p class="muted" id="tally-sub"></p>
+    </div>
+    <div class="go">
+      <p class="form-error" id="error"></p>
+      <button type="button" class="btn btn-primary" id="finish" disabled>Finish and make labels</button>
+    </div>
+  </div>
+</div>
+<script type="application/json" id="desk-data" set:html={JSON.stringify(data)} />
+
+<script>
+  type Line = {
+    key: string;
+    po_line_id: string | null;
+    variant_id: string;
+    title: string;
+    sub: string;
+    barcode: string | null;
+    thumbnail: string | null;
+    to_come: number;
+    cost: number | null;
+    extra: boolean;
+    good: number;
+    damaged: number;
+    refused: number;
+  };
+  const data = JSON.parse(document.getElementById('desk-data')!.textContent || '{}') as {
+    po_id: string | null;
+    vendor_id: string;
+    vendor_name: string;
+    location_id: string | null;
+    lines: Omit<Line, 'good' | 'damaged' | 'refused'>[];
+  };
+  const storeKey = `receive:${data.po_id ?? `vendor:${data.vendor_id}`}`;
+  const read = () => {
+    try {
+      return JSON.parse(localStorage.getItem(storeKey) || 'null');
+    } catch {
+      return null;
+    }
+  };
+  const write = (value: unknown) => {
+    try {
+      if (value === null) localStorage.removeItem(storeKey);
+      else localStorage.setItem(storeKey, JSON.stringify(value));
+    } catch {
+      /* private mode: counts just aren't kept */
+    }
+  };
+
+  const saved = read() as { client_receipt_id: string; lines: Line[] } | null;
+  let clientReceiptId: string = saved?.client_receipt_id ?? crypto.randomUUID();
+  let lines: Line[] = data.lines.map((l) => {
+    const s = saved?.lines.find((x) => x.key === l.key);
+    return { ...l, good: s?.good ?? 0, damaged: s?.damaged ?? 0, refused: s?.refused ?? 0 };
+  });
+  for (const extra of saved?.lines.filter((l) => l.extra) ?? []) lines.push(extra);
+  const counted = (l: Line) => l.good + l.damaged + l.refused;
+  if (saved && lines.some((l) => counted(l) > 0)) document.getElementById('resume')!.hidden = false;
+
+  const list = document.getElementById('lines')!;
+  const none = document.getElementById('none')!;
+  const scan = document.getElementById('scan') as HTMLInputElement;
+  const feedback = document.getElementById('scan-feedback')!;
+  const tally = document.getElementById('tally')!;
+  const tallySub = document.getElementById('tally-sub')!;
+  const finish = document.getElementById('finish') as HTMLButtonElement;
+  const error = document.getElementById('error')!;
+  const esc = (s: string) => s.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]!);
+  const money = (c: number) => `$${Math.floor(c / 100).toLocaleString('en-US')}.${String(c % 100).padStart(2, '0')}`;
+
+  function counter(l: Line, field: 'good' | 'damaged' | 'refused', label: string) {
+    return `<div class="counter ${field}"><span class="counter-label">${label}</span><div class="stepper">
+      <button type="button" data-k="${esc(l.key)}" data-f="${field}" data-d="-1" aria-label="One fewer ${label.toLowerCase()}">−</button>
+      <output>${l[field]}</output>
+      <button type="button" data-k="${esc(l.key)}" data-f="${field}" data-d="1" aria-label="One more ${label.toLowerCase()}">+</button></div></div>`;
+  }
+  function card(l: Line) {
+    const done = counted(l);
+    const status = l.extra ? '<span class="badge badge-warn">Not on the order</span>' : done === 0 ? `<span class="to-come"><b>${l.to_come}</b> to come</span>` : done === l.to_come ? '<span class="badge badge-approved">All counted</span>' : done > l.to_come ? `<span class="badge badge-warn">${done - l.to_come} more than ordered</span>` : `<span class="to-come"><b>${l.to_come - done}</b> still to count</span>`;
+    return `<li class="line card${done ? ' started' : ''}" data-line="${esc(l.key)}">
+      <div class="line-top">
+        ${l.thumbnail ? `<img src="${esc(l.thumbnail)}" alt="" width="64" height="64" loading="lazy">` : '<span class="no-photo"></span>'}
+        <div class="line-text"><div class="title">${esc(l.title)}</div><div class="sub">${esc(l.sub)}${l.extra && l.cost !== null ? ` · ${money(l.cost)} each` : ''}</div></div>
+        <div class="line-status">${status}${!l.extra && done < l.to_come ? `<button type="button" class="btn btn-small" data-all="${esc(l.key)}">All ${l.to_come} arrived</button>` : ''}</div>
+      </div>
+      <div class="counters">${counter(l, 'good', 'Good')}${counter(l, 'damaged', 'Damaged')}${counter(l, 'refused', 'Refused')}</div>
+    </li>`;
+  }
+  function render(flashKey?: string) {
+    list.innerHTML = lines.map(card).join('');
+    none.hidden = lines.length > 0;
+    if (flashKey) {
+      const el = list.querySelector<HTMLElement>(`[data-line="${CSS.escape(flashKey)}"]`);
+      el?.classList.add('flash');
+      el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+    totals();
+  }
+  function totals() {
+    const good = lines.reduce((s, l) => s + l.good, 0);
+    const damaged = lines.reduce((s, l) => s + l.damaged, 0);
+    const refused = lines.reduce((s, l) => s + l.refused, 0);
+    const toCome = lines.filter((l) => !l.extra).reduce((s, l) => s + l.to_come, 0);
+    const parts = [`${good} good`];
+    if (damaged) parts.push(`${damaged} damaged`);
+    if (refused) parts.push(`${refused} refused`);
+    tally.textContent = good + damaged + refused ? parts.join(' · ') : 'Nothing counted yet';
+    const left = lines.filter((l) => !l.extra).reduce((s, l) => s + Math.max(l.to_come - counted(l), 0), 0);
+    tallySub.textContent = toCome ? (left ? `${left} of ${toCome} still not counted; they stay on order` : 'Everything on the order is counted') : '';
+    finish.disabled = good + damaged + refused === 0;
+    write({ client_receipt_id: clientReceiptId, lines });
+  }
+
+  list.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement;
+    const all = target.closest<HTMLElement>('[data-all]');
+    if (all) {
+      const l = lines.find((x) => x.key === all.dataset.all)!;
+      l.good = Math.max(l.to_come - l.damaged - l.refused, l.good);
+      render(l.key);
+      return;
+    }
+    const step = target.closest<HTMLElement>('[data-f]');
+    if (!step) return;
+    const l = lines.find((x) => x.key === step.dataset.k)!;
+    const field = step.dataset.f as 'good' | 'damaged' | 'refused';
+    l[field] = Math.max(0, l[field] + Number(step.dataset.d));
+    if (l.extra && counted(l) === 0) lines = lines.filter((x) => x !== l);
+    render();
+  });
+
+  function say(text: string, kind: 'ok' | 'warn' | '') {
+    feedback.textContent = text;
+    feedback.className = `feedback ${kind}`;
+  }
+
+  // A scan (or Enter) counts one good unit of the matching line, or offers to add it.
+  async function look(raw: string) {
+    const q = raw.trim();
+    if (!q) return;
+    const hit = lines.find((l) => l.barcode && l.barcode.toLowerCase() === q.toLowerCase());
+    if (hit) {
+      hit.good += 1;
+      render(hit.key);
+      const done = counted(hit);
+      say(`${hit.title}: ${done}${hit.extra ? '' : ` of ${hit.to_come}`} counted`, 'ok');
+      return;
+    }
+    say(`Looking for “${q}”…`, '');
+    const res = await fetch(`/api/admin/medusa/purchasing/vendors/${encodeURIComponent(data.vendor_id)}/items/?q=${encodeURIComponent(q)}`);
+    const json = (await res.json().catch(() => ({}))) as { items?: { variant_id: string; title: string; sku: string | null; barcode: string | null; thumbnail: string | null; unit_cost_cents: number | null }[] };
+    const items = json.items ?? [];
+    const match = items.find((it) => it.barcode && it.barcode.toLowerCase() === q.toLowerCase()) ?? (items.length === 1 ? items[0] : null);
+    if (!match) {
+      say(items.length ? `${items.length} items match “${q}”. Scan its barcode, or type more of its name.` : `Nothing from ${data.vendor_name} matches “${q}”.`, 'warn');
+      return;
+    }
+    const existing = lines.find((l) => l.variant_id === match.variant_id);
+    if (existing) {
+      existing.good += 1;
+      render(existing.key);
+      say(`${existing.title}: ${counted(existing)} counted`, 'ok');
+      return;
+    }
+    if (match.unit_cost_cents === null) {
+      say(`${match.title} isn't on the order and has no cost on file. Add a cost to the vendor's item first.`, 'warn');
+      return;
+    }
+    const added: Line = {
+      key: `extra:${match.variant_id}`,
+      po_line_id: null,
+      variant_id: match.variant_id,
+      title: match.title,
+      sub: [match.sku, match.barcode].filter(Boolean).join(' · '),
+      barcode: match.barcode,
+      thumbnail: match.thumbnail,
+      to_come: 0,
+      cost: match.unit_cost_cents,
+      extra: true,
+      good: 1,
+      damaged: 0,
+      refused: 0,
+    };
+    lines.push(added);
+    render(added.key);
+    say(`${match.title} wasn't on the order. It's received, and someone will check it with ${data.vendor_name}.`, 'warn');
+  }
+  scan.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      const value = scan.value;
+      scan.value = '';
+      look(value);
+    }
+  });
+
+  document.getElementById('start-over')?.addEventListener('click', () => {
+    write(null);
+    window.location.reload();
+  });
+
+  finish.addEventListener('click', async () => {
+    error.textContent = '';
+    finish.disabled = true;
+    finish.textContent = 'Finishing…';
+    const dollars = parseFloat((document.getElementById('freight') as HTMLInputElement).value.replace(/[^0-9.]/g, ''));
+    const reference = (document.getElementById('reference') as HTMLInputElement).value.trim();
+    const location = document.getElementById('location') as unknown as HTMLSelectElement | null;
+    const body = {
+      client_receipt_id: clientReceiptId,
+      ...(data.po_id ? { purchase_order_id: data.po_id } : { vendor_id: data.vendor_id, location_id: location?.value ?? data.location_id }),
+      received_at: new Date().toISOString(),
+      freight_cents: Number.isFinite(dollars) ? Math.round(dollars * 100) : 0,
+      reference: reference || null,
+      lines: lines
+        .filter((l) => counted(l) > 0)
+        .map((l) =>
+          l.po_line_id
+            ? { purchase_order_line_id: l.po_line_id, accepted: l.good, damaged: l.damaged, refused: l.refused }
+            : { variant_id: l.variant_id, accepted: l.good, damaged: l.damaged, refused: l.refused, unit_cost_cents: l.cost },
+        ),
+    };
+    try {
+      const res = await fetch('/api/admin/medusa/purchasing/receipts/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const json = (await res.json().catch(() => ({}))) as { error?: string; label_run_id?: string; purchase_order?: { id: string }; receipt?: { purchase_order_id: string } };
+      if (!res.ok) throw new Error(json.error ?? 'The delivery didn’t save. Your counts are kept; try again.');
+      write(null);
+      const po = json.purchase_order?.id ?? json.receipt?.purchase_order_id;
+      window.location.href = `/admin/receiving/labels/${encodeURIComponent(json.label_run_id ?? '')}/?po=${encodeURIComponent(po ?? '')}`;
+    } catch (err) {
+      error.textContent = err instanceof Error ? err.message : 'The delivery didn’t save.';
+      finish.disabled = false;
+      finish.textContent = 'Finish and make labels';
+    }
+  });
+
+  render();
+  scan.focus();
+</script>
+
+<style>
+  .desk { display: grid; gap: 0.75rem; }
+  .scanbar { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0.5rem 0.75rem; margin: 0; position: sticky; top: 0.5rem; z-index: 3; box-shadow: var(--shadow); }
+  .scanbar svg { color: var(--ink-3); }
+  .scanbar input { min-height: 52px; font-size: 1.0625rem; border: 0; box-shadow: none; padding-left: 0; }
+  .scanbar input:focus { box-shadow: none; }
+  .feedback { grid-column: 1 / -1; font-weight: 600; font-size: 0.9375rem; min-height: 0; }
+  .feedback:empty { display: none; }
+  :global(.feedback.ok) { color: var(--sage); }
+  :global(.feedback.warn) { color: var(--clay); }
+  .resume { font-size: 0.9375rem; color: var(--ink-2); }
+  .link { background: none; border: 0; color: var(--teal); font: inherit; font-weight: 600; cursor: pointer; padding: 0; }
+  .lines { list-style: none; display: grid; gap: 0.75rem; }
+  :global(.desk .line) { margin: 0; display: grid; gap: 0.875rem; transition: box-shadow 0.2s var(--ease); }
+  :global(.desk .line.started) { border-color: color-mix(in srgb, var(--ink) 18%, var(--line)); }
+  :global(.desk .line.flash) { animation: arrive 1.2s var(--ease); }
+  @keyframes arrive { 0%, 25% { background: var(--gold-soft); } 100% { background: var(--panel); } }
+  :global(.desk .line-top) { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 0.875rem; align-items: center; }
+  :global(.desk .line-top img), :global(.desk .no-photo) { width: 64px; height: 64px; border-radius: 12px; object-fit: cover; background: #fff; }
+  :global(.desk .no-photo) { background: var(--sunk); display: block; }
+  :global(.desk .title) { font-weight: 700; line-height: 1.25; }
+  :global(.desk .sub) { font-size: 0.8125rem; color: var(--ink-3); margin-top: 0.125rem; }
+  :global(.desk .line-status) { display: grid; gap: 0.375rem; justify-items: end; text-align: right; }
+  :global(.desk .to-come) { color: var(--ink-2); }
+  :global(.desk .to-come b) { font-size: 1.375rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+  :global(.desk .counters) { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.625rem; }
+  :global(.desk .counter) { display: grid; gap: 0.25rem; }
+  :global(.desk .counter-label) { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+  :global(.desk .stepper) { display: grid; grid-template-columns: 52px 1fr 52px; align-items: center; border-radius: 12px; background: var(--sunk); box-shadow: inset 0 0 0 1px var(--line); }
+  :global(.desk .stepper button) { height: 52px; border: 0; background: none; font: inherit; font-size: 1.5rem; font-weight: 600; color: var(--ink); cursor: pointer; border-radius: 12px; }
+  :global(.desk .stepper button:active) { background: color-mix(in srgb, var(--ink) 8%, transparent); }
+  :global(.desk .stepper output) { text-align: center; font-size: 1.375rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  :global(.desk .counter.good .stepper) { background: var(--sage-soft); }
+  :global(.desk .counter.damaged .stepper) { background: var(--clay-soft); }
+  .none { padding: 1rem 0; }
+  .finish { position: sticky; bottom: 0.75rem; z-index: 3; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.75rem 1rem; align-items: end; box-shadow: var(--shadow); }
+  .finish .field { margin: 0; }
+  .tally-main { font-size: 1.125rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .go { display: grid; gap: 0.5rem; }
+  .go .form-error { margin: 0; }
+  @media (max-width: 560px) {
+    :global(.desk .line-top) { grid-template-columns: 56px minmax(0, 1fr); }
+    :global(.desk .line-status) { grid-column: 1 / -1; justify-items: start; text-align: left; grid-auto-flow: column; align-items: center; justify-content: space-between; }
+    :global(.desk .stepper) { grid-template-columns: 44px 1fr 44px; }
+  }
+</style>

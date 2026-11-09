@@ -1,0 +1,75 @@
+---
+export const prerender = false;
+
+import AdminBase from '@/layouts/AdminBase.astro';
+import ReceiveDesk from '@/components/buying/ReceiveDesk.astro';
+import { svg } from '@/lib/admin-ui';
+import { STATUS, whenLabel, type PurchaseOrder } from '@/lib/buying';
+import { MedusaProblem, medusaConfigured, medusaJson } from '@/lib/medusa-admin';
+
+if (Astro.locals.admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
+
+const env = Astro.locals.runtime.env;
+const id = Astro.params.id ?? '';
+let po: PurchaseOrder | null = null;
+let locations: { id: string; name: string; warehouse: boolean }[] = [];
+let problem = medusaConfigured(env) ? '' : 'The admin isn’t connected to Medusa yet.';
+if (!problem) {
+  try {
+    const [detail, l] = await Promise.all([
+      medusaJson<{ purchase_order: PurchaseOrder }>(env, `purchasing/orders/${encodeURIComponent(id)}`),
+      medusaJson<{ locations: typeof locations }>(env, 'purchasing/locations'),
+    ]);
+    po = detail.purchase_order;
+    locations = l.locations;
+  } catch (err) {
+    if (!(err instanceof MedusaProblem)) throw err;
+    if (err.status === 404) return new Response('No such purchase order', { status: 404 });
+    problem = err.message;
+  }
+}
+const receivable = po?.status === 'ordered' || po?.status === 'partially_received';
+const when = po ? whenLabel(po.expected_on) : null;
+const place = locations.find((l) => l.id === po?.location_id)?.name;
+---
+
+<AdminBase title={po ? `Receive ${po.display_number}` : 'Receive'}>
+  <div class="page-header">
+    <div>
+      <a class="back" href="/admin/receiving/"><Fragment set:html={svg('left', 16)} />Receiving</a>
+      {
+        po && (
+          <>
+            <h1>
+              {po.vendor.name} <span class="muted-title">· {po.display_number}</span>
+            </h1>
+            <p class="muted">
+              {when && !when.late ? when.text : when?.late ? <span class="late">{when.text}</span> : ''}
+              {place ? ` · into ${place}` : ''}
+              {po.vendor_confirmation ? ` · their #${po.vendor_confirmation}` : ''}
+            </p>
+          </>
+        )
+      }
+    </div>
+    {po && <a class="btn btn-ghost" href={`/admin/buying/${po.id}/`}>See the order</a>}
+  </div>
+  {problem && <div class="notice"><span>{problem}</span></div>}
+  {
+    po && !receivable && (
+      <div class="notice notice-info">
+        <span>
+          This order is {STATUS[po.status].label.toLowerCase()}, so there's nothing to receive against it.
+          {po.status === 'draft' ? ' Mark it as sent first.' : ''}
+        </span>
+      </div>
+    )
+  }
+  {po && receivable && <ReceiveDesk poId={po.id} vendorId={po.vendor.id} vendorName={po.vendor.name} lines={po.lines} locations={locations} locationId={po.location_id} />}
+</AdminBase>
+
+<style>
+  .back { display: inline-flex; align-items: center; gap: 0.25rem; color: var(--ink-3); font-weight: 600; font-size: 0.875rem; text-decoration: none; margin-bottom: 0.5rem; }
+  .muted-title { color: var(--ink-3); font-weight: 600; }
+  .late { color: var(--clay); font-weight: 600; }
+</style>
