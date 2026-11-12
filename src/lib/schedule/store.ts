@@ -9,6 +9,7 @@ import {
   snapshotCells,
   weekDates,
 } from '@/lib/schedule/core.mjs';
+import { readTexting, textsState, type TextsState } from '@/lib/schedule/texting';
 import { addDays, localDate, utcToLocalInput, workweekStart } from '@/lib/time-clock/hours.mjs';
 
 // ─── Types shared with the page ─────────────────────────────
@@ -80,6 +81,8 @@ export interface WeekState {
   lastWeekShifts: number;
   /** How long this week took to build, from the change history. */
   effort: { activeSeconds: number; actions: number } | null;
+  /** Schedule texts: who's signed up and who publishing would text. Managers only. */
+  texts: TextsState | null;
 }
 
 export interface Change {
@@ -190,7 +193,7 @@ function effortFrom(times: string[]): WeekState['effort'] {
 export async function loadWeek(
   db: D1Database,
   weekStart: string,
-  options: { readOnly: boolean },
+  options: { readOnly: boolean; textsReady?: boolean },
 ): Promise<WeekState> {
   const dates = weekDates(weekStart);
   const weekEnd = dates[6];
@@ -199,10 +202,17 @@ export async function loadWeek(
   const nowMinutes = Number(nowLocal.slice(11, 13)) * 60 + Number(nowLocal.slice(14, 16));
   const historyFrom = addDays(weekStart, -56);
 
-  const [peopleRows, cellRows, storeHours, batch] = await Promise.all([
+  const [peopleRows, cellRows, storeHours, texting, batch] = await Promise.all([
     readPeople(db),
     readCells(db, weekStart, weekEnd),
     readStoreHours(db),
+    // Texts never stop the schedule loading, even before their tables exist.
+    options.readOnly
+      ? null
+      : readTexting(db, weekStart).catch((err) => {
+          console.error('Schedule texts read failed', err);
+          return null;
+        }),
     db.batch<Record<string, unknown>>([
       db.prepare(`SELECT date, note, closed FROM schedule_days WHERE date >= ? AND date <= ?`).bind(weekStart, weekEnd),
       db.prepare(`SELECT note, published_json, published_at, published_by FROM schedule_weeks WHERE week_start = ?`).bind(weekStart),
@@ -332,6 +342,15 @@ export async function loadWeek(
     usualWeekMinutes,
     lastWeekShifts,
     effort: options.readOnly ? null : effortFrom((effortRes.results as Array<{ created_at: string }>).map((r) => r.created_at)),
+    texts: texting
+      ? textsState(texting, {
+          weekStart,
+          today,
+          peopleIds: people.map((p) => p.id),
+          cells: new Map(cellRows.map((r) => [cellKey(r.staffId, r.date), r])),
+          ready: options.textsReady ?? false,
+        })
+      : null,
   };
 }
 

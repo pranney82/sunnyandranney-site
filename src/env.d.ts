@@ -28,6 +28,12 @@ declare namespace Cloudflare {
     /** The Medusa backend the buying and warehouse pages call, and its secret admin key. */
     MEDUSA_BACKEND_URL?: string;
     MEDUSA_ADMIN_KEY?: string;
+    /** sent.dm, which texts staff their schedule. */
+    SENT_DM_API_KEY?: string;
+    /** A stand-in sent.dm for local tests. Never set in production. */
+    SENT_DM_API_BASE?: string;
+    /** "1" sends with sent.dm's sandbox flag: checked, never delivered. */
+    SENT_DM_SANDBOX?: string;
   }
 }
 

@@ -21,7 +21,15 @@ import {
   type Change,
   type TimeOff,
 } from '@/lib/schedule/store';
-import { isIsoDate, workweekStart } from '@/lib/time-clock/hours.mjs';
+import {
+  connectWebhook,
+  removeTextSignup,
+  retryTexts,
+  saveTextSignup,
+  sendWeekTexts,
+  SignupError,
+} from '@/lib/schedule/texting';
+import { isIsoDate, localDate, workweekStart } from '@/lib/time-clock/hours.mjs';
 
 export const prerender = false;
 
@@ -45,7 +53,8 @@ export const GET: APIRoute = async (context) => {
   if (admin instanceof Response) return admin;
   const week = weekOf(context.url.searchParams.get('week'));
   if (!week) return json({ error: 'Invalid week' }, 400);
-  return json(await loadWeek(dbOf(context), week, { readOnly: admin.role !== 'manager' }));
+  const textsReady = Boolean(context.locals.runtime.env.SENT_DM_API_KEY);
+  return json(await loadWeek(dbOf(context), week, { readOnly: admin.role !== 'manager', textsReady }));
 };
 
 export const POST: APIRoute = async (context) => {
@@ -57,9 +66,10 @@ export const POST: APIRoute = async (context) => {
   if (!body || !week) return json({ error: 'Invalid request' }, 400);
 
   const db = dbOf(context);
+  const env = context.locals.runtime.env;
   const actor = admin.email;
   const fresh = async (extra: Record<string, unknown> = {}, status = 200) =>
-    json({ ...extra, state: await loadWeek(db, week, { readOnly: false }) }, status);
+    json({ ...extra, state: await loadWeek(db, week, { readOnly: false, textsReady: Boolean(env.SENT_DM_API_KEY) }) }, status);
 
   try {
     switch (body.action) {
@@ -133,7 +143,47 @@ export const POST: APIRoute = async (context) => {
 
       case 'publish': {
         await publishWeek(db, week, actor);
-        return fresh();
+        // The week is published whatever sent.dm says; a text that fails is
+        // shown on the page and goes again on the next publish.
+        const texts = await sendWeekTexts(db, env, { weekStart: week, actor });
+        return fresh({ texts });
+      }
+
+      case 'textSignup': {
+        const staffId = typeof body.staffId === 'string' ? body.staffId : '';
+        if (body.remove === true) {
+          await removeTextSignup(db, staffId);
+          return fresh();
+        }
+        if (typeof body.phone !== 'string' || typeof body.signedOn !== 'string' || body.consent !== true) {
+          return json({ error: 'Add their number and the date on their signed form.' }, 400);
+        }
+        try {
+          const result = await saveTextSignup(
+            db,
+            env,
+            { staffId, phone: body.phone, signedOn: body.signedOn, today: localDate(new Date().toISOString()) },
+            actor,
+          );
+          return fresh(result);
+        } catch (err) {
+          if (err instanceof SignupError) return json({ error: err.message }, 400);
+          throw err;
+        }
+      }
+
+      case 'textRetry': {
+        const staffId = typeof body.staffId === 'string' ? body.staffId : '';
+        return fresh(await retryTexts(db, env, { weekStart: week, staffId, actor }));
+      }
+
+      case 'textsConnect': {
+        // Creates sent.dm's webhook once. Owners only: it changes the sent.dm account.
+        if (!admin.owner) return json({ error: 'Not authorized' }, 403);
+        const host = context.url.hostname === 'admin.sunnyandranney.com' ? 'https://sunnyandranney.com' : context.url.origin;
+        const result = await connectWebhook(db, env, { endpointUrl: `${host}/api/webhook/sent-dm/`, actor });
+        if (!result.ok) return json({ error: result.message }, 502);
+        return fresh({ connected: true, created: result.created });
       }
 
       case 'person': {

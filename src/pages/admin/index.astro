@@ -5,6 +5,8 @@ import AdminBase from '@/layouts/AdminBase.astro';
 import { loadToday } from '@/lib/admin/today.mjs';
 import { initials, svg, tone } from '@/lib/admin-ui';
 import { STORE_TIME_ZONE, workweekStart, localDate, utcToLocalInput } from '@/lib/time-clock/hours.mjs';
+import { nextSend, sendLabel } from '@/lib/sunny-side/special.mjs';
+import { getSpecial } from '@/lib/sunny-side/special-store.mjs';
 
 const admin = Astro.locals.admin;
 if (!admin) return new Response('Not authorized', { status: 403 });
@@ -12,6 +14,15 @@ if (admin.role !== 'manager') return Astro.redirect('/admin/clock/', 302);
 
 const now = new Date().toISOString();
 const t = await loadToday(Astro.locals.runtime.env.DB, { now, myEmail: admin.email });
+
+// The coming Tuesday email needs its special. If the check itself fails, Today still loads without it.
+const emailSend = nextSend(localDate(now));
+const specialMissing = await getSpecial(Astro.locals.runtime.env.DB, emailSend).then(
+  (s) => s === null,
+  () => false,
+);
+const emailDays = Math.round((Date.parse(emailSend) - Date.parse(localDate(now))) / 86400000);
+const emailWhen = emailDays === 0 ? 'It goes out today' : emailDays === 1 ? 'It goes out tomorrow' : `It goes out in ${emailDays} days`;
 
 const dayFmt = new Intl.DateTimeFormat('en-US', { timeZone: STORE_TIME_ZONE, weekday: 'long', month: 'long', day: 'numeric' });
 const shortDay = new Intl.DateTimeFormat('en-US', { timeZone: STORE_TIME_ZONE, weekday: 'short', month: 'short', day: 'numeric' });
@@ -31,7 +42,7 @@ const hoursLink = (item: { id: string; clockInAt: string }) => `/admin/hours/?we
 const readyMinutes = t.ready.reduce((sum: number, item: { minutes: number }) => sum + item.minutes, 0);
 const readyPeople = [...new Set(t.ready.map((item: { name: string }) => item.name))] as string[];
 const overtime = t.week.filter((p: { overtimeRisk: boolean }) => p.overtimeRisk);
-const attention = t.missedClockOuts.length + t.ready.length + t.needsLook.length + t.lateOrMissing.length + overtime.length;
+const attention = t.missedClockOuts.length + t.ready.length + t.needsLook.length + t.lateOrMissing.length + overtime.length + (specialMissing ? 1 : 0);
 const weekScale = Math.max(40 * 60, ...t.week.map((p: { projectedMinutes: number }) => p.projectedMinutes));
 const pct = (minutes: number) => `${Math.min(100, (minutes / weekScale) * 100).toFixed(2)}%`;
 const fortyAt = pct(40 * 60);
@@ -163,6 +174,19 @@ interface Missed {
           )}
         </article>
       ))}
+
+      {specialMissing && (
+        <article class:list={['task', emailDays === 0 ? 'task-urgent' : 'task-warn']} id="special-task">
+          <span class="task-icon" aria-hidden="true"><Fragment set:html={svg('tag', 20)} /></span>
+          <div class="task-body">
+            <h3>The {sendLabel(emailSend)} email has no special yet</h3>
+            <p>{emailWhen}. Pick the sale or a headline, and see it in the email as you type.</p>
+          </div>
+          <div class="task-actions">
+            <a class="btn btn-dark btn-small" href="/admin/special/">Set the special</a>
+          </div>
+        </article>
+      )}
 
       <article class="task task-quiet" id="payroll-task" hidden aria-live="polite">
         <span class="task-icon" aria-hidden="true"><Fragment set:html={svg('send', 20)} /></span>

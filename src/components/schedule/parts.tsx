@@ -291,6 +291,7 @@ export function Icon({ name }: { name: string }) {
     trash: 'M4.5 6h11M8 6V4.5h4V6M6 6l.7 10h6.6L14 6',
     plus: 'M10 4.5v11M4.5 10h11',
     note: 'M5 4h10v12H5zM7.5 8h5M7.5 11h5',
+    phone: 'M7 3h6c.6 0 1 .4 1 1v12c0 .6-.4 1-1 1H7c-.6 0-1-.4-1-1V4c0-.6.4-1 1-1zM9 14.5h2',
   };
   return (
     <svg class="icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">

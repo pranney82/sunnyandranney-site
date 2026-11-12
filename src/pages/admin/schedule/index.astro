@@ -14,7 +14,10 @@ const db = Astro.locals.runtime.env.DB;
 const requested = Astro.url.searchParams.get('week');
 const week = workweekStart(isIsoDate(requested) ? (requested as string) : localDate(new Date().toISOString()));
 // The store tablet sees only what's been published, and can't change anything.
-const initial = await loadWeek(db, week, { readOnly: admin.role !== 'manager' });
+const initial = await loadWeek(db, week, {
+  readOnly: admin.role !== 'manager',
+  textsReady: Boolean(Astro.locals.runtime.env.SENT_DM_API_KEY),
+});
 
 // Calendar links are served from the store's address: Cloudflare Access guards
 // the admin host, and a phone's calendar app can't sign in to it.

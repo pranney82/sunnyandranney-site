@@ -28,6 +28,13 @@ export function medusaConfigured(env: MedusaEnv): boolean {
 /** Only these parts of Medusa's admin API are reachable from the combined admin. */
 export const MEDUSA_PATH = /^(purchasing|warehouse|labels|reports)(\/[A-Za-z0-9_\-]+)*\/?$/;
 
+/**
+ * Settings only the owner may change, reached through their own owner-checked
+ * routes and never through the general /api/admin/medusa/* proxy: which Zeffy form
+ * the register's gifts go to.
+ */
+export const OWNER_MEDUSA_PATH = /^giving\/zeffy\/?$/;
+
 export async function medusaFetch(
   env: MedusaEnv,
   path: string,
@@ -36,7 +43,9 @@ export async function medusaFetch(
   if (!medusaConfigured(env)) {
     throw new MedusaProblem('The admin isn’t connected to Medusa yet. Set MEDUSA_BACKEND_URL and MEDUSA_ADMIN_KEY.', 503);
   }
-  if (!MEDUSA_PATH.test(path)) throw new MedusaProblem(`Not an admin path the admin may use: ${path}`, 400);
+  if (!MEDUSA_PATH.test(path) && !OWNER_MEDUSA_PATH.test(path)) {
+    throw new MedusaProblem(`Not an admin path the admin may use: ${path}`, 400);
+  }
   const base = env.MEDUSA_BACKEND_URL!.replace(/\/+$/, '');
   // The site wants a trailing slash on every address; Medusa's routes have none.
   const url = `${base}/admin/${path.replace(/\/+$/, '')}${init.search ?? ''}`;
