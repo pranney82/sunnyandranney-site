@@ -45,17 +45,42 @@ interface Baseline {
   since: string | null;
   until: string | null;
 }
+interface ZeffyForm {
+  campaign_id: string;
+  title: string;
+  url: string;
+  set_by: string | null;
+  set_at: string | null;
+  store_only?: boolean;
+  notified?: { to: string[]; at: string } | null;
+  notify_error?: string | null;
+}
+interface ZeffyChoices {
+  key_set: boolean;
+  current: ZeffyForm | null;
+  forms: Array<{ campaign_id: string; title: string; url: string; created: string | null }>;
+  problem: string | null;
+}
 interface Giving {
   month: string;
   shopify: { overall: Baseline; same_month_last_year: (Baseline & { month: string }) | null } | null;
   giving: Counts & {
+    zeffy_handoffs: number;
+    zeffy_handoff_cents: number;
     refunded_cents: number;
     given_cents: number;
-    by_cashier: Array<Counts & { staff_id: string; name: string }>;
+    by_cashier: Array<Counts & { staff_id: string; name: string; zeffy_handoffs: number }>;
   };
   zeffy: {
     configured: boolean;
+    key_set: boolean;
+    sync_on: boolean;
+    form: ZeffyForm | null;
+    online: { gifts: number; cents: number } | null;
+    online_problem: string | null;
     pending: Bucket;
+    /** Of the pending gifts, those whose sale has a card not yet collected. Missing from older servers. */
+    waiting_on_cards?: Bucket;
     recorded: Bucket;
     review: Bucket;
     removed: Bucket;
@@ -77,11 +102,15 @@ const thisMonth = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York
 const asked = Astro.url.searchParams.get('month');
 const month = asked && /^\d{4}-(0[1-9]|1[0-2])$/.test(asked) ? asked : thisMonth;
 
+const owner = Astro.locals.admin?.owner === true;
 let data: Giving | null = null;
+let choices: ZeffyChoices | null = null;
 let problem = medusaConfigured(env) ? '' : 'The admin isn’t connected to Medusa yet.';
 if (!problem) {
   try {
     data = await medusaJson<Giving>(env, 'reports/giving', { search: `?month=${month}` });
+    // Only the owner chooses the form, so only the owner's page asks Zeffy for the list.
+    if (owner) choices = await medusaJson<ZeffyChoices>(env, 'giving/zeffy').catch(() => null);
   } catch (err) {
     if (!(err instanceof MedusaProblem)) throw err;
     problem = err.message;
@@ -103,6 +132,16 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString
 
 const g = data?.giving;
 const z = data?.zeffy;
+/** Gifts held until a card on their sale is collected, so Zeffy never receipts money that may not come. */
+const onCards = z?.waiting_on_cards?.gifts ?? 0;
+// When the waiting gifts go once the Zeffy setup is fixed: those behind a card wait for it too.
+const waiting = z?.pending.gifts ?? 0;
+const whenTheyGo =
+  onCards === 0
+    ? `${waiting === 1 ? 'It goes' : 'They go'}, receipts and all, within a minute of it being fixed.`
+    : onCards === waiting
+      ? `${waiting === 1 ? 'It goes' : 'They go'}, receipts and all, once it’s fixed and ${waiting === 1 ? 'the card on its sale is' : 'the cards on their sales are'} collected.`
+      : `They go, receipts and all, within a minute of it being fixed, except ${onCards} paid by a card not collected yet, which ${onCards === 1 ? 'goes once it is' : 'go once they are'}.`;
 const shop = data?.shopify;
 // Whether this month beats Shopify's whole-history rate, once there's anything to compare.
 const ahead = g && shop?.overall.rate !== null && shop?.overall.rate !== undefined && g.gave_rate !== null && g.sales > 0
@@ -139,11 +178,26 @@ const short = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', m
   {problem && <div class="notice"><span>{problem}</span></div>}
 
   {
-    z && !z.configured && z.pending.gifts > 0 && (
+    z && !z.configured && (
       <div class="notice notice-info" role="status">
         <div>
-          <strong>Zeffy isn’t connected yet,</strong> so {plural(z.pending.gifts, 'gift')} ({money(z.pending.cents)}) {z.pending.gifts === 1 ? 'is' : 'are'} waiting
-          {z.waiting_since && <> since {day.format(new Date(z.waiting_since))}</>}. They go to Zeffy, receipts and all, within a minute of it being connected.
+          <strong>
+            {!z.key_set
+              ? 'There’s no Zeffy API key on the server yet,'
+              : !z.form
+                ? 'No Zeffy form is chosen yet,'
+                : 'This server doesn’t send gifts to Zeffy,'}
+          </strong>
+          {z.pending.gifts > 0 ? (
+            <>
+              {' '}so {plural(z.pending.gifts, 'gift')} ({money(z.pending.cents)}) {z.pending.gifts === 1 ? 'is' : 'are'} waiting
+              {z.waiting_since && <> since {day.format(new Date(z.waiting_since))}</>}. {whenTheyGo}
+            </>
+          ) : (
+            <> so gifts would wait here until it’s fixed.</>
+          )}
+          {!z.form && z.key_set && <> {owner ? 'Choose one under Zeffy form below.' : 'The owner chooses it under Zeffy form.'}</>}
+          {z.form && z.key_set && !z.sync_on && <> It’s switched off on purpose on a test server, so test sales never reach the real Zeffy.</>}
         </div>
       </div>
     )
@@ -152,7 +206,7 @@ const short = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', m
     z && z.review.gifts > 0 && (
       <div class="notice" role="status">
         <div>
-          <strong>{plural(z.review.gifts, 'gift')} need{z.review.gifts === 1 ? 's' : ''} a person.</strong> Zeffy refused {z.review.gifts === 1 ? 'it' : 'them'}, or couldn’t tell whether it already had {z.review.gifts === 1 ? 'it' : 'them'}. They’re listed below.
+          <strong>{plural(z.review.gifts, 'gift')} need{z.review.gifts === 1 ? 's' : ''} a person.</strong> {z.review.gifts === 1 ? 'It’s' : 'They’re'} listed below, with why.
         </div>
       </div>
     )
@@ -189,7 +243,7 @@ const short = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', m
             <p class="stat-label">In Zeffy</p>
             <p class="stat-value">{z.recorded.gifts.toLocaleString('en-US')}</p>
             <p class="stat-note">
-              {z.pending.gifts.toLocaleString('en-US')} waiting · {z.review.gifts.toLocaleString('en-US')} need a person
+              {z.pending.gifts.toLocaleString('en-US')} waiting{onCards > 0 && <>, {onCards.toLocaleString('en-US')} for a card to be collected</>} · {z.review.gifts.toLocaleString('en-US')} need a person
             </p>
           </div>
         </div>
@@ -205,6 +259,20 @@ const short = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', m
                   {' '}{monthName(shop.same_month_last_year.month)}: {shop.same_month_last_year.with_gift.toLocaleString('en-US')} of {plural(shop.same_month_last_year.sales, 'sale')} ({pct(shop.same_month_last_year.rate)}), {money(shop.same_month_last_year.gift_cents)}.
                 </>
               )}
+            </p>
+          )
+        }
+
+        {
+          (g.zeffy_handoffs > 0 || z.online) && (
+            <p class="baseline">
+              <strong>From the QR code:</strong>{' '}
+              {g.zeffy_handoffs > 0
+                ? <>staff sent {plural(g.zeffy_handoffs, 'gift-only customer')} to Zeffy, {money(g.zeffy_handoff_cents)} as rung.</>
+                : <>no one was sent to Zeffy this month.</>}
+              {z.online && <> On Zeffy’s page, the store’s form took {plural(z.online.gifts, 'gift')}, {money(z.online.cents)}, which the totals above don’t include.</>}
+              {!z.online && z.form && !z.form.store_only && g.zeffy_handoffs > 0 && <> What they gave there isn’t counted, because “{z.form.title}” also takes gifts from elsewhere. A form only for the store fixes that.</>}
+              {z.online_problem && <> Zeffy couldn’t be asked what arrived: {z.online_problem}</>}
             </p>
           )
         }
@@ -238,7 +306,10 @@ const short = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', m
                         </td>
                         <td class="num">
                           <div class="name">{c.counter_gave.toLocaleString('en-US')}</div>
-                          <div class="sub">of {c.counter_sales.toLocaleString('en-US')} gave</div>
+                          <div class="sub">
+                            of {c.counter_sales.toLocaleString('en-US')} gave
+                            {c.zeffy_handoffs > 0 && <> · {c.zeffy_handoffs.toLocaleString('en-US')} to Zeffy</>}
+                          </div>
                         </td>
                         <td class="num">
                           <div class="name">{money(c.gifts_cents + c.round_ups_cents)}</div>
@@ -267,7 +338,7 @@ const short = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', m
                       <th>Receipt</th>
                       <th class="num">Gift</th>
                       <th>Donor</th>
-                      <th>What Zeffy said</th>
+                      <th>Why</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -292,7 +363,103 @@ const short = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', m
       </>
     )
   }
+  {
+    z && (
+      <section class="card zeffy-form">
+        <div class="zeffy-head">
+          <div>
+            <h2>Zeffy form</h2>
+            <p class="muted">Where the register’s gifts are recorded, and the page its QR code opens for a gift with nothing bought.</p>
+          </div>
+          {owner && choices?.key_set && choices.forms.length > 0 && (
+            <button type="button" class="btn btn-ghost" id="choose-form">{z.form ? 'Change' : 'Choose a form'}</button>
+          )}
+        </div>
+        {z.form ? (
+          <p class="chosen">
+            <a href={z.form.url} target="_blank" rel="noopener">{z.form.title}</a>
+            {z.form.set_by && z.form.set_at && <span class="muted"> · chosen by {z.form.set_by} on {day.format(new Date(z.form.set_at))}</span>}
+          </p>
+        ) : null}
+        {z.form?.notified && (
+          <p class="muted chosen">Donor relations ({z.form.notified.to.join(', ')}) was emailed about it on {day.format(new Date(z.form.notified.at))}.</p>
+        )}
+        {z.form?.notify_error && (
+          <p class="chosen warn">The email to donor relations about this change didn’t go: {z.form.notify_error}</p>
+        )}
+        {z.form ? null : (
+          <p class="muted chosen">None chosen yet.{!owner && ' The owner chooses it.'}</p>
+        )}
+        {owner && choices?.problem && <p class="muted chosen">Zeffy couldn’t list the forms: {choices.problem}</p>}
+      </section>
+    )
+  }
+
+  {
+    owner && choices && choices.forms.length > 0 && (
+      <dialog id="form-dialog" aria-labelledby="form-title">
+        <h2 id="form-title">Choose the Zeffy form</h2>
+        <p class="muted">Gifts taken at the register are recorded on it from now on, and its page becomes the register’s QR code. Gifts already in Zeffy stay where they are. Donor relations is emailed about the change.</p>
+        <p class="form-error" id="form-error"></p>
+        <div class="choices" role="radiogroup" aria-label="Zeffy donation forms">
+          {choices.forms.map((f) => (
+            <label class="choice">
+              <input type="radio" name="zeffy-form" value={f.campaign_id} checked={f.campaign_id === z?.form?.campaign_id} />
+              <span>
+                <span class="choice-title">{f.title}</span>
+                <span class="muted choice-sub">
+                  {f.created && <>Made {day.format(new Date(f.created))} · </>}
+                  <a href={f.url} target="_blank" rel="noopener">Open on Zeffy</a>
+                </span>
+              </span>
+            </label>
+          ))}
+        </div>
+        <label class="check store-only">
+          <input type="checkbox" id="store-only" checked={z?.form?.store_only === true} />
+          This form is only for gifts at the store, so what people give on it from the register’s QR code can be counted here
+        </label>
+        <div class="dialog-actions">
+          <button type="button" class="btn btn-ghost" data-close>Cancel</button>
+          <button type="button" class="btn btn-dark" id="form-save">Use this form</button>
+        </div>
+      </dialog>
+    )
+  }
 </AdminBase>
+
+<script>
+  const dialog = document.getElementById('form-dialog') as HTMLDialogElement | null;
+  const error = document.getElementById('form-error');
+  document.getElementById('choose-form')?.addEventListener('click', () => {
+    if (error) error.textContent = '';
+    dialog?.showModal();
+  });
+  dialog?.querySelector('[data-close]')?.addEventListener('click', () => dialog.close());
+  document.getElementById('form-save')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget as HTMLButtonElement;
+    const picked = dialog?.querySelector<HTMLInputElement>('input[name="zeffy-form"]:checked');
+    if (!picked) {
+      if (error) error.textContent = 'Choose one of the forms.';
+      return;
+    }
+    button.disabled = true;
+    const res = await fetch('/api/admin/donations/zeffy-form/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        campaign_id: picked.value,
+        store_only: (document.getElementById('store-only') as HTMLInputElement | null)?.checked === true,
+      }),
+    });
+    if (res.ok) {
+      window.location.reload();
+      return;
+    }
+    if (error) error.textContent = ((await res.json().catch(() => ({}))) as { error?: string }).error ?? 'That didn’t save.';
+    button.disabled = false;
+  });
+</script>
 
 <style>
   .months {
@@ -354,6 +521,82 @@ const short = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', m
   }
   .stat-good .stat-value {
     color: var(--sage);
+  }
+  .zeffy-form {
+    margin-top: 16px;
+  }
+  .zeffy-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .chosen {
+    margin: 10px 0 0;
+  }
+  .warn {
+    color: var(--clay);
+    font-weight: 600;
+  }
+  .store-only {
+    align-items: flex-start;
+    margin: 0 0 4px;
+    line-height: 1.4;
+    min-height: 44px;
+  }
+  .store-only input[type='checkbox'] {
+    flex: none;
+    width: 1.25rem;
+    height: 1.25rem;
+    min-height: 1.25rem;
+    margin: 1px 0 0;
+    padding: 0;
+  }
+  .choices {
+    display: grid;
+    gap: 6px;
+    max-height: 50vh;
+    overflow-y: auto;
+    margin: 12px 0 16px;
+  }
+  /* A whole row to tap, not the admin's small-caps field label. */
+  .choice {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    margin: 0;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    cursor: pointer;
+    min-height: 44px;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--ink);
+  }
+  .choice:has(input:checked) {
+    border-color: var(--teal);
+    background: var(--teal-soft);
+  }
+  .choice input[type='radio'] {
+    flex: none;
+    width: 1.25rem;
+    height: 1.25rem;
+    min-height: 1.25rem;
+    margin: 1px 0 0;
+    padding: 0;
+    box-shadow: none;
+    accent-color: var(--ink);
+  }
+  .choice-title {
+    display: block;
+    font-weight: 600;
+  }
+  .choice-sub {
+    display: block;
+    font-size: 0.8125rem;
   }
   .empty {
     margin: 0;

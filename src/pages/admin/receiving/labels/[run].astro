@@ -10,7 +10,7 @@ if (Astro.locals.admin?.role !== 'manager') return new Response('Not authorized'
 
 interface RunLine {
   id: string;
-  kind: 'price' | 'rfid';
+  kind: 'price' | 'tag';
   copies: number;
   barcode: string;
   title: string;
@@ -26,7 +26,7 @@ interface Run {
   printed_by: string | null;
   lines: RunLine[];
   price_labels: number;
-  rfid_tags: number;
+  tags: number;
 }
 
 const env = Astro.locals.runtime.env;
@@ -73,10 +73,10 @@ const fileName = `labels-${po ? po.display_number : runId.slice(-6)}.zpl`;
             <p class="stat-value">{run.price_labels}</p>
             <p class="stat-note">one for each unit that arrived good</p>
           </div>
-          <div class:list={['stat', { 'stat-accent': run.rfid_tags > 0 }]}>
-            <p class="stat-label">RFID tags</p>
-            <p class="stat-value">{run.rfid_tags}</p>
-            <p class="stat-note">one for each furniture carton</p>
+          <div class:list={['stat', { 'stat-accent': run.tags > 0 }]}>
+            <p class="stat-label">Furniture tags</p>
+            <p class="stat-value">{run.tags}</p>
+            <p class="stat-note">a piece label for each piece, and a label for each of its boxes</p>
           </div>
         </div>
 
@@ -85,15 +85,23 @@ const fileName = `labels-${po ? po.display_number : runId.slice(-6)}.zpl`;
             <div class="field">
               <label for="stock">Label size</label>
               <select id="stock">
-                <option value="2x1">2 × 1 in, price labels</option>
-                <option value="4x2">4 × 2 in, cartons</option>
+                <option value="2x1">2 × 1 in</option>
+                <option value="4x2">4 × 2 in, twice the size</option>
                 <option value="4x6">4 × 6 in, shipping size</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="kind">Print</label>
+              <select id="kind">
+                <option value="">Everything</option>
+                <option value="price">Price labels only</option>
+                <option value="tag">Furniture tags only</option>
               </select>
             </div>
             <div class="field">
               <label for="dpi">Printer</label>
               <select id="dpi">
-                <option value="203">ZD621R at 203 dpi</option>
+                <option value="203">ZD421t at 203 dpi</option>
                 <option value="300">300 dpi model</option>
               </select>
             </div>
@@ -129,7 +137,7 @@ const fileName = `labels-${po ? po.display_number : runId.slice(-6)}.zpl`;
                     </>
                   ) : (
                     <>
-                      <div class="label-carton">RFID · carton tags</div>
+                      <div class="label-carton">Piece and box labels</div>
                       <div class="label-code">{l.damaged ? 'DAMAGED · ' : ''}{l.vendor_code ?? ''}</div>
                     </>
                   )}
@@ -153,9 +161,10 @@ const fileName = `labels-${po ? po.display_number : runId.slice(-6)}.zpl`;
     if (error) error.textContent = '';
     const [w, h] = (document.getElementById('stock') as unknown as HTMLSelectElement).value.split('x');
     const dpi = (document.getElementById('dpi') as unknown as HTMLSelectElement).value;
+    const kind = (document.getElementById('kind') as unknown as HTMLSelectElement).value;
     download.disabled = true;
     try {
-      const res = await fetch(`/api/admin/medusa/labels/runs/${encodeURIComponent(download.dataset.run!)}/zpl/?dpi=${dpi}&width=${w}&height=${h}`);
+      const res = await fetch(`/api/admin/medusa/labels/runs/${encodeURIComponent(download.dataset.run!)}/zpl/?dpi=${dpi}&width=${w}&height=${h}${kind ? `&kind=${kind}` : ''}`);
       if (!res.ok) throw new Error(((await res.json().catch(() => ({}))) as { error?: string }).error ?? 'The labels didn’t download.');
       const blob = new Blob([await res.text()], { type: 'application/octet-stream' });
       const a = document.createElement('a');
@@ -195,7 +204,7 @@ const fileName = `labels-${po ? po.display_number : runId.slice(-6)}.zpl`;
     flex: 1; min-width: 0; aspect-ratio: 2 / 1; padding: 0.625rem 0.75rem; border-radius: 6px; background: #fff; color: #1d1d1b;
     box-shadow: 0 0 0 1px #d9d3c8, 0 1px 2px rgba(0, 0, 0, 0.06); display: grid; align-content: space-between; gap: 0.25rem;
   }
-  .label.rfid .label-face { background: repeating-linear-gradient(-45deg, #fff, #fff 10px, #faf7f2 10px, #faf7f2 20px); }
+  .label.tag .label-face { background: repeating-linear-gradient(-45deg, #fff, #fff 10px, #faf7f2 10px, #faf7f2 20px); }
   .label-title { font-size: 0.75rem; font-weight: 600; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .label-price { font-size: 1.375rem; font-weight: 700; letter-spacing: -0.02em; }
   .label-carton { font-size: 0.9375rem; font-weight: 700; }
