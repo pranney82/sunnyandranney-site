@@ -450,6 +450,7 @@ export function PublishPanel({
   minutes,
   changed,
   problems,
+  texts,
   onPublish,
   onClose,
 }: {
@@ -458,12 +459,16 @@ export function PublishPanel({
   minutes: number;
   changed: number;
   problems: Alert[];
+  /** Who publishing will text, and what. */
+  texts?: ComponentChildren;
   onPublish: () => Promise<string | null>;
   onClose: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const peopleWorking = new Set(state.cells.filter((c) => c.shift).map((c) => c.staffId)).size;
+  const textCount = state.texts?.ready ? Object.values(state.texts.people).filter((p) => p.plan.send).length : 0;
+  const publishLabel = `${problems.length ? 'Publish anyway' : 'Publish'}${textCount ? ` and text ${textCount}` : ''}`;
   return (
     <Sheet title={`Publish ${weekRangeLabel(state.weekStart)}`} onClose={onClose}>
       <dl class="pub-stats">
@@ -502,6 +507,7 @@ export function PublishPanel({
           </ul>
         </div>
       )}
+      {texts}
       <p class="muted-line">
         Calendar links and the store tablet show the week as you publish it. Edits after this stay a draft until you publish again.
       </p>
@@ -521,7 +527,7 @@ export function PublishPanel({
           if (message) setError(message);
         }}
       >
-        {busy ? 'Publishing…' : problems.length ? 'Publish anyway' : 'Publish'}
+        {busy ? (textCount ? 'Publishing and texting…' : 'Publishing…') : publishLabel}
       </button>
     </Sheet>
   );

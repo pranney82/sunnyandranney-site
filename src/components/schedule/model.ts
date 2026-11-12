@@ -117,6 +117,10 @@ export interface ApiResult {
   error?: string;
   undo?: Array<{ staffId: string; date: string; before: Cell; after: Cell }>;
   stamps?: Record<string, Stamp>;
+  /** After publishing: who was texted, and who couldn't be. */
+  texts?: { ready: boolean; texted: string[]; failed: string[] };
+  /** After saving a number or trying again: whether a text went. */
+  texted?: boolean;
 }
 
 export async function postSchedule(body: Record<string, unknown>): Promise<ApiResult> {
@@ -165,6 +169,12 @@ export function initials(name: string): string {
 }
 
 export const firstName = (name: string) => name.split(/\s+/)[0] ?? name;
+
+/** "BJ", "BJ and Nikki", "BJ, Nikki and Tom". */
+export function listNames(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? '';
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
 
 export function formatPublished(iso: string): string {
   return new Intl.DateTimeFormat('en-US', {

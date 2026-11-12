@@ -752,6 +752,59 @@
 .publish-problems ul { padding-left: 1.125rem; font-size: 0.875rem; font-weight: 500; }
 .sheet .muted-line { margin: 0.75rem 0; }
 
+/* ── Schedule texts ─────────────────────────────────────── */
+.tx-publish { margin: 0.25rem 0 0.5rem; }
+.tx-publish .sheet-h3 { margin-top: 1.25rem; }
+.tx-outbox { display: grid; gap: 0.875rem; list-style: none; }
+.tx-outbox li { animation: tx-in 0.36s var(--ease) both; }
+.tx-outbox li:nth-child(2) { animation-delay: 0.05s; }
+.tx-outbox li:nth-child(3) { animation-delay: 0.1s; }
+.tx-outbox li:nth-child(n + 4) { animation-delay: 0.15s; }
+@keyframes tx-in { from { opacity: 0; transform: translateY(6px); } }
+.tx-who { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; }
+.tx-who .s-avatar { width: 24px; height: 24px; font-size: 0.5625rem; }
+.tx-number { margin-left: auto; font-size: 0.75rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.tx-tag { padding: 0.0625rem 0.4375rem; border-radius: 999px; background: var(--teal-soft); color: var(--teal); font-size: 0.5625rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+/* A phone's incoming bubble, so the manager reads it the way staff will. */
+.tx-bubble {
+  margin: 0.375rem 0 0 2rem;
+  padding: 0.5625rem 0.8125rem;
+  border-radius: 18px 18px 18px 6px;
+  background: var(--sunk);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.tx-skipped { margin-top: 0.875rem; font-size: 0.8125rem; color: var(--ink-3); }
+.tx-skipped > span:first-child { font-weight: 700; }
+
+.tx-list { list-style: none; }
+.tx-list li { padding: 0.625rem 0; border-bottom: 1px solid var(--line); animation: fade 0.25s var(--ease); }
+.tx-list li:last-child { border-bottom: 0; }
+.tx-list li.is-editing { padding-bottom: 1rem; }
+.tx-row { display: flex; align-items: center; gap: 0.75rem; }
+.tx-meta { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.sched .tx-meta.muted-line { margin: 0; color: var(--ink-3); }
+.tx-status { display: block; margin-top: 0.125rem; font-size: 0.8125rem; font-weight: 600; }
+.tx-dot { display: inline-block; width: 7px; height: 7px; margin-right: 0.375rem; border-radius: 50%; background: currentColor; vertical-align: 0.0625rem; }
+.tx-status--ok { color: var(--sage); }
+.tx-status--wait { color: var(--ink-2); }
+.tx-status--wait .tx-dot { animation: tx-pulse 1.4s var(--ease) infinite; }
+.tx-status--bad { color: var(--red); }
+@keyframes tx-pulse { 50% { opacity: 0.3; } }
+.tx-when { font-weight: 500; color: var(--ink-3); white-space: nowrap; }
+.sched .nowrap { white-space: nowrap; }
+.sched .tx-retry { align-self: flex-start; min-height: 32px; font-size: 0.8125rem; }
+.tx-form { margin: 0.75rem 0 0 calc(32px + 0.75rem); animation: tx-in 0.3s var(--ease); }
+.tx-form .field { margin-bottom: 0.5rem; }
+.tx-form-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+@media (max-width: 759px) {
+  .tx-form { margin-left: 0; }
+  .tx-form .field-pair { grid-template-columns: 1fr; gap: 0; }
+  .tx-bubble { margin-left: 0; }
+}
+
 .keys { display: grid; gap: 0.375rem; }
 .keys div { display: grid; grid-template-columns: 9.5rem 1fr; gap: 0.75rem; align-items: baseline; font-size: 0.875rem; }
 .keys dd { color: var(--ink-2); }

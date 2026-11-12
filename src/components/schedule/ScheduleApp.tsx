@@ -31,6 +31,7 @@ import {
   derive,
   fetchWeek,
   firstName,
+  listNames,
   formatPublished,
   initials,
   postSchedule,
@@ -42,6 +43,8 @@ import {
 } from './model';
 import { CalendarPanel, DayPanel, PeoplePanel, PublishPanel, ShortcutsPanel, TimeOffPanel, type TimeOffInput } from './Panels';
 import { AnimatedNumber, CellContent, CoverageBars, describeCell, Icon, OffBand, weekAxis } from './parts';
+import { PublishTexts, TextsPanel } from './Texts';
+import { formatUsPhone } from '@/lib/schedule/texts.mjs';
 
 type Pos = { row: number; col: number };
 type Selection = { anchor: Pos; focus: Pos };
@@ -52,6 +55,7 @@ type Panel =
   | { kind: 'timeoff'; staffId: string; from: string }
   | { kind: 'people' }
   | { kind: 'calendar' }
+  | { kind: 'texts' }
   | { kind: 'publish' }
   | { kind: 'keys' }
   | { kind: 'day'; date: string }
@@ -948,6 +952,8 @@ export default function ScheduleApp({ initial, feedOrigin }: AppProps) {
   const problems = derived.alerts.filter((a) => a.severity === 'problem');
   const warnings = derived.alerts.filter((a) => a.severity !== 'problem');
   const isPublished = Boolean(state.published);
+  // Texts due without an edit: someone just signed up, or a text failed.
+  const textsDue = state.texts?.ready ? Object.values(state.texts.people).filter((p) => p.plan.send).length : 0;
   const hasAnything = state.cells.length > 0 || overlay.size > 0;
   const axis = weekAxis(dates.map((d) => ({ hours: derived.hoursByDate.get(d) ?? null, cover: derived.coverage.get(d)! })));
   const selKeys = sel ? new Set(keysIn(sel)) : new Set<string>();
@@ -1316,6 +1322,9 @@ export default function ScheduleApp({ initial, feedOrigin }: AppProps) {
                     <button role="menuitem" type="button" onClick={copyAsText}>
                       <Icon name="text" /> Copy as text
                     </button>
+                    <button role="menuitem" type="button" onClick={() => { setMoreOpen(false); setPanel({ kind: 'texts' }); }}>
+                      <Icon name="phone" /> Schedule texts
+                    </button>
                     <button role="menuitem" type="button" onClick={() => { setMoreOpen(false); setPanel({ kind: 'calendar' }); }}>
                       <Icon name="calendar" /> Calendar links
                     </button>
@@ -1331,12 +1340,12 @@ export default function ScheduleApp({ initial, feedOrigin }: AppProps) {
             </span>
             <button
               type="button"
-              class={`btn btn-primary publish-btn${isPublished && changedCount === 0 ? ' is-done' : ''}`}
-              disabled={!hasAnything || (isPublished && changedCount === 0)}
+              class={`btn btn-primary publish-btn${isPublished && changedCount === 0 && !textsDue ? ' is-done' : ''}`}
+              disabled={!hasAnything || (isPublished && changedCount === 0 && !textsDue)}
               onClick={() => setPanel({ kind: 'publish' })}
             >
-              <Icon name={isPublished && changedCount === 0 ? 'check' : 'send'} />
-              {!isPublished ? 'Publish' : changedCount ? `Publish ${changedCount}` : 'Published'}
+              <Icon name={isPublished && changedCount === 0 && !textsDue ? 'check' : 'send'} />
+              {!isPublished ? 'Publish' : changedCount ? `Publish ${changedCount}` : textsDue ? `Text ${textsDue}` : 'Published'}
             </button>
           </div>
         )}
@@ -1683,6 +1692,29 @@ export default function ScheduleApp({ initial, feedOrigin }: AppProps) {
           onClose={() => setPanel(null)}
         />
       )}
+      {panel?.kind === 'texts' && (
+        <TextsPanel
+          state={state}
+          storeOrigin={feedOrigin}
+          onSave={async (input) => {
+            const result = await send({ action: 'textSignup', ...input, consent: true });
+            if (!result.ok) return result.error ?? 'That didn’t save.';
+            const name = firstName(rows.find((p) => p.id === input.staffId)?.name ?? '');
+            showToast(result.texted ? `Saved. ${name}’s sign-up text is on its way to ${formatUsPhone(input.phone)}.` : `Saved ${name}’s number.`);
+            return null;
+          }}
+          onRemove={(staffId) =>
+            simple({ action: 'textSignup', staffId, remove: true }, `${firstName(rows.find((p) => p.id === staffId)?.name ?? 'They')} won’t get schedule texts.`)
+          }
+          onRetry={async (staffId) => {
+            const result = await send({ action: 'textRetry', staffId });
+            if (!result.ok) return result.error ?? 'That didn’t send.';
+            showToast(result.texted ? 'Sent again.' : 'Nothing was due to send.');
+            return null;
+          }}
+          onClose={() => setPanel(null)}
+        />
+      )}
       {panel?.kind === 'calendar' && (
         <CalendarPanel state={state} feedOrigin={feedOrigin} onToggle={(staffId, enabled) => simple({ action: 'calendar', staffId, enabled })} onClose={() => setPanel(null)} />
       )}
@@ -1693,15 +1725,22 @@ export default function ScheduleApp({ initial, feedOrigin }: AppProps) {
           minutes={derived.totals.week}
           changed={changedCount}
           problems={problems}
+          texts={<PublishTexts state={state} onManage={() => setPanel({ kind: 'texts' })} />}
           onPublish={async () => {
             const was = new Set(derived.changed);
-            const message = await simple({ action: 'publish' }, `Published ${weekRangeLabel(state.weekStart)}. Calendars and the store tablet now show it.`);
-            if (!message) {
-              setPanel(null);
-              setBurst((n) => n + 1);
-              briefly<Set<string>>(setFadingDots, () => was, () => new Set(), 700);
-            }
-            return message;
+            const result = await send({ action: 'publish' });
+            if (!result.ok) return result.error ?? 'That didn’t publish.';
+            const names = (ids: string[] = []) => ids.map((id) => firstName(rows.find((p) => p.id === id)?.name ?? '')).filter(Boolean);
+            const texted = names(result.texts?.texted);
+            const failed = names(result.texts?.failed);
+            const done = `Published ${weekRangeLabel(state.weekStart)}.`;
+            if (failed.length) showToast(`${done} Couldn’t text ${listNames(failed)}. See More → Schedule texts.`, 'error');
+            else if (texted.length) showToast(`${done} Texted ${listNames(texted)}.`);
+            else showToast(`${done} Calendars and the store tablet now show it.`);
+            setPanel(null);
+            setBurst((n) => n + 1);
+            briefly<Set<string>>(setFadingDots, () => was, () => new Set(), 700);
+            return null;
           }}
           onClose={() => setPanel(null)}
         />
