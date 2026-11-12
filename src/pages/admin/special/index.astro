@@ -1,0 +1,48 @@
+---
+export const prerender = false;
+
+import SpecialApp from '@/components/special/SpecialApp';
+import '@/components/special/special.css';
+import AdminBase from '@/layouts/AdminBase.astro';
+import { sendLabel, summary, upcomingSends } from '@/lib/sunny-side/special.mjs';
+import { pastSpecials, specialsBetween } from '@/lib/sunny-side/special-store.mjs';
+import { localDate } from '@/lib/time-clock/hours.mjs';
+
+const admin = Astro.locals.admin;
+if (admin?.role !== 'manager') return new Response('Not authorized', { status: 403 });
+
+// This week's Tuesday email and the three after it; past ones have already gone out.
+const db = Astro.locals.runtime.env.DB;
+const sends = upcomingSends(localDate(new Date().toISOString()), 4);
+const asked = Astro.url.searchParams.get('send');
+if (asked && !sends.includes(asked)) return Astro.redirect('/admin/special/', 302);
+const send = asked ?? sends[0];
+
+const upcoming = await specialsBetween(db, sends[0], sends[sends.length - 1]);
+const bySend = new Map(upcoming.map((r) => [r.send, r]));
+const weeks = sends.map((s) => ({ send: s, label: sendLabel(s), set: bySend.has(s), summary: bySend.has(s) ? summary(bySend.get(s)!.special) : '' }));
+const record = bySend.get(send) ?? null;
+// Any other saved special can be a starting point: the coming weeks first, then the last dozen sent.
+const others = [...upcoming.filter((r) => r.send !== send), ...(await pastSpecials(db, sends[0], 12))].map((r) => ({
+  send: r.send,
+  label: sendLabel(r.send),
+  summary: summary(r.special),
+  special: r.special,
+}));
+
+const props = { send, label: sendLabel(send), weeks, record, others };
+// The page's JSON can't close its own script tag.
+const data = JSON.stringify(props).replace(/</g, '\\u003c');
+---
+
+<AdminBase title="Weekly special">
+  <div id="special-root"><SpecialApp {...props} /></div>
+  <script type="application/json" id="special-data" set:html={data} />
+</AdminBase>
+
+<script>
+  // Imports keep this script bundled: the admin's Content-Security-Policy blocks inline scripts.
+  import { mountSpecial } from '@/components/special/mount';
+
+  mountSpecial();
+</script>

@@ -1,0 +1,107 @@
+{
+  "hero": {
+    "src": "cf:sunny-ranney-interior",
+    "alt": "The Sunny & Ranney showroom floor"
+  },
+  "wall": {
+    "label": "Shop the floor",
+    "headline": "Our picks this&nbsp;week.",
+    "more": "/shop/",
+    "photos": [
+      {
+        "url": "https://sunnyandranney.com/shop/everly-swivel-chair-taupe-jfn/"
+      },
+      {
+        "url": "https://sunnyandranney.com/shop/harper-swivel-accent-chair-cloud-jfn/",
+        "src": "https://cdn.shopify.com/s/files/1/0930/2117/6092/files/255_harperswcloud20room.jpg?v=1776024853",
+        "name": "Harper Swivel Chair, Cloud"
+      },
+      {
+        "url": "https://sunnyandranney.com/shop/terrace-4-door-cabinet-lfi/",
+        "src": "https://cdn.shopify.com/s/files/1/0930/2117/6092/files/2230-ac1000_large_8fffa19b-a120-485e-a51b-237f89df3c04.jpg?v=1762537129",
+        "name": "Terrace 4-Door Cabinet"
+      },
+      {
+        "url": "https://sunnyandranney.com/shop/36-marlowe-gold-wall-mirror-olx/",
+        "src": "https://cdn.shopify.com/s/files/1/0930/2117/6092/files/cc43701a05ae7745795cd06c99e71490f0cb54ff.jpg?v=1776020727"
+      },
+      {
+        "url": "https://sunnyandranney.com/shop/kuga-swivel-sand-elmt/",
+        "src": "https://cdn.shopify.com/s/files/1/0930/2117/6092/files/kugaswivelchairinchingsand_lifestyle_r1_mhlmkkb9on34zrjn_1.jpg?v=1774561964",
+        "name": "Kuga Swivel Chair, Sand"
+      },
+      {
+        "url": "https://sunnyandranney.com/shop/origins-drum-table-jfn/"
+      }
+    ]
+  },
+  "story": {
+    "label": "Christmas d&#233;cor &amp; gifts",
+    "headline": "We couldn&#8217;t wait any&nbsp;longer.<br>Christmas is here.",
+    "body": "The trees are up and the shelves are stocked. Come see the Christmas d&#233;cor and gifts, in the showroom only.",
+    "cta": [
+      "Plan your visit",
+      "/visit/"
+    ],
+    "photo": {
+      "src": "https://cdn.shopify.com/s/files/1/0930/2117/6092/files/shopping_1.jpg?v=1776021813",
+      "alt": "Hudson castered ottoman in a living room"
+    }
+  },
+  "events": [
+    {
+      "title": "Kids&#8217; Christmas Saturdays",
+      "items": [
+        {
+          "what": "Build a snowman",
+          "date": "2026-11-14"
+        },
+        {
+          "what": "Write a letter to Santa",
+          "date": "2026-11-21"
+        },
+        {
+          "what": "Color a Sunny &amp; Ranney Christmas banner",
+          "date": "2026-11-28"
+        },
+        {
+          "what": "Make your own beaded ornament",
+          "date": "2026-12-05"
+        },
+        {
+          "what": "Color a holiday magnet",
+          "note": "Plus pictures with Greg, aka Santa&nbsp;Paws",
+          "greg": true,
+          "date": "2026-12-12"
+        },
+        {
+          "what": "Decorate your own Christmas cookie",
+          "date": "2026-12-19"
+        }
+      ],
+      "calendar": {
+        "title": "Kids' Christmas Saturdays at Sunny & Ranney",
+        "start": "11:00",
+        "end": "14:00",
+        "intro": "Holiday crafts for kids, 11am-2pm:",
+        "ics": "https://sunnyandranney.com/events/kids-christmas-saturdays-2026.ics"
+      },
+      "time": "11am&#8211;2pm"
+    }
+  ],
+  "mission": {
+    "photo": {
+      "src": "cf:kids/remi-and-nico/1791465769931-RemiNiko-9721.jpg",
+      "alt": "Remi and Nico's family celebrating in their new wheelchair-accessible bathroom on reveal day"
+    },
+    "caption": "Reveal day in Remi and Nico&#8217;s new bathroom.",
+    "story": "Their bathroom door was only two feet wide, too narrow to wheel the sisters through. Now they have a bathroom built around their needs, at no cost to their&nbsp;family.",
+    "cta": "See their reveal",
+    "url": "https://sunshineonaranneyday.com/kids/remi-and-nico/",
+    "impact": "live"
+  },
+  "subject": "🎄 Christmas Is In Store! Save Up to {upto} + Holiday Fun!",
+  "preheader": "{offer} Plus Christmas décor and kids' crafts every Saturday.",
+  "sale": "admin",
+  "send_date": "2026-11-17"
+}

@@ -28,6 +28,7 @@ export const ICON = {
   right: '<polyline points="9 18 15 12 9 6"/>',
   plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
   check: '<polyline points="20 6 9 17 4 12"/>',
+  tag: '<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>',
 } as const;
 
 export function svg(name: keyof typeof ICON, size = 20): string {

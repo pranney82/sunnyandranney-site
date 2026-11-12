@@ -1,0 +1,61 @@
+{
+  "hero": {
+    "src": "cf:sunny-ranney-interior",
+    "alt": "The Sunny & Ranney showroom floor"
+  },
+  "wall": {
+    "label": "New on the floor",
+    "headline": "Just landed in the&nbsp;showroom.",
+    "photos": [
+      {
+        "url": "https://sunnyandranney.com/shop/vito-swivel-chair-pebble-elmt/",
+        "src": "https://cdn.shopify.com/s/files/1/0930/2117/6092/files/vitoswivelchairinpebbletan_lifestyle_r1_lp9qm9n7aeyf8bxk.jpg?v=1774477996",
+        "name": "Vito Swivel Chair, Pebble",
+        "price": 500
+      },
+      {
+        "url": "https://sunnyandranney.com/shop/harper-swivel-accent-chair-cloud-jfn/",
+        "src": "https://cdn.shopify.com/s/files/1/0930/2117/6092/files/255_harperswcloud20room.jpg?v=1776024853",
+        "name": "Harper Swivel Chair, Cloud",
+        "price": 650
+      },
+      {
+        "url": "https://sunnyandranney.com/shop/terrace-4-door-cabinet-lfi/",
+        "src": "https://cdn.shopify.com/s/files/1/0930/2117/6092/files/2230-ac1000_large_8fffa19b-a120-485e-a51b-237f89df3c04.jpg?v=1762537129",
+        "name": "Terrace 4 Door Cabinet",
+        "price": 1200
+      },
+      {
+        "url": "https://sunnyandranney.com/shop/36-marlowe-gold-wall-mirror-olx/",
+        "src": "https://cdn.shopify.com/s/files/1/0930/2117/6092/files/cc43701a05ae7745795cd06c99e71490f0cb54ff.jpg?v=1776020727",
+        "name": "36\" Marlowe Gold Mirror",
+        "price": 275
+      }
+    ]
+  },
+  "events": [],
+  "mission": {
+    "photo": {
+      "src": "cf:kids/remi-and-nico/1791465769931-RemiNiko-9721.jpg",
+      "alt": "Remi and Nico's family celebrating in their new wheelchair-accessible bathroom on reveal day"
+    },
+    "caption": "Remi and Nico, ages 14 and 12, in their new bathroom.",
+    "story": "Their bathroom door was only two feet wide, too narrow to wheel the sisters through. Now they have a bathroom built around their needs, at no cost to their&nbsp;family.",
+    "cta": "See their reveal",
+    "url": "https://sunshineonaranneyday.com/kids/remi-and-nico/",
+    "impact": {
+      "rooms": "295+",
+      "children": "208+"
+    }
+  },
+  "subject": "Black Friday sneak peeks start this Friday",
+  "preheader": "A first look at Black Friday, plus what just landed in the showroom.",
+  "sale": {
+    "kind": "headline",
+    "name": "This week",
+    "headline": "Black Friday sneak peeks start this Friday.",
+    "cta": "See what&#8217;s new",
+    "url": "/shop/?collection=new-arrivals"
+  },
+  "send_date": "2026-11-10"
+}
