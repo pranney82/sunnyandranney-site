@@ -1,5 +1,6 @@
 ---
 import type { AdminRole } from '@/lib/admin-auth';
+import { ICONS, SIDEBAR, allLinks, currentHref as findCurrentHref, navFor, phoneNav } from '@/lib/admin/nav.mjs';
 
 interface Props {
   title: string;
@@ -10,94 +11,16 @@ const admin = Astro.locals.admin;
 const role: AdminRole | undefined = admin?.role;
 const path = Astro.url.pathname;
 
-// Feather-style line icons (MIT), drawn inline so the page needs no image requests.
-const ICONS: Record<string, string> = {
-  giving: '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>',
-  schedule: '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
-  hours: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
-  clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
-  staff: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
-  payroll: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
-  history: '<polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>',
-  gusto: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
-  tax: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>',
-  buying: '<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>',
-  receive: '<line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>',
-  vendors: '<rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>',
-  more: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
-  today: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
-  tag: '<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>',
-};
-
-interface NavLink {
-  href: string;
-  label: string;
-  short: string;
-  icon: string;
-  /** False keeps a rarely used page off the phone tab bar; it's under More instead. */
-  tab?: boolean;
-}
-
-const sections: Array<{ heading: string; links: NavLink[] }> =
-  role === 'manager'
-    ? [
-        {
-          heading: 'Team',
-          links: [
-            { href: '/admin/', label: 'Today', short: 'Today', icon: 'today' },
-            { href: '/admin/schedule/', label: 'Schedule', short: 'Schedule', icon: 'schedule' },
-            { href: '/admin/hours/', label: 'Hours', short: 'Hours', icon: 'hours' },
-            { href: '/admin/clock/', label: 'Time clock', short: 'Clock', icon: 'clock', tab: false },
-            { href: '/admin/staff/', label: 'Staff', short: 'Staff', icon: 'staff' },
-          ],
-        },
-        {
-          heading: 'Stock',
-          links: [
-            { href: '/admin/buying/', label: 'Purchase orders', short: 'Buying', icon: 'buying', tab: false },
-            { href: '/admin/receiving/', label: 'Receiving', short: 'Receive', icon: 'receive', tab: false },
-            { href: '/admin/buying/costs/', label: 'Costs to match', short: 'Costs', icon: 'buying', tab: false },
-            { href: '/admin/vendors/', label: 'Vendors', short: 'Vendors', icon: 'vendors', tab: false },
-          ],
-        },
-        {
-          heading: 'Email',
-          links: [{ href: '/admin/special/', label: 'Weekly special', short: 'Special', icon: 'tag', tab: false }],
-        },
-        {
-          heading: 'Pay',
-          links: [
-            { href: '/admin/payroll/', label: 'Payroll', short: 'Payroll', icon: 'payroll' },
-            { href: '/admin/hours/history/', label: 'Gusto history', short: 'History', icon: 'history', tab: false },
-            { href: '/admin/sales-tax/', label: 'Sales tax', short: 'Tax', icon: 'tax', tab: false },
-            { href: '/admin/donations/', label: 'Donations', short: 'Giving', icon: 'giving', tab: false },
-          ],
-        },
-        ...(admin?.owner
-          ? [{ heading: 'Settings', links: [{ href: '/admin/gusto/', label: 'Gusto', short: 'Gusto', icon: 'gusto', tab: false }] }]
-          : []),
-      ]
-    : role === 'kiosk'
-      ? [
-          {
-            heading: 'Store',
-            links: [
-              { href: '/admin/clock/', label: 'Time clock', short: 'Clock', icon: 'clock' },
-              { href: '/admin/schedule/', label: 'Schedule', short: 'Schedule', icon: 'schedule' },
-            ],
-          },
-        ]
-      : [];
-
-const links = sections.flatMap((section) => section.links);
-// Today is /admin/ itself; every other link also matches the pages under it.
-const currentHref = links
-  .filter((link) => (link.href === '/admin/' ? path === '/admin/' || path === '/admin' : path.startsWith(link.href)))
-  .sort((a, b) => b.href.length - a.href.length)[0]?.href;
-const tabLinks = links.filter((link) => link.tab !== false);
-const moreLinks = links.filter((link) => link.tab === false);
-const moreCurrent = moreLinks.some((link) => link.href === currentHref);
+const nav = navFor({ role, owner: admin?.owner });
+const { sections, settings: settingsLink } = nav;
+const links = allLinks(nav);
+const currentHref = findCurrentHref(path, links);
+const phone = phoneNav(nav, currentHref);
+// The sidebar's sizes come from the nav module, whose test holds the sidebar to one screen.
+const sidebarSizes = `--row:${SIDEBAR.row}px;--touch-row:${SIDEBAR.touchRow}px;--heading:${SIDEBAR.heading}px;--section-gap:${SIDEBAR.gap}px`;
 const roleLabel = admin?.owner ? 'Owner' : role === 'manager' ? 'Manager' : role === 'kiosk' ? 'Store tablet' : '';
+// Ends the Cloudflare Access session, so a shared computer doesn't stay signed in. Not for the store tablet.
+const SIGN_OUT = '/cdn-cgi/access/logout';
 // The store's logo, from its Cloudflare Images account (allowed by the admin's CSP).
 const LOGO = 'https://imagedelivery.net/ROYFuPmfN2vPS6mt5sCkZQ';
 const icon = (name: string) =>
@@ -118,8 +41,9 @@ const icon = (name: string) =>
     <title>{title} | Sunny & Ranney Admin</title>
   </head>
   <body class:list={[{ 'has-nav': links.length > 0 }]}>
+    {links.length > 0 && <a class="skip-link" href="#main">Skip to content</a>}
     <div class="shell">
-      <aside class="sidebar" aria-label="Admin">
+      <header class="sidebar" style={sidebarSizes}>
         <a class="brand" href="/admin/" aria-label="Sunny & Ranney Admin, home">
           <picture>
             <img
@@ -137,7 +61,7 @@ const icon = (name: string) =>
 
         {
           role === 'manager' && (
-            <button type="button" class="search-button" data-open-palette aria-keyshortcuts="Meta+K Control+K">
+            <button type="button" class="search-button" data-open-palette aria-label="Search" aria-keyshortcuts="Meta+K Control+K">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
               <span>Search</span>
               <kbd class="search-kbd">⌘K</kbd>
@@ -147,16 +71,35 @@ const icon = (name: string) =>
 
         {
           sections.length > 0 && (
-            <nav class="side-nav">
+            <nav class="side-nav" aria-label="Admin">
               {sections.map((section) => (
-                <div class="side-section">
-                  <p class="side-heading">{section.heading}</p>
-                  {section.links.map((link) => (
-                    <a href={link.href} class="side-link" aria-current={link.href === currentHref ? 'page' : undefined}>
-                      <Fragment set:html={icon(link.icon)} />
-                      <span>{link.label}</span>
-                    </a>
-                  ))}
+                <div class="side-section" role="group" aria-labelledby={`side-${section.heading.toLowerCase()}`}>
+                  <p class="side-heading" id={`side-${section.heading.toLowerCase()}`}>{section.heading}</p>
+                  {section.links.map((link) => {
+                    // Sub-pages show under their page while you're anywhere in it, as in Shopify's admin.
+                    const inChild = link.children?.some((child) => child.href === currentHref) ?? false;
+                    return (
+                      <Fragment>
+                        <a
+                          href={link.href}
+                          class:list={['side-link', { 'side-parent-current': inChild }]}
+                          aria-current={link.href === currentHref ? 'page' : undefined}
+                        >
+                          <Fragment set:html={icon(link.icon)} />
+                          <span>{link.label}</span>
+                        </a>
+                        {link.children && (
+                          <div class:list={['side-children', { 'side-children-open': inChild || link.href === currentHref }]}>
+                            {link.children.map((child) => (
+                              <a href={child.href} class="side-link side-child" aria-current={child.href === currentHref ? 'page' : undefined}>
+                                <span>{child.label}</span>
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                      </Fragment>
+                    );
+                  })}
                 </div>
               ))}
             </nav>
@@ -165,18 +108,31 @@ const icon = (name: string) =>
 
         {
           admin && (
-            <div class="who">
-              <span class="who-avatar" aria-hidden="true">{admin.email.slice(0, 1).toUpperCase()}</span>
-              <span class="who-text">
-                <span class="who-email">{admin.email}</span>
-                <span class="who-role">{roleLabel}</span>
-              </span>
+            <div class="side-foot">
+              {settingsLink && (
+                <a href={settingsLink.href} class="side-link" aria-current={settingsLink.href === currentHref ? 'page' : undefined}>
+                  <Fragment set:html={icon(settingsLink.icon)} />
+                  <span>{settingsLink.label}</span>
+                </a>
+              )}
+              <div class="who">
+                <span class="who-avatar" aria-hidden="true">{admin.email.slice(0, 1).toUpperCase()}</span>
+                <span class="who-text">
+                  <span class="who-email">{admin.email}</span>
+                  <span class="who-role">{roleLabel}</span>
+                </span>
+                {role === 'manager' && (
+                  <a class="who-out" href={SIGN_OUT} aria-label="Sign out" title="Sign out">
+                    <Fragment set:html={icon('signout')} />
+                  </a>
+                )}
+              </div>
             </div>
           )
         }
-      </aside>
+      </header>
 
-      <main class="main">
+      <main class="main" id="main" tabindex="-1">
         <div class="main-inner">
           <slot />
         </div>
@@ -186,24 +142,39 @@ const icon = (name: string) =>
     {
       links.length > 0 && (
         <nav class="tabbar" aria-label="Admin">
-          {tabLinks.map((link) => (
-            <a href={link.href} class="tab" aria-current={link.href === currentHref ? 'page' : undefined}>
+          {phone.tabs.map((link) => (
+            <a
+              href={link.href}
+              class="tab"
+              aria-current={link.href === currentHref ? 'page' : link.href === phone.activeTab ? 'true' : undefined}
+            >
               <Fragment set:html={icon(link.icon)} />
               <span>{link.short}</span>
             </a>
           ))}
-          {moreLinks.length > 0 && (
+          {(phone.groups.length > 0 || role === 'manager') && (
             <details class="tab-more">
-              <summary class:list={['tab', { 'tab-current': moreCurrent }]}>
+              <summary class:list={['tab', { 'tab-current': phone.moreActive }]}>
                 <Fragment set:html={icon('more')} />
                 <span>More</span>
               </summary>
               <div class="more-sheet">
-                {moreLinks.map((link) => (
-                  <a href={link.href} class="more-link" aria-current={link.href === currentHref ? 'page' : undefined}>
-                    <Fragment set:html={icon(link.icon)} />
-                    <span>{link.label}</span>
-                  </a>
+                {[...phone.groups, ...(role === 'manager' && !settingsLink ? [[]] : [])].map((group, index, all) => (
+                  <div class="more-group">
+                    {group.map((link) => (
+                      <a href={link.href} class="more-link" aria-current={link.href === currentHref ? 'page' : undefined}>
+                        <Fragment set:html={icon(link.icon)} />
+                        <span>{link.label}</span>
+                      </a>
+                    ))}
+                    {/* Sign out ends the sheet, with Gusto settings when there is one. */}
+                    {role === 'manager' && index === all.length - 1 && (
+                      <a href={SIGN_OUT} class="more-link">
+                        <Fragment set:html={icon('signout')} />
+                        <span>Sign out</span>
+                      </a>
+                    )}
+                  </div>
                 ))}
               </div>
             </details>
@@ -289,6 +260,23 @@ const icon = (name: string) =>
 
   :focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; border-radius: 4px; }
 
+  /* The first Tab on every page jumps past the navigation. */
+  .skip-link {
+    position: fixed;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: 70;
+    padding: 0.625rem 1rem;
+    border-radius: var(--r-sm);
+    background: var(--ink);
+    color: var(--bg);
+    font-weight: 600;
+    text-decoration: none;
+    transform: translateY(-200%);
+  }
+  .skip-link:focus { transform: none; }
+  .main:focus { outline: none; }
+
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
   /* Classes like .btn set display, which would otherwise beat the hidden attribute. */
@@ -323,25 +311,28 @@ const icon = (name: string) =>
     color: var(--ink-3);
   }
 
-  .side-nav, .who, .search-button { display: none; }
+  .side-nav, .side-foot { display: none; }
 
   /* ── Search, toasts, shortcuts (lib/admin/shell.ts) ───── */
+  /* On a phone or an upright iPad, search is an icon in the top bar, as in Shopify's app. */
   .search-button {
+    display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.625rem;
-    margin: 0 0 1.25rem;
-    padding: 0.5rem 0.625rem;
+    width: 44px;
+    height: 44px;
+    padding: 0;
     border: 1px solid var(--line);
     border-radius: 10px;
     background: var(--panel);
     color: var(--ink-3);
     font: inherit;
-    font-size: 0.9063rem;
     font-weight: 600;
     cursor: pointer;
     text-align: left;
   }
-  .search-button span { flex: 1; }
+  .search-button span, .search-button .search-kbd { display: none; }
   .search-button:hover { color: var(--ink); border-color: color-mix(in srgb, var(--ink) 25%, var(--line)); }
   kbd, .search-kbd {
     display: inline-block;
@@ -478,8 +469,8 @@ const icon = (name: string) =>
     font-weight: 600;
     border-radius: var(--r-sm);
   }
-  .tab[aria-current='page'], .tab-current { color: var(--teal); }
-  .tab[aria-current='page'] svg, .tab-current svg { color: var(--teal); stroke-width: 2.25; }
+  .tab[aria-current], .tab-current { color: var(--teal); }
+  .tab[aria-current] svg, .tab-current svg { color: var(--teal); stroke-width: 2.25; }
 
   .tab-more summary { list-style: none; cursor: pointer; }
   .tab-more summary::-webkit-details-marker { display: none; }
@@ -489,17 +480,23 @@ const icon = (name: string) =>
     right: 0.5rem;
     bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
     min-width: 13rem;
+    max-height: calc(100vh - 5.5rem - env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px));
+    max-height: calc(100dvh - 5.5rem - env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 0.375rem;
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: var(--r-lg);
     box-shadow: var(--shadow);
   }
+  .more-group + .more-group { margin-top: 0.1875rem; padding-top: 0.1875rem; border-top: 1px solid var(--line); }
   .more-link {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.75rem 0.875rem;
+    min-height: 44px;
+    padding: 0 0.875rem;
     border-radius: 10px;
     color: var(--ink);
     text-decoration: none;
@@ -521,18 +518,36 @@ const icon = (name: string) =>
       align-items: stretch;
       justify-content: flex-start;
       gap: 0;
-      padding: 1.25rem 0.875rem;
+      padding: 0.625rem 0.75rem;
       border-bottom: 0;
       border-right: 1px solid var(--line);
       background: var(--sunk);
     }
-    .brand { padding: 0.25rem 0.5rem 1.25rem; }
-    .search-button { display: flex; }
+    .brand { padding: 0.125rem 0.5rem 0.625rem; }
+    .brand-logo { height: 32px; }
+    .search-button { width: auto; height: auto; justify-content: flex-start; margin-bottom: 0.625rem; padding: 0.3125rem 0.625rem; font-size: 0.875rem; }
+    .search-button span { display: block; flex: 1; }
+    .search-button .search-kbd { display: inline-block; }
 
-    .side-nav { display: flex; flex-direction: column; gap: 1.25rem; flex: 1; overflow-y: auto; }
+    /* Sized to Shopify's admin, measured 2026-11-12: 30px rows, 13px type, 16px icons, every item
+       on screen with no scrollbar. DM Sans runs small, so 14px here. Windows too short for the
+       list get a thin scrollbar rather than the system's 15px one. */
+    .side-nav {
+      display: flex;
+      flex-direction: column;
+      gap: var(--section-gap);
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+      scrollbar-color: var(--line) transparent;
+    }
+    .side-section { display: flex; flex-direction: column; }
     .side-heading {
-      padding: 0 0.625rem 0.375rem;
+      padding: 0 0.625rem 2px;
       font-size: 0.6875rem;
+      line-height: calc(var(--heading) - 2px);
       font-weight: 700;
       letter-spacing: 0.15em;
       text-transform: uppercase;
@@ -541,19 +556,37 @@ const icon = (name: string) =>
     .side-link {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      padding: 0.5625rem 0.625rem;
-      border-radius: 10px;
+      gap: 0.625rem;
+      min-height: var(--row);
+      padding: 0 0.625rem;
+      border-radius: var(--r-sm);
       color: var(--ink-2);
       text-decoration: none;
-      font-weight: 600;
-      font-size: 0.9375rem;
+      font-weight: 500;
+      font-size: 0.875rem;
+      line-height: 1.25rem;
       transition: background-color 0.15s var(--ease), color 0.15s var(--ease);
     }
-    .side-link svg { color: var(--ink-3); flex: none; }
+    .side-link svg { color: var(--ink-3); flex: none; width: 16px; height: 16px; }
     .side-link:hover { background: var(--panel); color: var(--ink); }
-    .side-link[aria-current='page'] { background: var(--panel); color: var(--ink); box-shadow: var(--shadow-sm), inset 0 0 0 1px var(--line); }
-    .side-link[aria-current='page'] svg { color: var(--teal); }
+    /* Inside the scrolling list an outside ring would be clipped, so it sits inside the row. */
+    .side-link:focus-visible { outline-offset: -2px; }
+
+    /* When the list scrolls (an iPad, a short window), fade the edge that has more, since Safari hides scrollbars. */
+    .side-nav.more-below { -webkit-mask-image: linear-gradient(#000 calc(100% - 2.5rem), transparent); mask-image: linear-gradient(#000 calc(100% - 2.5rem), transparent); }
+    .side-nav.more-above { -webkit-mask-image: linear-gradient(transparent, #000 2.5rem); mask-image: linear-gradient(transparent, #000 2.5rem); }
+    .side-nav.more-above.more-below {
+      -webkit-mask-image: linear-gradient(transparent, #000 2.5rem, #000 calc(100% - 2.5rem), transparent);
+      mask-image: linear-gradient(transparent, #000 2.5rem, #000 calc(100% - 2.5rem), transparent);
+    }
+    .side-link[aria-current='page'], .side-parent-current { background: var(--panel); color: var(--ink); font-weight: 600; box-shadow: var(--shadow-sm), inset 0 0 0 1px var(--line); }
+    .side-link[aria-current='page'] svg, .side-parent-current svg { color: var(--teal); }
+
+    /* Sub-pages: no icon, lined up with their page's label, lighter until chosen. */
+    .side-children { display: none; flex-direction: column; }
+    .side-children-open { display: flex; }
+    .side-child { padding-left: calc(0.625rem + 16px + 0.625rem); color: var(--ink-3); }
+    .side-child[aria-current='page'] { background: none; box-shadow: none; }
     .side-link[aria-current='page']::after {
       content: '';
       margin-left: auto;
@@ -564,20 +597,26 @@ const icon = (name: string) =>
       box-shadow: 0 0 0 3px var(--teal-soft);
     }
 
+    .side-foot {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--line);
+    }
     .who {
       display: flex;
       align-items: center;
       gap: 0.625rem;
-      padding: 0.875rem 0.5rem 0;
-      border-top: 1px solid var(--line);
-      margin-top: 1rem;
+      padding: 0 0.5rem;
       min-width: 0;
     }
     .who-avatar {
       display: grid;
       place-items: center;
-      width: 32px;
-      height: 32px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       background: var(--panel);
       box-shadow: inset 0 0 0 1px var(--line);
@@ -585,11 +624,32 @@ const icon = (name: string) =>
       font-size: 0.8125rem;
       flex: none;
     }
-    .who-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+    .who-text { display: flex; flex: 1; flex-direction: column; min-width: 0; line-height: 1.25; }
+    .who-out {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      flex: none;
+      border-radius: var(--r-sm);
+      color: var(--ink-3);
+    }
+    .who-out svg { width: 16px; height: 16px; }
+    .who-out:hover { background: var(--panel); color: var(--ink); }
     .who-email { font-size: 0.8125rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .who-role { font-size: 0.75rem; color: var(--ink-3); }
 
     .main-inner { padding: 2.25rem 2.5rem 4rem; }
+  }
+
+  /* An iPad in landscape gets the sidebar too; fingers keep Apple's 44pt rows. */
+  @media (min-width: 1024px) and (pointer: coarse) {
+    .side-link { min-height: var(--touch-row); font-size: 0.9375rem; }
+    .side-link svg { width: 20px; height: 20px; }
+    .side-child { padding-left: calc(0.625rem + 20px + 0.625rem); }
+    .search-button { min-height: var(--touch-row); }
+    .search-button .search-kbd { display: none; }
+    .who-out { width: var(--touch-row); height: var(--touch-row); }
   }
 
   /* ── Page header ───────────────────────────────────────── */

@@ -183,9 +183,10 @@ function select(
 function render(dialog: HTMLDialogElement, query: string): void {
   const list = dialog.querySelector("ul")!;
   const all = [...pageCommands(), ...(people ?? [])];
-  const found = (
-    query.trim() ? all.filter((command) => matches(command.label, query)) : all
-  ).slice(0, 12);
+  // Nothing typed: every page, so none is out of reach. Typed: the best dozen.
+  const found = query.trim()
+    ? all.filter((command) => matches(command.label, query)).slice(0, 12)
+    : pageCommands();
   list.textContent = "";
   found.forEach((command, index) => {
     const li = document.createElement("li");
@@ -291,4 +292,57 @@ if (document.querySelector(".side-link")) {
   document
     .querySelector("[data-open-palette]")
     ?.addEventListener("click", openPalette);
+}
+
+// ─── Navigation ──────────────────────────────────────────────
+
+// The sidebar list scrolls on an iPad or a short window. Bring the current page
+// into view, and mark the edges that have more, since Safari hides scrollbars.
+const sideNav = document.querySelector<HTMLElement>(".side-nav");
+if (sideNav) {
+  const current = sideNav.querySelector<HTMLElement>('[aria-current="page"]');
+  if (current) {
+    const box = sideNav.getBoundingClientRect();
+    const row = current.getBoundingClientRect();
+    if (row.bottom > box.bottom) sideNav.scrollTop += row.bottom - box.bottom + box.height / 3;
+  }
+  const markEdges = () => {
+    sideNav.classList.toggle("more-above", sideNav.scrollTop > 1);
+    sideNav.classList.toggle(
+      "more-below",
+      sideNav.scrollTop + sideNav.clientHeight < sideNav.scrollHeight - 1,
+    );
+  };
+  sideNav.addEventListener("scroll", markEdges, { passive: true });
+  new ResizeObserver(markEdges).observe(sideNav);
+  markEdges();
+}
+
+// The phone's More sheet closes like an iOS menu: a tap outside it, or Escape.
+// That tap only closes the sheet, so it can't press a button on the page under
+// it; the other tabs still work, as in a tab bar.
+const more = document.querySelector<HTMLDetailsElement>(".tab-more");
+if (more) {
+  let closedAt = -Infinity;
+  document.addEventListener("pointerdown", (event) => {
+    if (!more.open || more.contains(event.target as Node)) return;
+    more.open = false;
+    if (!(event.target as Element).closest(".tabbar")) closedAt = event.timeStamp;
+  });
+  document.addEventListener("pointercancel", () => (closedAt = -Infinity));
+  document.addEventListener(
+    "click",
+    (event) => {
+      if (event.timeStamp - closedAt > 1000) return;
+      closedAt = -Infinity;
+      event.preventDefault();
+      event.stopPropagation();
+    },
+    true,
+  );
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || !more.open) return;
+    more.open = false;
+    more.querySelector("summary")?.focus();
+  });
 }
